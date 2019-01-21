@@ -27,10 +27,10 @@ public:
     auto operator=(TaskManager &&) -> TaskManager& = delete;
 
     template<typename Task>
-    auto submit(Task&& task) -> std::future<std::result_of_t<Task()>>;
+    auto submit(Task&& task) const -> std::future<std::result_of_t<Task()>>;
 
     template<typename Task>
-    auto strand(Task&& task) -> std::future<std::result_of_t<Task()>>;
+    auto strand(Task&& task) const -> std::future<std::result_of_t<Task()>>;
 
 private:
     boost::asio::io_context ioContext_;
@@ -43,7 +43,7 @@ private:
 };
 
 template<typename Task>
-auto TaskManager::submit(Task&& task) -> std::future<std::result_of_t<Task()>>
+auto TaskManager::submit(Task&& task) const -> std::future<std::result_of_t<Task()>>
 {
     using result_type = std::result_of_t<Task()>;
 
@@ -57,7 +57,7 @@ auto TaskManager::submit(Task&& task) -> std::future<std::result_of_t<Task()>>
 }
 
 template<typename Task>
-auto TaskManager::strand(Task&& task) -> std::future<std::result_of_t<Task()>>
+auto TaskManager::strand(Task&& task) const -> std::future<std::result_of_t<Task()>>
 {
     using result_type = std::result_of_t<Task()>;
 

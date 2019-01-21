@@ -5,6 +5,7 @@ project(cyclonite VERSION 0.0.0.0)
 set(PUBLIC_HEADERS
     src/options.h
     src/app.h
+    src/core/sceneManager.h
     src/core/scene.h
     src/multithreading/taskManager.h
     src/loaders/glTF/Loader.h
@@ -14,6 +15,7 @@ set(SOURCES
     src/options.cpp
     src/multithreading/taskManager.cpp
     src/loaders/glTF/Loader.cpp
+    src/core/scene.cpp
 )
 
 add_library(${PROJECT_NAME} SHARED

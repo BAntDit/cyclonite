@@ -11,6 +11,8 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 
+#include "../../core/scene.h"
+
 namespace cyclonite::loaders::gltf {
 class Loader
 {
@@ -19,37 +21,43 @@ public:
 
     Loader();
 
-    template<typename Scene>
-    auto load(std::istream& stream, std::vector<Scene>& scenes) -> std::vector<Scene>&;
+    template<typename SceneManager>
+    auto load(std::istream& stream, SceneManager& sceneManager, std::vector<core::Scene>& scenes)
+      -> std::vector<core::Scene>&;
 
-    template<typename Scene>
-    auto load(std::filesystem::path const& path, std::vector<Scene>& scenes) -> std::vector<Scene>&;
+    template<typename SceneManager>
+    auto load(std::filesystem::path const& path, SceneManager& sceneManager, std::vector<core::Scene>& scenes)
+      -> std::vector<core::Scene>&;
 
-    template<typename Scene>
-    auto load(std::pair<void const*, size_t> buffer, std::vector<Scene>& scenes) -> std::vector<Scene>&;
+    template<typename SceneManager>
+    auto load(std::pair<void const*, size_t> buffer, SceneManager& sceneManager, std::vector<core::Scene>& scenes)
+      -> std::vector<core::Scene>&;
 
-    template<typename Scene>
-    auto load(std::istream& stream, std::vector<Scene>&& scenes = {}) -> std::vector<Scene>&&;
+    template<typename SceneManager>
+    auto load(std::istream& stream, SceneManager& sceneManager, std::vector<core::Scene>&& scenes)
+      -> std::vector<core::Scene>&&;
 
-    template<typename Scene>
-    auto load(std::filesystem::path const& path, std::vector<Scene>&& scenes = {}) -> std::vector<Scene>&&;
+    template<typename SceneManager>
+    auto load(std::filesystem::path const& path, SceneManager& sceneManager, std::vector<core::Scene>&& scenes)
+      -> std::vector<core::Scene>&&;
 
-    template<typename Scene>
-    auto load(std::pair<void const*, size_t> buffer, std::vector<Scene>&& scenes = {}) -> std::vector<Scene>&&;
+    template<typename SceneManager>
+    auto load(std::pair<void const*, size_t> buffer, SceneManager& sceneManager, std::vector<core::Scene>&& scenes)
+      -> std::vector<core::Scene>&&;
 
 private:
     void _parseAsset(json& input);
 
     bool _testVersion(json& asset);
 
-    template<typename Scene>
-    void _parseScenes(json& input, std::vector<Scene>& scenes);
+    void _parseScenes(json& input, std::vector<core::Scene>& scenes);
 
     std::filesystem::path basePath_;
 };
 
-template<typename Scene>
-auto Loader::load(std::istream& stream, std::vector<Scene>& scenes) -> std::vector<Scene>&
+template<typename SceneManager>
+auto Loader::load(std::istream& stream, SceneManager& sceneManager, std::vector<core::Scene>& scenes)
+  -> std::vector<core::Scene>&
 {
     json input;
 
@@ -64,8 +72,9 @@ auto Loader::load(std::istream& stream, std::vector<Scene>& scenes) -> std::vect
     return scenes;
 }
 
-template<typename Scene>
-auto Loader::load(std::filesystem::path const& path, std::vector<Scene>& scenes) -> std::vector<Scene>&
+template<typename SceneManager>
+auto Loader::load(std::filesystem::path const& path, SceneManager& sceneManager, std::vector<core::Scene>& scenes)
+  -> std::vector<core::Scene>&
 {
     basePath_ = path.parent_path();
 
@@ -74,11 +83,12 @@ auto Loader::load(std::filesystem::path const& path, std::vector<Scene>& scenes)
     file.open(path.string());
     file.exceptions(std::ios::badbit);
 
-    return load(file, scenes);
+    return load(file, sceneManager, scenes);
 }
 
-template<typename Scene>
-auto Loader::load(std::pair<void const*, size_t> buffer, std::vector<Scene>& scenes) -> std::vector<Scene>&
+template<typename SceneManager>
+auto Loader::load(std::pair<void const*, size_t> buffer, SceneManager& sceneManager, std::vector<core::Scene>& scenes)
+  -> std::vector<core::Scene>&
 {
     std::stringstream stream;
 
@@ -86,31 +96,43 @@ auto Loader::load(std::pair<void const*, size_t> buffer, std::vector<Scene>& sce
 
     stream.write(static_cast<char const*>(data), size);
 
-    return load(stream, scenes);
+    return load(stream, sceneManager, scenes);
 }
 
-template<typename Scene>
-auto Loader::load(std::istream& stream, std::vector<Scene>&& scenes) -> std::vector<Scene>&&
+template<typename SceneManager>
+auto Loader::load(std::istream& stream, SceneManager& sceneManager, std::vector<core::Scene>&& scenes)
+  -> std::vector<core::Scene>&&
 {
-    return std::move(load(stream, scenes));
+    return std::move(load(stream, sceneManager, scenes));
 }
 
-template<typename Scene>
-auto Loader::load(std::filesystem::path const& path, std::vector<Scene>&& scenes) -> std::vector<Scene>&&
+template<typename SceneManager>
+auto Loader::load(std::filesystem::path const& path, SceneManager& sceneManager, std::vector<core::Scene>&& scenes)
+  -> std::vector<core::Scene>&&
 {
-    return std::move(load(path, scenes));
+    return std::move(load(path, sceneManager, scenes));
 }
 
-template<typename Scene>
-auto Loader::load(std::pair<void const*, size_t> buffer, std::vector<Scene>&& scenes) -> std::vector<Scene>&&
+template<typename SceneManager>
+auto Loader::load(std::pair<void const*, size_t> buffer, SceneManager& sceneManager, std::vector<core::Scene>&& scenes)
+  -> std::vector<core::Scene>&&
 {
-    return std::move(load(buffer, scenes));
+    return std::move(load(buffer, sceneManager, scenes));
 }
 
-template<typename Scene>
-void Loader::_parseScenes(json& input, std::vector<Scene>& scenes)
+void Loader::_parseScenes(json& input, std::vector<core::Scene>& scenes)
 {
-    // TODO:: ...
+    auto it = input.find("scenes");
+
+    if (it == input.end()) {
+        return;
+    }
+
+    auto& _scenes = (*it);
+
+    if (!_scenes.is_array() || scenes.empty()) {
+        throw std::runtime_error("glTF scenes property should be an array with at least one item or undefined");
+    }
 }
 }
 
