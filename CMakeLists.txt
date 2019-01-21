@@ -51,6 +51,8 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     )
 endif()
 
+find_package(enttx REQUIRED)
+
 find_package(nlohmann_json REQUIRED)
 
 find_package(Boost REQUIRED COMPONENTS

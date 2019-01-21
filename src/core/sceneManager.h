@@ -7,6 +7,8 @@
 
 #include <unordered_map>
 #include <boost/uuid/random_generator.hpp>
+#include <boost/functional/hash.hpp>
+
 #include "../multithreading/taskManager.h"
 #include "scene.h"
 
@@ -15,18 +17,23 @@ template<typename EntityManager, typename SystemManager>
 class SceneManager
 {
 public:
+    using scene_t = core::Scene<SceneManager<EntityManager, SystemManager>>;
+
     explicit SceneManager(multithreading::TaskManager& taskManager);
 
-    auto createScene(std::string const& name) -> core::Scene&;
+    auto createScene(std::string const& name) -> scene_t&;
 
 private:
+    using scene_registry_t = std::unordered_map<boost::uuids::uuid, std::tuple<std::string, EntityManager, SystemManager>, boost::hash<boost::uuids::uuid>>;
+
     multithreading::TaskManager& taskManager_;
-    std::unordered_map<boost::uuids::uuid, core::Scene> scenes_;
+
+    scene_registry_t sceneRegistry_;
 };
 
 template<typename EntityManager, typename SystemManager>
 SceneManager<EntityManager, SystemManager>::SceneManager(multithreading::TaskManager& taskManager) :
-    taskManager_{taskManager}
+    taskManager_{ taskManager }
 {
 }
 
