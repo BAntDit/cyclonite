@@ -2,15 +2,15 @@
 // Created by bantdit on 1/20/19.
 //
 
-#include "Loader.h"
+#include "loader.h"
 #include <regex>
 
 namespace cyclonite::loaders::gltf {
-Loader::Loader()
+loader::loader()
   : basePath_{}
 {}
 
-void Loader::_parseAsset(json& input)
+void loader::_parseAsset(json& input)
 {
     auto it = input.find(u8"asset");
 
@@ -29,7 +29,7 @@ void Loader::_parseAsset(json& input)
     }
 }
 
-bool Loader::_testVersion(json& asset)
+bool loader::_testVersion(json& asset)
 {
     // From spec: https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#asset
     //

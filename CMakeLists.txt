@@ -8,14 +8,13 @@ set(PUBLIC_HEADERS
     src/core/sceneManager.h
     src/core/scene.h
     src/multithreading/taskManager.h
-    src/loaders/glTF/Loader.h
+        src/loaders/glTF/loader.h
 )
 
 set(SOURCES
     src/options.cpp
     src/multithreading/taskManager.cpp
-    src/loaders/glTF/Loader.cpp
-    src/core/scene.cpp
+    src/loaders/glTF/loader.cpp
 )
 
 add_library(${PROJECT_NAME} SHARED

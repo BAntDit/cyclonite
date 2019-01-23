@@ -19,15 +19,29 @@ public:
     using system_manager_t = typename SceneManager::system_manager_t;
 
 private:
-    Scene(std::string const& name, boost::uuids::uuid const& uuid);
+    Scene(boost::uuids::uuid const& uuid,
+          std::string const& name,
+          entity_manager_t& entities,
+          system_manager_t& systems);
 
 private:
     boost::uuids::uuid uuid_;
     std::string name_;
 
-    entity_manager_t* entityManager_;
-    system_manager_t* systemManager_;
+    entity_manager_t* entities_;
+    system_manager_t* systems_;
 };
+
+template<typename SceneManager>
+Scene<SceneManager>::Scene(boost::uuids::uuid const& uuid,
+                           std::string const& name,
+                           entity_manager_t& entities,
+                           system_manager_t& systems)
+  : uuid_{ uuid }
+  , name_{ name }
+  , entities_{ &entities }
+  , systems_{ &systems }
+{}
 }
 
 #endif // CYCLONITE_SCENE_H
