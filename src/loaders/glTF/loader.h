@@ -9,11 +9,11 @@
 #include <fstream>
 #include <istream>
 #include <nlohmann/json.hpp>
-#include <vector>
 #include <optional>
+#include <vector>
 
-#include "../../core/typedefs.h"
 #include "../../core/sceneManager.h"
+#include "../../core/typedefs.h"
 
 namespace cyclonite::loaders::gltf {
 class Loader
@@ -48,17 +48,18 @@ public:
       -> std::vector<core::Scene>&&;
 
 private:
-    struct GLTFNode {
-        std::string                 name;
-        std::optional<size_t>       camera;
-        std::optional<size_t>       skin;
-        std::optional<size_t>       mesh;
-        std::vector<size_t>         children;
-        std::optional<core::mat4>   matrix;
-        std::optional<core::quat>   rotation;
-        std::optional<core::vec3>   scale;
-        std::optional<core::vec3>   translation;
-        std::vector<core::real>     weights;
+    struct GLTFNode
+    {
+        std::string name;
+        std::optional<size_t> camera;
+        std::optional<size_t> skin;
+        std::optional<size_t> mesh;
+        std::vector<size_t> children;
+        std::optional<core::mat4> matrix;
+        std::optional<core::quat> rotation;
+        std::optional<core::vec3> scale;
+        std::optional<core::vec3> translation;
+        std::vector<core::real> weights;
     };
 
 private:
