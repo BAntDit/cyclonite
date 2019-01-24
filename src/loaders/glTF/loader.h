@@ -10,8 +10,10 @@
 #include <istream>
 #include <nlohmann/json.hpp>
 #include <vector>
+#include <optional>
 
-#include "../../core/scene.h"
+#include "../../core/typedefs.h"
+#include "../../core/sceneManager.h"
 
 namespace cyclonite::loaders::gltf {
 class Loader
@@ -22,8 +24,8 @@ public:
     Loader();
 
     template<typename SceneManager>
-    auto load(std::istream& stream, SceneManager& sceneManager, std::vector<core::Scene>& scenes)
-      -> std::vector<core::Scene>&;
+    auto load(std::istream& stream, SceneManager& sceneManager, std::vector<typename SceneManager::scene_t>& scenes)
+      -> std::vector<typename SceneManager::scene_t>&;
 
     template<typename SceneManager>
     auto load(std::filesystem::path const& path, SceneManager& sceneManager, std::vector<core::Scene>& scenes)
@@ -46,18 +48,37 @@ public:
       -> std::vector<core::Scene>&&;
 
 private:
+    struct GLTFNode {
+        std::string                 name;
+        std::optional<size_t>       camera;
+        std::optional<size_t>       skin;
+        std::optional<size_t>       mesh;
+        std::vector<size_t>         children;
+        std::optional<core::mat4>   matrix;
+        std::optional<core::quat>   rotation;
+        std::optional<core::vec3>   scale;
+        std::optional<core::vec3>   translation;
+        std::vector<core::real>     weights;
+    };
+
+private:
     void _parseAsset(json& input);
 
     bool _testVersion(json& asset);
 
     void _parseScenes(json& input, std::vector<core::Scene>& scenes);
 
+    void _parseNodes(); // TODO:: ...
+
+private:
     std::filesystem::path basePath_;
+
+    std::vector<GLTFNode> nodes_;
 };
 
 template<typename SceneManager>
-auto Loader::load(std::istream& stream, SceneManager& sceneManager, std::vector<core::Scene>& scenes)
-  -> std::vector<core::Scene>&
+auto Loader::load(std::istream& stream, SceneManager& sceneManager, std::vector<typename SceneManager::scene_t>& scenes)
+  -> std::vector<typename SceneManager::scene_t>&
 {
     json input;
 
