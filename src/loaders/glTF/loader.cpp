@@ -6,11 +6,11 @@
 #include <regex>
 
 namespace cyclonite::loaders::gltf {
-loader::loader()
+Loader::Loader()
   : basePath_{}
 {}
 
-void loader::_parseAsset(json& input)
+void Loader::_parseAsset(json& input)
 {
     auto it = input.find(u8"asset");
 
@@ -29,7 +29,7 @@ void loader::_parseAsset(json& input)
     }
 }
 
-bool loader::_testVersion(json& asset)
+bool Loader::_testVersion(json& asset)
 {
     // From spec: https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#asset
     //
@@ -115,5 +115,14 @@ bool loader::_testVersion(json& asset)
     }
 
     std::terminate();
+}
+
+void Loader::_parseNodes(json& input)
+{
+    auto it = input.find(u8"nodes");
+
+    if (it == input.end()) return;
+
+    auto& _nodes = (*it);
 }
 }

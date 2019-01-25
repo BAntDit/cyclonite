@@ -19,13 +19,17 @@ class SceneManager
 public:
     using scene_t = core::Scene<SceneManager<EntityManager, SystemManager>>;
 
+    using entity_manager_t = EntityManager;
+
+    using system_manager_t = SystemManager;
+
     explicit SceneManager(multithreading::TaskManager& taskManager);
 
     auto createScene(std::string const& name) -> scene_t;
 
 private:
     using scene_registry_t = std::unordered_map<boost::uuids::uuid,
-                                                std::tuple<std::string, EntityManager, SystemManager>,
+                                                std::tuple<std::string, entity_manager_t, system_manager_t>,
                                                 boost::hash<boost::uuids::uuid>>;
 
     multithreading::TaskManager& taskManager_;
@@ -46,7 +50,7 @@ auto SceneManager<EntityManager, SystemManager>::createScene(std::string const& 
 {
     auto future = taskManager_.strand([&, this]() -> scene_t {
         auto [it, inserted] =
-          sceneRegistry_.emplace(generator_(), std::forward_as_tuple(name, EntityManager{}, SystemManager{}));
+          sceneRegistry_.emplace(generator_(), std::forward_as_tuple(name, entity_manager_t{}, system_manager_t{}));
 
         assert(inserted);
 

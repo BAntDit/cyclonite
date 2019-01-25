@@ -6,6 +6,7 @@ set(PUBLIC_HEADERS
     src/options.h
     src/app.h
     src/core/typedefs.h
+    src/core/transform.h
     src/core/sceneManager.h
     src/core/scene.h
     src/multithreading/taskManager.h

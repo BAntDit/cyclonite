@@ -69,7 +69,7 @@ private:
 
     void _parseScenes(json& input, std::vector<core::Scene>& scenes);
 
-    void _parseNodes(); // TODO:: ...
+    void _parseNodes(json& input);
 
 private:
     std::filesystem::path basePath_;
@@ -90,6 +90,9 @@ auto Loader::load(std::istream& stream, SceneManager& sceneManager, std::vector<
     }
 
     _parseAsset(input);
+
+    if constexpr (SceneManager::system_manager_t::template has_system_for_components_v<>) {
+    }
 
     return scenes;
 }
