@@ -11,10 +11,11 @@
 #include <vector>
 
 namespace cyclonite::multithreading {
+
 class TaskManager
 {
 public:
-    explicit TaskManager(size_t countThreads = std::thread::hardware_concurrency());
+    explicit TaskManager(size_t countThreads = std::max(std::thread::hardware_concurrency(), 2u) - 1u);
 
     TaskManager(TaskManager const&) = delete;
 
@@ -31,6 +32,10 @@ public:
 
     template<typename Task>
     auto strand(Task&& task) const -> std::future<std::result_of_t<Task()>>;
+
+    auto threadCount() const -> size_t { return pool_.size(); }
+
+    auto getTaskCount(size_t countItems) const -> std::pair<size_t, size_t>;
 
 private:
     boost::asio::io_context ioContext_;
