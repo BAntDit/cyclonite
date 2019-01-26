@@ -52,6 +52,11 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     )
 endif()
 
+find_package(glm REQUIRED)
+target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_ENABLE_EXPERIMENTAL)
+target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_FORCE_RADIANS)
+target_link_libraries(${PROJECT_NAME} glm)
+
 find_package(enttx REQUIRED)
 
 find_package(nlohmann_json REQUIRED)
