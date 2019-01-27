@@ -6,6 +6,7 @@
 #include "internal/getOptional.h"
 #include "internal/readArray.h"
 #include <regex>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace cyclonite::loaders::gltf {
 Loader::Loader(multithreading::TaskManager& taskManager)
@@ -148,7 +149,93 @@ auto Loader::_parseNode(json& _node) -> GLTFNode
         }
     }
 
-    // TODO:: read matrix...
+    {
+        auto it = _node.find(u8"matrix");
+
+        if (it != _node.end()) {
+            auto _matrix = *it;
+
+            if (!_matrix.is_array() || _matrix.size() != 16) {
+                throw std::runtime_error("glTF node.matrix property must be an array of 16 numbers or undefined");
+            }
+
+            auto elements = internal::readArray<core::real, 16>(_matrix);
+
+            core::mat4 matrix{1.0};
+
+            std::copy_n(glm::value_ptr(matrix), 16, elements.data());
+
+            node.matrix = matrix;
+        } else {
+            auto translationIt = _node.find(u8"translation");
+            auto scaleIt = _node.find(u8"scale");
+            auto rotationIt = _node.find(u8"rotation");
+
+            core::vec3 translation{0.0};
+            core::vec3 scale{0.0};
+            core::quat rotation{0.0, 0.0, 0.0, 1.0};
+
+            if (translationIt != _node.end()) {
+                auto _translation = *translationIt;
+
+                if (!_translation.is_array() || _translation.size() != 3) {
+                    throw std::runtime_error(
+                            "glTF node.translation property must be an array of 3 numbers or undefined");
+                }
+
+                auto elements = internal::readArray<core::real, 3>(_translation);
+
+                std::copy_n(glm::value_ptr(translation), 3, elements.data());
+            }
+
+            if (scaleIt != _node.end()) {
+                auto _scale = *scaleIt;
+
+                if (!_scale.is_array() || _scale.size() != 3) {
+                    throw std::runtime_error(
+                            "glTF node.scale property must be an array of 3 numbers or undefined");
+                }
+
+                auto elements = internal::readArray<core::real, 3>(_scale);
+
+                std::copy_n(glm::value_ptr(scale), 3, elements.data());
+            }
+
+            if (rotationIt != _node.end()) {
+                auto _rotation = *rotationIt;
+
+                if (!_rotation.is_array() || _rotation.size() != 4) {
+                    throw std::runtime_error(
+                            "glTF node.rotation property must be an array of 4 numbers or undefined");
+                }
+
+                auto elements = internal::readArray<core::real, 4>(_rotation);
+
+                std::copy_n(glm::value_ptr(rotation), 4, elements.data());
+            }
+
+            node.translation = translation;
+            node.scale = scale;
+            node.rotation = rotation;
+        }
+    }
+
+    { // weights
+        auto it = _node.find(u8"weights");
+
+        if (it != _node.end()) {
+            auto _weights = *it;
+
+            if (!_weights.is_array() || _weights.size() > 0) {
+                throw std::runtime_error(
+                        "glTF node.weights property must be an array with at least one item or undefined");
+            }
+
+            for (size_t i = 0; i < _weights.size(); i++) {
+                node.weights.push_back(_weights.at(i).get<core::real>());
+            }
+        }
+    }
 
     return node;
 }
