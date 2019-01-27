@@ -153,7 +153,7 @@ auto Loader::_parseNode(json& _node) -> GLTFNode
         auto it = _node.find(u8"matrix");
 
         if (it != _node.end()) {
-            auto _matrix = *it;
+            auto& _matrix = *it;
 
             if (!_matrix.is_array() || _matrix.size() != 16) {
                 throw std::runtime_error("glTF node.matrix property must be an array of 16 numbers or undefined");
@@ -176,7 +176,7 @@ auto Loader::_parseNode(json& _node) -> GLTFNode
             core::quat rotation{0.0, 0.0, 0.0, 1.0};
 
             if (translationIt != _node.end()) {
-                auto _translation = *translationIt;
+                auto& _translation = *translationIt;
 
                 if (!_translation.is_array() || _translation.size() != 3) {
                     throw std::runtime_error(
@@ -189,7 +189,7 @@ auto Loader::_parseNode(json& _node) -> GLTFNode
             }
 
             if (scaleIt != _node.end()) {
-                auto _scale = *scaleIt;
+                auto& _scale = *scaleIt;
 
                 if (!_scale.is_array() || _scale.size() != 3) {
                     throw std::runtime_error(
@@ -202,7 +202,7 @@ auto Loader::_parseNode(json& _node) -> GLTFNode
             }
 
             if (rotationIt != _node.end()) {
-                auto _rotation = *rotationIt;
+                auto& _rotation = *rotationIt;
 
                 if (!_rotation.is_array() || _rotation.size() != 4) {
                     throw std::runtime_error(
@@ -224,9 +224,9 @@ auto Loader::_parseNode(json& _node) -> GLTFNode
         auto it = _node.find(u8"weights");
 
         if (it != _node.end()) {
-            auto _weights = *it;
+            auto& _weights = *it;
 
-            if (!_weights.is_array() || _weights.size() > 0) {
+            if (!_weights.is_array() || _weights.size() < 1) {
                 throw std::runtime_error(
                         "glTF node.weights property must be an array with at least one item or undefined");
             }
@@ -287,6 +287,36 @@ void Loader::_parseNodes(json& input)
 
         for (auto&& node : nodes) {
             nodes_.emplace_back(node);
+        }
+    }
+}
+
+void Loader::_parseCameras(json& input)
+{
+    auto it = input.find(u8"cameras");
+
+    if (it == input.end()) {
+        return;
+    }
+
+    auto& _cameras = *it;
+
+    if (!_cameras.is_array() || _cameras.size() < 1) {
+        throw std::runtime_error(
+                "glTF node.cameras property must be an array with at least one item or undefined");
+    }
+
+    for (size_t i = 0; i < _cameras.size(); i++) {
+        auto& _camera = _cameras.at(i);
+
+        auto type = internal::getOptional(_camera, u8"type", std::string{""});
+
+        if (type == u8"perspective") {
+
+        } else if (type == u8"orthographic") {
+
+        } else {
+            throw std::runtime_error("glTF camera.type must be a json object");
         }
     }
 }

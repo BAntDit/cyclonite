@@ -11,11 +11,13 @@
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <vector>
+#include <variant>
 
 #include "../../multithreading/taskManager.h"
 #include "../../core/sceneManager.h"
 #include "../../core/typedefs.h"
 #include "../../core/transform.h"
+#include "../../core/camera.h"
 
 namespace cyclonite::loaders::gltf {
 class Loader
@@ -73,6 +75,8 @@ private:
 
     void _parseNodes(json& input);
 
+    void _parseCameras(json& input);
+
     auto _parseNode(json& _node) -> GLTFNode;
 
 private:
@@ -81,6 +85,7 @@ private:
     std::filesystem::path basePath_;
 
     std::vector<GLTFNode> nodes_;
+    std::vector<std::variant<core::PerspectiveCamera, core::OrthographicCamera>> cameras_;
 };
 
 template<typename SceneManager>
