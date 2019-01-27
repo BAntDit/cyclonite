@@ -13,6 +13,11 @@ set(PUBLIC_HEADERS
     src/loaders/glTF/loader.h
 )
 
+set(PRIVATE_HEADERS
+    src/loaders/glTF/internal/getOptional.h
+    src/loaders/glTF/internal/readArray.h
+)
+
 set(SOURCES
     src/options.cpp
     src/multithreading/taskManager.cpp
@@ -21,6 +26,7 @@ set(SOURCES
 
 add_library(${PROJECT_NAME} SHARED
     ${PUBLIC_HEADERS}
+    ${PRIVATE_HEADERS}
     ${SOURCES}
 )
 
@@ -72,7 +78,7 @@ target_link_libraries(${PROJECT_NAME}
     Boost::program_options
 )
 
-set(ALL_SOURCES_FOR_STYLE_CORRECTION ${PUBLIC_HEADERS} ${SOURCES})
+set(ALL_SOURCES_FOR_STYLE_CORRECTION ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
 
 include(ClangFormat.cmake)
 CODE_STYLE_CORRECTION("${ALL_SOURCES_FOR_STYLE_CORRECTION}")

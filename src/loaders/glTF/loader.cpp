@@ -3,10 +3,12 @@
 //
 
 #include "loader.h"
+#include "internal/getOptional.h"
+#include "internal/readArray.h"
 #include <regex>
 
 namespace cyclonite::loaders::gltf {
-Loader::Loader()
+Loader::Loader(multithreading::TaskManager& taskManager)
   : basePath_{}
 {}
 
@@ -117,12 +119,88 @@ bool Loader::_testVersion(json& asset)
     std::terminate();
 }
 
+auto Loader::_parseNode(json& _node) -> GLTFNode
+{
+    GLTFNode node;
+
+    node.name = internal::getOptional(_node, u8"name", std::string{""});
+    node.camera = internal::getOptional(_node, u8"camera", std::numeric_limits<size_t>::max());
+    node.skin = internal::getOptional(_node, u8"skin", std::numeric_limits<size_t>::max());
+    node.mesh = internal::getOptional(_node, u8"mesh", std::numeric_limits<size_t>::max());
+
+    {
+        auto it = _node.find(u8"children");
+
+        if (it != _node.end()) {
+            auto& _children = *it;
+
+            if (!_children.is_array()) {
+                throw std::runtime_error("glTF node.children property must be an array of numbers or undefined");
+            }
+
+            if (_children.empty()) {
+                throw std::runtime_error("glTF node.children array must have at least one item");
+            }
+
+            for (size_t i = 0; i < _children.size(); i++) {
+                node.children.push_back(_children.at(i).get<size_t>());
+            }
+        }
+    }
+
+    // TODO:: read matrix...
+
+    return node;
+}
+
 void Loader::_parseNodes(json& input)
 {
     auto it = input.find(u8"nodes");
 
-    if (it == input.end()) return;
+    if (it == input.end())
+        return;
 
     auto& _nodes = (*it);
+
+    if (!_nodes.is_array()) {
+        throw std::runtime_error("glTF nodes property must be an array of numbers or undefined");
+    }
+
+    nodes_.reserve(_nodes.size());
+
+    auto [taskCount, nodesPerTask] = taskManager_->getTaskCount(_nodes.size());
+
+    std::vector<std::future<std::vector<GLTFNode>>> futures(taskCount);
+
+    for (size_t taskIndex = 0; taskIndex < taskCount; taskIndex++) {
+        size_t taskStartIndex = taskIndex * nodesPerTask;
+        size_t taskEndIndex = std::min((taskIndex + 1) * nodesPerTask, _nodes.size());
+
+        futures[taskIndex] = taskManager_->submit([&, this, taskStartIndex, taskEndIndex]() -> std::vector<GLTFNode> {
+            std::vector<GLTFNode> nodes;
+
+            nodes.reserve(taskEndIndex - taskStartIndex);
+
+            for (size_t i = taskStartIndex; i < taskEndIndex; i++) {
+                auto& node = _nodes.at(i);
+
+                if (!node.is_object()) {
+                    throw std::runtime_error("glTF node should be a json object");
+                }
+
+                nodes.emplace_back(this->_parseNode(node));
+            }
+
+            return nodes;
+        });
+    }
+
+    for (auto&& future : futures) {
+        auto nodes = future.get();
+
+        for (auto&& node : nodes) {
+            nodes_.emplace_back(node);
+        }
+    }
 }
 }

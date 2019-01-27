@@ -36,6 +36,6 @@ auto TaskManager::getTaskCount(size_t countItems) const -> std::pair<size_t, siz
     auto tail = countItems % pool_.size();
     auto count = tail > 0 ? countItems / itemsPerTask + 1 : countItems / itemsPerTask;
 
-    return { itemsPerTask, count };
+    return { count, itemsPerTask };
 }
 }

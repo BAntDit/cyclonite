@@ -12,8 +12,10 @@
 #include <optional>
 #include <vector>
 
+#include "../../multithreading/taskManager.h"
 #include "../../core/sceneManager.h"
 #include "../../core/typedefs.h"
+#include "../../core/transform.h"
 
 namespace cyclonite::loaders::gltf {
 class Loader
@@ -21,7 +23,7 @@ class Loader
 public:
     using json = nlohmann::json;
 
-    Loader();
+    Loader(multithreading::TaskManager& taskManager);
 
     template<typename SceneManager>
     auto load(std::istream& stream, SceneManager& sceneManager, std::vector<typename SceneManager::scene_t>& scenes)
@@ -51,9 +53,9 @@ private:
     struct GLTFNode
     {
         std::string name;
-        std::optional<size_t> camera;
-        std::optional<size_t> skin;
-        std::optional<size_t> mesh;
+        size_t camera;
+        size_t skin;
+        size_t mesh;
         std::vector<size_t> children;
         std::optional<core::mat4> matrix;
         std::optional<core::quat> rotation;
@@ -71,7 +73,11 @@ private:
 
     void _parseNodes(json& input);
 
+    auto _parseNode(json& _node) -> GLTFNode;
+
 private:
+    multithreading::TaskManager* taskManager_;
+
     std::filesystem::path basePath_;
 
     std::vector<GLTFNode> nodes_;
@@ -91,7 +97,8 @@ auto Loader::load(std::istream& stream, SceneManager& sceneManager, std::vector<
 
     _parseAsset(input);
 
-    if constexpr (SceneManager::system_manager_t::template has_system_for_components_v<>) {
+    if constexpr (SceneManager::system_manager_t::template has_system_for_components_v<core::Transform>) {
+        _parseNodes(input);
     }
 
     return scenes;
