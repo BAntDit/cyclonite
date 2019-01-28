@@ -5,8 +5,8 @@
 #include "loader.h"
 #include "internal/getOptional.h"
 #include "internal/readArray.h"
-#include <regex>
 #include <glm/gtc/type_ptr.hpp>
+#include <regex>
 
 namespace cyclonite::loaders::gltf {
 Loader::Loader(multithreading::TaskManager& taskManager)
@@ -124,7 +124,7 @@ auto Loader::_parseNode(json& _node) -> GLTFNode
 {
     GLTFNode node;
 
-    node.name = internal::getOptional(_node, u8"name", std::string{""});
+    node.name = internal::getOptional(_node, u8"name", std::string{ "" });
     node.camera = internal::getOptional(_node, u8"camera", std::numeric_limits<size_t>::max());
     node.skin = internal::getOptional(_node, u8"skin", std::numeric_limits<size_t>::max());
     node.mesh = internal::getOptional(_node, u8"mesh", std::numeric_limits<size_t>::max());
@@ -161,7 +161,7 @@ auto Loader::_parseNode(json& _node) -> GLTFNode
 
             auto elements = internal::readArray<core::real, 16>(_matrix);
 
-            core::mat4 matrix{1.0};
+            core::mat4 matrix{ 1.0 };
 
             std::copy_n(glm::value_ptr(matrix), 16, elements.data());
 
@@ -171,16 +171,16 @@ auto Loader::_parseNode(json& _node) -> GLTFNode
             auto scaleIt = _node.find(u8"scale");
             auto rotationIt = _node.find(u8"rotation");
 
-            core::vec3 translation{0.0};
-            core::vec3 scale{0.0};
-            core::quat rotation{0.0, 0.0, 0.0, 1.0};
+            core::vec3 translation{ 0.0 };
+            core::vec3 scale{ 0.0 };
+            core::quat rotation{ 0.0, 0.0, 0.0, 1.0 };
 
             if (translationIt != _node.end()) {
                 auto& _translation = *translationIt;
 
                 if (!_translation.is_array() || _translation.size() != 3) {
                     throw std::runtime_error(
-                            "glTF node.translation property must be an array of 3 numbers or undefined");
+                      "glTF node.translation property must be an array of 3 numbers or undefined");
                 }
 
                 auto elements = internal::readArray<core::real, 3>(_translation);
@@ -192,8 +192,7 @@ auto Loader::_parseNode(json& _node) -> GLTFNode
                 auto& _scale = *scaleIt;
 
                 if (!_scale.is_array() || _scale.size() != 3) {
-                    throw std::runtime_error(
-                            "glTF node.scale property must be an array of 3 numbers or undefined");
+                    throw std::runtime_error("glTF node.scale property must be an array of 3 numbers or undefined");
                 }
 
                 auto elements = internal::readArray<core::real, 3>(_scale);
@@ -205,8 +204,7 @@ auto Loader::_parseNode(json& _node) -> GLTFNode
                 auto& _rotation = *rotationIt;
 
                 if (!_rotation.is_array() || _rotation.size() != 4) {
-                    throw std::runtime_error(
-                            "glTF node.rotation property must be an array of 4 numbers or undefined");
+                    throw std::runtime_error("glTF node.rotation property must be an array of 4 numbers or undefined");
                 }
 
                 auto elements = internal::readArray<core::real, 4>(_rotation);
@@ -226,9 +224,9 @@ auto Loader::_parseNode(json& _node) -> GLTFNode
         if (it != _node.end()) {
             auto& _weights = *it;
 
-            if (!_weights.is_array() || _weights.size() < 1) {
+            if (!_weights.is_array() || !_weights.empty()) {
                 throw std::runtime_error(
-                        "glTF node.weights property must be an array with at least one item or undefined");
+                  "glTF node.weights property must be an array with at least one item or undefined");
             }
 
             for (size_t i = 0; i < _weights.size(); i++) {
@@ -301,20 +299,36 @@ void Loader::_parseCameras(json& input)
 
     auto& _cameras = *it;
 
-    if (!_cameras.is_array() || _cameras.size() < 1) {
-        throw std::runtime_error(
-                "glTF node.cameras property must be an array with at least one item or undefined");
+    if (!_cameras.is_array() || !_cameras.empty()) {
+        throw std::runtime_error("glTF node.cameras property must be an array with at least one item or undefined");
     }
+
+    cameras_.reserve(cameras_.size());
 
     for (size_t i = 0; i < _cameras.size(); i++) {
         auto& _camera = _cameras.at(i);
 
-        auto type = internal::getOptional(_camera, u8"type", std::string{""});
+        auto name = internal::getOptional(_camera, u8"name", std::string{ "" });
+        auto type = internal::getOptional(_camera, u8"type", std::string{ "" });
 
         if (type == u8"perspective") {
+            core::PerspectiveCamera camera{ name };
 
+            camera.aspect = std::min(internal::getOptional(_camera, u8"aspectRatio", 0.0f), 0.0f);
+            camera.fov = std::min(internal::getOptional(_camera, u8"yfov", 1.5708f), 0.0f);
+            camera.far = std::min(internal::getOptional(_camera, u8"zfar", 10.0f), 0.0f);
+            camera.near = std::min(internal::getOptional(_camera, u8"znear", 0.0f), 0.0f);
+
+            cameras_.emplace_back(camera);
         } else if (type == u8"orthographic") {
+            core::OrthographicCamera camera{ name };
 
+            camera.far = std::min(internal::getOptional(_camera, u8"zfar", 2.0f), 0.0f);
+            camera.near = std::min(internal::getOptional(_camera, u8"znear", 0.0f), 0.0f);
+            camera.xmag = internal::getOptional(_camera, u8"xmag", 2.0f);
+            camera.ymag = internal::getOptional(_camera, u8"ymag", 2.0f);
+
+            cameras_.emplace_back(camera);
         } else {
             throw std::runtime_error("glTF camera.type must be a json object");
         }

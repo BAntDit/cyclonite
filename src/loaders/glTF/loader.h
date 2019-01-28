@@ -10,14 +10,14 @@
 #include <istream>
 #include <nlohmann/json.hpp>
 #include <optional>
-#include <vector>
 #include <variant>
+#include <vector>
 
-#include "../../multithreading/taskManager.h"
-#include "../../core/sceneManager.h"
-#include "../../core/typedefs.h"
-#include "../../core/transform.h"
 #include "../../core/camera.h"
+#include "../../core/sceneManager.h"
+#include "../../core/transform.h"
+#include "../../core/typedefs.h"
+#include "../../multithreading/taskManager.h"
 
 namespace cyclonite::loaders::gltf {
 class Loader
@@ -101,6 +101,11 @@ auto Loader::load(std::istream& stream, SceneManager& sceneManager, std::vector<
     }
 
     _parseAsset(input);
+
+    if constexpr (SceneManager::system_manager_t::template has_system_for_components_v<core::PerspectiveCamera> ||
+                  SceneManager::system_manager_t::template has_system_for_components_v<core::OrthographicCamera>) {
+        _parseCameras(input);
+    }
 
     if constexpr (SceneManager::system_manager_t::template has_system_for_components_v<core::Transform>) {
         _parseNodes(input);
