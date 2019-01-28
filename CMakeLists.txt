@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 project(cyclonite VERSION 0.0.0.0)
 
 set(PUBLIC_HEADERS
+    src/config.h
     src/options.h
     src/app.h
     src/core/typedefs.h
@@ -23,7 +24,7 @@ set(SOURCES
     src/options.cpp
     src/multithreading/taskManager.cpp
     src/loaders/glTF/loader.cpp
-)
+        src/updateStages.h)
 
 add_library(${PROJECT_NAME} SHARED
     ${PUBLIC_HEADERS}
