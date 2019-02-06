@@ -6,10 +6,10 @@
 #define CYCLONITE_APP_H
 
 #include "config.h"
-#include "updateStages.h"
 #include "core/camera.h"
 #include "core/transform.h"
 #include "options.h"
+#include "updateStages.h"
 #include <easy-mp/enum.h>
 #include <enttx/componentStorage.h>
 #include <exception>

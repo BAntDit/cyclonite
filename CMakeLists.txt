@@ -6,11 +6,13 @@ set(PUBLIC_HEADERS
     src/config.h
     src/options.h
     src/app.h
+    src/updateStages.h
     src/core/typedefs.h
     src/core/transform.h
     src/core/camera.h
     src/core/sceneManager.h
     src/core/scene.h
+    src/core/attributeSemantic.h
     src/multithreading/taskManager.h
     src/loaders/glTF/loader.h
 )
@@ -24,7 +26,7 @@ set(SOURCES
     src/options.cpp
     src/multithreading/taskManager.cpp
     src/loaders/glTF/loader.cpp
-        src/updateStages.h)
+)
 
 add_library(${PROJECT_NAME} SHARED
     ${PUBLIC_HEADERS}
