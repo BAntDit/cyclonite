@@ -3,8 +3,10 @@ cmake_minimum_required(VERSION 3.10)
 project(cyclonite VERSION 0.0.0.0)
 
 set(PUBLIC_HEADERS
+    src/config.h
     src/options.h
     src/app.h
+    src/updateStages.h
     src/core/typedefs.h
     src/core/transform.h
     src/core/camera.h

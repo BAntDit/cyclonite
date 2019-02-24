@@ -7,27 +7,26 @@
 
 #include <nlohmann/json.hpp>
 
-namespace cyclonite::loaders::gltf::internal
+namespace cyclonite::loaders::gltf::internal {
+template<typename T>
+auto getOptional(nlohmann::json& json, std::string const& property, T&& defaultValue) -> std::decay_t<T>
 {
-    template<typename T>
-    auto getOptional(nlohmann::json& json, std::string const& property, T&& defaultValue) -> std::decay_t<T>
-    {
-        typename std::decay<T>::type result;
+    typename std::decay<T>::type result;
 
-        auto it = json.find(property);
+    auto it = json.find(property);
 
-        if (it != json.end()) {
-            try {
-                result = it.value().get<T>();
-            } catch (...) {
-                result = std::forward<T>(defaultValue);
-            }
-        } else {
+    if (it != json.end()) {
+        try {
+            result = it.value().get<T>();
+        } catch (...) {
             result = std::forward<T>(defaultValue);
         }
-
-        return result;
+    } else {
+        result = std::forward<T>(defaultValue);
     }
+
+    return result;
+}
 }
 
-#endif //CYCLONITE_READOPTIONAL_H
+#endif // CYCLONITE_READOPTIONAL_H

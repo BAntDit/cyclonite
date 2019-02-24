@@ -5,7 +5,13 @@
 #ifndef CYCLONITE_APP_H
 #define CYCLONITE_APP_H
 
+#include "config.h"
+#include "core/camera.h"
+#include "core/transform.h"
 #include "options.h"
+#include "updateStages.h"
+#include <easy-mp/enum.h>
+#include <enttx/componentStorage.h>
 #include <exception>
 #include <iostream>
 
@@ -14,6 +20,13 @@ template<class Application>
 class BaseApp
 {
 public:
+    using config_t = Config<easy_mp::type_list<core::Transform, core::PerspectiveCamera, core::OrthographicCamera>,
+                            easy_mp::type_list<enttx::ComponentStorage<64, 8, core::Transform>,
+                                               enttx::ComponentStorage<8, 1, core::PerspectiveCamera>,
+                                               enttx::ComponentStorage<8, 1, core::OrthographicCamera>>,
+                            easy_mp::type_list<>,
+                            easy_mp::value_cast(UpdateStage::COUNT)>;
+
     auto init(Options const& options) -> Application&;
 
     auto run() -> Application&;
