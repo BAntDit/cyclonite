@@ -10,6 +10,7 @@ set(PUBLIC_HEADERS
     src/core/camera.h
     src/core/sceneManager.h
     src/core/scene.h
+    src/vulkan/handle.h
     src/multithreading/taskManager.h
     src/loaders/glTF/loader.h
 )
@@ -78,6 +79,9 @@ target_link_libraries(${PROJECT_NAME}
     Boost::system
     Boost::program_options
 )
+
+find_package(Vulkan REQUIRED)
+target_link_libraries(${PROJECT_NAME} Vulkan::Vulkan)
 
 set(ALL_SOURCES_FOR_STYLE_CORRECTION ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
 
