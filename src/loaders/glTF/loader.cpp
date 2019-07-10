@@ -308,7 +308,6 @@ void Loader::_parseCameras(json& input)
     for (size_t i = 0; i < _cameras.size(); i++) {
         auto& _camera = _cameras.at(i);
 
-
         auto name = internal::getOptional(_camera, u8"name", std::string{ "" });
 
         auto type = internal::getOptional(_camera, u8"type", std::string{ "" });
