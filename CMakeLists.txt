@@ -12,6 +12,8 @@ set(PUBLIC_HEADERS
     src/core/camera.h
     src/core/sceneManager.h
     src/core/scene.h
+    src/core/attributeSemantic.h
+    src/core/vertexAttribute.h
     src/vulkan/handle.h
     src/multithreading/taskManager.h
     src/loaders/glTF/loader.h
