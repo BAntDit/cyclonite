@@ -84,6 +84,8 @@ private:
 
     auto _parseNode(json& _node) -> GLTFNode;
 
+    void _readBuffers(json& input);
+
 private:
     multithreading::TaskManager* taskManager_;
 

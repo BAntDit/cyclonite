@@ -120,6 +120,79 @@ bool Loader::_testVersion(json& asset)
     std::terminate();
 }
 
+void Loader::_readBuffers(json& input) {
+    auto it = input.find(u8"buffers");
+
+    if (it == input.end()) {
+        return;
+    }
+
+    auto& buffers = (*it);
+
+    if (!buffers.is_array()) {
+        throw std::runtime_error("glTF.buffers property should be an array or undefined");
+    }
+
+    auto countBuffers = buffers.size();
+
+    if (countBuffers == 0) {
+        return;
+    }
+
+    std::vector<std::vector<std::byte>> buffers_;
+
+    std::vector<std::future<void>> futures(countBuffers);
+
+    buffers_.resize(countBuffers);
+
+    for (size_t i = 0; i < countBuffers; i++) {
+        auto& jsonBuffer = buffers.at(i);
+
+        if (!jsonBuffer.is_object()) {
+            throw std::runtime_error("glTF json buffer should be an object");
+        }
+
+        auto byteLength = internal::getOptional(jsonBuffer, u8"byteLength", static_cast<size_t>(0));
+
+        if (byteLength == 0) {
+            throw std::runtime_error("glTF json buffer must has byteLength property as number");
+        }
+
+        buffers_[i].resize(byteLength);
+
+        auto* bufferPtr = reinterpret_cast<char*>(buffers_[i].data());
+
+        taskManager_->submit([&, byteLength]() -> void {
+            auto bufferUri = internal::getOptional<std::string>(jsonBuffer, u8"uri", u8"");
+
+            if (bufferUri.empty()) {
+                return;
+            }
+
+            auto base64MimeType = u8"data:application/octet-stream;base64";
+
+            auto base64Start = bufferUri.find(base64MimeType);
+
+            if (base64Start == std::string::npos) {
+                auto path = basePath_ / bufferUri;
+
+                std::ifstream file;
+
+                file.exceptions(std::ios::failbit);
+                file.open(path.string(), std::ifstream::binary);
+                file.exceptions(std::ios::badbit);
+                file.seekg(0, std::ifstream::beg);
+
+                file.read(bufferPtr, byteLength);
+
+                file.close();
+            } else {
+
+            }
+        }); // TODO:: ...
+    }
+}
+
 auto Loader::_parseNode(json& _node) -> GLTFNode
 {
     GLTFNode node;
