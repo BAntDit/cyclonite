@@ -8,12 +8,15 @@ set(PUBLIC_HEADERS
     src/app.h
     src/updateStages.h
     src/core/typedefs.h
+    src/core/bufferView.h
     src/core/transform.h
     src/core/camera.h
     src/core/sceneManager.h
     src/core/scene.h
     src/core/attributeSemantic.h
+    src/core/primitiveType.h
     src/core/vertexAttribute.h
+    src/core/geometry.h
     src/vulkan/handle.h
     src/multithreading/taskManager.h
     src/loaders/glTF/loader.h

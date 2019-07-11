@@ -6,14 +6,22 @@
 #define CYCLONITE_VERTEXATTRIBUTE_H
 
 #include <cstddef>
+#include <cstdint>
+#include <easy-mp/enum.h>
+#include <vector>
 
 #include "attributeSemantic.h"
-#include "../../../../../../usr/include/c++/7/cstdint"
 
 namespace cyclonite::core {
 template<typename Type, AttributeSemantic S>
-class VertexAttribute {
+class VertexAttribute
+{
 public:
+    using type_t = Type;
+
+    using semantic_t = std::integral_constant<std::underlying_type_t<AttributeSemantic>, easy_mp::value_cast(S)>;
+
+    static constexpr AttributeSemantic semantic_v = S;
 
 private:
     bool normalized_;
@@ -28,6 +36,8 @@ private:
     // count components
 
     // get value by index
+
+    // TODO:: buffer view
 };
 }
 

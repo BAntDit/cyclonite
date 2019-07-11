@@ -32,24 +32,28 @@ public:
       -> std::vector<typename SceneManager::scene_t>&;
 
     template<typename SceneManager>
-    auto load(std::filesystem::path const& path, SceneManager& sceneManager, std::vector<core::Scene>& scenes)
-      -> std::vector<core::Scene>&;
+    auto load(std::filesystem::path const& path,
+              SceneManager& sceneManager,
+              std::vector<typename SceneManager::scene_t>& scenes) -> std::vector<typename SceneManager::scene_t>&;
 
     template<typename SceneManager>
-    auto load(std::pair<void const*, size_t> buffer, SceneManager& sceneManager, std::vector<core::Scene>& scenes)
-      -> std::vector<core::Scene>&;
+    auto load(std::pair<void const*, size_t> buffer,
+              SceneManager& sceneManager,
+              std::vector<typename SceneManager::scene_t>& scenes) -> std::vector<typename SceneManager::scene_t>&;
 
     template<typename SceneManager>
-    auto load(std::istream& stream, SceneManager& sceneManager, std::vector<core::Scene>&& scenes)
-      -> std::vector<core::Scene>&&;
+    auto load(std::istream& stream, SceneManager& sceneManager, std::vector<typename SceneManager::scene_t>&& scenes)
+      -> std::vector<typename SceneManager::scene_t>&&;
 
     template<typename SceneManager>
-    auto load(std::filesystem::path const& path, SceneManager& sceneManager, std::vector<core::Scene>&& scenes)
-      -> std::vector<core::Scene>&&;
+    auto load(std::filesystem::path const& path,
+              SceneManager& sceneManager,
+              std::vector<typename SceneManager::scene_t>&& scenes) -> std::vector<typename SceneManager::scene_t>&&;
 
     template<typename SceneManager>
-    auto load(std::pair<void const*, size_t> buffer, SceneManager& sceneManager, std::vector<core::Scene>&& scenes)
-      -> std::vector<core::Scene>&&;
+    auto load(std::pair<void const*, size_t> buffer,
+              SceneManager& sceneManager,
+              std::vector<typename SceneManager::scene_t>&& scenes) -> std::vector<typename SceneManager::scene_t>&&;
 
 private:
     struct GLTFNode
@@ -71,7 +75,8 @@ private:
 
     bool _testVersion(json& asset);
 
-    void _parseScenes(json& input, std::vector<core::Scene>& scenes);
+    template<typename SceneManager>
+    void _parseScenes(json& input, std::vector<typename SceneManager::scene_t>& scenes);
 
     void _parseNodes(json& input);
 
@@ -115,8 +120,9 @@ auto Loader::load(std::istream& stream, SceneManager& sceneManager, std::vector<
 }
 
 template<typename SceneManager>
-auto Loader::load(std::filesystem::path const& path, SceneManager& sceneManager, std::vector<core::Scene>& scenes)
-  -> std::vector<core::Scene>&
+auto Loader::load(std::filesystem::path const& path,
+                  SceneManager& sceneManager,
+                  std::vector<typename SceneManager::scene_t>& scenes) -> std::vector<typename SceneManager::scene_t>&
 {
     basePath_ = path.parent_path();
 
@@ -129,8 +135,9 @@ auto Loader::load(std::filesystem::path const& path, SceneManager& sceneManager,
 }
 
 template<typename SceneManager>
-auto Loader::load(std::pair<void const*, size_t> buffer, SceneManager& sceneManager, std::vector<core::Scene>& scenes)
-  -> std::vector<core::Scene>&
+auto Loader::load(std::pair<void const*, size_t> buffer,
+                  SceneManager& sceneManager,
+                  std::vector<typename SceneManager::scene_t>& scenes) -> std::vector<typename SceneManager::scene_t>&
 {
     std::stringstream stream;
 
@@ -142,27 +149,31 @@ auto Loader::load(std::pair<void const*, size_t> buffer, SceneManager& sceneMana
 }
 
 template<typename SceneManager>
-auto Loader::load(std::istream& stream, SceneManager& sceneManager, std::vector<core::Scene>&& scenes)
-  -> std::vector<core::Scene>&&
+auto Loader::load(std::istream& stream,
+                  SceneManager& sceneManager,
+                  std::vector<typename SceneManager::scene_t>&& scenes) -> std::vector<typename SceneManager::scene_t>&&
 {
     return std::move(load(stream, sceneManager, scenes));
 }
 
 template<typename SceneManager>
-auto Loader::load(std::filesystem::path const& path, SceneManager& sceneManager, std::vector<core::Scene>&& scenes)
-  -> std::vector<core::Scene>&&
+auto Loader::load(std::filesystem::path const& path,
+                  SceneManager& sceneManager,
+                  std::vector<typename SceneManager::scene_t>&& scenes) -> std::vector<typename SceneManager::scene_t>&&
 {
     return std::move(load(path, sceneManager, scenes));
 }
 
 template<typename SceneManager>
-auto Loader::load(std::pair<void const*, size_t> buffer, SceneManager& sceneManager, std::vector<core::Scene>&& scenes)
-  -> std::vector<core::Scene>&&
+auto Loader::load(std::pair<void const*, size_t> buffer,
+                  SceneManager& sceneManager,
+                  std::vector<typename SceneManager::scene_t>&& scenes) -> std::vector<typename SceneManager::scene_t>&&
 {
     return std::move(load(buffer, sceneManager, scenes));
 }
 
-void Loader::_parseScenes(json& input, std::vector<core::Scene>& scenes)
+template<typename SceneManager>
+void Loader::_parseScenes(json& input, std::vector<typename SceneManager::scene_t>& scenes)
 {
     auto it = input.find("scenes");
 
