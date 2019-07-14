@@ -12,7 +12,7 @@ namespace cyclonite::core {
 class BufferView
 {
 private:
-    // std::shared_ptr<> buffer_;
+    // std::shared_ptr<> buffer_; // what is the buffer view?
 
     size_t offset;
     size_t size;

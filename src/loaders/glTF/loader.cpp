@@ -5,6 +5,7 @@
 #include "loader.h"
 #include "internal/getOptional.h"
 #include "internal/readArray.h"
+#include "internal/base64Decode.h"
 #include <glm/gtc/type_ptr.hpp>
 #include <regex>
 
@@ -139,8 +140,6 @@ void Loader::_readBuffers(json& input) {
         return;
     }
 
-    std::vector<std::vector<std::byte>> buffers_;
-
     std::vector<std::future<void>> futures(countBuffers);
 
     buffers_.resize(countBuffers);
@@ -162,14 +161,14 @@ void Loader::_readBuffers(json& input) {
 
         auto* bufferPtr = reinterpret_cast<char*>(buffers_[i].data());
 
-        taskManager_->submit([&, byteLength]() -> void {
+        futures[i] = taskManager_->submit([&, byteLength]() -> void {
             auto bufferUri = internal::getOptional<std::string>(jsonBuffer, u8"uri", u8"");
 
             if (bufferUri.empty()) {
                 return;
             }
 
-            auto base64MimeType = u8"data:application/octet-stream;base64";
+            auto base64MimeType = std::string(u8"data:application/octet-stream;base64");
 
             auto base64Start = bufferUri.find(base64MimeType);
 
@@ -187,10 +186,14 @@ void Loader::_readBuffers(json& input) {
 
                 file.close();
             } else {
+                auto base64Data = bufferUri.substr(base64MimeType.size() + 1); // +1 for comma character
 
+                std::copy_n(base64Decode(base64Data).begin(), byteLength, buffers_[i].begin());
             }
-        }); // TODO:: ...
+        });
     }
+
+    for (auto&& future : futures) { future.get(); }
 }
 
 auto Loader::_parseNode(json& _node) -> GLTFNode

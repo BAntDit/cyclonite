@@ -91,7 +91,10 @@ private:
 
     std::filesystem::path basePath_;
 
+    std::vector<std::vector<std::byte>> buffers_;
+
     std::vector<GLTFNode> nodes_;
+
     std::vector<std::variant<core::PerspectiveCamera, core::OrthographicCamera>> cameras_;
 };
 
@@ -108,6 +111,8 @@ auto Loader::load(std::istream& stream, SceneManager& sceneManager, std::vector<
     }
 
     _parseAsset(input);
+
+    _readBuffers(input);
 
     if constexpr (SceneManager::system_manager_t::template has_system_for_components_v<core::PerspectiveCamera> ||
                   SceneManager::system_manager_t::template has_system_for_components_v<core::OrthographicCamera>) {

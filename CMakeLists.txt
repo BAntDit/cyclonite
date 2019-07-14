@@ -25,11 +25,13 @@ set(PUBLIC_HEADERS
 set(PRIVATE_HEADERS
     src/loaders/glTF/internal/getOptional.h
     src/loaders/glTF/internal/readArray.h
+    src/loaders/glTF/internal/base64Decode.h
 )
 
 set(SOURCES
     src/options.cpp
     src/multithreading/taskManager.cpp
+    src/loaders/glTF/internal/base64Decode.cpp
     src/loaders/glTF/loader.cpp
 )
 
