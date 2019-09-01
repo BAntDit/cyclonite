@@ -3,9 +3,9 @@
 //
 
 #include "loader.h"
+#include "internal/base64Decode.h"
 #include "internal/getOptional.h"
 #include "internal/readArray.h"
-#include "internal/base64Decode.h"
 #include <glm/gtc/type_ptr.hpp>
 #include <regex>
 
@@ -121,7 +121,8 @@ bool Loader::_testVersion(json& asset)
     std::terminate();
 }
 
-void Loader::_readBuffers(json& input) {
+void Loader::_readBuffers(json& input)
+{
     auto it = input.find(u8"buffers");
 
     if (it == input.end()) {
@@ -193,7 +194,9 @@ void Loader::_readBuffers(json& input) {
         });
     }
 
-    for (auto&& future : futures) { future.get(); }
+    for (auto&& future : futures) {
+        future.get();
+    }
 }
 
 auto Loader::_parseNode(json& _node) -> GLTFNode

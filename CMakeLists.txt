@@ -7,6 +7,7 @@ set(PUBLIC_HEADERS
     src/options.h
     src/app.h
     src/updateStages.h
+    src/rangeBasedMemoryManager.h
     src/core/typedefs.h
     src/core/bufferView.h
     src/core/transform.h
@@ -18,6 +19,8 @@ set(PUBLIC_HEADERS
     src/core/vertexAttribute.h
     src/core/geometry.h
     src/vulkan/handle.h
+    src/vulkan/instance.h
+    src/vulkan/memoryPage.h
     src/multithreading/taskManager.h
     src/loaders/glTF/loader.h
 )
@@ -30,6 +33,7 @@ set(PRIVATE_HEADERS
 
 set(SOURCES
     src/options.cpp
+    src/vulkan/instance.cpp
     src/multithreading/taskManager.cpp
     src/loaders/glTF/internal/base64Decode.cpp
     src/loaders/glTF/loader.cpp
@@ -68,6 +72,14 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         /Wall
     )
 endif()
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    PROJECT_NAME="${PROJECT_NAME}"
+    VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+    VERSION_MINOR=${PROJECT_VERSION_MINOR}
+    VERSION_PATCH=${PROJECT_VERSION_PATCH}
+    VERSION_TWEAK=${PROJECT_VERSION_TWEAK}
+)
 
 find_package(glm REQUIRED)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_ENABLE_EXPERIMENTAL)

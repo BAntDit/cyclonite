@@ -9,9 +9,8 @@
 #include <string>
 #include <vector>
 
-namespace cyclonite::loaders::gltf
-{
-    std::vector<std::byte> base64Decode(std::string const& src);
+namespace cyclonite::loaders::gltf {
+std::vector<std::byte> base64Decode(std::string const& src);
 }
 
-#endif //CYCLONITE_BASE64DECODE_H
+#endif // CYCLONITE_BASE64DECODE_H
