@@ -48,7 +48,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL dbgCallback(VkFlags msgFlags,
 }
 
 template<size_t N>
-constexpr auto getExtensionNamesArray(std::array<const char*, N>&& list) -> decltype(list) {
+constexpr auto getExtensionNamesArray(std::array<const char*, N>&& list) -> decltype(list)
+{
     return std::forward<std::array<const char*, N>>(list);
 }
 
@@ -103,12 +104,4 @@ void Instance::createInstance(uint32_t layerCount,
 
     throw std::runtime_error("vulkan instance creation failed"); // and no one knows why
 }
-
-Instance::Instance(bool presentationSupport /* = true*/)
-  : Instance(
-      { "VK_LAYER_LUNARG_standard_validation" },
-      presentationSupport
-        ? std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME, VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_XLIB_SURFACE_EXTENSION_NAME }
-        : std::array<char const*, 1>({ VK_EXT_DEBUG_REPORT_EXTENSION_NAME }))
-{}
 }
