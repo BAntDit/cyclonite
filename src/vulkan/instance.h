@@ -8,13 +8,13 @@
 #include "handle.h"
 #include <array>
 #include <cstdint>
+#include <iostream>
+#include <sstream>
 
 namespace cyclonite::vulkan {
 class Instance
 {
 public:
-    Instance(bool presentationSupport = true);
-
     template<size_t N, size_t M>
     Instance(std::array<char const*, N> const& reqLayers, std::array<char const*, M> const& reqExtensions);
 

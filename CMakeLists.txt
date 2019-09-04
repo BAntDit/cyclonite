@@ -102,6 +102,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 find_package(Vulkan REQUIRED)
+target_compile_definitions(${PROJECT_NAME} PRIVATE VK_USE_PLATFORM_XLIB_KHR)
 target_link_libraries(${PROJECT_NAME} Vulkan::Vulkan)
 
 set(ALL_SOURCES_FOR_STYLE_CORRECTION ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})

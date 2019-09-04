@@ -6,17 +6,21 @@
 #define CYCLONITE_BUFFERVIEW_H
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 
 namespace cyclonite::core {
 class BufferView
 {
+public:
 private:
-    // std::shared_ptr<> buffer_; // what is the buffer view?
+    uint32_t stagingBufferId_;
+    uint32_t deviceBufferId_;
 
-    size_t offset;
-    size_t size;
-    size_t stride;
+    size_t stagingOffset_;
+    size_t deviceOffset_;
+    size_t size_;
+    size_t stride_;
 };
 }
 

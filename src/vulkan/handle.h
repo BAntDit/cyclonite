@@ -15,24 +15,24 @@ class Handle
 {
 public:
     Handle()
-      : Handle([](T, VkAllocationCallbacks*) -> void {})
+      : Handle([](T, VkAllocationCallbacks const*) -> void {})
     {}
 
-    explicit Handle(void deleter(T, VkAllocationCallbacks*))
+    explicit Handle(void (*deleter)(T, VkAllocationCallbacks const*))
       : handle_{ VK_NULL_HANDLE }
       , deleter_{ deleter }
     {}
 
-    Handle(VkInstance vkInstance, void deleter(VkInstance, T, VkAllocationCallbacks*))
+    Handle(VkInstance vkInstance, void (*deleter)(VkInstance, T, VkAllocationCallbacks const*))
       : handle_{ VK_NULL_HANDLE }
       , deleter_{}
     {
-        deleter_ = [deleter, vkInstance](T handle, VkAllocationCallbacks* vkAllocationCallbacks) -> void {
+        deleter_ = [deleter, vkInstance](T handle, VkAllocationCallbacks const* vkAllocationCallbacks) -> void {
             deleter(vkInstance, handle, vkAllocationCallbacks);
         };
     }
 
-    Handle(VkDevice vkDevice, void deleter(VkDevice, T, VkAllocationCallbacks*))
+    Handle(VkDevice vkDevice, void (*deleter)(VkDevice, T, VkAllocationCallbacks*))
       : handle_{ VK_NULL_HANDLE }
       , deleter_{}
     {
