@@ -18,6 +18,8 @@ public:
     template<size_t N, size_t M>
     Instance(std::array<char const*, N> const& reqLayers, std::array<char const*, M> const& reqExtensions);
 
+    Instance();
+
     Instance(Instance const&) = delete;
 
     Instance(Instance&&) = default;
@@ -36,7 +38,7 @@ private:
     void testLayers(std::array<char const*, N> const& reqLayers);
 
     template<size_t N>
-    void testExtensions(std::array<char const*, N> const& reqLayers);
+    void testExtensions(std::array<char const*, N> const& reqExtensions);
 
     void createInstance(uint32_t layerCount,
                         char const* const* layerNames,

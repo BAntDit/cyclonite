@@ -20,6 +20,7 @@ set(PUBLIC_HEADERS
     src/core/geometry.h
     src/vulkan/handle.h
     src/vulkan/instance.h
+    src/vulkan/device.h
     src/vulkan/memoryPage.h
     src/multithreading/taskManager.h
     src/loaders/glTF/loader.h
