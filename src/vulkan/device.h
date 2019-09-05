@@ -11,7 +11,7 @@ namespace cyclonite::vulkan {
 class Device
 {
 public:
-    Device();
+    Device(VkPhysicalDevice const& vkPhysicalDevice);
 
     Device(Device const&) = delete;
 
@@ -22,7 +22,7 @@ public:
 public:
     auto operator=(Device const&) -> Device& = delete;
 
-    auto operator=(Device&&) -> Device& = default;
+    auto operator=(Device &&) -> Device& = default;
 
 public:
     auto handle() const -> Handle<VkDevice> const& { return vkDevice_; }

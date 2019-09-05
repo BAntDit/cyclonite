@@ -35,6 +35,7 @@ set(PRIVATE_HEADERS
 set(SOURCES
     src/options.cpp
     src/vulkan/instance.cpp
+    src/vulkan/device.cpp
     src/multithreading/taskManager.cpp
     src/loaders/glTF/internal/base64Decode.cpp
     src/loaders/glTF/loader.cpp

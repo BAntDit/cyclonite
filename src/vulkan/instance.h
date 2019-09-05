@@ -105,11 +105,10 @@ void Instance::testExtensions(std::array<char const*, N> const& reqExtensions)
     std::vector<VkExtensionProperties> availableExtensions{};
 
     if (availableInstanceExtensionsCount > 0) {
-        availableExtensions.resize(availableInstanceExtensionsCount)
+        availableExtensions.resize(availableInstanceExtensionsCount);
 
-          if (vkEnumerateInstanceExtensionProperties(
-                nullptr, &availableInstanceExtensionsCount, availableExtensions.data()) != VK_SUCCESS)
-        {
+        if (vkEnumerateInstanceExtensionProperties(
+              nullptr, &availableInstanceExtensionsCount, availableExtensions.data()) != VK_SUCCESS) {
             throw std::runtime_error("count not read properties of available extensions");
         }
     }
