@@ -28,6 +28,7 @@ public:
     auto handle() const -> Handle<VkDevice> const& { return vkDevice_; }
 
 private:
+    std::string name_;
     VkPhysicalDevice vkPhysicalDevice_;
     VkPhysicalDeviceProperties vkDeviceProperties_;
     VkPhysicalDeviceMemoryProperties vkPhysicalDeviceMemoryProperties_;
