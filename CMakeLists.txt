@@ -90,6 +90,8 @@ target_link_libraries(${PROJECT_NAME} glm)
 
 find_package(enttx REQUIRED)
 
+find_package(easy-mp REQUIRED)
+
 find_package(nlohmann_json REQUIRED)
 
 find_package(Boost REQUIRED COMPONENTS
