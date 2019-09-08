@@ -29,6 +29,10 @@ public:
 
 private:
     std::string name_;
+    size_t graphicsQueueIndex_;
+    size_t computeQueueIndex_;
+    size_t deviceHostTransferIndex_;
+    size_t presentationQueueIndex_;
     VkPhysicalDevice vkPhysicalDevice_;
     VkPhysicalDeviceProperties vkDeviceProperties_;
     VkPhysicalDeviceMemoryProperties vkPhysicalDeviceMemoryProperties_;
