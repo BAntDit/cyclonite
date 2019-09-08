@@ -8,6 +8,7 @@ set(PUBLIC_HEADERS
     src/app.h
     src/updateStages.h
     src/rangeBasedMemoryManager.h
+    src/root.h
     src/core/typedefs.h
     src/core/bufferView.h
     src/core/transform.h
@@ -27,6 +28,7 @@ set(PUBLIC_HEADERS
 )
 
 set(PRIVATE_HEADERS
+    src/vulkan/internal/deviceCreationFunctions.h
     src/loaders/glTF/internal/getOptional.h
     src/loaders/glTF/internal/readArray.h
     src/loaders/glTF/internal/base64Decode.h
