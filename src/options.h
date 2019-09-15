@@ -7,8 +7,6 @@
 
 #include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -20,22 +18,24 @@ public:
     struct WindowProperties
     {
         std::string title;
-        uint32_t left;
-        uint32_t top;
-        uint32_t width;
-        uint32_t height;
+        uint16_t left;
+        uint16_t top;
+        uint16_t width;
+        uint16_t height;
         bool fullscreen;
     };
 
     explicit Options(int argc = 0, const char* argv[] = {});
 
-private:
-    void parseWindowProperties();
+    auto deviceName() const -> std::string const& { return deviceName_; }
+
+    void deviceName(std::string const& name) { deviceName_ = name; }
+
+    void save();
 
 private:
     std::string config_;
     std::string deviceName_;
-    boost::property_tree::ptree properties_;
     std::vector<WindowProperties> windows_;
 };
 }

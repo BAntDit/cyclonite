@@ -3,16 +3,75 @@
 //
 
 #include "options.h"
+#include <fstream>
 #include <iostream>
+#include <istream>
+#include <iomanip>
+#include <nlohmann/json.hpp>
 
 namespace po = boost::program_options;
-namespace pt = boost::property_tree;
 
 namespace cyclonite {
+static auto parseWindowProperties(nlohmann::json const& json) -> Options::WindowProperties
+{
+    Options::WindowProperties wp{};
+
+    {
+        auto it = json.find(u8"title");
+
+        if (it != json.end() && (*it).is_string()) {
+            wp.title = (*it).get<std::string>();
+        } else {
+            wp.title = "";
+        }
+    }
+
+    {
+        auto it = json.find(u8"left");
+
+        if (it != json.end() && (*it).is_number()) {
+            wp.left = (*it).get<uint16_t>();
+        }
+    }
+
+    {
+        auto it = json.find(u8"top");
+
+        if (it != json.end() && (*it).is_number()) {
+            wp.top = (*it).get<uint16_t>();
+        }
+    }
+
+    {
+        auto it = json.find(u8"width");
+
+        if (it != json.end() && (*it).is_number()) {
+            wp.width = (*it).get<uint16_t>();
+        }
+    }
+
+    {
+        auto it = json.find(u8"height");
+
+        if (it != json.end() && (*it).is_number()) {
+            wp.height = (*it).get<uint16_t>();
+        }
+    }
+
+    {
+        auto it = json.find(u8"fullscreen");
+
+        if (it != json.end() && (*it).is_boolean()) {
+            wp.fullscreen = (*it).get<bool>();
+        }
+    }
+
+    return wp;
+}
+
 Options::Options(int argc /* = 0*/, const char* argv[] /* = {}*/)
   : config_{ "config.json" }
   , deviceName_{ "" }
-  , properties_{}
   , windows_{}
 {
     po::options_description commandLineOptions{ "commandLineOptions" };
@@ -33,72 +92,91 @@ Options::Options(int argc /* = 0*/, const char* argv[] /* = {}*/)
         po::store(po::parse_command_line(argc, argv, commandLineOptions), variables);
     }
 
-    if (variables.count("config")) {
+    if (variables.count("config") > 0) {
         config_ = variables["config"].as<std::string>();
     }
 
-    if (variables.count("device-name")) {
+    if (variables.count("device-name") > 0) {
         deviceName_ = variables["device-name"].as<std::string>();
     }
 
     po::notify(variables);
 
-    if (variables.count("help")) {
+    if (variables.count("help") > 0) {
         std::cout << commandLineOptions << std::endl;
     }
+
+    bool rewriteConfig = false;
+
+    nlohmann::json json;
 
     {
         std::ifstream ifs(config_);
 
         if (ifs) {
-            pt::read_json(ifs, properties_);
+            ifs >> json;
         }
     }
 
-    if (deviceName_.empty() && properties_.count("device")) {
-        deviceName_ = properties_.get<std::string>("device");
+    if (deviceName_.empty()) {
+        auto it = json.find(u8"device");
+
+        if (it != json.end()) {
+            deviceName_ = it.value().get<std::string>();
+        }
+    } else {
+        rewriteConfig = true;
     }
 
-    parseWindowProperties();
+    {
+        auto it = json.find(u8"windows");
 
-    bool changesInWindowProperties = false;
+        if (it != json.end()) {
+            auto const& windows = *it;
+
+            if (windows.is_array()) {
+                for (size_t i = 0; i < windows.size(); i++) {
+                    windows_.push_back(parseWindowProperties(windows.at(i)));
+                }
+            }
+        }
+    }
 
     if (windows_.empty() && !variables["no-window"].as<bool>()) {
-        WindowProperties wp = {};
+        WindowProperties defaultWindow{};
 
-        wp.title = "Cyclonite";
-        wp.left = 0x1FFF0000;
-        wp.top = 0x1FFF0000;
-        wp.width = variables["width"].as<uint16_t>();
-        wp.height = variables["height"].as<uint16_t>();
-        wp.fullscreen = variables["full-screen"].as<bool>();
+        defaultWindow.title = "Cyclonite";
+        defaultWindow.left = 0x1FFF;
+        defaultWindow.top = 0x1FFF;
+        defaultWindow.height = variables["height"].as<uint16_t>();
+        defaultWindow.width = variables["width"].as<uint16_t>();
+        defaultWindow.fullscreen = variables["full-screen"].as<bool>();
 
-        windows_.push_back(wp);
-
-        changesInWindowProperties = true;
+        rewriteConfig = true;
     }
 
-    if (changesInWindowProperties) {
-        // todo:: ...
+    if (rewriteConfig) {
+        save();
     }
 }
 
-void Options::parseWindowProperties()
+void Options::save()
 {
-    if (properties_.count("windows") == 0)
-        return;
+    nlohmann::json json = { { u8"device", deviceName_ } };
 
-    for (auto const& windowProperties : properties_.get_child("windows")) {
-        WindowProperties wp = {};
+    auto windows = nlohmann::json::array();
 
-        wp.title = windowProperties.second.get<std::string>("title");
-        wp.left = windowProperties.second.get<uint16_t>("left");
-        wp.top = windowProperties.second.get<uint16_t>("top");
-        wp.width = windowProperties.second.get<uint16_t>("width");
-        wp.height = windowProperties.second.get<uint16_t>("height");
-        wp.fullscreen = windowProperties.second.get<bool>("fullscreen");
+    for (auto const& [title, top, left, width, height, fullscreen] : windows_) {
+        nlohmann::json wp = { { u8"title", title }, { u8"top", top },       { u8"left", left },
+                              { u8"width", width }, { u8"height", height }, { u8"fullscreen", fullscreen } };
 
-        windows_.push_back(wp);
+        windows.push_back(wp);
     }
+
+    json[u8"windows"] = windows;
+
+    std::ofstream ofs(config_, std::ofstream::trunc);
+
+    ofs << std::setw(4) << json << std::endl;
 }
 }
