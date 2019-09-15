@@ -7,6 +7,7 @@
 
 #include "config.h"
 #include "options.h"
+#include "sdl/sdlSupport.h"
 #include "vulkan/instance.h"
 #include <memory>
 
@@ -35,18 +36,34 @@ public:
     void init(Options const& options);
 
 private:
+    std::shared_ptr<Options> options_;
+    sdl::SDLSupport sdlSupport_;
     std::unique_ptr<vulkan::Instance> vulkanInstance_;
 };
 
 template<typename ComponentList, typename ComponentStorageList, typename SystemList, size_t updateStageCount>
 Root<Config<ComponentList, ComponentStorageList, SystemList, updateStageCount>>::Root()
-  : vulkanInstance_{ nullptr }
+  : options_{ nullptr }
+  , sdlSupport_{}
+  , vulkanInstance_{ nullptr }
 {}
 
 template<typename ComponentList, typename ComponentStorageList, typename SystemList, size_t updateStageCount>
 void Root<Config<ComponentList, ComponentStorageList, SystemList, updateStageCount>>::init(Options const& options)
 {
-    // todo:: ...
+    options_ = std::make_shared<Options>(options);
+
+    if (!options.windows().empty()) {
+        vulkanInstance_ = std::make_unique<vulkan::Instance>();
+    } else {
+        vulkanInstance_ =
+          std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_LUNARG_standard_validation" },
+                                             std::array<char const*, 1>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME });
+    }
+
+    int displayIndex = 0; // every time use first display for now
+
+    sdlSupport_.storeDisplayResolutions(*options_, displayIndex);
 }
 }
 #endif // CYCLONITE_ROOT_H

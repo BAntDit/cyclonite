@@ -4,9 +4,9 @@
 
 #include "options.h"
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <istream>
-#include <iomanip>
 #include <nlohmann/json.hpp>
 
 namespace po = boost::program_options;
@@ -73,6 +73,7 @@ Options::Options(int argc /* = 0*/, const char* argv[] /* = {}*/)
   : config_{ "config.json" }
   , deviceName_{ "" }
   , windows_{}
+  , displayResolutions_{}
 {
     po::options_description commandLineOptions{ "commandLineOptions" };
 

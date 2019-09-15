@@ -19,6 +19,7 @@ set(PUBLIC_HEADERS
     src/core/primitiveType.h
     src/core/vertexAttribute.h
     src/core/geometry.h
+    src/sdl/sdlSupport.h
     src/vulkan/handle.h
     src/vulkan/instance.h
     src/vulkan/device.h
@@ -36,6 +37,7 @@ set(PRIVATE_HEADERS
 
 set(SOURCES
     src/options.cpp
+    src/sdl/sdlSupport.cpp
     src/vulkan/instance.cpp
     src/vulkan/device.cpp
     src/multithreading/taskManager.cpp
@@ -89,6 +91,8 @@ find_package(glm REQUIRED)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_ENABLE_EXPERIMENTAL)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_FORCE_RADIANS)
 target_link_libraries(${PROJECT_NAME} glm)
+
+target_link_libraries(${PROJECT_NAME} SDL2)
 
 find_package(enttx REQUIRED)
 

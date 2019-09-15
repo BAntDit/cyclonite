@@ -27,9 +27,27 @@ public:
 
     explicit Options(int argc = 0, const char* argv[] = {});
 
+    Options(Options const&) = default;
+
+    Options(Options&&) = default;
+
+    ~Options() = default;
+
+    auto operator=(Options const&) -> Options& = default;
+
+    auto operator=(Options&&) -> Options& = default;
+
     auto deviceName() const -> std::string const& { return deviceName_; }
 
     void deviceName(std::string const& name) { deviceName_ = name; }
+
+    auto windows() const -> std::vector<WindowProperties> const& { return windows_; }
+
+    auto windows() -> std::vector<WindowProperties>& { return windows_; }
+
+    auto displayResolutions() const -> std::vector<std::pair<uint16_t, uint16_t>> const& { return displayResolutions_; }
+
+    auto displayResolutions() -> std::vector<std::pair<uint16_t, uint16_t>>& { return displayResolutions_; }
 
     void save();
 
@@ -37,6 +55,7 @@ private:
     std::string config_;
     std::string deviceName_;
     std::vector<WindowProperties> windows_;
+    std::vector<std::pair<uint16_t, uint16_t>> displayResolutions_;
 };
 }
 
