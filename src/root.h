@@ -53,7 +53,7 @@ void Root<Config<ComponentList, ComponentStorageList, SystemList, updateStageCou
 {
     options_ = std::make_shared<Options>(options);
 
-    if (!options.windows().empty()) {
+    if (!options_->windows().empty()) {
         vulkanInstance_ = std::make_unique<vulkan::Instance>();
     } else {
         vulkanInstance_ =
@@ -64,6 +64,10 @@ void Root<Config<ComponentList, ComponentStorageList, SystemList, updateStageCou
     int displayIndex = 0; // every time use first display for now
 
     sdlSupport_.storeDisplayResolutions(*options_, displayIndex);
+
+    options_->adjustWindowResolutions();
+
+    options_->save();
 }
 }
 #endif // CYCLONITE_ROOT_H

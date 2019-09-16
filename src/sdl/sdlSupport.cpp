@@ -18,7 +18,8 @@ SDLSupport::~SDLSupport()
     SDL_Quit();
 }
 
-void SDLSupport::storeDisplayResolutions(Options& options, int displayIndex) {
+void SDLSupport::storeDisplayResolutions(Options& options, int displayIndex)
+{
     auto countDisplayModes = SDL_GetNumDisplayModes(displayIndex);
 
     for (auto i = 0; i < countDisplayModes; i++) {

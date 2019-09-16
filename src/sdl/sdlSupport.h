@@ -5,8 +5,8 @@
 #ifndef CYCLONITE_SDLSUPPORT_H
 #define CYCLONITE_SDLSUPPORT_H
 
-#include <SDL2/SDL.h>
 #include "../options.h"
+#include <SDL2/SDL.h>
 
 namespace cyclonite::sdl {
 class SDLSupport

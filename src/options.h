@@ -35,7 +35,7 @@ public:
 
     auto operator=(Options const&) -> Options& = default;
 
-    auto operator=(Options&&) -> Options& = default;
+    auto operator=(Options &&) -> Options& = default;
 
     auto deviceName() const -> std::string const& { return deviceName_; }
 
@@ -48,6 +48,8 @@ public:
     auto displayResolutions() const -> std::vector<std::pair<uint16_t, uint16_t>> const& { return displayResolutions_; }
 
     auto displayResolutions() -> std::vector<std::pair<uint16_t, uint16_t>>& { return displayResolutions_; }
+
+    void adjustWindowResolutions();
 
     void save();
 
