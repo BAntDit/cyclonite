@@ -38,6 +38,7 @@ public:
 private:
     std::shared_ptr<Options> options_;
     sdl::SDLSupport sdlSupport_;
+    std::vector<sdl::SDLWindow> windows_;
     std::unique_ptr<vulkan::Instance> vulkanInstance_;
 };
 
@@ -45,6 +46,7 @@ template<typename ComponentList, typename ComponentStorageList, typename SystemL
 Root<Config<ComponentList, ComponentStorageList, SystemList, updateStageCount>>::Root()
   : options_{ nullptr }
   , sdlSupport_{}
+  , windows_{}
   , vulkanInstance_{ nullptr }
 {}
 
@@ -53,6 +55,19 @@ void Root<Config<ComponentList, ComponentStorageList, SystemList, updateStageCou
 {
     options_ = std::make_shared<Options>(options);
 
+    int displayIndex = 0; // every time use first display for now
+
+    sdlSupport_.storeDisplayResolutions(*options_, displayIndex);
+
+    options_->adjustWindowResolutions();
+
+    for (auto const& window : options_->windows()) {
+        uint32_t flags =
+          window.fullscreen ? SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS : SDL_WINDOW_SHOWN;
+
+        windows_.push_back(sdlSupport_.createWindow(window.left, window.top, window.width, window.height, flags));
+    }
+
     if (!options_->windows().empty()) {
         vulkanInstance_ = std::make_unique<vulkan::Instance>();
     } else {
@@ -60,12 +75,6 @@ void Root<Config<ComponentList, ComponentStorageList, SystemList, updateStageCou
           std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_LUNARG_standard_validation" },
                                              std::array<char const*, 1>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME });
     }
-
-    int displayIndex = 0; // every time use first display for now
-
-    sdlSupport_.storeDisplayResolutions(*options_, displayIndex);
-
-    options_->adjustWindowResolutions();
 
     options_->save();
 }

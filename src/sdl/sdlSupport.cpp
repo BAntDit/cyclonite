@@ -33,4 +33,14 @@ void SDLSupport::storeDisplayResolutions(Options& options, int displayIndex)
         options.displayResolutions().emplace_back(width, height);
     }
 }
+
+auto SDLSupport::createWindow(std::string const& title,
+                              int left /* = SDL_WINDOWPOS_UNDEFINED*/,
+                              int top /* = SDL_WINDOWPOS_UNDEFINED*/,
+                              int width /* = 512*/,
+                              int height /* = 512*/,
+                              uint32_t flags /* = SDL_WINDOW_SHOWN*/) -> SDLWindow
+{
+    return SDLWindow(title, left, top, width, height, flags);
+}
 }

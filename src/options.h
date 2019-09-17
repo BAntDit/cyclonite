@@ -37,15 +37,18 @@ public:
 
     auto operator=(Options &&) -> Options& = default;
 
-    auto deviceName() const -> std::string const& { return deviceName_; }
+    [[nodiscard]] auto deviceName() const -> std::string const& { return deviceName_; }
 
     void deviceName(std::string const& name) { deviceName_ = name; }
 
-    auto windows() const -> std::vector<WindowProperties> const& { return windows_; }
+    [[nodiscard]] auto windows() const -> std::vector<WindowProperties> const& { return windows_; }
 
     auto windows() -> std::vector<WindowProperties>& { return windows_; }
 
-    auto displayResolutions() const -> std::vector<std::pair<uint16_t, uint16_t>> const& { return displayResolutions_; }
+    [[nodiscard]] auto displayResolutions() const -> std::vector<std::pair<uint16_t, uint16_t>> const&
+    {
+        return displayResolutions_;
+    }
 
     auto displayResolutions() -> std::vector<std::pair<uint16_t, uint16_t>>& { return displayResolutions_; }
 

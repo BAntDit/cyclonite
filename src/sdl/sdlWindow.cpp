@@ -2,8 +2,8 @@
 // Created by bantdit on 9/17/19.
 //
 
-#include <SDL2/SDL_syswm.h>
 #include "sdlWindow.h"
+#include <SDL2/SDL_syswm.h>
 
 namespace cyclonite::sdl {
 SDLWindow::SDLWindow(const std::string& title,
