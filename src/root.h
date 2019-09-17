@@ -78,16 +78,14 @@ void Root<Config<ComponentList, ComponentStorageList, SystemList, updateStageCou
 
     uint32_t physicalDeviceCount = 0;
 
-    if (vkEnumeratePhysicalDevices(
-          static_cast<VkInstance>(vulkanInstance_->handle()), &physicalDeviceCount, VK_NULL_HANDLE) != VK_SUCCESS) {
+    if (vkEnumeratePhysicalDevices(vulkanInstance_->handle(), &physicalDeviceCount, VK_NULL_HANDLE) != VK_SUCCESS) {
         throw std::runtime_error("could not enumerate physical devices");
     }
 
     std::vector<VkPhysicalDevice> physicalDeviceList(physicalDeviceCount);
 
-    if (vkEnumeratePhysicalDevices(static_cast<VkInstance>(vulkanInstance_->handle()),
-                                   &physicalDeviceCount,
-                                   physicalDeviceList.data()) != VK_SUCCESS) {
+    if (vkEnumeratePhysicalDevices(vulkanInstance_->handle(), &physicalDeviceCount, physicalDeviceList.data()) !=
+        VK_SUCCESS) {
         throw std::runtime_error("could not get physical devices");
     }
 

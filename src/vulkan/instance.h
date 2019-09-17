@@ -31,7 +31,7 @@ public:
     auto operator=(Instance &&) -> Instance& = default;
 
 public:
-    auto handle() const -> Handle<VkInstance> const& { return vkInstance_; }
+    [[nodiscard]] auto handle() const -> VkInstance { return static_cast<VkInstance>(vkInstance_); }
 
 private:
     template<size_t N>
