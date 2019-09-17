@@ -9,6 +9,7 @@ set(PUBLIC_HEADERS
     src/updateStages.h
     src/rangeBasedMemoryManager.h
     src/root.h
+    src/surface.h
     src/core/typedefs.h
     src/core/bufferView.h
     src/core/transform.h
@@ -43,7 +44,7 @@ set(SOURCES
     src/sdl/sdlWindow.cpp
     src/vulkan/instance.cpp
     src/vulkan/device.cpp
-    src/vulkan/XlibSurface.cpp
+    src/vulkan/xlibSurface.cpp
     src/multithreading/taskManager.cpp
     src/loaders/glTF/internal/base64Decode.cpp
     src/loaders/glTF/loader.cpp

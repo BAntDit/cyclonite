@@ -39,7 +39,7 @@ auto SDLSupport::createWindow(std::string const& title,
                               int top /* = SDL_WINDOWPOS_UNDEFINED*/,
                               int width /* = 512*/,
                               int height /* = 512*/,
-                              uint32_t flags /* = SDL_WINDOW_SHOWN*/) -> SDLWindow
+                              uint32_t flags /* = SDL_WINDOW_SHOWN*/) const -> SDLWindow
 {
     return SDLWindow(title, left, top, width, height, flags);
 }
