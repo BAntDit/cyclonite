@@ -11,7 +11,7 @@ namespace cyclonite::vulkan {
 class Device
 {
 public:
-    Device(VkPhysicalDevice const& vkPhysicalDevice);
+    explicit Device(VkPhysicalDevice const& vkPhysicalDevice);
 
     Device(Device const&) = delete;
 
@@ -25,7 +25,7 @@ public:
     auto operator=(Device &&) -> Device& = default;
 
 public:
-    auto handle() const -> Handle<VkDevice> const& { return vkDevice_; }
+    [[nodiscard]] auto handle() const -> VkDevice { return static_cast<VkDevice>(vkDevice_); }
 
 private:
     std::string name_;
