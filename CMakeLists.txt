@@ -24,6 +24,7 @@ set(PUBLIC_HEADERS
     src/vulkan/handle.h
     src/vulkan/instance.h
     src/vulkan/device.h
+    src/vulkan/xlibSurface.h
     src/vulkan/memoryPage.h
     src/multithreading/taskManager.h
     src/loaders/glTF/loader.h
@@ -42,6 +43,7 @@ set(SOURCES
     src/sdl/sdlWindow.cpp
     src/vulkan/instance.cpp
     src/vulkan/device.cpp
+    src/vulkan/XlibSurface.cpp
     src/multithreading/taskManager.cpp
     src/loaders/glTF/internal/base64Decode.cpp
     src/loaders/glTF/loader.cpp

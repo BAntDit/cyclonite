@@ -68,12 +68,27 @@ void Root<Config<ComponentList, ComponentStorageList, SystemList, updateStageCou
         windows_.push_back(sdlSupport_.createWindow(window.left, window.top, window.width, window.height, flags));
     }
 
-    if (!options_->windows().empty()) {
+    if (!windows_.empty()) {
         vulkanInstance_ = std::make_unique<vulkan::Instance>();
     } else {
         vulkanInstance_ =
           std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_LUNARG_standard_validation" },
                                              std::array<char const*, 1>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME });
+    }
+
+    uint32_t physicalDeviceCount = 0;
+
+    if (vkEnumeratePhysicalDevices(
+          static_cast<VkInstance>(vulkanInstance_->handle()), &physicalDeviceCount, VK_NULL_HANDLE) != VK_SUCCESS) {
+        throw std::runtime_error("could not enumerate physical devices");
+    }
+
+    std::vector<VkPhysicalDevice> physicalDeviceList(physicalDeviceCount);
+
+    if (vkEnumeratePhysicalDevices(static_cast<VkInstance>(vulkanInstance_->handle()),
+                                   &physicalDeviceCount,
+                                   physicalDeviceList.data()) != VK_SUCCESS) {
+        throw std::runtime_error("could not get physical devices");
     }
 
     options_->save();
