@@ -32,16 +32,48 @@ public:
 
     auto operator=(SDLWindow &&) -> SDLWindow& = default;
 
-#if defined(SDL_VIDEO_DRIVER_X11)
-    [[nodiscard]] auto display() const -> Display*;
-
-    [[nodiscard]] auto window() const -> Window;
-#endif
+    template<typename T>
+    auto get() const -> T;
 
 private:
     SDL_SysWMinfo sysWMinfo_;
     std::unique_ptr<SDL_Window, std::function<void(SDL_Window*)>> sdlWindowPtr_;
 };
+
+#if defined(SDL_VIDEO_DRIVER_X11)
+template<>
+auto SDLWindow::get<Display*>() const -> Display* { return sysWMinfo_.info.x11.display; }
+
+template<>
+auto SDLWindow::get<Window const&>() const -> Window const& { return sysWMinfo_.info.x11.window; }
+#endif
+
+#if defined(SDL_VIDEO_DRIVER_WAYLAND)
+template<>
+auto SDLWindow::get<wl_display*>() const -> wl_display* { return sysWMinfo_.info.wl.display; }
+
+template<>
+auto SDLWindow::get<wl_surface*>() const -> wl_surface* { return sysWMinfo_.info.wl.surface; }
+
+template<>
+auto SDLWindow::get<wl_shell_surface*>() const -> wl_shell_surface* { return sysWMinfo_.info.wl.shell_surface; }
+#endif
+
+#if defined(SDL_VIDEO_DRIVER_ANDROID)
+template<>
+auto SDLWindow::get<ANativeWindow*>() const -> ANativeWindow* { return sysWMinfo_.info.android.window; }
+
+template<>
+auto SDLWindow::get<EGLSurface>() const -> EGLSurface const& { return sysWMinfo_.info.android.surface; }
+#endif
+
+#if defined(SDL_VIDEO_DRIVER_WINDOWS)
+template<>
+auto SDLWindow::get<HWND>() const -> HWND { return sysWMinfo_.info.win.window; }
+
+template<>
+auto SDLWindow::get<HDC>() const -> HDC { return sysWMinfo_.info.win.hdc; }
+#endif
 }
 
 #endif // CYCLONITE_SDLWINDOW_H

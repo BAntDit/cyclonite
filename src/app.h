@@ -10,11 +10,16 @@
 #include "core/transform.h"
 #include "options.h"
 #include "updateStages.h"
-#include "vulkan/xlibSurface.h"
+#include <SDL2/SDL.h>
 #include <easy-mp/enum.h>
 #include <enttx/componentStorage.h>
 #include <exception>
 #include <iostream>
+
+#if defined(SDL_VIDEO_DRIVER_X11)
+#include "vulkan/xlibSurface.h"
+#elif defined(SDL_VIDEO_DRIVER_WAYLAND)
+#endif
 
 namespace cyclonite {
 template<class Application>

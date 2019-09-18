@@ -10,6 +10,7 @@
 #include "sdl/sdlSupport.h"
 #include "surface.h"
 #include "vulkan/instance.h"
+
 #include <memory>
 
 namespace cyclonite {
@@ -64,7 +65,7 @@ void Root<Config<SurfaceType, EcsConfig>>::init(Options const& options)
 
     options_->adjustWindowResolutions();
 
-    if (!surfaces_.empty()) {
+    if constexpr (std::is_same_v<surface_type_t, vulkan::XlibSurface>) {
         vulkanInstance_ = std::make_unique<vulkan::Instance>();
     } else {
         vulkanInstance_ =

@@ -26,14 +26,4 @@ SDLWindow::SDLWindow(const std::string& title,
         throw std::runtime_error("could not get window WM Info");
     }
 }
-
-auto SDLWindow::display() const -> Display*
-{
-    return sysWMinfo_.info.x11.display;
-}
-
-auto SDLWindow::window() const -> Window
-{
-    return sysWMinfo_.info.x11.window;
-}
 }
