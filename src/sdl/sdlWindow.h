@@ -32,9 +32,11 @@ public:
 
     auto operator=(SDLWindow &&) -> SDLWindow& = default;
 
+#if defined(SDL_VIDEO_DRIVER_X11)
     [[nodiscard]] auto display() const -> Display*;
 
     [[nodiscard]] auto window() const -> Window;
+#endif
 
 private:
     SDL_SysWMinfo sysWMinfo_;

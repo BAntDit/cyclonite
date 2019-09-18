@@ -8,6 +8,7 @@
 #include "config.h"
 #include "options.h"
 #include "sdl/sdlSupport.h"
+#include "surface.h"
 #include "vulkan/instance.h"
 #include <memory>
 
@@ -15,11 +16,13 @@ namespace cyclonite {
 template<typename Config>
 class Root;
 
-template<typename ComponentList, typename ComponentStorageList, typename SystemList, size_t updateStageCount>
-class Root<Config<ComponentList, ComponentStorageList, SystemList, updateStageCount>>
+template<typename SurfaceType, typename EcsConfig>
+class Root<Config<SurfaceType, EcsConfig>>
 {
 public:
-    using config_t = Config<ComponentList, ComponentStorageList, SystemList, updateStageCount>;
+    using config_t = Config<SurfaceType, EcsConfig>;
+
+    using surface_type_t = typename config_t::urface_type_t;
 
     Root();
 
@@ -38,20 +41,20 @@ public:
 private:
     std::shared_ptr<Options> options_;
     sdl::SDLSupport sdlSupport_;
-    std::vector<sdl::SDLWindow> windows_;
     std::unique_ptr<vulkan::Instance> vulkanInstance_;
+    std::vector<Surface<surface_type_t>> surfaces_;
 };
 
-template<typename ComponentList, typename ComponentStorageList, typename SystemList, size_t updateStageCount>
-Root<Config<ComponentList, ComponentStorageList, SystemList, updateStageCount>>::Root()
+template<typename SurfaceType, typename EcsConfig>
+Root<Config<SurfaceType, EcsConfig>>::Root()
   : options_{ nullptr }
   , sdlSupport_{}
-  , windows_{}
   , vulkanInstance_{ nullptr }
+  , surfaces_{}
 {}
 
-template<typename ComponentList, typename ComponentStorageList, typename SystemList, size_t updateStageCount>
-void Root<Config<ComponentList, ComponentStorageList, SystemList, updateStageCount>>::init(Options const& options)
+template<typename SurfaceType, typename EcsConfig>
+void Root<Config<SurfaceType, EcsConfig>>::init(Options const& options)
 {
     options_ = std::make_shared<Options>(options);
 
@@ -61,19 +64,18 @@ void Root<Config<ComponentList, ComponentStorageList, SystemList, updateStageCou
 
     options_->adjustWindowResolutions();
 
-    for (auto const& window : options_->windows()) {
-        uint32_t flags =
-          window.fullscreen ? SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS : SDL_WINDOW_SHOWN;
-
-        windows_.push_back(sdlSupport_.createWindow(window.left, window.top, window.width, window.height, flags));
-    }
-
-    if (!windows_.empty()) {
+    if (!surfaces_.empty()) {
         vulkanInstance_ = std::make_unique<vulkan::Instance>();
     } else {
         vulkanInstance_ =
           std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_LUNARG_standard_validation" },
                                              std::array<char const*, 1>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME });
+    }
+
+    surfaces_.resize(options_->windows().size());
+
+    for (auto const& window : options_->windows()) {
+        surfaces_.emplace_back();
     }
 
     uint32_t physicalDeviceCount = 0;

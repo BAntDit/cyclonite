@@ -10,13 +10,13 @@
 
 namespace cyclonite {
 template<typename ComponentList, typename ComponentStorageList, typename SystemList, size_t updateStageCount>
-struct Config;
+struct EcsConfig;
 
 template<typename... Components, typename... Storages, typename... Systems, size_t updateStageCount>
-struct Config<easy_mp::type_list<Components...>,
-              easy_mp::type_list<Storages...>,
-              easy_mp::type_list<Systems...>,
-              updateStageCount>
+struct EcsConfig<easy_mp::type_list<Components...>,
+                 easy_mp::type_list<Storages...>,
+                 easy_mp::type_list<Systems...>,
+                 updateStageCount>
 {
     using scene_component_list_t = easy_mp::type_list<Components...>;
     using scene_storage_list_t = easy_mp::type_list<Storages...>;
@@ -24,6 +24,28 @@ struct Config<easy_mp::type_list<Components...>,
 
     using entity_manager_t = enttx::EntityManagerConfig<scene_component_list_t, scene_storage_list_t>;
     using scene_manager_t = enttx::SystemManagerConfig<updateStageCount, entity_manager_t, scene_system_list_t>;
+};
+
+template<typename SurfaceType, typename EcsConfig>
+struct Config;
+
+template<typename SurfaceType,
+         typename... Components,
+         typename... Storages,
+         typename... Systems,
+         size_t updateStageCount>
+struct Config<SurfaceType,
+              EcsConfig<easy_mp::type_list<Components...>,
+                        easy_mp::type_list<Storages...>,
+                        easy_mp::type_list<Systems...>,
+                        updateStageCount>>
+{
+    using surface_type_t = SurfaceType;
+
+    using ecs_config_t = EcsConfig<easy_mp::type_list<Components...>,
+                                   easy_mp::type_list<Storages...>,
+                                   easy_mp::type_list<Systems...>,
+                                   updateStageCount>;
 };
 }
 
