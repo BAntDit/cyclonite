@@ -10,6 +10,7 @@
 #include "core/transform.h"
 #include "platform.h"
 #include "updateStages.h"
+#include "vulkan/win32Surface.h"
 #include "vulkan/xlibSurface.h"
 #include <easy-mp/enum.h>
 #include <enttx/componentStorage.h>
@@ -19,6 +20,8 @@ struct DefaultConfigs
 {
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
     using platform_config_t = PlatformConfig<vulkan::XlibSurface>;
+#elif defined(VK_USE_PLATFORM_WIN32_KHR)
+    using platform_config_t = PlatformConfig<vulkan::Win32Surface>;
 #else
     using platform_config_t = PlatformConfig<void>;
 #endif

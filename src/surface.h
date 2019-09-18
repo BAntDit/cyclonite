@@ -7,6 +7,7 @@
 
 #include "options.h"
 #include "sdl/sdlSupport.h"
+#include <easy-mp/type_list.h>
 #include <vulkan/vulkan.h>
 
 namespace cyclonite {
@@ -18,7 +19,9 @@ public:
     using surface_type_t = xPlatformSurface;
 
     template<typename... SurfaceArgs>
-    Surface(VkInstance vkInstance, Options::WindowProperties const& windowProperties);
+    Surface(VkInstance vkInstance,
+            Options::WindowProperties const& windowProperties,
+            easy_mp::type_list<SurfaceArgs...>);
 
     Surface(Surface const&) = delete;
 
@@ -39,7 +42,9 @@ private:
 
 template<typename xPlatformSurface>
 template<typename... SurfaceArgs>
-Surface<xPlatformSurface>::Surface(VkInstance vkInstance, const cyclonite::Options::WindowProperties& windowProperties)
+Surface<xPlatformSurface>::Surface(VkInstance vkInstance,
+                                   const cyclonite::Options::WindowProperties& windowProperties,
+                                   easy_mp::type_list<SurfaceArgs...>)
   : window_{ windowProperties.title,
              windowProperties.left,
              windowProperties.top,
