@@ -5,6 +5,10 @@
 #ifndef CYCLONITE_XLIBSURFACE_H
 #define CYCLONITE_XLIBSURFACE_H
 
+#include "platform.h"
+
+#if defined(VK_USE_PLATFORM_XLIB_KHR)
+
 #include "handle.h"
 
 namespace cyclonite::vulkan {
@@ -29,5 +33,7 @@ private:
     Handle<VkSurfaceKHR> vkSurfaceKHR_;
 };
 }
+
+#endif
 
 #endif // CYCLONITE_XLIBSURFACE_H

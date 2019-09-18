@@ -104,11 +104,4 @@ void Instance::createInstance(uint32_t layerCount,
 
     throw std::runtime_error("vulkan instance creation failed"); // and no one knows why
 }
-
-Instance::Instance()
-  : Instance(std::array<char const*, 1>{ "VK_LAYER_LUNARG_standard_validation" },
-             std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-                                         VK_KHR_SURFACE_EXTENSION_NAME,
-                                         VK_KHR_XLIB_SURFACE_EXTENSION_NAME })
-{}
 }

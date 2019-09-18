@@ -18,7 +18,7 @@ public:
     using surface_type_t = xPlatformSurface;
 
     template<typename... SurfaceArgs>
-    Surface(VkInstance vkInstance, Options::WindowProperties const& windowProperties, SurfaceArgs&&... surfaceArgs);
+    Surface(VkInstance vkInstance, Options::WindowProperties const& windowProperties);
 
     Surface(Surface const&) = delete;
 
@@ -39,9 +39,7 @@ private:
 
 template<typename xPlatformSurface>
 template<typename... SurfaceArgs>
-Surface<xPlatformSurface>::Surface(VkInstance vkInstance,
-                                   const cyclonite::Options::WindowProperties& windowProperties,
-                                   SurfaceArgs&&... surfaceArgs)
+Surface<xPlatformSurface>::Surface(VkInstance vkInstance, const cyclonite::Options::WindowProperties& windowProperties)
   : window_{ windowProperties.title,
              windowProperties.left,
              windowProperties.top,
@@ -50,7 +48,7 @@ Surface<xPlatformSurface>::Surface(VkInstance vkInstance,
              static_cast<uint32_t>(windowProperties.fullscreen
                                      ? SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS
                                      : SDL_WINDOW_SHOWN) }
-  , xSurface_{ vkInstance, std::forward<SurfaceArgs>(surfaceArgs)... }
+  , xSurface_{ vkInstance, window_.get<SurfaceArgs>()... }
 {}
 }
 

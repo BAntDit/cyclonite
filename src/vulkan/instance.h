@@ -18,8 +18,6 @@ public:
     template<size_t N, size_t M>
     Instance(std::array<char const*, N> const& reqLayers, std::array<char const*, M> const& reqExtensions);
 
-    Instance();
-
     Instance(Instance const&) = delete;
 
     Instance(Instance&&) = default;

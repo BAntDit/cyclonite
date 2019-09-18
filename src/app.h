@@ -5,36 +5,22 @@
 #ifndef CYCLONITE_APP_H
 #define CYCLONITE_APP_H
 
-#include "config.h"
-#include "core/camera.h"
-#include "core/transform.h"
+#include "defaultConfigs.h"
 #include "options.h"
 #include "updateStages.h"
-#include <SDL2/SDL.h>
-#include <easy-mp/enum.h>
-#include <enttx/componentStorage.h>
 #include <exception>
 #include <iostream>
-
-#if defined(SDL_VIDEO_DRIVER_X11)
-#include "vulkan/xlibSurface.h"
-#elif defined(SDL_VIDEO_DRIVER_WAYLAND)
-#endif
 
 namespace cyclonite {
 template<class Application>
 class BaseApp
 {
 public:
-    using ecs_config_t =
-      EcsConfig<easy_mp::type_list<core::Transform, core::PerspectiveCamera, core::OrthographicCamera>,
-                easy_mp::type_list<enttx::ComponentStorage<64, 8, core::Transform>,
-                                   enttx::ComponentStorage<8, 1, core::PerspectiveCamera>,
-                                   enttx::ComponentStorage<8, 1, core::OrthographicCamera>>,
-                easy_mp::type_list<>,
-                easy_mp::value_cast(UpdateStage::COUNT)>;
+    using platform_config_t = typename DefaultConfigs::platform_config_t;
 
-    using config_t = Config<vulkan::XlibSurface, ecs_config_t>;
+    using ecs_config_t = typename DefaultConfigs::ecs_config_t;
+
+    using config_t = Config<platform_config_t, ecs_config_t>;
 
     auto init(Options const& options) -> Application&;
 

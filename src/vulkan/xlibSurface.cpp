@@ -4,6 +4,8 @@
 
 #include "xlibSurface.h"
 
+#if defined(VK_USE_PLATFORM_XLIB_KHR)
+
 namespace cyclonite::vulkan {
 XlibSurface::XlibSurface(VkInstance vkInstance, Display* display, Window const& window)
   : vkSurfaceKHR_{ vkInstance, vkDestroySurfaceKHR }
@@ -27,3 +29,5 @@ XlibSurface::XlibSurface(VkInstance vkInstance, Display* display, Window const& 
     }
 }
 }
+
+#endif

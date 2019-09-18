@@ -3,7 +3,9 @@ cmake_minimum_required(VERSION 3.10)
 project(cyclonite VERSION 0.0.0.0)
 
 set(PUBLIC_HEADERS
+    src/platform.h
     src/config.h
+    src/defaultConfigs.h
     src/options.h
     src/app.h
     src/updateStages.h
@@ -117,7 +119,6 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 find_package(Vulkan REQUIRED)
-target_compile_definitions(${PROJECT_NAME} PRIVATE VK_USE_PLATFORM_XLIB_KHR)
 target_link_libraries(${PROJECT_NAME} Vulkan::Vulkan)
 
 set(ALL_SOURCES_FOR_STYLE_CORRECTION ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
