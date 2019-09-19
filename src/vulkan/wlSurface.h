@@ -9,6 +9,8 @@
 
 #if defined(VK_USE_PLATFORM_WAYLAND_KHR)
 
+#include "handle.h"
+
 namespace cyclonite::vulkan {
 class WlSurface
 {

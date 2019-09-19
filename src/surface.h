@@ -11,7 +11,7 @@
 #include <vulkan/vulkan.h>
 
 namespace cyclonite {
-// Xlib, HWnd, Xcb or some other platform surfaces
+// Xlib, HWnd, Android or some other platform surfaces
 template<typename xPlatformSurface>
 class Surface
 {
