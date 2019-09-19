@@ -47,16 +47,16 @@ private:
     std::vector<window_surface_t> surfaces_;
 };
 
-template<typename SurfaceType, typename EcsConfig>
-Root<Config<SurfaceType, EcsConfig>>::Root()
+template<typename PlatformConfig, typename EcsConfig>
+Root<Config<PlatformConfig, EcsConfig>>::Root()
   : options_{ nullptr }
   , sdlSupport_{}
   , vulkanInstance_{ nullptr }
   , surfaces_{}
 {}
 
-template<typename SurfaceType, typename EcsConfig>
-void Root<Config<SurfaceType, EcsConfig>>::init(Options const& options)
+template<typename PlatformConfig, typename EcsConfig>
+void Root<Config<PlatformConfig, EcsConfig>>::init(Options const& options)
 {
     options_ = std::make_shared<Options>(options);
 
