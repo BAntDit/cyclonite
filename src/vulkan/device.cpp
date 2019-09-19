@@ -57,6 +57,8 @@ Device::Device(VkPhysicalDevice const& vkPhysicalDevice)
 
     VkPhysicalDeviceFeatures features = {};
 
+    vkGetPhysicalDeviceFeatures(vkPhysicalDevice_, &features);
+
     // turn off unused features (for now)
     features.robustBufferAccess = VK_FALSE;
     features.shaderFloat64 = VK_FALSE;
