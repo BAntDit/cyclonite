@@ -29,6 +29,7 @@ set(PUBLIC_HEADERS
     src/vulkan/device.h
     src/vulkan/xlibSurface.h
     src/vulkan/win32Surface.h
+    src/vulkan/wlSurface.h
     src/vulkan/memoryPage.h
     src/multithreading/taskManager.h
     src/loaders/glTF/loader.h
@@ -49,6 +50,7 @@ set(SOURCES
     src/vulkan/device.cpp
     src/vulkan/xlibSurface.cpp
     src/vulkan/win32Surface.cpp
+    src/vulkan/wlSurface.cpp
     src/multithreading/taskManager.cpp
     src/loaders/glTF/internal/base64Decode.cpp
     src/loaders/glTF/loader.cpp
