@@ -86,7 +86,7 @@ void Root<Config<SurfaceType, EcsConfig>>::init(Options const& options)
 
     for (auto const& window : options_->windows()) {
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
-        surfaces_.emplace_back(vulkanInstance_->handle(), window, easy_mp::type_list<Display*, Window const*>{});
+        surfaces_.emplace_back(vulkanInstance_->handle(), window, easy_mp::type_list<Display*, Window const&>{});
 #elif defined(VK_USE_PLATFORM_WIN32_KHR)
         surfaces_.emplace_back(vulkanInstance_->handle(), window, easy_mp::type_list<HINSTANCE, HWND>{});
 #endif
