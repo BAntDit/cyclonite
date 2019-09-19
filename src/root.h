@@ -72,6 +72,11 @@ void Root<Config<SurfaceType, EcsConfig>>::init(Options const& options)
                                          std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
                                                                      VK_KHR_SURFACE_EXTENSION_NAME,
                                                                      VK_KHR_XLIB_SURFACE_EXTENSION_NAME });
+#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
+      std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_LUNARG_standard_validation" },
+                                         std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+                                                                     VK_KHR_SURFACE_EXTENSION_NAME,
+                                                                     VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME });
 #elif defined(VK_USE_PLATFORM_WIN32_KHR)
       std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_LUNARG_standard_validation" },
                                          std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
@@ -87,6 +92,8 @@ void Root<Config<SurfaceType, EcsConfig>>::init(Options const& options)
     for (auto const& window : options_->windows()) {
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
         surfaces_.emplace_back(vulkanInstance_->handle(), window, easy_mp::type_list<Display*, Window const&>{});
+#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
+        surfaces_.emplace_back(vulkanInstance_->handle(), window, easy_mp::type_list<wl_display*, wl_surface*>{});
 #elif defined(VK_USE_PLATFORM_WIN32_KHR)
         surfaces_.emplace_back(vulkanInstance_->handle(), window, easy_mp::type_list<HINSTANCE, HWND>{});
 #endif
