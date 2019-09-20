@@ -103,6 +103,8 @@ static uint32_t getBestQueueFamilyIndex(std::vector<VkQueueFamilyProperties> con
             lastCapabilityCount = capabilityCount;
             queueFamilyIndex = i;
         } else if (desiredCapabilitiesCount != 0 && capabilityCount < lastCapabilityCount) {
+            lastCapabilityCount = capabilityCount;
+            queueFamilyIndex = i;
         }
     }
 
