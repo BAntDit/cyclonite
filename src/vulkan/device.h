@@ -28,6 +28,14 @@ public:
 public:
     [[nodiscard]] auto handle() const -> VkDevice { return static_cast<VkDevice>(vkDevice_); }
 
+    [[nodiscard]] auto graphicsQueue() const -> VkQueue;
+
+    [[nodiscard]] auto computeQueue() const -> VkQueue;
+
+    [[nodiscard]] auto hostTransferQueue() const -> VkQueue;
+
+    [[nodiscard]] auto presentationQueue() const -> VkQueue;
+
 private:
     void _testExtensions(VkPhysicalDevice const& physicalDevice, std::vector<const char*> const& requiredExtensions);
 

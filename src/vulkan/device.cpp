@@ -148,4 +148,24 @@ void Device::_handleDeviceCreationResult(VkResult result)
 
     throw std::runtime_error("could not create logical device");
 }
+
+auto Device::graphicsQueue() const -> VkQueue
+{
+    return static_cast<VkQueue>(vkQueues_[graphicsQueueIndex_]);
+}
+
+auto Device::computeQueue() const -> VkQueue
+{
+    return static_cast<VkQueue>(vkQueues_[computeQueueIndex_]);
+}
+
+auto Device::hostTransferQueue() const -> VkQueue
+{
+    return static_cast<VkQueue>(vkQueues_[deviceHostTransferQueueIndex_]);
+}
+
+auto Device::presentationQueue() const -> VkQueue
+{
+    return static_cast<VkQueue>(vkQueues_[presentationQueueIndex_]);
+}
 }
