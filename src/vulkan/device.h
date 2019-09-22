@@ -29,13 +29,15 @@ public:
     [[nodiscard]] auto handle() const -> VkDevice { return static_cast<VkDevice>(vkDevice_); }
 
 private:
-    bool _testExtensions(std::vector<const char*> const& requiredExtensions); // TODO:: ...
+    void _testExtensions(VkPhysicalDevice const& physicalDevice, std::vector<const char*> const& requiredExtensions);
 
     void _defineQueueIndices(std::vector<uint32_t>& queueFamilyIndices,
                              uint32_t graphicsQueueFamilyIndex,
                              uint32_t computeQueueFamilyIndex,
                              uint32_t hostTransferQueueFamilyIndex,
                              uint32_t presentationQueueFamilyIndex);
+
+    static void _handleDeviceCreationResult(VkResult result);
 
     static void _defineQueuesInfo(std::vector<uint32_t> const& queueFamilyIndices,
                                   std::vector<VkDeviceQueueCreateInfo>& deviceQueuesCreateInfo);
@@ -69,6 +71,7 @@ private:
     size_t deviceHostTransferQueueIndex_;
     size_t presentationQueueIndex_;
     Handle<VkDevice> vkDevice_;
+    std::vector<Handle<VkQueue>> vkQueues_;
 };
 
 template<typename SurfaceType, template<typename> class Surface>
@@ -82,6 +85,7 @@ Device::Device(VkPhysicalDevice const& vkPhysicalDevice, std::vector<Surface<Sur
   , deviceHostTransferQueueIndex_{ std::numeric_limits<size_t>::max() }
   , presentationQueueIndex_{ std::numeric_limits<size_t>::max() }
   , vkDevice_{ vkDestroyDevice }
+  , vkQueues_{}
 {
     vkGetPhysicalDeviceProperties(vkPhysicalDevice_, &vkDeviceProperties_);
     vkGetPhysicalDeviceMemoryProperties(vkPhysicalDevice_, &vkPhysicalDeviceMemoryProperties_);
@@ -138,6 +142,8 @@ Device::Device(VkPhysicalDevice const& vkPhysicalDevice, std::vector<Surface<Sur
         requiredExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     }
 
+    _testExtensions(vkPhysicalDevice_, requiredExtensions);
+
     VkPhysicalDeviceFeatures features = {};
 
     vkGetPhysicalDeviceFeatures(vkPhysicalDevice_, &features);
@@ -147,6 +153,25 @@ Device::Device(VkPhysicalDevice const& vkPhysicalDevice, std::vector<Surface<Sur
     features.shaderFloat64 = VK_FALSE;
     features.shaderInt64 = VK_FALSE;
     features.inheritedQueries = VK_FALSE;
+
+    VkDeviceCreateInfo deviceInfo = {};
+    deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    deviceInfo.queueCreateInfoCount = static_cast<uint32_t>(deviceQueuesCreateInfo.size());
+    deviceInfo.pQueueCreateInfos = deviceQueuesCreateInfo.data();
+    deviceInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
+    deviceInfo.ppEnabledExtensionNames = requiredExtensions.data();
+    deviceInfo.pEnabledFeatures = &features;
+
+    _handleDeviceCreationResult(vkCreateDevice(vkPhysicalDevice_, &deviceInfo, nullptr, &vkDevice_));
+
+    const uint32_t queueIndex = 0;  // always create one queue per device for a while
+                                    // so, queueIndex is constantly 0
+
+    for (uint32_t queueFamilyIndex : queueFamilyIndices) {
+        vkQueues_.emplace_back();
+
+        vkGetDeviceQueue(static_cast<VkDevice>(vkDevice_), queueFamilyIndex, queueIndex, &vkQueues_.back());
+    }
 }
 
 template<typename SurfaceType, template<typename> class Surface>

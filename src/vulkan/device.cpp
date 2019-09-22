@@ -5,6 +5,7 @@
 #include "device.h"
 #include "internal/deviceCreationFunctions.h"
 #include <boost/cstdfloat.hpp>
+#include <cstring>
 
 namespace cyclonite::vulkan {
 auto Device::_extractPhysicalDeviceNameFromProperties(VkPhysicalDeviceProperties const& deviceProperties) -> std::string
@@ -85,5 +86,66 @@ void Device::_defineQueueIndices(std::vector<uint32_t>& queueFamilyIndices,
         : presentationQueueFamilyIndex == computeQueueFamilyIndex
             ? computeQueueIndex_
             : (queueFamilyIndices.push_back(presentationQueueFamilyIndex), queueFamilyIndices.size() - 1);
+}
+
+void Device::_testExtensions(VkPhysicalDevice const& physicalDevice, std::vector<const char*> const& requiredExtensions)
+{
+    uint32_t extensionsCount = 0;
+
+    std::vector<VkExtensionProperties> availableExtensionList = {};
+
+    if (vkEnumerateDeviceExtensionProperties(vkPhysicalDevice_, nullptr, &extensionsCount, nullptr) != VK_SUCCESS) {
+        throw std::runtime_error("could not enumerate available device extensions");
+    }
+
+    if (extensionsCount > 0) {
+        availableExtensionList.resize(extensionsCount);
+
+        if (vkEnumerateDeviceExtensionProperties(
+              vkPhysicalDevice_, nullptr, &extensionsCount, availableExtensionList.data()) != VK_SUCCESS) {
+            throw std::runtime_error("count not read properties of available extensions for device");
+        }
+    }
+
+    for (auto extIt = requiredExtensions.cbegin(); extIt != requiredExtensions.cend(); ++extIt) {
+        auto it = availableExtensionList.cbegin();
+
+        while (it != availableExtensionList.cend()) {
+            if (0 == strcmp((*extIt), (*it).extensionName))
+                break;
+            it++;
+        }
+
+        if (it == availableExtensionList.cend()) {
+            throw std::runtime_error("required device extension: " + std::string(*extIt) + " is not supported");
+        }
+    }
+}
+
+void Device::_handleDeviceCreationResult(VkResult result)
+{
+    if (result == VK_SUCCESS)
+        return;
+
+    switch (result) {
+        case VK_ERROR_OUT_OF_HOST_MEMORY:
+            throw std::runtime_error("running out of system memory on attempt to create logical device");
+        case VK_ERROR_OUT_OF_DEVICE_MEMORY:
+            throw std::runtime_error("running out of device memory on attempt to create logical device");
+        case VK_ERROR_INITIALIZATION_FAILED:
+            throw std::runtime_error("initialization failed on attempt to create logical device");
+        case VK_ERROR_EXTENSION_NOT_PRESENT:
+            throw std::runtime_error("extension is not present on device");
+        case VK_ERROR_FEATURE_NOT_PRESENT:
+            throw std::runtime_error("feature not presented");
+        case VK_ERROR_TOO_MANY_OBJECTS:
+            throw std::runtime_error("too many object, device creation failed");
+        case VK_ERROR_DEVICE_LOST:
+            throw std::runtime_error("device lost on attempt to create device");
+        default:
+            assert(false);
+    }
+
+    throw std::runtime_error("could not create logical device");
 }
 }
