@@ -41,6 +41,10 @@ public:
 
     void deviceName(std::string const& name) { deviceName_ = name; }
 
+    [[nodiscard]] auto deviceId() const -> uint32_t { return deviceId_; }
+
+    void deviceId(uint32_t value) { deviceId_ = value; }
+
     [[nodiscard]] auto windows() const -> std::vector<WindowProperties> const& { return windows_; }
 
     auto windows() -> std::vector<WindowProperties>& { return windows_; }
@@ -59,6 +63,7 @@ public:
 private:
     std::string config_;
     std::string deviceName_;
+    uint32_t deviceId_;
     std::vector<WindowProperties> windows_;
     std::vector<std::pair<uint16_t, uint16_t>> displayResolutions_;
 };

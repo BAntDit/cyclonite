@@ -5,48 +5,75 @@
 #include "device.h"
 #include "internal/deviceCreationFunctions.h"
 #include <boost/cstdfloat.hpp>
-#include <cstring>
 
 namespace cyclonite::vulkan {
-auto Device::_extractPhysicalDeviceNameFromProperties(VkPhysicalDeviceProperties const& deviceProperties) -> std::string
+Device::Device(VkPhysicalDevice const& vkPhysicalDevice,
+               VkPhysicalDeviceProperties const& physicalDeviceProperties,
+               std::vector<const char*> const& requiredExtensions)
+  : vkPhysicalDevice_{ vkPhysicalDevice }
+  , id_{ physicalDeviceProperties.deviceID }
+  , name_{ physicalDeviceProperties.deviceName }
+  , vendor_{ internal::getVendorName(physicalDeviceProperties) }
+  , graphicsQueueIndex_{ std::numeric_limits<size_t>::max() }
+  , computeQueueIndex_{ std::numeric_limits<size_t>::max() }
+  , deviceHostTransferQueueIndex_{ std::numeric_limits<size_t>::max() }
+  , vkDevice_{ vkDestroyDevice }
+  , queueFamilyIndices_{}
+  , vkQueues_{}
 {
-    return internal::getDeviceName(deviceProperties);
-}
+    uint32_t familyCount = 0;
 
-auto Device::_findBestGraphicsQueueFamilyIndex(std::vector<VkQueueFamilyProperties> const& familyProperties) -> uint32_t
-{
-    return internal::getBestQueueFamilyIndex(familyProperties, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT);
-}
+    vkGetPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice_, &familyCount, nullptr);
 
-auto Device::_findBestComputeQueueFamilyIndex(std::vector<VkQueueFamilyProperties> const& familyProperties,
-                                              uint32_t graphicsQueueFamilyIndex) -> uint32_t
-{
-    return internal::testQueueCapability(familyProperties, graphicsQueueFamilyIndex, VK_QUEUE_COMPUTE_BIT)
-             ? graphicsQueueFamilyIndex
-             : internal::getBestQueueFamilyIndex(familyProperties, VK_QUEUE_COMPUTE_BIT, 1u);
-}
+    std::vector<VkQueueFamilyProperties> familyPropertiesList(familyCount);
 
-auto Device::_findBestHostTransferQueueFamilyIndex(std::vector<VkQueueFamilyProperties> const& familyProperties,
-                                                   uint32_t graphicsQueueFamilyIndex) -> uint32_t
-{
+    vkGetPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice_, &familyCount, familyPropertiesList.data());
+
+    uint32_t graphicsQueueFamilyIndex =
+      internal::getBestQueueFamilyIndex(familyPropertiesList, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT);
+
+    if (graphicsQueueFamilyIndex == std::numeric_limits<uint32_t>::max()) {
+        throw std::runtime_error("could not found valid graphics queue family index for device: " + name_);
+    }
+
+    uint32_t computeQueueFamilyIndex =
+      internal::testQueueCapability(familyPropertiesList, graphicsQueueFamilyIndex, VK_QUEUE_COMPUTE_BIT)
+        ? graphicsQueueFamilyIndex
+        : internal::getBestQueueFamilyIndex(familyPropertiesList, VK_QUEUE_COMPUTE_BIT, 1u);
+
+    if (computeQueueFamilyIndex == std::numeric_limits<uint32_t>::max()) {
+        throw std::runtime_error("could not found valid compute queue family index for device: " + name_);
+    }
+
     uint32_t deviceHostTransferQueueFamilyIndex =
-      internal::getBestQueueFamilyIndex(familyProperties, VK_QUEUE_TRANSFER_BIT, 1u);
+      internal::getBestQueueFamilyIndex(familyPropertiesList, VK_QUEUE_TRANSFER_BIT, 1u);
 
-    if (deviceHostTransferQueueFamilyIndex == std::numeric_limits<uint32_t>::max()) {
+    if (deviceHostTransferQueueFamilyIndex == std::numeric_limits<uint32_t>::max() ||
+        deviceHostTransferQueueFamilyIndex == computeQueueFamilyIndex) {
         deviceHostTransferQueueFamilyIndex = graphicsQueueFamilyIndex;
     }
 
-    return deviceHostTransferQueueFamilyIndex;
-}
+    graphicsQueueIndex_ = queueFamilyIndices_.size();
+    queueFamilyIndices_.push_back(graphicsQueueFamilyIndex);
 
-void Device::_defineQueuesInfo(std::vector<uint32_t> const& queueFamilyIndices,
-                               std::vector<VkDeviceQueueCreateInfo>& deviceQueuesCreateInfo)
-{
+    computeQueueIndex_ = computeQueueFamilyIndex == graphicsQueueFamilyIndex
+                           ? graphicsQueueIndex_
+                           : (queueFamilyIndices_.push_back(computeQueueFamilyIndex), queueFamilyIndices_.size() - 1);
+
+    deviceHostTransferQueueIndex_ =
+      deviceHostTransferQueueFamilyIndex == graphicsQueueFamilyIndex
+        ? graphicsQueueIndex_
+        : deviceHostTransferQueueFamilyIndex == computeQueueFamilyIndex
+            ? computeQueueIndex_
+            : (queueFamilyIndices_.push_back(deviceHostTransferQueueFamilyIndex), queueFamilyIndices_.size() - 1);
+
     std::array<boost::float32_t, 1> deviceQueuePriority = { 1.0f };
 
-    deviceQueuesCreateInfo.reserve(queueFamilyIndices.size());
+    std::vector<VkDeviceQueueCreateInfo> deviceQueuesCreateInfo = {};
 
-    for (uint32_t queueFamilyIndex : queueFamilyIndices) {
+    deviceQueuesCreateInfo.reserve(queueFamilyIndices_.size());
+
+    for (uint32_t queueFamilyIndex : queueFamilyIndices_) {
         VkDeviceQueueCreateInfo deviceQueueInfo = {};
         deviceQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         deviceQueueInfo.queueCount = static_cast<uint32_t>(deviceQueuePriority.size());
@@ -55,98 +82,38 @@ void Device::_defineQueuesInfo(std::vector<uint32_t> const& queueFamilyIndices,
 
         deviceQueuesCreateInfo.push_back(deviceQueueInfo);
     }
-}
 
-void Device::_defineQueueIndices(std::vector<uint32_t>& queueFamilyIndices,
-                                 uint32_t graphicsQueueFamilyIndex,
-                                 uint32_t computeQueueFamilyIndex,
-                                 uint32_t hostTransferQueueFamilyIndex,
-                                 uint32_t presentationQueueFamilyIndex)
-{
-    graphicsQueueIndex_ = queueFamilyIndices.size();
-    queueFamilyIndices.push_back(graphicsQueueFamilyIndex);
-
-    computeQueueIndex_ = computeQueueFamilyIndex == graphicsQueueFamilyIndex
-                           ? graphicsQueueIndex_
-                           : (queueFamilyIndices.push_back(computeQueueFamilyIndex), queueFamilyIndices.size() - 1);
-
-    deviceHostTransferQueueIndex_ =
-      hostTransferQueueFamilyIndex == graphicsQueueFamilyIndex
-        ? graphicsQueueIndex_
-        : hostTransferQueueFamilyIndex == computeQueueFamilyIndex
-            ? computeQueueIndex_
-            : (queueFamilyIndices.push_back(hostTransferQueueFamilyIndex), queueFamilyIndices.size() - 1);
-
-    if (presentationQueueFamilyIndex == std::numeric_limits<uint32_t>::max())
-        return;
-
-    presentationQueueIndex_ =
-      presentationQueueFamilyIndex == graphicsQueueFamilyIndex
-        ? graphicsQueueIndex_
-        : presentationQueueFamilyIndex == computeQueueFamilyIndex
-            ? computeQueueIndex_
-            : (queueFamilyIndices.push_back(presentationQueueFamilyIndex), queueFamilyIndices.size() - 1);
-}
-
-void Device::_testExtensions(VkPhysicalDevice const& physicalDevice, std::vector<const char*> const& requiredExtensions)
-{
-    uint32_t extensionsCount = 0;
-
-    std::vector<VkExtensionProperties> availableExtensionList = {};
-
-    if (vkEnumerateDeviceExtensionProperties(vkPhysicalDevice_, nullptr, &extensionsCount, nullptr) != VK_SUCCESS) {
-        throw std::runtime_error("could not enumerate available device extensions");
+    if (!internal::testRequiredDeviceExtensions(vkPhysicalDevice_, requiredExtensions)) {
+        throw std::runtime_error("device " + name_ + " does not support required extensions");
     }
 
-    if (extensionsCount > 0) {
-        availableExtensionList.resize(extensionsCount);
+    VkPhysicalDeviceFeatures features = {};
 
-        if (vkEnumerateDeviceExtensionProperties(
-              vkPhysicalDevice_, nullptr, &extensionsCount, availableExtensionList.data()) != VK_SUCCESS) {
-            throw std::runtime_error("count not read properties of available extensions for device");
-        }
+    vkGetPhysicalDeviceFeatures(vkPhysicalDevice_, &features);
+
+    // turn off unused features (for now)
+    features.robustBufferAccess = VK_FALSE;
+    features.shaderFloat64 = VK_FALSE;
+    features.shaderInt64 = VK_FALSE;
+    features.inheritedQueries = VK_FALSE;
+
+    VkDeviceCreateInfo deviceInfo = {};
+    deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    deviceInfo.queueCreateInfoCount = static_cast<uint32_t>(deviceQueuesCreateInfo.size());
+    deviceInfo.pQueueCreateInfos = deviceQueuesCreateInfo.data();
+    deviceInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
+    deviceInfo.ppEnabledExtensionNames = requiredExtensions.data();
+    deviceInfo.pEnabledFeatures = &features;
+
+    internal::_handleDeviceCreationResult(vkCreateDevice(vkPhysicalDevice_, &deviceInfo, nullptr, &vkDevice_));
+
+    const uint32_t queueIndex = 0; // always create one queue per device for a while
+                                   // so, queueIndex is constantly 0
+
+    for (uint32_t queueFamilyIndex : queueFamilyIndices_) {
+        vkQueues_.emplace_back();
+        vkGetDeviceQueue(static_cast<VkDevice>(vkDevice_), queueFamilyIndex, queueIndex, &vkQueues_.back());
     }
-
-    for (auto extIt = requiredExtensions.cbegin(); extIt != requiredExtensions.cend(); ++extIt) {
-        auto it = availableExtensionList.cbegin();
-
-        while (it != availableExtensionList.cend()) {
-            if (0 == strcmp((*extIt), (*it).extensionName))
-                break;
-            it++;
-        }
-
-        if (it == availableExtensionList.cend()) {
-            throw std::runtime_error("required device extension: " + std::string(*extIt) + " is not supported");
-        }
-    }
-}
-
-void Device::_handleDeviceCreationResult(VkResult result)
-{
-    if (result == VK_SUCCESS)
-        return;
-
-    switch (result) {
-        case VK_ERROR_OUT_OF_HOST_MEMORY:
-            throw std::runtime_error("running out of system memory on attempt to create logical device");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY:
-            throw std::runtime_error("running out of device memory on attempt to create logical device");
-        case VK_ERROR_INITIALIZATION_FAILED:
-            throw std::runtime_error("initialization failed on attempt to create logical device");
-        case VK_ERROR_EXTENSION_NOT_PRESENT:
-            throw std::runtime_error("extension is not present on device");
-        case VK_ERROR_FEATURE_NOT_PRESENT:
-            throw std::runtime_error("feature not presented");
-        case VK_ERROR_TOO_MANY_OBJECTS:
-            throw std::runtime_error("too many object, device creation failed");
-        case VK_ERROR_DEVICE_LOST:
-            throw std::runtime_error("device lost on attempt to create device");
-        default:
-            assert(false);
-    }
-
-    throw std::runtime_error("could not create logical device");
 }
 
 auto Device::graphicsQueue() const -> VkQueue
@@ -164,8 +131,18 @@ auto Device::hostTransferQueue() const -> VkQueue
     return static_cast<VkQueue>(vkQueues_[deviceHostTransferQueueIndex_]);
 }
 
-auto Device::presentationQueue() const -> VkQueue
+auto Device::graphicsQueueFamilyIndex() const -> uint32_t
 {
-    return static_cast<VkQueue>(vkQueues_[presentationQueueIndex_]);
+    return queueFamilyIndices_[graphicsQueueIndex_];
+}
+
+auto Device::computeQueueFamilyIndex() const -> uint32_t
+{
+    return queueFamilyIndices_[computeQueueIndex_];
+}
+
+auto Device::hostTransferQueueFamilyIndex() const -> uint32_t
+{
+    return queueFamilyIndices_[deviceHostTransferQueueIndex_];
 }
 }

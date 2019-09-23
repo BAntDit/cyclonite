@@ -72,6 +72,7 @@ static auto parseWindowProperties(nlohmann::json const& json) -> Options::Window
 Options::Options(int argc /* = 0*/, const char* argv[] /* = {}*/)
   : config_{ "config.json" }
   , deviceName_{ "" }
+  , deviceId_{ std::numeric_limits<uint32_t>::max() }
   , windows_{}
   , displayResolutions_{}
 {
@@ -118,10 +119,20 @@ Options::Options(int argc /* = 0*/, const char* argv[] /* = {}*/)
     }
 
     if (deviceName_.empty()) {
-        auto it = json.find(u8"device");
+        {
+            auto it = json.find(u8"device-name");
 
-        if (it != json.end()) {
-            deviceName_ = it.value().get<std::string>();
+            if (it != json.end()) {
+                deviceName_ = it.value().get<std::string>();
+            }
+        }
+
+        {
+            auto it = json.find(u8"device-id");
+
+            if (it != json.end()) {
+                deviceId_ = it.value().get<uint32_t>();
+            }
         }
     }
 
@@ -182,7 +193,7 @@ void Options::adjustWindowResolutions()
 
 void Options::save()
 {
-    nlohmann::json json = { { u8"device", deviceName_ } };
+    nlohmann::json json = { { u8"device-name", deviceName_ }, { u8"device-id", deviceId_ } };
 
     auto windows = nlohmann::json::array();
 
