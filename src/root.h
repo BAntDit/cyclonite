@@ -174,11 +174,14 @@ void Root<Config<PlatformConfig, EcsConfig>>::init(Options const& options)
                 options_->deviceId() == properties.deviceID) {
 
                 try {
-                    vulkanDevice_ = std::make_unique<vulkan::Device>(physicalDevice, properties, requiredExtensions);
+                    auto vulkanDevice =
+                      std::make_unique<vulkan::Device>(physicalDevice, properties, requiredExtensions);
 
                     if (!testSurfacesSupport(physicalDevice, vulkanDevice_->graphicsQueueFamilyIndex())) {
                         throw std::runtime_error("device graphics queue does not support surface");
                     }
+
+                    std::swap(vulkanDevice_, vulkanDevice);
                 } catch (const std::exception& e) {
                     std::cout << "device " << properties.deviceName << " skipped, cause of: " << e.what() << std::endl;
                 }
@@ -187,16 +190,19 @@ void Root<Config<PlatformConfig, EcsConfig>>::init(Options const& options)
             } else if (options_->deviceId() == std::numeric_limits<uint32_t>::max() &&
                        options_->deviceName() == properties.deviceName) {
                 try {
-                    vulkanDevice_ = std::make_unique<vulkan::Device>(physicalDevice, properties, requiredExtensions);
+                    auto vulkanDevice =
+                      std::make_unique<vulkan::Device>(physicalDevice, properties, requiredExtensions);
 
                     if (!testSurfacesSupport(physicalDevice, vulkanDevice_->graphicsQueueFamilyIndex())) {
                         throw std::runtime_error("device graphics queue does not support surface");
                     }
+
+                    std::swap(vulkanDevice_, vulkanDevice);
+
+                    options_->deviceId(properties.deviceID);
                 } catch (std::exception const& e) {
                     std::cout << "device " << properties.deviceName << " skipped, cause of: " << e.what() << std::endl;
                 }
-
-                options_->deviceId(properties.deviceID);
 
                 break;
             }
@@ -212,11 +218,14 @@ void Root<Config<PlatformConfig, EcsConfig>>::init(Options const& options)
                 vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
                 try {
-                    vulkanDevice_ = std::make_unique<vulkan::Device>(physicalDevice, properties, requiredExtensions);
+                    auto vulkanDevice =
+                      std::make_unique<vulkan::Device>(physicalDevice, properties, requiredExtensions);
 
                     if (!testSurfacesSupport(physicalDevice, vulkanDevice_->graphicsQueueFamilyIndex())) {
                         throw std::runtime_error("device graphics queue does not support surface");
                     }
+
+                    std::swap(vulkanDevice_, vulkanDevice);
 
                     options_->deviceName(properties.deviceName);
                     options_->deviceId(properties.deviceID);
