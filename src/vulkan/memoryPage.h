@@ -6,19 +6,19 @@
 #define CYCLONITE_MEMORYPAGE_H
 
 #include "handle.h"
-#include <dque>
-#include <vulkan/vulkan.h>
+#include <deque>
+#include "device.h"
 
 namespace cyclonite::vulkan {
 class MemoryPage
 {
 public:
+    MemoryPage(Device const& device, VkDeviceSize pageSize);
+
 private:
-    using MemoryBlockRange = std::pair<size_t, size_t>;
-
     Handle<VkDeviceMemory> deviceMemory_;
-
     VkDeviceSize pageSize_;
+    std::deque<std::pair<VkDeviceSize , VkDeviceSize>> freeRanges_;
 };
 }
 
