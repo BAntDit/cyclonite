@@ -23,6 +23,28 @@ struct OutOfMemory : Error
 class MemoryPage
 {
 public:
+    class AllocatedMemory
+    {
+    public:
+        AllocatedMemory(MemoryPage& memoryPage, VkDeviceSize size);
+
+        AllocatedMemory(AllocatedMemory const&) = delete;
+
+        AllocatedMemory(AllocatedMemory&& allocatedMemory) noexcept;
+
+        ~AllocatedMemory();
+
+        auto operator=(AllocatedMemory const&) -> AllocatedMemory& = delete;
+
+        auto operator=(AllocatedMemory&& rhs) noexcept -> AllocatedMemory&;
+
+    private:
+        MemoryPage* memoryPage_;
+        VkDeviceSize offset;
+        VkDeviceSize size;
+    };
+
+public:
     MemoryPage(Device const& device, VkDeviceSize pageSize, uint32_t memoryTypeIndex);
 
     MemoryPage(MemoryPage const&) = delete;
