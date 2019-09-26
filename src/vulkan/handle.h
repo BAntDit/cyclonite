@@ -32,11 +32,11 @@ public:
         };
     }
 
-    Handle(VkDevice vkDevice, void (*deleter)(VkDevice, T, VkAllocationCallbacks*))
+    Handle(VkDevice vkDevice, void (*deleter)(VkDevice, T, VkAllocationCallbacks const*))
       : handle_{ VK_NULL_HANDLE }
       , deleter_{}
     {
-        deleter_ = [deleter, vkDevice](T handle, VkAllocationCallbacks* vkAllocationCallbacks) -> void {
+        deleter_ = [deleter, vkDevice](T handle, VkAllocationCallbacks const* vkAllocationCallbacks) -> void {
             deleter(vkDevice, handle, vkAllocationCallbacks);
         };
     }

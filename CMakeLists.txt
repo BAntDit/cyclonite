@@ -12,6 +12,7 @@ set(PUBLIC_HEADERS
     src/rangeBasedMemoryManager.h
     src/root.h
     src/surface.h
+    src/error.h
     src/core/typedefs.h
     src/core/bufferView.h
     src/core/transform.h
@@ -53,6 +54,7 @@ set(SOURCES
     src/vulkan/win32Surface.cpp
     src/vulkan/wlSurface.cpp
     src/vulkan/androidSurface.cpp
+    src/vulkan/memoryPage.cpp
     src/multithreading/taskManager.cpp
     src/loaders/glTF/internal/base64Decode.cpp
     src/loaders/glTF/loader.cpp
