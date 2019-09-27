@@ -27,6 +27,8 @@ public:
     auto operator=(Device &&) -> Device& = default;
 
 public:
+    [[nodiscard]] auto physicalDevice() const -> VkPhysicalDevice { return vkPhysicalDevice_; }
+
     [[nodiscard]] auto handle() const -> VkDevice { return static_cast<VkDevice>(vkDevice_); }
 
     [[nodiscard]] auto id() const -> uint32_t { return id_; }
