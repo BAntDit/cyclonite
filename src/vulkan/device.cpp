@@ -10,7 +10,8 @@ namespace cyclonite::vulkan {
 Device::Device(VkPhysicalDevice const& vkPhysicalDevice,
                VkPhysicalDeviceProperties const& physicalDeviceProperties,
                std::vector<const char*> const& requiredExtensions)
-  : vkPhysicalDevice_{ vkPhysicalDevice }
+  : capabilities_{ physicalDeviceProperties.limits }
+  , vkPhysicalDevice_{ vkPhysicalDevice }
   , id_{ physicalDeviceProperties.deviceID }
   , name_{ physicalDeviceProperties.deviceName }
   , vendor_{ internal::getVendorName(physicalDeviceProperties) }
@@ -145,4 +146,8 @@ auto Device::hostTransferQueueFamilyIndex() const -> uint32_t
 {
     return queueFamilyIndices_[deviceHostTransferQueueIndex_];
 }
+
+Device::Capabilities::Capabilities(VkPhysicalDeviceLimits const& vkPhysicalDeviceLimits)
+  : minMemoryMapAlignment{ vkPhysicalDeviceLimits.minMemoryMapAlignment }
+{}
 }

@@ -11,6 +11,14 @@ namespace cyclonite::vulkan {
 class Device
 {
 public:
+    struct Capabilities
+    {
+        explicit Capabilities(VkPhysicalDeviceLimits const& vkPhysicalDeviceLimits);
+
+        size_t minMemoryMapAlignment;
+    };
+
+public:
     Device(VkPhysicalDevice const& vkPhysicalDevice,
            VkPhysicalDeviceProperties const& physicalDeviceProperties,
            std::vector<const char*> const& requiredExtensions);
@@ -49,7 +57,10 @@ public:
 
     [[nodiscard]] auto hostTransferQueueFamilyIndex() const -> uint32_t;
 
+    [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
+
 private:
+    Capabilities capabilities_;
     VkPhysicalDevice vkPhysicalDevice_;
     uint32_t id_;
     std::string name_;
