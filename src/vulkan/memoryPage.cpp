@@ -142,6 +142,27 @@ auto MemoryPage::alloc(VkDeviceSize size) -> MemoryPage::AllocatedMemory
     return AllocatedMemory(*this, rangeOffset, rangeSize);
 }
 
+void MemoryPage::_free(MemoryPage::AllocatedMemory const& allocatedMemory)
+{
+    auto offset = allocatedMemory.offset();
+    auto size = allocatedMemory.size();
+
+    auto prevIt = std::find_if(freeRanges_.begin(), freeRanges_.end(), [=](auto const& p) -> bool {
+        return p.first + p.second == offset;
+    });
+
+    auto nextIt = std::find_if(freeRanges_.begin(), freeRanges_.end(), [=](auto const& p) -> bool {
+        return offset + size = p.first;
+    });
+
+    if (prevIt != freeRanges_.end() && nextIt != freeRanges_.end()) {
+        auto newOffset = (*prevIt).first;
+        auto newSize = (*prevIt).second + size + (*nextIt).second;
+
+        // freeRanges_.erase(prevIt);
+    }
+}
+
 MemoryPage::AllocatedMemory::AllocatedMemory(MemoryPage& memoryPage, VkDeviceSize offset, VkDeviceSize size)
   : memoryPage_{ &memoryPage }
   , ptr_{ memoryPage_->ptr() == nullptr ? nullptr : reinterpret_cast<std::byte*>(memoryPage_->ptr()) + offset }

@@ -79,7 +79,7 @@ public:
 
     [[nodiscard]] auto ptr() const -> void* { return ptr_; }
 
-    auto alloc(VkDeviceSize size) -> AllocatedMemory;
+    [[nodiscard]] auto alloc(VkDeviceSize size) -> AllocatedMemory;
 
 private:
     void _free(AllocatedMemory const& allocatedMemory);
