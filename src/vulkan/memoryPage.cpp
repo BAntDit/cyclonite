@@ -108,6 +108,40 @@ auto MemoryPage::maxAvailableRange() const -> VkDeviceSize
     return freeRanges_.empty() ? 0 : freeRanges_.back().second;
 }
 
+// it's called in strand always
+// todo:: make private
+auto MemoryPage::alloc(VkDeviceSize size) -> MemoryPage::AllocatedMemory
+{
+    auto it =
+      std::lower_bound(freeRanges_.begin(), freeRanges_.end(), size, [](auto const& lhs, VkDeviceSize rhs) -> bool {
+          return (*lhs).second < rhs;
+      });
+
+    assert(it != freeRanges_.end());
+
+    auto [rangeOffset, rangeSize] = (*it);
+
+    freeRanges_.erase(it);
+
+    if (rangeSize > size) {
+        auto newOffset = rangeOffset + size;
+        auto newSize = rangeSize - size;
+
+        if (auto newIt =
+              std::upper_bound(freeRanges_.begin(),
+                               freeRanges_.end(),
+                               newSize,
+                               [](VkDeviceSize lhs, auto const& rhs) -> bool { return lhs < (*rhs).second; });
+            newIt != freeRanges_.end()) {
+            freeRanges_.emplace(newIt, newOffset, newSize);
+        } else {
+            freeRanges_.emplace_back(newOffset, newSize);
+        }
+    }
+
+    return AllocatedMemory(*this, rangeOffset, rangeSize);
+}
+
 MemoryPage::AllocatedMemory::AllocatedMemory(MemoryPage& memoryPage, VkDeviceSize offset, VkDeviceSize size)
   : memoryPage_{ &memoryPage }
   , ptr_{ memoryPage_->ptr() == nullptr ? nullptr : reinterpret_cast<std::byte*>(memoryPage_->ptr()) + offset }

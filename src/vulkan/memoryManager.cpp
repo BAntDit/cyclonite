@@ -27,7 +27,8 @@ auto MemoryManager::alloc(uint32_t memoryType, VkDeviceSize size, VkDeviceSize a
                            pages.end(),
                            [alignedSize](auto const& p) -> bool { return p.maxAvailableRange() >= alignedSize; });
             it != pages.end()) {
-            // TODO:: alloc from existed page
+
+            return (*it).alloc(alignedSize);
         } else {
             // TODO:: create new page and alloc
         }
