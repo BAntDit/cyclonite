@@ -147,19 +147,50 @@ void MemoryPage::_free(MemoryPage::AllocatedMemory const& allocatedMemory)
     auto offset = allocatedMemory.offset();
     auto size = allocatedMemory.size();
 
-    auto prevIt = std::find_if(freeRanges_.begin(), freeRanges_.end(), [=](auto const& p) -> bool {
-        return p.first + p.second == offset;
-    });
+    auto prevIt = std::find_if(
+      freeRanges_.begin(), freeRanges_.end(), [=](auto const& p) -> bool { return p.first + p.second == offset; });
 
-    auto nextIt = std::find_if(freeRanges_.begin(), freeRanges_.end(), [=](auto const& p) -> bool {
-        return offset + size = p.first;
-    });
+    auto nextIt = std::find_if(
+      freeRanges_.begin(), freeRanges_.end(), [=](auto const& p) -> bool { return offset + size = p.first; });
+
+    auto prevIndex = std::distance(freeRanges_.begin(), prevIt);
+    auto nextIndex = std::distance(freeRanges_.begin(), nextIt);
+
+    VkDeviceSize newOffset = offset;
+    VkDeviceSize newSize = size;
 
     if (prevIt != freeRanges_.end() && nextIt != freeRanges_.end()) {
-        auto newOffset = (*prevIt).first;
-        auto newSize = (*prevIt).second + size + (*nextIt).second;
+        assert(prevIndex != nextIndex);
 
-        // freeRanges_.erase(prevIt);
+        newOffset = (*prevIt).first;
+        newSize = (*prevIt).second + size + (*nextIt).second;
+
+        if (nextIndex > prevIndex) {
+            freeRanges_.erase(std::next(freeRanges_.begin(), nextIndex));
+            freeRanges_.erase(std::next(freeRanges_.begin(), prevIndex));
+        } else {
+            freeRanges_.erase(std::next(freeRanges_.begin(), prevIndex));
+            freeRanges_.erase(std::next(freeRanges_.begin(), nextIndex));
+        }
+    } else if (prevIt != freeRanges_.end()) {
+        newOffset = (*prevIt).first;
+        newSize = (*prevIt).second + size;
+
+        freeRanges_.erase(prevIt);
+    } else if (nextIt != freeRanges_.end()) {
+        newSize = size + (*nextIt).second;
+
+        freeRanges_.erase(nextIt);
+    }
+
+    if (auto newIt = std::upper_bound(freeRanges_.begin(),
+                                      freeRanges_.end(),
+                                      newSize,
+                                      [](VkDeviceSize lhs, auto const& rhs) -> bool { return lhs < (*rhs).second; });
+        newIt != freeRanges_.end()) {
+        freeRanges_.emplace(newIt, newOffset, newSize);
+    } else {
+        freeRanges_.emplace_back(newOffset, newSize);
     }
 }
 
