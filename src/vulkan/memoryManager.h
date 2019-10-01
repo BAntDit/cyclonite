@@ -20,10 +20,23 @@ public:
     auto alloc(uint32_t memoryType, VkDeviceSize size, VkDeviceSize align) -> MemoryPage::AllocatedMemory;
 
 private:
-    using page_key_t = std::pair<uint32_t, VkDeviceSize>;
+    struct MemoryType
+    {
+        MemoryType(bool _hostVisible, VkDeviceSize _pageSize)
+          : hostVisible{ _hostVisible }
+          , pageSize{ _pageSize }
+        {}
+
+        bool hostVisible;
+        VkDeviceSize pageSize;
+    };
+
+    using page_key_t = std::pair<uint32_t, VkDeviceSize>; // memory type / align
 
     multithreading::TaskManager const* taskManager_;
+    Device const* device_;
     std::unordered_map<page_key_t, std::vector<MemoryPage>, boost::hash<page_key_t>> pages_;
+    std::unordered_map<uint32_t, MemoryType> memoryTypes_;
 };
 }
 

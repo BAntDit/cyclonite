@@ -142,7 +142,7 @@ auto MemoryPage::alloc(VkDeviceSize size) -> MemoryPage::AllocatedMemory
     return AllocatedMemory(*this, rangeOffset, rangeSize);
 }
 
-void MemoryPage::_free(MemoryPage::AllocatedMemory const& allocatedMemory)
+void MemoryPage::free(MemoryPage::AllocatedMemory const& allocatedMemory)
 {
     auto offset = allocatedMemory.offset();
     auto size = allocatedMemory.size();
@@ -216,7 +216,7 @@ MemoryPage::AllocatedMemory::AllocatedMemory(MemoryPage::AllocatedMemory&& alloc
 MemoryPage::AllocatedMemory::~AllocatedMemory()
 {
     if (memoryPage_ != nullptr) {
-        memoryPage_->_free(*this);
+        memoryPage_->free(*this);
     }
 }
 

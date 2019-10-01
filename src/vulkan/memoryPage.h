@@ -81,8 +81,7 @@ public:
 
     [[nodiscard]] auto alloc(VkDeviceSize size) -> AllocatedMemory;
 
-private:
-    void _free(AllocatedMemory const& allocatedMemory);
+    void free(AllocatedMemory const& allocatedMemory);
 
 private:
     multithreading::TaskManager const* taskManager_;
