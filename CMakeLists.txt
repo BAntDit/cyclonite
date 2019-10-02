@@ -9,9 +9,9 @@ set(PUBLIC_HEADERS
     src/options.h
     src/app.h
     src/updateStages.h
-    src/rangeBasedMemoryManager.h
     src/root.h
     src/surface.h
+    src/arena.h
     src/error.h
     src/core/typedefs.h
     src/core/bufferView.h

@@ -5,6 +5,7 @@
 #ifndef CYCLONITE_MEMORYPAGE_H
 #define CYCLONITE_MEMORYPAGE_H
 
+#include "../arena.h"
 #include "../error.h"
 #include "../multithreading/taskManager.h"
 #include "device.h"
@@ -21,45 +22,12 @@ struct OutOfMemory : Error
     {}
 };
 
-class MemoryPage
+class MemoryManager;
+
+class MemoryPage : public Arena<MemoryPage>
 {
 public:
-    class AllocatedMemory
-    {
-    public:
-        AllocatedMemory(MemoryPage& memoryPage, VkDeviceSize offset, VkDeviceSize size);
-
-        AllocatedMemory(AllocatedMemory const&) = delete;
-
-        AllocatedMemory(AllocatedMemory&& allocatedMemory) noexcept;
-
-        ~AllocatedMemory();
-
-        auto operator=(AllocatedMemory const&) -> AllocatedMemory& = delete;
-
-        auto operator=(AllocatedMemory&& rhs) noexcept -> AllocatedMemory&;
-
-        explicit operator std::byte*() { return reinterpret_cast<std::byte*>(ptr_); }
-
-        [[nodiscard]] auto ptr() const -> void* { return ptr_; }
-
-        [[nodiscard]] auto offset() const -> VkDeviceSize { return offset_; }
-
-        [[nodiscard]] auto size() const -> VkDeviceSize { return size_; }
-
-    private:
-        MemoryPage* memoryPage_;
-        void* ptr_;
-        VkDeviceSize offset_;
-        VkDeviceSize size_;
-    };
-
-public:
-    MemoryPage(multithreading::TaskManager const& taskManager,
-               Device const& device,
-               VkDeviceSize pageSize,
-               uint32_t memoryTypeIndex,
-               bool hostVisible);
+    friend class MemoryManager;
 
     MemoryPage(MemoryPage const&) = delete;
 
@@ -73,17 +41,23 @@ public:
 
     [[nodiscard]] auto handle() const -> VkDeviceMemory { return static_cast<VkDeviceMemory>(vkDeviceMemory_); }
 
-    [[nodiscard]] auto size() const -> VkDeviceSize { return pageSize_; }
+    [[nodiscard]] auto size() const -> size_t { return static_cast<size_t>(pageSize_); }
 
-    [[nodiscard]] auto maxAvailableRange() const -> VkDeviceSize;
+    [[nodiscard]] auto maxAvailableRange() const -> size_t;
 
     [[nodiscard]] auto ptr() const -> void* { return ptr_; }
 
-    [[nodiscard]] auto alloc(VkDeviceSize size) -> AllocatedMemory;
+    [[nodiscard]] auto alloc(size_t size) -> Arena<MemoryPage>::AllocatedMemory;
 
-    void free(AllocatedMemory const& allocatedMemory);
+    void free(Arena<MemoryPage>::AllocatedMemory const& allocatedMemory);
 
 private:
+    MemoryPage(multithreading::TaskManager const& taskManager,
+               Device const& device,
+               VkDeviceSize pageSize,
+               uint32_t memoryTypeIndex,
+               bool hostVisible);
+
     multithreading::TaskManager const* taskManager_;
     VkDevice vkDevice_;
     bool hostVisible_;

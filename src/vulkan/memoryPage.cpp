@@ -3,10 +3,10 @@
 //
 
 #include "memoryPage.h"
+#include "memoryManager.h"
 
 namespace cyclonite::vulkan {
 // memory manager always creates new memory page in strand
-// todo:: make constructor private
 MemoryPage::MemoryPage(multithreading::TaskManager const& taskManager,
                        Device const& device,
                        VkDeviceSize pageSize,
@@ -103,17 +103,18 @@ auto MemoryPage::operator=(MemoryPage&& rhs) noexcept -> MemoryPage&
     return *this;
 }
 
-auto MemoryPage::maxAvailableRange() const -> VkDeviceSize
+auto MemoryPage::maxAvailableRange() const -> size_t
 {
-    return freeRanges_.empty() ? 0 : freeRanges_.back().second;
+    return freeRanges_.empty() ? 0 : static_cast<size_t>(freeRanges_.back().second);
 }
 
-// it's called in strand always
-// todo:: make private
-auto MemoryPage::alloc(VkDeviceSize size) -> MemoryPage::AllocatedMemory
+// calls in strand always
+auto MemoryPage::alloc(size_t size) -> Arena<MemoryPage>::AllocatedMemory
 {
+    auto sz = static_cast<VkDeviceSize>(size);
+
     auto it =
-      std::lower_bound(freeRanges_.begin(), freeRanges_.end(), size, [](auto const& lhs, VkDeviceSize rhs) -> bool {
+      std::lower_bound(freeRanges_.begin(), freeRanges_.end(), sz, [](auto const& lhs, VkDeviceSize rhs) -> bool {
           return (*lhs).second < rhs;
       });
 
@@ -123,9 +124,9 @@ auto MemoryPage::alloc(VkDeviceSize size) -> MemoryPage::AllocatedMemory
 
     freeRanges_.erase(it);
 
-    if (rangeSize > size) {
-        auto newOffset = rangeOffset + size;
-        auto newSize = rangeSize - size;
+    if (rangeSize > sz) {
+        auto newOffset = rangeOffset + sz;
+        auto newSize = rangeSize - sz;
 
         if (auto newIt =
               std::upper_bound(freeRanges_.begin(),
@@ -142,10 +143,10 @@ auto MemoryPage::alloc(VkDeviceSize size) -> MemoryPage::AllocatedMemory
     return AllocatedMemory(*this, rangeOffset, rangeSize);
 }
 
-void MemoryPage::free(MemoryPage::AllocatedMemory const& allocatedMemory)
+void MemoryPage::free(Arena<MemoryPage>::AllocatedMemory const& allocatedMemory)
 {
-    auto offset = allocatedMemory.offset();
-    auto size = allocatedMemory.size();
+    auto offset = static_cast<VkDeviceSize>(allocatedMemory.offset());
+    auto size = static_cast<VkDeviceSize>(allocatedMemory.size());
 
     auto prevIt = std::find_if(
       freeRanges_.begin(), freeRanges_.end(), [=](auto const& p) -> bool { return p.first + p.second == offset; });
@@ -156,8 +157,8 @@ void MemoryPage::free(MemoryPage::AllocatedMemory const& allocatedMemory)
     auto prevIndex = std::distance(freeRanges_.begin(), prevIt);
     auto nextIndex = std::distance(freeRanges_.begin(), nextIt);
 
-    VkDeviceSize newOffset = offset;
-    VkDeviceSize newSize = size;
+    auto newOffset = offset;
+    auto newSize = size;
 
     if (prevIt != freeRanges_.end() && nextIt != freeRanges_.end()) {
         assert(prevIndex != nextIndex);
@@ -192,46 +193,5 @@ void MemoryPage::free(MemoryPage::AllocatedMemory const& allocatedMemory)
     } else {
         freeRanges_.emplace_back(newOffset, newSize);
     }
-}
-
-MemoryPage::AllocatedMemory::AllocatedMemory(MemoryPage& memoryPage, VkDeviceSize offset, VkDeviceSize size)
-  : memoryPage_{ &memoryPage }
-  , ptr_{ memoryPage_->ptr() == nullptr ? nullptr : reinterpret_cast<std::byte*>(memoryPage_->ptr()) + offset }
-  , offset_{ offset }
-  , size_{ size }
-{}
-
-MemoryPage::AllocatedMemory::AllocatedMemory(MemoryPage::AllocatedMemory&& allocatedMemory) noexcept
-  : memoryPage_{ allocatedMemory.memoryPage_ }
-  , ptr_{ allocatedMemory.ptr_ }
-  , offset_{ allocatedMemory.offset_ }
-  , size_{ allocatedMemory.size_ }
-{
-    allocatedMemory.memoryPage_ = nullptr;
-    allocatedMemory.ptr_ = nullptr;
-    allocatedMemory.offset_ = 0;
-    allocatedMemory.size_ = 0;
-}
-
-MemoryPage::AllocatedMemory::~AllocatedMemory()
-{
-    if (memoryPage_ != nullptr) {
-        memoryPage_->free(*this);
-    }
-}
-
-auto MemoryPage::AllocatedMemory::operator=(MemoryPage::AllocatedMemory&& rhs) noexcept -> MemoryPage::AllocatedMemory&
-{
-    memoryPage_ = rhs.memoryPage_;
-    ptr_ = rhs.ptr_;
-    offset_ = rhs.offset_;
-    size_ = rhs.size_;
-
-    rhs.memoryPage_ = nullptr;
-    rhs.ptr_ = nullptr;
-    rhs.offset_ = 0;
-    rhs.size_ = 0;
-
-    return *this;
 }
 }
