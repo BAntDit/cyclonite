@@ -34,6 +34,7 @@ set(PUBLIC_HEADERS
     src/vulkan/androidSurface.h
     src/vulkan/memoryPage.h
     src/vulkan/memoryManager.h
+    src/vulkan/buffer.h
     src/multithreading/taskManager.h
     src/loaders/glTF/loader.h
 )
@@ -57,6 +58,7 @@ set(SOURCES
     src/vulkan/androidSurface.cpp
     src/vulkan/memoryPage.cpp
     src/vulkan/memoryManager.cpp
+    src/vulkan/buffer.cpp
     src/multithreading/taskManager.cpp
     src/loaders/glTF/internal/base64Decode.cpp
     src/loaders/glTF/loader.cpp
