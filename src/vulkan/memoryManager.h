@@ -6,7 +6,6 @@
 #define CYCLONITE_MEMORYMANAGER_H
 
 #include "../multithreading/taskManager.h"
-#include "device.h"
 #include "memoryPage.h"
 #include <boost/functional/hash.hpp>
 #include <unordered_map>
@@ -17,17 +16,28 @@ class MemoryManager
 public:
     MemoryManager(multithreading::TaskManager const& taskManager, Device const& device);
 
-    auto alloc(uint32_t memoryType, VkDeviceSize size, VkDeviceSize align) -> Arena<MemoryPage>::AllocatedMemory;
+    [[nodiscard]] auto alloc(VkMemoryRequirements const& memoryRequirements,
+                             VkMemoryPropertyFlags memoryPropertyFlags,
+                             VkDeviceSize size) -> Arena<MemoryPage>::AllocatedMemory;
 
 private:
     struct MemoryType
     {
-        MemoryType(bool _hostVisible, VkDeviceSize _pageSize)
-          : hostVisible{ _hostVisible }
-          , pageSize{ _pageSize }
-        {}
+        MemoryType(VkMemoryPropertyFlags flags, VkDeviceSize _pageSize)
+          : propertyFlags{ flags }
+          , pageSize{ _pageSize } {}
 
-        bool hostVisible;
+              [[nodiscard]] auto isHostVisible() const -> bool
+        {
+            return (propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;
+        }
+
+        [[nodiscard]] auto isLocal() const -> bool
+        {
+            return (propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) != 0;
+        }
+
+        VkMemoryPropertyFlags propertyFlags;
         VkDeviceSize pageSize;
     };
 

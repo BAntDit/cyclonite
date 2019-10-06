@@ -15,6 +15,8 @@ public:
     class AllocatedMemory
     {
     public:
+        AllocatedMemory();
+
         AllocatedMemory(MemoryPage& memoryPage, size_t offset, size_t size);
 
         AllocatedMemory(AllocatedMemory const&) = delete;
@@ -83,6 +85,14 @@ void Arena<MemoryPage>::free(Arena<MemoryPage>::AllocatedMemory const& allocated
 {
     static_cast<MemoryPage*>(this)->free(allocatedMemory);
 }
+
+template<typename MemoryPage>
+Arena<MemoryPage>::AllocatedMemory::AllocatedMemory()
+  : memoryPage_{ nullptr }
+  , ptr_{ nullptr }
+  , offset_{ 0 }
+  , size_{ 0 }
+{}
 
 template<typename MemoryPage>
 Arena<MemoryPage>::AllocatedMemory::AllocatedMemory(MemoryPage& memoryPage, size_t offset, size_t size)

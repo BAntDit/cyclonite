@@ -3,6 +3,7 @@
 //
 
 #include "memoryPage.h"
+#include "device.h"
 #include "memoryManager.h"
 
 namespace cyclonite::vulkan {
@@ -42,20 +43,22 @@ MemoryPage::MemoryPage(multithreading::TaskManager const& taskManager,
 
     assert(!hostVisible || 0 == pageSize % device.capabilities().minMemoryMapAlignment);
 
-    if (auto result = vkMapMemory(vkDevice_, handle(), 0, VK_WHOLE_SIZE, 0, &ptr_); result != VK_SUCCESS) {
-        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
-            throw std::runtime_error("there is no enough memory on device to map vulkan::MemoryPage");
-        }
+    if (hostVisible_) {
+        if (auto result = vkMapMemory(vkDevice_, handle(), 0, VK_WHOLE_SIZE, 0, &ptr_); result != VK_SUCCESS) {
+            if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+                throw std::runtime_error("there is no enough memory on device to map vulkan::MemoryPage");
+            }
 
-        if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
-            throw std::runtime_error("there is no enough system memory to map vulkan::MemoryPage");
-        }
+            if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
+                throw std::runtime_error("there is no enough system memory to map vulkan::MemoryPage");
+            }
 
-        if (result == VK_ERROR_MEMORY_MAP_FAILED) {
-            throw std::runtime_error("Mapping of a memory object has failed");
-        }
+            if (result == VK_ERROR_MEMORY_MAP_FAILED) {
+                throw std::runtime_error("Mapping of a memory object has failed");
+            }
 
-        assert(false);
+            assert(false);
+        }
     }
 }
 
@@ -77,7 +80,7 @@ MemoryPage::MemoryPage(cyclonite::vulkan::MemoryPage&& memoryPage) noexcept
 MemoryPage::~MemoryPage()
 {
     auto future = taskManager_->strand([this]() -> void {
-        if (vkDevice_ != VK_NULL_HANDLE && ptr_ != nullptr) {
+        if (hostVisible_ && vkDevice_ != VK_NULL_HANDLE && ptr_ != nullptr) {
             vkUnmapMemory(vkDevice_, handle());
         }
     });

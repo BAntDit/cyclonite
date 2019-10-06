@@ -4,10 +4,12 @@
 
 #include "device.h"
 #include "internal/deviceCreationFunctions.h"
+#include "memoryManager.h"
 #include <boost/cstdfloat.hpp>
 
 namespace cyclonite::vulkan {
-Device::Device(VkPhysicalDevice const& vkPhysicalDevice,
+Device::Device(multithreading::TaskManager const& taskManager,
+               VkPhysicalDevice const& vkPhysicalDevice,
                VkPhysicalDeviceProperties const& physicalDeviceProperties,
                std::vector<const char*> const& requiredExtensions)
   : capabilities_{ physicalDeviceProperties.limits }
@@ -21,6 +23,7 @@ Device::Device(VkPhysicalDevice const& vkPhysicalDevice,
   , vkDevice_{ vkDestroyDevice }
   , queueFamilyIndices_{}
   , vkQueues_{}
+  , memoryManager_{ nullptr }
 {
     uint32_t familyCount = 0;
 
@@ -115,6 +118,8 @@ Device::Device(VkPhysicalDevice const& vkPhysicalDevice,
         vkQueues_.emplace_back();
         vkGetDeviceQueue(static_cast<VkDevice>(vkDevice_), queueFamilyIndex, queueIndex, &vkQueues_.back());
     }
+
+    memoryManager_ = std::make_unique<MemoryManager>(taskManager, *this);
 }
 
 auto Device::graphicsQueue() const -> VkQueue
@@ -149,5 +154,8 @@ auto Device::hostTransferQueueFamilyIndex() const -> uint32_t
 
 Device::Capabilities::Capabilities(VkPhysicalDeviceLimits const& vkPhysicalDeviceLimits)
   : minMemoryMapAlignment{ vkPhysicalDeviceLimits.minMemoryMapAlignment }
+  , minStorageBufferOffsetAlignment{ vkPhysicalDeviceLimits.minStorageBufferOffsetAlignment }
+  , minUniformBufferOffsetAlignment{ vkPhysicalDeviceLimits.minUniformBufferOffsetAlignment }
+  , minTexelBufferOffsetAlignment{ vkPhysicalDeviceLimits.minTexelBufferOffsetAlignment }
 {}
 }

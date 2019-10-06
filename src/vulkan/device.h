@@ -5,9 +5,13 @@
 #ifndef CYCLONITE_DEVICE_H
 #define CYCLONITE_DEVICE_H
 
+#include "../multithreading/taskManager.h"
 #include "handle.h"
+#include <memory>
 
 namespace cyclonite::vulkan {
+class MemoryManager;
+
 class Device
 {
 public:
@@ -16,10 +20,14 @@ public:
         explicit Capabilities(VkPhysicalDeviceLimits const& vkPhysicalDeviceLimits);
 
         size_t minMemoryMapAlignment;
+        size_t minStorageBufferOffsetAlignment;
+        size_t minUniformBufferOffsetAlignment;
+        size_t minTexelBufferOffsetAlignment;
     };
 
 public:
-    Device(VkPhysicalDevice const& vkPhysicalDevice,
+    Device(multithreading::TaskManager const& taskManager,
+           VkPhysicalDevice const& vkPhysicalDevice,
            VkPhysicalDeviceProperties const& physicalDeviceProperties,
            std::vector<const char*> const& requiredExtensions);
 
@@ -59,6 +67,10 @@ public:
 
     [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
 
+    [[nodiscard]] auto memoryManager() const -> MemoryManager const& { return *memoryManager_; }
+
+    [[nodiscard]] auto memoryManager() -> MemoryManager& { return *memoryManager_; }
+
 private:
     Capabilities capabilities_;
     VkPhysicalDevice vkPhysicalDevice_;
@@ -71,6 +83,7 @@ private:
     Handle<VkDevice> vkDevice_;
     std::vector<uint32_t> queueFamilyIndices_;
     std::vector<Handle<VkQueue>> vkQueues_;
+    std::unique_ptr<MemoryManager> memoryManager_;
 };
 }
 

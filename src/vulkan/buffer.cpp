@@ -3,15 +3,18 @@
 //
 
 #include "buffer.h"
+#include "device.h"
 #include "internal/fillBufferCreationInfo.h"
+#include "memoryManager.h"
 
 namespace cyclonite::vulkan {
-Buffer::Buffer(Device const& device,
+Buffer::Buffer(Device& device,
                VkMemoryPropertyFlags memoryPropertyFlags,
                VkBufferUsageFlags usageFlags,
                VkDeviceSize size,
                owner_queue_family_indices_t ownerQueueFamilyIndices)
-  : vkBuffer_{ device.handle(), vkDestroyBuffer }
+  : allocatedMemory_{}
+  , vkBuffer_{ device.handle(), vkDestroyBuffer }
 {
     VkBufferCreateInfo bufferCreateInfo = {};
 
@@ -31,7 +34,7 @@ Buffer::Buffer(Device const& device,
         VkMemoryRequirements memoryRequirements = {};
         vkGetBufferMemoryRequirements(device.handle(), static_cast<VkBuffer>(vkBuffer_), &memoryRequirements);
 
-        
+        allocatedMemory_ = device.memoryManager().alloc(memoryRequirements, memoryPropertyFlags, size);
     }
 }
 }

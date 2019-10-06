@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_BUFFER_H
 #define CYCLONITE_BUFFER_H
 
-#include "device.h"
+#include "memoryPage.h"
 #include <array>
 #include <variant>
 
@@ -16,13 +16,16 @@ public:
     using owner_queue_family_indices_t =
       std::variant<std::array<uint32_t, 1>, std::array<uint32_t, 2>, std::array<uint32_t, 3>>;
 
-    Buffer(Device const& device,
+    Buffer(Device& device,
            VkMemoryPropertyFlags memoryPropertyFlags,
            VkBufferUsageFlags usageFlags,
            VkDeviceSize size,
            owner_queue_family_indices_t ownerQueueFamilyIndices);
 
+    [[nodiscard]] auto handle() const -> VkBuffer { return static_cast<VkBuffer>(vkBuffer_); }
+
 private:
+    MemoryPage::AllocatedMemory allocatedMemory_;
     Handle<VkBuffer> vkBuffer_;
 };
 }

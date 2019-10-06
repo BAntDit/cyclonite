@@ -8,7 +8,6 @@
 #include "../arena.h"
 #include "../error.h"
 #include "../multithreading/taskManager.h"
-#include "device.h"
 #include "handle.h"
 #include <deque>
 
@@ -21,6 +20,8 @@ struct OutOfMemory : Error
       : Error("device have no enough memory to allocate: " + std::to_string(size) + " bytes")
     {}
 };
+
+class Device;
 
 class MemoryManager;
 
