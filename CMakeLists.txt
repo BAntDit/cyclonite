@@ -41,6 +41,7 @@ set(PUBLIC_HEADERS
 
 set(PRIVATE_HEADERS
     src/vulkan/internal/deviceCreationFunctions.h
+    src/vulkan/internal/fillBufferCreationInfo.h
     src/loaders/glTF/internal/getOptional.h
     src/loaders/glTF/internal/readArray.h
     src/loaders/glTF/internal/base64Decode.h
