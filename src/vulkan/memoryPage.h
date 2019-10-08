@@ -42,15 +42,7 @@ public:
 
     [[nodiscard]] auto handle() const -> VkDeviceMemory { return static_cast<VkDeviceMemory>(vkDeviceMemory_); }
 
-    [[nodiscard]] auto size() const -> size_t { return static_cast<size_t>(pageSize_); }
-
-    [[nodiscard]] auto maxAvailableRange() const -> size_t;
-
     [[nodiscard]] auto ptr() const -> void* { return ptr_; }
-
-    [[nodiscard]] auto alloc(size_t size) -> Arena<MemoryPage>::AllocatedMemory;
-
-    void free(Arena<MemoryPage>::AllocatedMemory const& allocatedMemory);
 
 private:
     MemoryPage(multithreading::TaskManager const& taskManager,
@@ -63,8 +55,6 @@ private:
     VkDevice vkDevice_;
     bool hostVisible_;
     Handle<VkDeviceMemory> vkDeviceMemory_;
-    VkDeviceSize pageSize_;
-    std::deque<std::pair<VkDeviceSize, VkDeviceSize>> freeRanges_;
     void* ptr_;
 };
 }
