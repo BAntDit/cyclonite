@@ -35,6 +35,7 @@ set(PUBLIC_HEADERS
     src/vulkan/memoryPage.h
     src/vulkan/memoryManager.h
     src/vulkan/buffer.h
+    src/vulkan/staging.h
     src/multithreading/taskManager.h
     src/loaders/glTF/loader.h
 )
