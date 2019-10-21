@@ -17,6 +17,8 @@ public:
     class AllocatedMemory
     {
     public:
+        friend class Arena<MemoryPage>;
+
         AllocatedMemory();
 
         AllocatedMemory(MemoryPage& memoryPage, size_t offset, size_t size);
@@ -35,11 +37,11 @@ public:
 
         [[nodiscard]] auto ptr() const -> void* { return ptr_; }
 
-        [[nodiscard]] auto offset() const -> size_t { return offset_; }
-
         [[nodiscard]] auto size() const -> size_t { return size_; }
 
     private:
+        [[nodiscard]] auto offset() const -> size_t { return offset_; }
+
         MemoryPage* memoryPage_;
         void* ptr_;
         size_t offset_;
