@@ -24,6 +24,8 @@ public:
 
     [[nodiscard]] auto handle() const -> VkBuffer { return static_cast<VkBuffer>(vkBuffer_); }
 
+    [[nodiscard]] auto allocatedMemory() const -> MemoryPage::AllocatedMemory const& { return allocatedMemory_; }
+
 private:
     MemoryPage::AllocatedMemory allocatedMemory_;
     Handle<VkBuffer> vkBuffer_;

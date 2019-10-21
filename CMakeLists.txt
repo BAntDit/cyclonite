@@ -61,6 +61,7 @@ set(SOURCES
     src/vulkan/memoryPage.cpp
     src/vulkan/memoryManager.cpp
     src/vulkan/buffer.cpp
+    src/vulkan/staging.cpp
     src/multithreading/taskManager.cpp
     src/loaders/glTF/internal/base64Decode.cpp
     src/loaders/glTF/loader.cpp

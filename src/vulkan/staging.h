@@ -9,8 +9,7 @@
 #include "buffer.h"
 
 namespace cyclonite::vulkan {
-// TODO:: implement
-class Staging: public Arena<Staging>
+class Staging : public Arena<Staging>
 {
 public:
     Staging(Device& device, VkBufferUsageFlags usageFlags, VkDeviceSize size);
@@ -23,7 +22,7 @@ public:
 
     auto operator=(Staging const&) -> Staging& = delete;
 
-    auto operator=(Staging&&) -> Staging& = default;
+    auto operator=(Staging &&) -> Staging& = default;
 
     [[nodiscard]] auto ptr() const -> void*;
 
