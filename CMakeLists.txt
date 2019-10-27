@@ -13,7 +13,7 @@ set(PUBLIC_HEADERS
     src/surface.h
     src/arena.h
     src/error.h
-    src/core/typedefs.h
+    src/typedefs.h
     src/core/bufferView.h
     src/core/transform.h
     src/core/camera.h
@@ -43,8 +43,8 @@ set(PUBLIC_HEADERS
 set(PRIVATE_HEADERS
     src/vulkan/internal/deviceCreationFunctions.h
     src/vulkan/internal/fillBufferCreationInfo.h
+    src/loaders/glTF/internal/testVersion.h
     src/loaders/glTF/internal/getOptional.h
-    src/loaders/glTF/internal/readArray.h
     src/loaders/glTF/internal/base64Decode.h
 )
 
@@ -63,8 +63,8 @@ set(SOURCES
     src/vulkan/buffer.cpp
     src/vulkan/staging.cpp
     src/multithreading/taskManager.cpp
-    src/loaders/glTF/internal/base64Decode.cpp
     src/loaders/glTF/loader.cpp
+    src/loaders/glTF/internal/base64Decode.cpp
 )
 
 add_library(${PROJECT_NAME} SHARED

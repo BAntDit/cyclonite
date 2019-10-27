@@ -9,7 +9,7 @@
 
 namespace cyclonite::loaders::gltf::internal {
 template<typename T>
-auto getOptional(nlohmann::json& json, std::string const& property, T&& defaultValue) -> std::decay_t<T>
+static auto getOptional(nlohmann::json& json, std::string const& property, T&& defaultValue) -> std::decay_t<T>
 {
     typename std::decay<T>::type result;
 

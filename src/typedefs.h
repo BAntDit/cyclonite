@@ -12,7 +12,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/transform.hpp>
 
-namespace cyclonite::core {
+namespace cyclonite {
 using real = boost::float32_t;
 
 using uint = std::uint32_t;
