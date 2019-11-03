@@ -11,8 +11,8 @@
 #include <nlohmann/json.hpp>
 
 #include "../../arena.h"
-#include "../../typedefs.h"
 #include "../../multithreading/taskManager.h"
+#include "../../typedefs.h"
 
 namespace cyclonite::loaders::gltf {
 class Loader

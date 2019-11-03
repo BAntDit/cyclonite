@@ -23,6 +23,9 @@ set(PUBLIC_HEADERS
     src/core/primitiveType.h
     src/core/vertexAttribute.h
     src/core/geometry.h
+    src/renderTarget.h
+    src/renderPass.h
+    src/vulkanRenderer.h
     src/sdl/sdlSupport.h
     src/sdl/sdlWindow.h
     src/vulkan/handle.h
@@ -34,6 +37,7 @@ set(PUBLIC_HEADERS
     src/vulkan/androidSurface.h
     src/vulkan/memoryPage.h
     src/vulkan/memoryManager.h
+    src/vulkan/image.h
     src/vulkan/buffer.h
     src/vulkan/staging.h
     src/multithreading/taskManager.h
@@ -43,6 +47,7 @@ set(PUBLIC_HEADERS
 set(PRIVATE_HEADERS
     src/vulkan/internal/deviceCreationFunctions.h
     src/vulkan/internal/fillBufferCreationInfo.h
+    src/vulkan/internal/fillImageCreationInfo.h
     src/loaders/glTF/internal/testVersion.h
     src/loaders/glTF/internal/getOptional.h
     src/loaders/glTF/internal/base64Decode.h
@@ -50,6 +55,7 @@ set(PRIVATE_HEADERS
 
 set(SOURCES
     src/options.cpp
+    src/vulkanRenderer.cpp
     src/sdl/sdlSupport.cpp
     src/sdl/sdlWindow.cpp
     src/vulkan/instance.cpp
@@ -60,6 +66,7 @@ set(SOURCES
     src/vulkan/androidSurface.cpp
     src/vulkan/memoryPage.cpp
     src/vulkan/memoryManager.cpp
+    src/vulkan/image.cpp
     src/vulkan/buffer.cpp
     src/vulkan/staging.cpp
     src/multithreading/taskManager.cpp
