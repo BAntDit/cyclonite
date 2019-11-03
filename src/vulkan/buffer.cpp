@@ -34,7 +34,7 @@ Buffer::Buffer(Device& device,
         VkMemoryRequirements memoryRequirements = {};
         vkGetBufferMemoryRequirements(device.handle(), static_cast<VkBuffer>(vkBuffer_), &memoryRequirements);
 
-        allocatedMemory_ = device.memoryManager().alloc(memoryRequirements, memoryPropertyFlags, size);
+        allocatedMemory_ = device.memoryManager().alloc(memoryRequirements, memoryPropertyFlags);
     }
 }
 }

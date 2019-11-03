@@ -5,6 +5,7 @@
 #include "image.h"
 #include "device.h"
 #include "internal/fillImageCreationInfo.h"
+#include "memoryManager.h"
 
 namespace cyclonite::vulkan {
 Image::Image(Device& device,
@@ -21,7 +22,7 @@ Image::Image(Device& device,
              VkImageType imageType,
              VkImageLayout imageInitialLayout,
              VkImageCreateFlags imageCreateFlags,
-             VkMemoryPropertyFlags memoryPropertieFlags)
+             VkMemoryPropertyFlags memoryPropertyFlags)
   : allocatedMemory_{}
   , vkImage_{ device.handle(), vkDestroyImage }
 {
@@ -37,9 +38,53 @@ Image::Image(Device& device,
                                     arrayLayerCount,
                                     format,
                                     tiling,
-                                    imageCreateFlags,
+                                    imageUsageFlags,
                                     sampleCount,
                                     imageInitialLayout,
                                     ownerQueueFamilyIndices);
+
+    if (auto result = vkCreateImage(device.handle(), &imageCreateInfo, nullptr, &vkImage_); result != VK_SUCCESS) {
+        if (result == VK_ERROR_OUT_OF_HOST_MEMORY)
+            throw std::runtime_error("not enough RAM to create image");
+
+        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY)
+            throw std::runtime_error("not enough GPU Memory to create image");
+
+        assert(false);
+    }
+
+    {
+        VkMemoryRequirements memoryRequirements = {};
+        vkGetImageMemoryRequirements(device.handle(), static_cast<VkImage>(vkImage_), &memoryRequirements);
+
+        allocatedMemory_ = device.memoryManager().alloc(memoryRequirements, memoryPropertyFlags);
+    }
 }
+
+Image::Image(cyclonite::vulkan::Device& device,
+             uint32_t width,
+             uint32_t height,
+             uint32_t depth,
+             uint32_t countMipLevels,
+             uint32_t arrayLayerCount,
+             VkFormat format,
+             VkImageTiling tiling,
+             VkImageUsageFlags imageUsageFlags,
+             VkImageType imageType)
+  : Image{ device,
+           std::array<uint32_t, 1>{ device.graphicsQueueFamilyIndex() },
+           width,
+           height,
+           depth,
+           format,
+           countMipLevels,
+           arrayLayerCount,
+           tiling,
+           VK_SAMPLE_COUNT_1_BIT,
+           imageUsageFlags,
+           imageType,
+           VK_IMAGE_LAYOUT_UNDEFINED,
+           0,
+           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT }
+{}
 }

@@ -16,9 +16,8 @@ class MemoryManager
 public:
     MemoryManager(multithreading::TaskManager const& taskManager, Device const& device);
 
-    [[nodiscard]] auto alloc(VkMemoryRequirements const& memoryRequirements,
-                             VkMemoryPropertyFlags memoryPropertyFlags,
-                             VkDeviceSize size) -> Arena<MemoryPage>::AllocatedMemory;
+    [[nodiscard]] auto alloc(VkMemoryRequirements const& memoryRequirements, VkMemoryPropertyFlags memoryPropertyFlags)
+      -> Arena<MemoryPage>::AllocatedMemory;
 
 private:
     struct MemoryType

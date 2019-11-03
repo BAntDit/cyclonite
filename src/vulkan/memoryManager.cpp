@@ -34,11 +34,13 @@ MemoryManager::MemoryManager(cyclonite::multithreading::TaskManager const& taskM
     }
 }
 
-auto MemoryManager::alloc(VkMemoryRequirements const& memoryRequirements,
-                          VkMemoryPropertyFlags memoryPropertyFlags,
-                          VkDeviceSize size) -> MemoryPage::AllocatedMemory
+auto MemoryManager::alloc(VkMemoryRequirements const& memoryRequirements, VkMemoryPropertyFlags memoryPropertyFlags)
+  -> MemoryPage::AllocatedMemory
 {
     auto align = memoryRequirements.alignment;
+    auto size = memoryRequirements.size;
+
+    assert(size % align == 0);
 
     uint32_t memoryTypeIndex = std::numeric_limits<uint32_t>::max();
 
@@ -59,21 +61,18 @@ auto MemoryManager::alloc(VkMemoryRequirements const& memoryRequirements,
     auto future = taskManager_->strand([&, this]() -> MemoryPage::AllocatedMemory {
         auto& pages = pages_[{ memoryTypeIndex, align }];
 
-        auto mod = size % align;
-        auto alignedSize = mod == 0 ? size : size + align - mod;
-
-        if (auto it =
-              std::find_if(pages.begin(),
-                           pages.end(),
-                           [alignedSize](auto const& p) -> bool { return p.maxAvailableRange() >= alignedSize; });
+        if (auto it = std::find_if(
+              pages.begin(), pages.end(), [size](auto const& p) -> bool { return p.maxAvailableRange() >= size; });
             it != pages.end()) {
 
-            return (*it).alloc(alignedSize);
+            return (*it).alloc(size);
         } else {
             auto const& type = memoryTypes_[memoryTypeIndex];
 
-            pages.emplace_back(
-              *taskManager_, *device_, std::max(type.pageSize, alignedSize), memoryTypeIndex, type.isHostVisible());
+            return pages
+              .emplace_back(
+                *taskManager_, *device_, std::max(type.pageSize, size), memoryTypeIndex, type.isHostVisible())
+              .alloc(size);
         }
     });
 

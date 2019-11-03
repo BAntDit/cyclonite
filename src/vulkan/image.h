@@ -30,7 +30,20 @@ public:
           VkImageType imageType = VK_IMAGE_TYPE_2D,
           VkImageLayout imageInitialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
           VkImageCreateFlags imageCreateFlags = 0,
-          VkMemoryPropertyFlags memoryPropertieFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+          VkMemoryPropertyFlags memoryPropertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    Image(Device& device,
+          uint32_t width,
+          uint32_t height,
+          uint32_t depth,
+          uint32_t countMipLevels = 1,
+          uint32_t arrayLayerCount = 1,
+          VkFormat format = VK_FORMAT_R8G8B8A8_UINT,
+          VkImageTiling tiling = VK_IMAGE_TILING_LINEAR,
+          VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
+          VkImageType imageType = VK_IMAGE_TYPE_2D);
+
+    [[nodiscard]] auto handle() const -> VkImage { return static_cast<VkImage>(vkImage_); }
 
 private:
     MemoryPage::AllocatedMemory allocatedMemory_;
