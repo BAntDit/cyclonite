@@ -23,9 +23,19 @@ Image::Image(Device& device,
              VkImageLayout imageInitialLayout,
              VkImageCreateFlags imageCreateFlags,
              VkMemoryPropertyFlags memoryPropertyFlags)
-  : allocatedMemory_{}
+  : width_{ width }
+  , height_{ height }
+  , depth_{ depth }
+  , mipLevelCount_{ countMipLevels }
+  , arrayLayerCount_{ arrayLayerCount }
+  , format_{ format }
+  , imageType_{ imageType }
+  , tiling_{ tiling }
+  , allocatedMemory_{}
   , vkImage_{ device.handle(), vkDestroyImage }
 {
+    // TODO:: validate parameters
+
     VkImageCreateInfo imageCreateInfo = {};
 
     internal::fillImageCreationInfo(imageCreateInfo,
