@@ -49,6 +49,7 @@ set(PRIVATE_HEADERS
     src/vulkan/internal/deviceCreationFunctions.h
     src/vulkan/internal/fillBufferCreationInfo.h
     src/vulkan/internal/fillImageCreationInfo.h
+    src/vulkan/internal/imageHelpers.h
     src/loaders/glTF/internal/testVersion.h
     src/loaders/glTF/internal/getOptional.h
     src/loaders/glTF/internal/base64Decode.h
@@ -73,7 +74,7 @@ set(SOURCES
     src/multithreading/taskManager.cpp
     src/loaders/glTF/loader.cpp
     src/loaders/glTF/internal/base64Decode.cpp
-)
+        src/vulkan/internal/imageHelpers.h)
 
 add_library(${PROJECT_NAME} SHARED
     ${PUBLIC_HEADERS}

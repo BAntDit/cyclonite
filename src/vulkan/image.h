@@ -49,6 +49,16 @@ public:
           VkFormat format = VK_FORMAT_R8G8B8A8_UINT,
           VkImageTiling tiling = VK_IMAGE_TILING_LINEAR);
 
+    Image(Image const&) = delete;
+
+    Image(Image&&) = default;
+
+    ~Image() = default;
+
+    auto operator=(Image const&) -> Image& = delete;
+
+    auto operator=(Image &&) -> Image& = default;
+
     [[nodiscard]] auto handle() const -> VkImage { return static_cast<VkImage>(vkImage_); }
 
     [[nodiscard]] auto allocatedMemory() const -> MemoryPage::AllocatedMemory const& { return allocatedMemory_; }
@@ -85,6 +95,8 @@ private:
     MemoryPage::AllocatedMemory allocatedMemory_;
     Handle<VkImage> vkImage_;
 };
+
+using ImagePtr = std::shared_ptr<Image>;
 }
 
 #endif // CYCLONITE_IMAGE_H
