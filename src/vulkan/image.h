@@ -47,8 +47,7 @@ public:
           uint32_t width,
           uint32_t height,
           VkFormat format = VK_FORMAT_R8G8B8A8_UINT,
-          VkImageTiling tiling = VK_IMAGE_TILING_LINEAR,
-          VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
+          VkImageTiling tiling = VK_IMAGE_TILING_LINEAR);
 
     [[nodiscard]] auto handle() const -> VkImage { return static_cast<VkImage>(vkImage_); }
 

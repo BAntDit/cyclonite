@@ -97,4 +97,19 @@ Image::Image(cyclonite::vulkan::Device& device,
            0,
            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT }
 {}
+
+Image::Image(VkImage vkImage, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling)
+  : width_{ width }
+  , height_{ height }
+  , depth_{ 1 }
+  , mipLevelCount_{ 1 }
+  , arrayLayerCount_{ 1 }
+  , format_{ format }
+  , imageType_{ VK_IMAGE_TYPE_2D }
+  , tiling_{ VK_IMAGE_TILING_OPTIMAL }
+  , allocatedMemory_{}
+  , vkImage_{}
+{
+    *vkImage_._replace() = vkImage;
+}
 }
