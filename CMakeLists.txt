@@ -69,12 +69,14 @@ set(SOURCES
     src/vulkan/memoryPage.cpp
     src/vulkan/memoryManager.cpp
     src/vulkan/image.cpp
+    src/vulkan/imageView.cpp
     src/vulkan/buffer.cpp
     src/vulkan/staging.cpp
     src/multithreading/taskManager.cpp
     src/loaders/glTF/loader.cpp
     src/loaders/glTF/internal/base64Decode.cpp
-        src/vulkan/internal/imageHelpers.h)
+    src/vulkan/internal/imageHelpers.h
+)
 
 add_library(${PROJECT_NAME} SHARED
     ${PUBLIC_HEADERS}

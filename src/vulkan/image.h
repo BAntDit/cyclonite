@@ -75,9 +75,11 @@ public:
 
     [[nodiscard]] auto format() const -> VkFormat { return format_; }
 
-    [[nodiscard]] auto imageType() const -> VkImageType { return imageType_; }
+    [[nodiscard]] auto type() const -> VkImageType { return imageType_; }
 
     [[nodiscard]] auto tiling() const -> VkImageTiling { return tiling_; }
+
+    [[nodiscard]] auto createFlags() const -> VkImageCreateFlags { return imageCreateFlags_ }
 
 private:
     uint32_t width_;
@@ -91,6 +93,8 @@ private:
     VkImageType imageType_;
 
     VkImageTiling tiling_;
+
+    VkImageCreateFlags imageCreateFlags_;
 
     MemoryPage::AllocatedMemory allocatedMemory_;
     Handle<VkImage> vkImage_;

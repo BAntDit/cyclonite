@@ -31,6 +31,7 @@ Image::Image(Device& device,
   , format_{ format }
   , imageType_{ imageType }
   , tiling_{ tiling }
+  , imageCreateFlags_{ imageCreateFlags }
   , allocatedMemory_{}
   , vkImage_{ device.handle(), vkDestroyImage }
 {
