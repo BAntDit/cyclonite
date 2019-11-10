@@ -84,7 +84,7 @@ ImageView::ImageView(Device const& device,
                      VkSampleCountFlagBits sampleCount,
                      VkImageUsageFlags imageUsageFlags,
                      VkImageCreateFlags imageCreateFlags,
-                     VkMemoryPropertyFlags memoryPropertieFlags)
+                     VkMemoryPropertyFlags memoryPropertiesFlags)
   : imagePtr_{ std::make_shared<Image>(device,
                                        ownerQueueFamilyIndices,
                                        width,
@@ -99,7 +99,7 @@ ImageView::ImageView(Device const& device,
                                        internal::viewTypeToImageType(imageViewType),
                                        VK_IMAGE_LAYOUT_UNDEFINED,
                                        imageCreateFlags,
-                                       memoryPropertieFlags) }
+                                       memoryPropertiesFlags) }
   , vkImageView_{ device.handle(), vkDestroyImageView }
   , vkImageViewType_{ imageViewType }
 {

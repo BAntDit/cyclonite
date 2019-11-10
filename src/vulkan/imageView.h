@@ -39,7 +39,7 @@ public:
               VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT,
               VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
               VkImageCreateFlags imageCreateFlags = 0,
-              VkMemoryPropertyFlags memoryPropertieFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+              VkMemoryPropertyFlags memoryPropertiesFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     [[nodiscard]] auto handle() const -> VkImageView { return static_cast<VkImageView>(vkImageView_); }
 
