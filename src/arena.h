@@ -6,9 +6,9 @@
 #define CYCLONITE_ARENA_H
 
 #include <algorithm>
+#include <cassert>
 #include <cstddef>
 #include <deque>
-#include <cassert>
 
 namespace cyclonite {
 template<typename MemoryPage>

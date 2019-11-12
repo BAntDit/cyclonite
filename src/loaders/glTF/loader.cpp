@@ -67,9 +67,9 @@ void Loader::_readBuffers(json& input)
 
         buffers_[i].resize(byteLength);
 
-        auto* bufferPtr = reinterpret_cast<char*>(buffers_[i].data());
+        // auto* bufferPtr = reinterpret_cast<char*>(buffers_[i].data());
 
-        futures[i] = taskManager_->submit([&, byteLength]() -> void {
+        /* futures[i] = taskManager_->submit([&, byteLength]() -> void {
             auto bufferUri = internal::getOptional<std::string>(jsonBuffer, u8"uri", u8"");
 
             if (bufferUri.empty()) {
@@ -98,7 +98,7 @@ void Loader::_readBuffers(json& input)
 
                 std::copy_n(base64Decode(base64Data).begin(), byteLength, buffers_[i].begin());
             }
-        });
+        }); */
     }
 
     for (auto&& future : futures) {

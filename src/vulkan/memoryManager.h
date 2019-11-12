@@ -22,7 +22,8 @@ public:
 private:
     struct MemoryType
     {
-        MemoryType() {
+        MemoryType()
+        {
             std::terminate(); // attempt to allocate from unexpected memory type
         }
 
