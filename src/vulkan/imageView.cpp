@@ -7,7 +7,7 @@
 #include "internal/imageHelpers.h"
 
 namespace cyclonite::vulkan {
-ImageView::ImageView(Device const& device,
+ImageView::ImageView(Device& device,
                      ImagePtr const& image,
                      VkImageViewType imageViewType,
                      VkImageAspectFlags imageAspectFlags,
@@ -70,7 +70,7 @@ ImageView::ImageView(Device const& device,
     }
 }
 
-ImageView::ImageView(Device const& device,
+ImageView::ImageView(Device& device,
                      cyclonite::vulkan::ImageView::owner_queue_family_indices_t ownerQueueFamilyIndices,
                      uint32_t width,
                      uint32_t height,

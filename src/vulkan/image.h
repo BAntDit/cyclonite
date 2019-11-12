@@ -79,7 +79,7 @@ public:
 
     [[nodiscard]] auto tiling() const -> VkImageTiling { return tiling_; }
 
-    [[nodiscard]] auto createFlags() const -> VkImageCreateFlags { return imageCreateFlags_ }
+    [[nodiscard]] auto createFlags() const -> VkImageCreateFlags { return imageCreateFlags_; }
 
 private:
     uint32_t width_;

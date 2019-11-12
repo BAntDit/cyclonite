@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <deque>
+#include <cassert>
 
 namespace cyclonite {
 template<typename MemoryPage>
@@ -88,7 +89,7 @@ auto Arena<MemoryPage>::alloc(size_t size) -> Arena<MemoryPage>::AllocatedMemory
 {
 
     auto it = std::lower_bound(freeRanges_.begin(), freeRanges_.end(), size, [](auto const& lhs, size_t rhs) -> bool {
-        return (*lhs).second < rhs;
+        return lhs.second < rhs;
     });
 
     assert(it != freeRanges_.end());
@@ -104,7 +105,7 @@ auto Arena<MemoryPage>::alloc(size_t size) -> Arena<MemoryPage>::AllocatedMemory
         if (auto newIt = std::upper_bound(freeRanges_.begin(),
                                           freeRanges_.end(),
                                           newSize,
-                                          [](size_t lhs, auto const& rhs) -> bool { return lhs < (*rhs).second; });
+                                          [](size_t lhs, auto const& rhs) -> bool { return lhs < rhs.second; });
             newIt != freeRanges_.end()) {
             freeRanges_.emplace(newIt, newOffset, newSize);
         } else {
@@ -125,7 +126,7 @@ void Arena<MemoryPage>::free(Arena<MemoryPage>::AllocatedMemory const& allocated
       freeRanges_.begin(), freeRanges_.end(), [=](auto const& p) -> bool { return p.first + p.second == offset; });
 
     auto nextIt = std::find_if(
-      freeRanges_.begin(), freeRanges_.end(), [=](auto const& p) -> bool { return offset + size = p.first; });
+      freeRanges_.begin(), freeRanges_.end(), [=](auto const& p) -> bool { return offset + size == p.first; });
 
     auto prevIndex = std::distance(freeRanges_.begin(), prevIt);
     auto nextIndex = std::distance(freeRanges_.begin(), nextIt);
@@ -160,7 +161,7 @@ void Arena<MemoryPage>::free(Arena<MemoryPage>::AllocatedMemory const& allocated
     if (auto newIt = std::upper_bound(freeRanges_.begin(),
                                       freeRanges_.end(),
                                       newSize,
-                                      [](size_t lhs, auto const& rhs) -> bool { return lhs < (*rhs).second; });
+                                      [](size_t lhs, auto const& rhs) -> bool { return lhs < rhs.second; });
         newIt != freeRanges_.end()) {
         freeRanges_.emplace(newIt, newOffset, newSize);
     } else {

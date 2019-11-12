@@ -16,7 +16,7 @@ public:
     using owner_queue_family_indices_t =
       std::variant<std::array<uint32_t, 1>, std::array<uint32_t, 2>, std::array<uint32_t, 3>>;
 
-    ImageView(Device const& device,
+    ImageView(Device& device,
               ImagePtr const& image,
               VkImageViewType imageViewType = VK_IMAGE_VIEW_TYPE_2D,
               VkImageAspectFlags imageAspectFlags = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -25,7 +25,7 @@ public:
               uint32_t baseArrayLayer = 0,
               uint32_t layerCount = 1);
 
-    ImageView(Device const& device,
+    ImageView(Device& device,
               owner_queue_family_indices_t ownerQueueFamilyIndices,
               uint32_t width,
               uint32_t height,

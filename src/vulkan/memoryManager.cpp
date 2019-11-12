@@ -71,7 +71,7 @@ auto MemoryManager::alloc(VkMemoryRequirements const& memoryRequirements, VkMemo
 
             return pages
               .emplace_back(
-                *taskManager_, *device_, std::max(type.pageSize, size), memoryTypeIndex, type.isHostVisible())
+                *taskManager_, *device_, std::max(type.pageSize, size), memoryTypeIndex, type.isHostVisible(), MemoryPage::private_tag{})
               .alloc(size);
         }
     });

@@ -27,8 +27,19 @@ class MemoryManager;
 
 class MemoryPage : public Arena<MemoryPage>
 {
+private:
+    struct private_tag
+    {};
+
 public:
     friend class MemoryManager;
+
+    MemoryPage(multithreading::TaskManager const& taskManager,
+               Device const& device,
+               VkDeviceSize pageSize,
+               uint32_t memoryTypeIndex,
+               bool hostVisible,
+               private_tag);
 
     MemoryPage(MemoryPage const&) = delete;
 
@@ -45,12 +56,6 @@ public:
     [[nodiscard]] auto ptr() const -> void* { return ptr_; }
 
 private:
-    MemoryPage(multithreading::TaskManager const& taskManager,
-               Device const& device,
-               VkDeviceSize pageSize,
-               uint32_t memoryTypeIndex,
-               bool hostVisible);
-
     multithreading::TaskManager const* taskManager_;
     VkDevice vkDevice_;
     bool hostVisible_;

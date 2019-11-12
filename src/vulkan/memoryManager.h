@@ -22,6 +22,10 @@ public:
 private:
     struct MemoryType
     {
+        MemoryType() {
+            std::terminate(); // attempt to allocate from unexpected memory type
+        }
+
         MemoryType(VkMemoryPropertyFlags flags, VkDeviceSize _pageSize)
           : propertyFlags{ flags }
           , pageSize{ _pageSize } {}

@@ -12,7 +12,8 @@ MemoryPage::MemoryPage(multithreading::TaskManager const& taskManager,
                        Device const& device,
                        VkDeviceSize pageSize,
                        uint32_t memoryTypeIndex,
-                       bool hostVisible)
+                       bool hostVisible,
+                       private_tag)
   : Arena<MemoryPage>{ static_cast<size_t>(pageSize) }
   , taskManager_{ &taskManager }
   , vkDevice_{ device.handle() }
