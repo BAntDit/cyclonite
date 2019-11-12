@@ -5,6 +5,7 @@
 #ifndef CYCLONITE_VULKANRENDERER_H
 #define CYCLONITE_VULKANRENDERER_H
 
+#include "renderPass.h"
 #include "vulkan/device.h"
 #include <array>
 
@@ -16,7 +17,7 @@ public:
 
     ~VulkanRenderer() = default;
 
-    void renderOneFrame();
+    void renderOneFrame(RenderPass const& renderPass);
 
 private:
     std::array<vulkan::Handle<VkFence>, 2> frameSyncFences_; // for a while dummy sync

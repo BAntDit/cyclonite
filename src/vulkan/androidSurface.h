@@ -6,14 +6,12 @@
 #define CYCLONITE_ANDROIDSURFACE_H
 
 #include "platform.h"
-
-#if defined(VK_USE_PLATFORM_ANDROID_KHR)
-
 #include "handle.h"
 
 class AndroidSurface
 {
 public:
+#if defined(VK_USE_PLATFORM_ANDROID_KHR)
     AndroidSurface(VkInstance vkInstance, ANativeWindow* window);
 
     AndroidSurface(AndroidSurface const&) = delete;
@@ -27,9 +25,13 @@ public:
     ~AndroidSurface() = default;
 
     [[nodiscard]] auto handle() const -> VkSurfaceKHR { return static_cast<VkSurfaceKHR>(vkSurfaceKHR_); }
-
+#else
+    [[nodiscard]] auto handle() const -> VkSurfaceKHR { return VK_NULL_HANDLE; }
+#endif
 private:
+#if defined(VK_USE_PLATFORM_ANDROID_KHR)
     Handle<VkSurfaceKHR> vkSurfaceKHR_;
+#endif
 };
 
 #endif

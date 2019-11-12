@@ -81,7 +81,6 @@ public:
     {
         if (handle_ != VK_NULL_HANDLE) {
             deleter_(handle_, nullptr);
-
             handle_ = VK_NULL_HANDLE;
         }
     }
@@ -94,7 +93,7 @@ public:
 
 private:
     T handle_;
-    std::function<void(T)> deleter_;
+    std::function<void(T, VkAllocationCallbacks const*)> deleter_;
 };
 }
 
