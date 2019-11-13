@@ -161,9 +161,10 @@ void Root<Config<PlatformConfig, EcsConfig>>::init(Options const& options)
 
         std::vector<const char*> requiredExtensions = {};
 
-        if (!surfaces_.empty()) {
-            requiredExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-        }
+#if defined(VK_USE_PLATFORM_XLIB_KHR) || defined(VK_USE_PLATFORM_WAYLAND_KHR) || (VK_USE_PLATFORM_WIN32_KHR) ||        \
+  defined(VK_USE_PLATFORM_ANDROID_KHR)
+        requiredExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+#endif
 
         for (auto const& physicalDevice : physicalDeviceList) {
             VkPhysicalDeviceProperties properties = {};

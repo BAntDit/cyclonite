@@ -8,11 +8,10 @@
 #include "platform.h"
 
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
-
-#include "handle.h"
+#include "baseSurface.h"
 
 namespace cyclonite::vulkan {
-class XlibSurface
+class XlibSurface : public BaseSurface
 {
 public:
     XlibSurface(VkInstance vkInstance, Display* display, Window const& window);
@@ -26,14 +25,8 @@ public:
     auto operator=(XlibSurface &&) -> XlibSurface& = default;
 
     ~XlibSurface() = default;
-
-    [[nodiscard]] auto handle() const -> VkSurfaceKHR { return static_cast<VkSurfaceKHR>(vkSurfaceKHR_); }
-
-private:
-    Handle<VkSurfaceKHR> vkSurfaceKHR_;
 };
 }
-
 #endif
 
 #endif // CYCLONITE_XLIBSURFACE_H

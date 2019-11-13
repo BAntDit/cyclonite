@@ -23,6 +23,7 @@ set(PUBLIC_HEADERS
     src/core/primitiveType.h
     src/core/vertexAttribute.h
     src/core/geometry.h
+    src/surfaceManager.h
     src/renderTarget.h
     src/renderPass.h
     src/vulkanRenderer.h
@@ -31,6 +32,7 @@ set(PUBLIC_HEADERS
     src/vulkan/handle.h
     src/vulkan/instance.h
     src/vulkan/device.h
+    src/vulkan/baseSurface.h
     src/vulkan/xlibSurface.h
     src/vulkan/win32Surface.h
     src/vulkan/wlSurface.h
@@ -62,6 +64,7 @@ set(SOURCES
     src/sdl/sdlWindow.cpp
     src/vulkan/instance.cpp
     src/vulkan/device.cpp
+    src/vulkan/baseSurface.cpp
     src/vulkan/xlibSurface.cpp
     src/vulkan/win32Surface.cpp
     src/vulkan/wlSurface.cpp
@@ -75,7 +78,6 @@ set(SOURCES
     src/multithreading/taskManager.cpp
     src/loaders/glTF/loader.cpp
     src/loaders/glTF/internal/base64Decode.cpp
-    src/vulkan/internal/imageHelpers.h
 )
 
 add_library(${PROJECT_NAME} SHARED

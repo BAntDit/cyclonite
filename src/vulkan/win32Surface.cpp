@@ -8,7 +8,7 @@
 
 namespace cyclonite::vulkan {
 Win32Surface::Win32Surface(VkInstance vkInstance, HINSTANCE hinstance, HWND hwnd)
-  : vkSurfaceKHR_{ vkInstance, vkDestroySurfaceKHR }
+  : BaseSurface{ vkInstance }
 {
     VkWin32SurfaceCreateInfoKHR vkWin32SurfaceCreateInfoKHR = {};
 

@@ -8,11 +8,10 @@
 #include "platform.h"
 
 #if defined(VK_USE_PLATFORM_WAYLAND_KHR)
-
-#include "handle.h"
+#include "baseSurface.h"
 
 namespace cyclonite::vulkan {
-class WlSurface
+class WlSurface : public BaseSurface
 {
 public:
     WlSurface(VkInstance vkInstance, wl_display* display, wl_surface* surface);
@@ -26,14 +25,8 @@ public:
     auto operator=(WlSurface &&) -> WlSurface& = default;
 
     ~WlSurface() = default;
-
-    [[nodiscard]] auto handle() const -> VkSurfaceKHR { return static_cast<VkSurfaceKHR>(vkSurfaceKHR_); }
-
-private:
-    Handle<VkSurfaceKHR> vkSurfaceKHR_;
 };
 }
-
 #endif
 
 #endif // CYCLONITE_WLSURFACE_H

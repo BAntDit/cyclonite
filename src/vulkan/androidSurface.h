@@ -8,8 +8,7 @@
 #include "platform.h"
 
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
-
-#include "handle.h"
+#include "baseSurface.h"
 
 class AndroidSurface
 {
@@ -25,11 +24,6 @@ public:
     auto operator=(AndroidSurface &&) -> AndroidSurface& = default;
 
     ~AndroidSurface() = default;
-
-    [[nodiscard]] auto handle() const -> VkSurfaceKHR { return static_cast<VkSurfaceKHR>(vkSurfaceKHR_); }
-
-private:
-    Handle<VkSurfaceKHR> vkSurfaceKHR_;
 };
 
 #endif

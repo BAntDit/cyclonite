@@ -8,8 +8,7 @@
 #include "platform.h"
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
-
-#include "handle.h"
+#include "baseSurface.h"
 
 namespace cyclonite::vulkan {
 class Win32Surface
@@ -26,11 +25,6 @@ public:
     auto operator=(Win32Surface &&) -> Win32Surface& = default;
 
     ~Win32Surface() = default;
-
-    [[nodiscard]] auto handle() const -> VkSurfaceKHR { return static_cast<VkSurfaceKHR>(vkSurfaceKHR_); }
-
-private:
-    Handle<VkSurfaceKHR> vkSurfaceKHR_;
 };
 }
 

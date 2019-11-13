@@ -8,7 +8,7 @@
 
 namespace cyclonite::vulkan {
 AndroidSurface::AndroidSurface(VkInstance vkInstance, ANativeWindow* window)
-  : vkSurfaceKHR_{ vkInstance, vkDestroySurfaceKHR }
+  : BaseSurface{ vkInstance }
 {
     VkAndroidSurfaceCreateInfoKHR vkAndroidSurfaceCreateInfoKHR = {};
 

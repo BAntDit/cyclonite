@@ -7,7 +7,7 @@
 #if defined(VK_USE_PLATFORM_WAYLAND_KHR)
 namespace cyclonite::vulkan {
 WlSurface::WlSurface(VkInstance vkInstance, wl_display* display, wl_surface* surface)
-  : vkSurfaceKHR_{ vkInstance, vkDestroySurfaceKHR }
+  : BaseSurface{ vkInstance }
 {
     VkWaylandSurfaceCreateInfoKHR vkWaylandSurfaceCreateInfoKHR = {};
 
