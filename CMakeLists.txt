@@ -37,6 +37,7 @@ set(PUBLIC_HEADERS
     src/vulkan/win32Surface.h
     src/vulkan/wlSurface.h
     src/vulkan/androidSurface.h
+    src/vulkan/platformSurface.h
     src/vulkan/memoryPage.h
     src/vulkan/memoryManager.h
     src/vulkan/image.h
@@ -59,6 +60,7 @@ set(PRIVATE_HEADERS
 
 set(SOURCES
     src/options.cpp
+    src/surface.cpp
     src/vulkanRenderer.cpp
     src/sdl/sdlSupport.cpp
     src/sdl/sdlWindow.cpp

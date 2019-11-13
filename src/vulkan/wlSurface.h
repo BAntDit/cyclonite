@@ -26,6 +26,10 @@ public:
 
     ~WlSurface() = default;
 };
+
+using platform_surface_t = WlSurface;
+
+using platform_surface_argument_type_list_t = easy_mp::type_list<wl_display*, wl_surface*>;
 }
 #endif
 

@@ -9,8 +9,8 @@
 
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
 #include "baseSurface.h"
-
-class AndroidSurface
+namespace cyclonite::vulkan {
+class AndroidSurface : public BaseSurface
 {
 public:
     AndroidSurface(VkInstance vkInstance, ANativeWindow* window);
@@ -26,6 +26,10 @@ public:
     ~AndroidSurface() = default;
 };
 
+using platform_surface_t = Win32Surface;
+
+using platform_surface_argument_type_list_t = easy_mp::type_list<ANativeWindow*>;
+}
 #endif
 
 #endif // CYCLONITE_ANDROIDSURFACE_H

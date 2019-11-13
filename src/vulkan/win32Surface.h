@@ -11,7 +11,7 @@
 #include "baseSurface.h"
 
 namespace cyclonite::vulkan {
-class Win32Surface
+class Win32Surface : public BaseSurface
 {
 public:
     Win32Surface(VkInstance vkInstance, HINSTANCE hinstance, HWND hwnd);
@@ -26,6 +26,10 @@ public:
 
     ~Win32Surface() = default;
 };
+
+using platform_surface_t = Win32Surface;
+
+using platform_surface_argument_type_list_t = easy_mp::type_list<HINSTANCE, HWND>;
 }
 
 #endif

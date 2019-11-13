@@ -7,21 +7,19 @@
 
 #include "options.h"
 #include "sdl/sdlSupport.h"
-#include <easy-mp/type_list.h>
-#include <vulkan/vulkan.h>
+#include "vulkan/platformSurface.h"
 
 namespace cyclonite {
-// Xlib, HWnd, Android or some other platform surfaces
-template<typename xPlatformSurface>
 class Surface
 {
 public:
-    using surface_type_t = xPlatformSurface;
+    struct Capabilities {
+        uint32_t minSwapChainImageCount = 0;
+        uint32_t maxSwapChainImageCount = 0;
+    };
 
-    template<typename... SurfaceArgs>
-    Surface(VkInstance vkInstance,
-            Options::WindowProperties const& windowProperties,
-            easy_mp::type_list<SurfaceArgs...>);
+public:
+    Surface(VkInstance vkInstance, VkPhysicalDevice physicalDevice, Options::WindowProperties const& windowProperties);
 
     Surface(Surface const&) = delete;
 
@@ -33,28 +31,23 @@ public:
 
     auto operator=(Surface &&) -> Surface& = default;
 
-    [[nodiscard]] auto handle() const -> VkSurfaceKHR { return xSurface_.template handle(); }
+    [[nodiscard]] auto handle() const -> VkSurfaceKHR { return platformSurface_.handle(); }
+    
+    [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
 
 private:
     sdl::SDLWindow window_;
-    surface_type_t xSurface_;
+    vulkan::platform_surface_t platformSurface_;
+    Capabilities capabilities_;
 };
 
-template<typename xPlatformSurface>
 template<typename... SurfaceArgs>
-Surface<xPlatformSurface>::Surface(VkInstance vkInstance,
-                                   const cyclonite::Options::WindowProperties& windowProperties,
-                                   easy_mp::type_list<SurfaceArgs...>)
-  : window_{ windowProperties.title,
-             windowProperties.left,
-             windowProperties.top,
-             windowProperties.width,
-             windowProperties.height,
-             static_cast<uint32_t>(windowProperties.fullscreen
-                                     ? SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS
-                                     : SDL_WINDOW_SHOWN) }
-  , xSurface_{ vkInstance, window_.get<SurfaceArgs>()... }
-{}
+static vulkan::platform_surface_t _createSurface(VkInstance vkInstance,
+                                                 sdl::SDLWindow const& window,
+                                                 easy_mp::type_list<SurfaceArgs...>)
+{
+    return vulkan::platform_surface_t{ vkInstance, window.get<SurfaceArgs>()... };
+}
 }
 
 #endif // CYCLONITE_SURFACE_H
