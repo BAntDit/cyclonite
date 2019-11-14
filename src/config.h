@@ -26,28 +26,15 @@ struct EcsConfig<easy_mp::type_list<Components...>,
     using scene_manager_t = enttx::SystemManagerConfig<updateStageCount, entity_manager_t, scene_system_list_t>;
 };
 
-template<typename SurfaceType>
-struct PlatformConfig
-{
-    using surface_type_t = SurfaceType;
-};
-
-template<typename PlatformConfig, typename EcsConfig>
+template<typename EcsConfig>
 struct Config;
 
-template<typename SurfaceType,
-         typename... Components,
-         typename... Storages,
-         typename... Systems,
-         size_t updateStageCount>
-struct Config<PlatformConfig<SurfaceType>,
-              EcsConfig<easy_mp::type_list<Components...>,
+template<typename... Components, typename... Storages, typename... Systems, size_t updateStageCount>
+struct Config<EcsConfig<easy_mp::type_list<Components...>,
                         easy_mp::type_list<Storages...>,
                         easy_mp::type_list<Systems...>,
                         updateStageCount>>
 {
-    using platform_config_t = PlatformConfig<SurfaceType>;
-
     using ecs_config_t = EcsConfig<easy_mp::type_list<Components...>,
                                    easy_mp::type_list<Storages...>,
                                    easy_mp::type_list<Systems...>,

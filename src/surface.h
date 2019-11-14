@@ -13,7 +13,8 @@ namespace cyclonite {
 class Surface
 {
 public:
-    struct Capabilities {
+    struct Capabilities
+    {
         uint32_t minSwapChainImageCount = 0;
         uint32_t maxSwapChainImageCount = 0;
     };
@@ -32,7 +33,7 @@ public:
     auto operator=(Surface &&) -> Surface& = default;
 
     [[nodiscard]] auto handle() const -> VkSurfaceKHR { return platformSurface_.handle(); }
-    
+
     [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
 
 private:

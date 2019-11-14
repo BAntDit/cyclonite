@@ -23,7 +23,6 @@ set(PUBLIC_HEADERS
     src/core/primitiveType.h
     src/core/vertexAttribute.h
     src/core/geometry.h
-    src/surfaceManager.h
     src/renderTarget.h
     src/renderPass.h
     src/vulkanRenderer.h

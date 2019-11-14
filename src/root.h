@@ -20,13 +20,11 @@ namespace cyclonite {
 template<typename Config>
 class Root;
 
-template<typename PlatformConfig, typename EcsConfig>
-class Root<Config<PlatformConfig, EcsConfig>>
+template<typename EcsConfig>
+class Root<Config<EcsConfig>>
 {
 public:
-    using config_t = Config<PlatformConfig, EcsConfig>;
-
-    using window_surface_t = Surface<typename PlatformConfig::surface_type_t>;
+    using config_t = Config<EcsConfig>;
 
     Root();
 
@@ -46,12 +44,12 @@ private:
     std::shared_ptr<Options> options_;
     sdl::SDLSupport sdlSupport_;
     std::unique_ptr<vulkan::Instance> vulkanInstance_;
-    std::vector<window_surface_t> surfaces_;
+    std::vector<Surface> surfaces_;
     std::unique_ptr<vulkan::Device> vulkanDevice_;
 };
 
-template<typename PlatformConfig, typename EcsConfig>
-Root<Config<PlatformConfig, EcsConfig>>::Root()
+template<typename EcsConfig>
+Root<Config<EcsConfig>>::Root()
   : options_{ nullptr }
   , sdlSupport_{}
   , vulkanInstance_{ nullptr }
@@ -59,8 +57,8 @@ Root<Config<PlatformConfig, EcsConfig>>::Root()
   , vulkanDevice_{ nullptr }
 {}
 
-template<typename PlatformConfig, typename EcsConfig>
-void Root<Config<PlatformConfig, EcsConfig>>::init(Options const& options)
+template<typename EcsConfig>
+void Root<Config<EcsConfig>>::init(Options const& options)
 {
     options_ = std::make_shared<Options>(options);
 
@@ -96,20 +94,6 @@ void Root<Config<PlatformConfig, EcsConfig>>::init(Options const& options)
                                          std::array<char const*, 1>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME });
 #endif
 
-    surfaces_.reserve(options_->windows().size());
-
-    for (auto const& window : options_->windows()) {
-#if defined(VK_USE_PLATFORM_XLIB_KHR)
-        surfaces_.emplace_back(vulkanInstance_->handle(), window, easy_mp::type_list<Display*, Window const&>{});
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-        surfaces_.emplace_back(vulkanInstance_->handle(), window, easy_mp::type_list<wl_display*, wl_surface*>{});
-#elif defined(VK_USE_PLATFORM_WIN32_KHR)
-        surfaces_.emplace_back(vulkanInstance_->handle(), window, easy_mp::type_list<HINSTANCE, HWND>{});
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-        surfaces_.emplace_back(vulkanInstance_->handle(), window, easy_mp::type_list<ANativeWindow*>{});
-#endif
-    }
-
     uint32_t physicalDeviceCount = 0;
 
     if (vkEnumeratePhysicalDevices(vulkanInstance_->handle(), &physicalDeviceCount, VK_NULL_HANDLE) != VK_SUCCESS) {
@@ -124,7 +108,7 @@ void Root<Config<PlatformConfig, EcsConfig>>::init(Options const& options)
     }
 
     {
-        auto testSurfacesSupport = [&](VkPhysicalDevice const& physicalDevice, uint32_t queueFamilyIndex) -> bool {
+        /* auto testSurfacesSupport = [&](VkPhysicalDevice const& physicalDevice, uint32_t queueFamilyIndex) -> bool {
             bool presentationSupportResult = true;
 
             for (auto const& surface : surfaces_) {
@@ -157,7 +141,7 @@ void Root<Config<PlatformConfig, EcsConfig>>::init(Options const& options)
             }
 
             return presentationSupportResult;
-        };
+        }; */
 
         std::vector<const char*> requiredExtensions = {};
 
@@ -178,9 +162,9 @@ void Root<Config<PlatformConfig, EcsConfig>>::init(Options const& options)
                     auto vulkanDevice =
                       std::make_unique<vulkan::Device>(physicalDevice, properties, requiredExtensions);
 
-                    if (!testSurfacesSupport(physicalDevice, vulkanDevice_->graphicsQueueFamilyIndex())) {
-                        throw std::runtime_error("device graphics queue does not support surface");
-                    }
+                    // if (!testSurfacesSupport(physicalDevice, vulkanDevice_->graphicsQueueFamilyIndex())) {
+                    //     throw std::runtime_error("device graphics queue does not support surface");
+                    // }
 
                     std::swap(vulkanDevice_, vulkanDevice);
                 } catch (const std::exception& e) {
@@ -194,9 +178,9 @@ void Root<Config<PlatformConfig, EcsConfig>>::init(Options const& options)
                     auto vulkanDevice =
                       std::make_unique<vulkan::Device>(physicalDevice, properties, requiredExtensions);
 
-                    if (!testSurfacesSupport(physicalDevice, vulkanDevice_->graphicsQueueFamilyIndex())) {
-                        throw std::runtime_error("device graphics queue does not support surface");
-                    }
+                    // if (!testSurfacesSupport(physicalDevice, vulkanDevice_->graphicsQueueFamilyIndex())) {
+                    //    throw std::runtime_error("device graphics queue does not support surface");
+                    // }
 
                     std::swap(vulkanDevice_, vulkanDevice);
 
@@ -222,9 +206,9 @@ void Root<Config<PlatformConfig, EcsConfig>>::init(Options const& options)
                     auto vulkanDevice =
                       std::make_unique<vulkan::Device>(physicalDevice, properties, requiredExtensions);
 
-                    if (!testSurfacesSupport(physicalDevice, vulkanDevice_->graphicsQueueFamilyIndex())) {
-                        throw std::runtime_error("device graphics queue does not support surface");
-                    }
+                    // if (!testSurfacesSupport(physicalDevice, vulkanDevice_->graphicsQueueFamilyIndex())) {
+                    //    throw std::runtime_error("device graphics queue does not support surface");
+                    // }
 
                     std::swap(vulkanDevice_, vulkanDevice);
 
@@ -245,6 +229,14 @@ void Root<Config<PlatformConfig, EcsConfig>>::init(Options const& options)
             throw std::runtime_error("there is no suitable physical device on the host");
         }
     } // end vulkan device creation
+
+    surfaces_.reserve(options_->windows().size());
+
+    for (auto const& window : options_->windows()) {
+        surfaces_.emplace_back(vulkanInstance_->handle(), window);
+    }
+
+    // TODO:: surface support test
 
     options_->save();
 }
