@@ -74,7 +74,6 @@ Options::Options(int argc /* = 0*/, const char* argv[] /* = {}*/)
   , deviceName_{ "" }
   , deviceId_{ std::numeric_limits<uint32_t>::max() }
   , windows_{}
-  , displayResolutions_{}
 {
     po::options_description commandLineOptions{ "commandLineOptions" };
 
@@ -159,35 +158,6 @@ Options::Options(int argc /* = 0*/, const char* argv[] /* = {}*/)
         defaultWindow.height = variables["height"].as<uint16_t>();
         defaultWindow.width = variables["width"].as<uint16_t>();
         defaultWindow.fullscreen = variables["full-screen"].as<bool>();
-    }
-}
-
-void Options::adjustWindowResolutions()
-{
-    uint16_t maxWidth = 0;
-    uint16_t maxHeight = 0;
-
-    for (auto&& [width, height] : displayResolutions_) {
-        maxWidth = std::max(maxWidth, width);
-        maxHeight = std::max(maxHeight, height);
-    }
-
-    for (auto& window : windows_) {
-        if (window.fullscreen) {
-            auto it = std::find_if(displayResolutions_.cbegin(), displayResolutions_.cend(), [&](auto& r) -> bool {
-                return window.width == r.first && window.height == r.second;
-            });
-
-            if (it != displayResolutions_.end()) {
-                continue;
-            } else {
-                window.width = displayResolutions_[0].first;
-                window.height = displayResolutions_[0].second;
-            }
-        } else {
-            window.width = std::min(window.width, maxWidth);
-            window.height = std::min(window.height, maxHeight);
-        }
     }
 }
 

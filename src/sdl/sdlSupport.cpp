@@ -18,9 +18,12 @@ SDLSupport::~SDLSupport()
     SDL_Quit();
 }
 
-void SDLSupport::storeDisplayResolutions(Options& options, int displayIndex)
+void SDLSupport::storeDisplayResolutions(std::vector<std::pair<uint16_t, uint16_t>>& displayREsoltions,
+                                         int displayIndex)
 {
     auto countDisplayModes = SDL_GetNumDisplayModes(displayIndex);
+
+    displayREsoltions.reserve(countDisplayModes);
 
     for (auto i = 0; i < countDisplayModes; i++) {
         SDL_DisplayMode displayMode = {};
@@ -30,7 +33,7 @@ void SDLSupport::storeDisplayResolutions(Options& options, int displayIndex)
         auto width = static_cast<uint16_t>(displayMode.w);
         auto height = static_cast<uint16_t>(displayMode.h);
 
-        options.displayResolutions().emplace_back(width, height);
+        displayREsoltions.emplace_back(width, height);
     }
 }
 }

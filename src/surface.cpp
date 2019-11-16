@@ -6,8 +6,8 @@
 
 namespace cyclonite {
 Surface::Surface(VkInstance vkInstance,
-                 VkPhysicalDevice physicalDevice,
-                 const cyclonite::Options::WindowProperties& windowProperties)
+                 vulkan::Device const& device,
+                 cyclonite::Options::WindowProperties const& windowProperties)
   : window_{ windowProperties.title,
              windowProperties.left,
              windowProperties.top,
@@ -19,8 +19,33 @@ Surface::Surface(VkInstance vkInstance,
   , platformSurface_{ _createSurface(vkInstance, window_, vulkan::platform_surface_argument_type_list_t{}) }
   , capabilities_{}
 {
+    VkBool32 presentationSupport = VK_FALSE;
+
+    if (auto result = vkGetPhysicalDeviceSurfaceSupportKHR(
+          device.physicalDevice(), device.graphicsQueueFamilyIndex(), platformSurface_.handle(), &presentationSupport);
+        result != VK_SUCCESS) {
+        if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
+            throw std::runtime_error("device has no enough memory to test surface support");
+        }
+
+        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+            throw std::runtime_error("device has no enough GPU memory to test surface support");
+        }
+
+        if (result == VK_ERROR_SURFACE_LOST_KHR) {
+            throw std::runtime_error("surface lost");
+        }
+
+        std::terminate();
+    }
+
+    if (presentationSupport == VK_FALSE) {
+        throw std::runtime_error("device graphics queue does not support surface");
+    }
+
     VkSurfaceCapabilitiesKHR vkSurfaceCapabilitiesKHR = {};
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, platformSurface_.handle(), &vkSurfaceCapabilitiesKHR);
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+      device.physicalDevice(), platformSurface_.handle(), &vkSurfaceCapabilitiesKHR);
 
     capabilities_.minSwapChainImageCount = vkSurfaceCapabilitiesKHR.minImageCount;
     capabilities_.maxSwapChainImageCount = vkSurfaceCapabilitiesKHR.maxImageCount;

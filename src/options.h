@@ -49,15 +49,6 @@ public:
 
     auto windows() -> std::vector<WindowProperties>& { return windows_; }
 
-    [[nodiscard]] auto displayResolutions() const -> std::vector<std::pair<uint16_t, uint16_t>> const&
-    {
-        return displayResolutions_;
-    }
-
-    auto displayResolutions() -> std::vector<std::pair<uint16_t, uint16_t>>& { return displayResolutions_; }
-
-    void adjustWindowResolutions();
-
     void save();
 
 private:
@@ -65,7 +56,6 @@ private:
     std::string deviceName_;
     uint32_t deviceId_;
     std::vector<WindowProperties> windows_;
-    std::vector<std::pair<uint16_t, uint16_t>> displayResolutions_;
 };
 }
 

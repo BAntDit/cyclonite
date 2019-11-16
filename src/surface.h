@@ -7,6 +7,7 @@
 
 #include "options.h"
 #include "sdl/sdlSupport.h"
+#include "vulkan/device.h"
 #include "vulkan/platformSurface.h"
 
 namespace cyclonite {
@@ -20,7 +21,7 @@ public:
     };
 
 public:
-    Surface(VkInstance vkInstance, VkPhysicalDevice physicalDevice, Options::WindowProperties const& windowProperties);
+    Surface(VkInstance vkInstance, vulkan::Device const& device, Options::WindowProperties const& windowProperties);
 
     Surface(Surface const&) = delete;
 
