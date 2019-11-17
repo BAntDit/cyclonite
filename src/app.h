@@ -16,11 +16,9 @@ template<class Application>
 class BaseApp
 {
 public:
-    using platform_config_t = typename DefaultConfigs::platform_config_t;
-
     using ecs_config_t = typename DefaultConfigs::ecs_config_t;
 
-    using config_t = Config<platform_config_t, ecs_config_t>;
+    using config_t = Config<ecs_config_t>;
 
     auto init(Options const& options) -> Application&;
 
