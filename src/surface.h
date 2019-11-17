@@ -9,17 +9,11 @@
 #include "sdl/sdlSupport.h"
 #include "vulkan/device.h"
 #include "vulkan/platformSurface.h"
+#include <array>
 
 namespace cyclonite {
 class Surface
 {
-public:
-    struct Capabilities
-    {
-        uint32_t minSwapChainImageCount = 0;
-        uint32_t maxSwapChainImageCount = 0;
-    };
-
 public:
     Surface(VkInstance vkInstance, vulkan::Device const& device, Options::WindowProperties const& windowProperties);
 
@@ -35,18 +29,15 @@ public:
 
     [[nodiscard]] auto handle() const -> VkSurfaceKHR { return platformSurface_.handle(); }
 
-    [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
-
 private:
     sdl::SDLWindow window_;
     vulkan::platform_surface_t platformSurface_;
-    Capabilities capabilities_;
+    vulkan::Handle<VkSwapchainKHR> vkSwapchain_;
 };
 
 template<typename... SurfaceArgs>
-static vulkan::platform_surface_t _createSurface(VkInstance vkInstance,
-                                                 sdl::SDLWindow const& window,
-                                                 easy_mp::type_list<SurfaceArgs...>)
+static auto _createSurface(VkInstance vkInstance, sdl::SDLWindow const& window, easy_mp::type_list<SurfaceArgs...>)
+  -> vulkan::platform_surface_t
 {
     return vulkan::platform_surface_t{ vkInstance, window.get<SurfaceArgs>()... };
 }
