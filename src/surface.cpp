@@ -117,7 +117,31 @@ Surface::Surface(VkInstance vkInstance,
 
     if (auto result = vkCreateSwapchainKHR(device.handle(), &swapchainCreateInfoKHR, nullptr, &vkSwapchain_);
         result != VK_SUCCESS) {
-        // TODO:: handle error
+        if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
+            throw std::runtime_error("not enough RAM memory to create swap chain");
+        }
+
+        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+            throw std::runtime_error("not enough GPU memory to create swap chain");
+        }
+
+        if (result == VK_ERROR_DEVICE_LOST) {
+            throw std::runtime_error("device lost on attempt to create swap chain");
+        }
+
+        if (result == VK_ERROR_SURFACE_LOST_KHR) {
+            throw std::runtime_error("surface lost");
+        }
+
+        if (result == VK_ERROR_NATIVE_WINDOW_IN_USE_KHR) {
+            throw std::runtime_error("could not create swap chain - native window is in use");
+        }
+
+        if (result == VK_ERROR_INITIALIZATION_FAILED) {
+            throw std::runtime_error("swap chain initialization failed");
+        }
+
+        std::terminate();
     }
 
     // TODO:: get swapchain images
