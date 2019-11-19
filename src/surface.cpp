@@ -48,38 +48,16 @@ Surface::Surface(VkInstance vkInstance,
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
       device.physicalDevice(), platformSurface_.handle(), &vkSurfaceCapabilitiesKHR);
 
-    std::vector<VkSurfaceFormatKHR> availableFormats = {};
-
-    uint32_t formatCount = 0;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device.physicalDevice(), platformSurface_.handle(), &formatCount, nullptr);
-
-    assert(formatCount > 0);
-
-    availableFormats.reserve(formatCount);
-
-    vkGetPhysicalDeviceSurfaceFormatsKHR(
-      device.physicalDevice(), platformSurface_.handle(), &formatCount, availableFormats.data());
-
-    std::vector<VkPresentModeKHR> availablePresentModes = {};
-
-    uint32_t presentModeCount = 0;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(
-      device.physicalDevice(), platformSurface_.handle(), &presentModeCount, nullptr);
-
-    assert(presentModeCount > 0);
-
-    availablePresentModes.reserve(presentModeCount);
-
-    vkGetPhysicalDeviceSurfacePresentModesKHR(
-      device.physicalDevice(), platformSurface_.handle(), &presentModeCount, availablePresentModes.data());
-
     auto surfaceFormat =
-      internal::_chooseSurfaceFormat(availableFormats,
+      internal::_chooseSurfaceFormat(device.physicalDevice(),
+                                     platformSurface_.handle(),
                                      std::array<std::pair<VkFormat, VkColorSpaceKHR>, 1>{
                                        std::make_pair(VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) });
 
     auto presentationMode = internal::_choosePresentationMode(
-      availablePresentModes, std::array<VkPresentModeKHR, 2>{ VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR });
+      device.physicalDevice(),
+      platformSurface_.handle(),
+      std::array<VkPresentModeKHR, 2>{ VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR });
 
     VkExtent2D actualExtent = {};
 
