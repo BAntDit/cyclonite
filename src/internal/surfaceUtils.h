@@ -21,7 +21,7 @@ static auto _chooseSurfaceFormat(VkPhysicalDevice physicalDevice,
 
     assert(availableFormatCount > 0);
 
-    std::vector<VkSurfaceKHR> availableFormats(availableFormatCount);
+    std::vector<VkSurfaceFormatKHR> availableFormats(availableFormatCount);
 
     vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &availableFormatCount, availableFormats.data());
 
@@ -41,17 +41,18 @@ static auto _choosePresentationMode(VkPhysicalDevice physicalDevice,
                                     VkSurfaceKHR surface,
                                     std::array<VkPresentModeKHR, modeCount> const& candidates) -> VkPresentModeKHR
 {
-    unit32_t availableModeCount = 0;
+    uint32_t availableModeCount = 0;
     vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &availableModeCount, nullptr);
 
     assert(availableModeCount > 0);
 
     std::vector<VkPresentModeKHR> availablePresentModes(availableModeCount);
 
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, availablePresentModes.data());
+    vkGetPhysicalDeviceSurfacePresentModesKHR(
+      physicalDevice, surface, &availableModeCount, availablePresentModes.data());
 
     for (auto&& candidate : candidates) {
-        for (auto&& availableMode : availableModes) {
+        for (auto&& availableMode : availablePresentModes) {
             if (availableMode == candidate) {
                 return availableMode;
             }
