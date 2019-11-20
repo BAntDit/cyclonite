@@ -16,7 +16,7 @@ public:
     using owner_queue_family_indices_t =
       std::variant<std::array<uint32_t, 1>, std::array<uint32_t, 2>, std::array<uint32_t, 3>>;
 
-    ImageView(Device& device,
+    ImageView(Device const& device,
               ImagePtr const& image,
               VkImageViewType imageViewType = VK_IMAGE_VIEW_TYPE_2D,
               VkImageAspectFlags imageAspectFlags = VK_IMAGE_ASPECT_COLOR_BIT,

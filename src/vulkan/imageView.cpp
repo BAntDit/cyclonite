@@ -7,7 +7,7 @@
 #include "internal/imageHelpers.h"
 
 namespace cyclonite::vulkan {
-ImageView::ImageView(Device& device,
+ImageView::ImageView(Device const& device,
                      ImagePtr const& image,
                      VkImageViewType imageViewType,
                      VkImageAspectFlags imageAspectFlags,
@@ -50,6 +50,10 @@ ImageView::ImageView(Device& device,
     imageViewCreateInfo.image = image->handle();
     imageViewCreateInfo.viewType = imageViewType;
     imageViewCreateInfo.format = image->format();
+    imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
     imageViewCreateInfo.subresourceRange.aspectMask = imageAspectFlags;
     imageViewCreateInfo.subresourceRange.baseMipLevel = baseMipLevel;
     imageViewCreateInfo.subresourceRange.levelCount = levelCount;

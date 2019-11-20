@@ -19,6 +19,7 @@ Surface::Surface(VkInstance vkInstance,
                                      : SDL_WINDOW_SHOWN) }
   , platformSurface_{ _createSurface(vkInstance, window_, vulkan::platform_surface_argument_type_list_t{}) }
   , vkSwapchain_{ device.handle(), vkDestroySwapchainKHR }
+  , imageViews_{}
 {
     VkBool32 presentationSupport = VK_FALSE;
 
@@ -122,6 +123,19 @@ Surface::Surface(VkInstance vkInstance,
         std::terminate();
     }
 
-    // TODO:: get swapchain images
+    uint32_t imageCount = 0;
+    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapchain_), &imageCount, nullptr);
+
+    std::vector<VkImage> vkImages(imageCount, VK_NULL_HANDLE);
+
+    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapchain_), &imageCount, vkImages.data());
+
+    imageViews_.reserve(imageCount);
+
+    for (auto vkImage : vkImages) {
+        imageViews_.emplace_back(
+          device,
+          std::make_shared<vulkan::Image>(vkImage, actualExtent.width, actualExtent.height, surfaceFormat.format));
+    }
 }
 }

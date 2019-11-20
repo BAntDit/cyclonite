@@ -8,6 +8,7 @@
 #include "options.h"
 #include "sdl/sdlSupport.h"
 #include "vulkan/device.h"
+#include "vulkan/imageView.h"
 #include "vulkan/platformSurface.h"
 #include <array>
 
@@ -33,6 +34,7 @@ private:
     sdl::SDLWindow window_;
     vulkan::platform_surface_t platformSurface_;
     vulkan::Handle<VkSwapchainKHR> vkSwapchain_;
+    std::vector<vulkan::ImageView> imageViews_;
 };
 
 template<typename... SurfaceArgs>

@@ -108,6 +108,7 @@ Image::Image(VkImage vkImage, uint32_t width, uint32_t height, VkFormat format, 
   , format_{ format }
   , imageType_{ VK_IMAGE_TYPE_2D }
   , tiling_{ tiling }
+  , imageCreateFlags_{ 0 }
   , allocatedMemory_{}
   , vkImage_{}
 {
