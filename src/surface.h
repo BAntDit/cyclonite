@@ -30,11 +30,17 @@ public:
 
     [[nodiscard]] auto handle() const -> VkSurfaceKHR { return platformSurface_.handle(); }
 
+    [[nodiscard]] auto format() const -> VkFormat { return vkFormat_; }
+
+    [[nodiscard]] auto colorSpace() const -> VkColorSpaceKHR { return vkColorSpaceKHR_; }
+
 private:
     sdl::SDLWindow window_;
     vulkan::platform_surface_t platformSurface_;
     vulkan::Handle<VkSwapchainKHR> vkSwapchain_;
     std::vector<vulkan::ImageView> imageViews_;
+    VkFormat vkFormat_;
+    VkColorSpaceKHR vkColorSpaceKHR_;
 };
 
 template<typename... SurfaceArgs>

@@ -20,6 +20,8 @@ Surface::Surface(VkInstance vkInstance,
   , platformSurface_{ _createSurface(vkInstance, window_, vulkan::platform_surface_argument_type_list_t{}) }
   , vkSwapchain_{ device.handle(), vkDestroySwapchainKHR }
   , imageViews_{}
+  , vkFormat_{ VK_FORMAT_UNDEFINED }
+  , vkColorSpaceKHR_{ VK_COLOR_SPACE_MAX_ENUM_KHR }
 {
     VkBool32 presentationSupport = VK_FALSE;
 
@@ -137,5 +139,8 @@ Surface::Surface(VkInstance vkInstance,
           device,
           std::make_shared<vulkan::Image>(vkImage, actualExtent.width, actualExtent.height, surfaceFormat.format));
     }
+
+    vkFormat_ = surfaceFormat.format;
+    vkColorSpaceKHR_ = surfaceFormat.colorSpace;
 }
 }
