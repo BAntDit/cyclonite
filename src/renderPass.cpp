@@ -8,8 +8,9 @@ namespace cyclonite {
 RenderPass::RenderPass(VkInstance vkInstance,
                        cyclonite::vulkan::Device const& device,
                        cyclonite::Options::WindowProperties const& windowProperties,
-                       VkSampleCountFlagBits sampleCount/* = VK_SAMPLE_COUNT_1_BIT*/)
+                       VkSampleCountFlagBits sampleCount /* = VK_SAMPLE_COUNT_1_BIT*/)
   : surface_{ Surface{ vkInstance, device, windowProperties } }
+  , vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderQueueSubmitInfo_{}
 {
     VkAttachmentDescription colorAttachment = {};
@@ -25,5 +26,42 @@ RenderPass::RenderPass(VkInstance vkInstance,
     VkAttachmentReference colorAttachmentRef = {};
     colorAttachmentRef.attachment = 0;
     colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    // we have no depth for now
+    VkSubpassDescription subPass = {};
+    subPass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subPass.colorAttachmentCount = 1;
+    subPass.pColorAttachments = &colorAttachmentRef;
+
+    VkSubpassDependency dependency = {};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    VkRenderPassCreateInfo renderPassInfo = {};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = 1;
+    renderPassInfo.pAttachments = &colorAttachment;
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subPass;
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies = &dependency;
+
+    if (auto result = vkCreateRenderPass(device.handle(), &renderPassInfo, nullptr, &vkRenderPass_);
+        result != VK_SUCCESS) {
+
+        if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
+            throw std::runtime_error("not enough RAM memory to create render pass");
+        }
+
+        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+            throw std::runtime_error("not enough GPU memory to create render pass");
+        }
+
+        assert(false);
+    }
 }
 }

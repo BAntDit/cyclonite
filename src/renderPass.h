@@ -25,6 +25,7 @@ public:
 
 private:
     std::optional<Surface> surface_;
+    vulkan::Handle<VkRenderPass> vkRenderPass_;
     std::vector<VkSubmitInfo> renderQueueSubmitInfo_;
 };
 }
