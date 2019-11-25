@@ -23,6 +23,7 @@ public:
         size_t minStorageBufferOffsetAlignment;
         size_t minUniformBufferOffsetAlignment;
         size_t minTexelBufferOffsetAlignment;
+        uint32_t maxPushConstantsSize;
     };
 
 public:

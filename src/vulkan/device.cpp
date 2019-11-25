@@ -157,5 +157,6 @@ Device::Capabilities::Capabilities(VkPhysicalDeviceLimits const& vkPhysicalDevic
   , minStorageBufferOffsetAlignment{ vkPhysicalDeviceLimits.minStorageBufferOffsetAlignment }
   , minUniformBufferOffsetAlignment{ vkPhysicalDeviceLimits.minUniformBufferOffsetAlignment }
   , minTexelBufferOffsetAlignment{ vkPhysicalDeviceLimits.minTexelBufferOffsetAlignment }
+  , maxPushConstantsSize{ vkPhysicalDeviceLimits.maxPushConstantsSize }
 {}
 }

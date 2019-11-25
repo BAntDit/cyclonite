@@ -43,6 +43,7 @@ set(PUBLIC_HEADERS
     src/vulkan/imageView.h
     src/vulkan/buffer.h
     src/vulkan/staging.h
+    src/vulkan/shaderModule.h
     src/multithreading/taskManager.h
     src/loaders/glTF/loader.h
 )
@@ -83,11 +84,35 @@ set(SOURCES
     src/loaders/glTF/internal/base64Decode.cpp
 )
 
+set(SHADER_SOURCES
+    src/shaders/defaultVert.vert
+    src/shaders/defaultFrag.frag
+)
+
 add_library(${PROJECT_NAME} SHARED
     ${PUBLIC_HEADERS}
     ${PRIVATE_HEADERS}
     ${SOURCES}
 )
+
+find_program(GLSLANG_VALIDATOR glslValidator)
+
+foreach(source ${SHADER_SOURCES})
+    get_filename_component(dir "${source}" DIRECTORY)
+    get_filename_component(name "${source}" NAME_WE)
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${dir}")
+    set(source "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
+    set(output "${CMAKE_CURRENT_BINARY_DIR}/${dir}/${name}.spv.cpp.txt")
+
+    add_custom_command(
+            OUTPUT "${output}"
+            COMMAND "${GLSLANG_VALIDATOR}" -V ${source} -x -o "${output}"
+            DEPENDS "${source}"
+    )
+
+    target_sources(${PROJECT_NAME} PRIVATE "${output}")
+endforeach()
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/src")
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
