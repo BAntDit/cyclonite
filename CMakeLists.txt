@@ -110,7 +110,7 @@ foreach(source ${SHADER_SOURCES})
             DEPENDS "${source}"
     )
 
-    target_sources(${PROJECT_NAME} PRIVATE "${output}")
+    #target_sources(${PROJECT_NAME} PRIVATE "${output}")
 endforeach()
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/src")
 
