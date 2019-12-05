@@ -34,6 +34,8 @@ public:
 
     [[nodiscard]] auto colorSpace() const -> VkColorSpaceKHR { return vkColorSpaceKHR_; }
 
+    [[nodiscard]] auto imageViews() const -> std::vector<vulkan::ImageView> const& { return imageViews_; }
+
 private:
     sdl::SDLWindow window_;
     vulkan::platform_surface_t platformSurface_;
