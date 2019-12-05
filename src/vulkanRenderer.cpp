@@ -16,6 +16,10 @@ void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
     vkWaitForFences(
       static_cast<VkDevice>(device_->handle()), 1, &vkFrameFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
 
+    if (auto result = vkResetFences(device_->handle(), 1, &vkFrameFence); result != VK_SUCCESS) {
+        throw std::runtime_error("error on attempt to reset frame synchronization fence");
+    }
+
     auto const& renderQueueSubmitInfo = renderPass.renderQueueSubmitInfo();
 
     if (auto result = vkQueueSubmit(

@@ -36,6 +36,11 @@ public:
 
     [[nodiscard]] auto imageViews() const -> std::vector<vulkan::ImageView> const& { return imageViews_; }
 
+    [[nodiscard]] auto imageAvailableSemaphores() const -> std::vector<vulkan::Handle<VkSemaphore>> const&
+    {
+        return imageAvailableSemaphores_;
+    }
+
     [[nodiscard]] auto swapChainLength() const -> size_t { return imageViews_.size(); }
 
 private:
@@ -43,6 +48,7 @@ private:
     vulkan::platform_surface_t platformSurface_;
     vulkan::Handle<VkSwapchainKHR> vkSwapchain_;
     std::vector<vulkan::ImageView> imageViews_;
+    std::vector<vulkan::Handle<VkSemaphore>> imageAvailableSemaphores_;
     VkFormat vkFormat_;
     VkColorSpaceKHR vkColorSpaceKHR_;
 };

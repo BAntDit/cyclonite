@@ -20,6 +20,7 @@ Surface::Surface(VkInstance vkInstance,
   , platformSurface_{ _createSurface(vkInstance, window_, vulkan::platform_surface_argument_type_list_t{}) }
   , vkSwapchain_{ device.handle(), vkDestroySwapchainKHR }
   , imageViews_{}
+  , imageAvailableSemaphores_{}
   , vkFormat_{ VK_FORMAT_UNDEFINED }
   , vkColorSpaceKHR_{ VK_COLOR_SPACE_MAX_ENUM_KHR }
 {
@@ -142,5 +143,20 @@ Surface::Surface(VkInstance vkInstance,
 
     vkFormat_ = surfaceFormat.format;
     vkColorSpaceKHR_ = surfaceFormat.colorSpace;
+
+    {
+        imageAvailableSemaphores_.resize(imageCount,
+                                         vulkan::Handle<VkSemaphore>{ device.handle(), vkDestroySemaphore });
+
+        VkSemaphoreCreateInfo semaphoreInfo = {};
+        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+        for (auto& vkSemaphore : imageAvailableSemaphores_) {
+            if (auto result = vkCreateSemaphore(device.handle(), &semaphoreInfo, nullptr, &vkSemaphore);
+                result != VK_SUCCESS) {
+                throw std::runtime_error("failed to create acquire image synchronization semaphores");
+            }
+        }
+    }
 }
 }
