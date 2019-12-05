@@ -85,8 +85,8 @@ set(SOURCES
 )
 
 set(SHADER_SOURCES
-    src/shaders/defaultVert.vert
-    src/shaders/defaultFrag.frag
+    src/shaders/default.vert
+    src/shaders/default.frag
 )
 
 add_library(${PROJECT_NAME} SHARED
@@ -95,22 +95,23 @@ add_library(${PROJECT_NAME} SHARED
     ${SOURCES}
 )
 
-find_program(GLSLANG_VALIDATOR glslValidator)
+find_program(GLSLANG_VALIDATOR glslangValidator)
 
 foreach(source ${SHADER_SOURCES})
     get_filename_component(dir "${source}" DIRECTORY)
     get_filename_component(name "${source}" NAME_WE)
+    get_filename_component(ext "${source}" LAST_EXT)
     file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${dir}")
     set(source "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
-    set(output "${CMAKE_CURRENT_BINARY_DIR}/${dir}/${name}.spv.cpp.txt")
+    set(output "${CMAKE_CURRENT_BINARY_DIR}/${dir}/${name}.${ext}.spv.cpp.txt")
 
     add_custom_command(
-            OUTPUT "${output}"
-            COMMAND "${GLSLANG_VALIDATOR}" -V ${source} -x -o "${output}"
-            DEPENDS "${source}"
+        OUTPUT "${output}"
+        COMMAND "${GLSLANG_VALIDATOR}" -V ${source} -x -o "${output}"
+        DEPENDS "${source}"
     )
 
-    #target_sources(${PROJECT_NAME} PRIVATE "${output}")
+    target_sources(${PROJECT_NAME} PRIVATE "${output}")
 endforeach()
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/src")
 
