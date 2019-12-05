@@ -23,10 +23,14 @@ public:
         return renderQueueSubmitInfo_;
     }
 
+    auto begin() -> std::tuple<VkFence>;
+
 private:
     std::optional<Surface> surface_;
     vulkan::Handle<VkRenderPass> vkRenderPass_;
+    std::vector<vulkan::Handle<VkFence>> frameSyncFences_;
     std::vector<VkSubmitInfo> renderQueueSubmitInfo_;
+    uint64_t frameNumber_;
 };
 }
 

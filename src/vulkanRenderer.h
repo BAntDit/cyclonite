@@ -17,11 +17,9 @@ public:
 
     ~VulkanRenderer() = default;
 
-    void renderOneFrame(RenderPass const& renderPass);
+    void renderOneFrame(RenderPass& renderPass);
 
 private:
-    std::array<vulkan::Handle<VkFence>, 2> frameSyncFences_; // for a while dummy sync
-    uint64_t frameNumber_;                                   // tmp
     vulkan::Device* device_;
 };
 }

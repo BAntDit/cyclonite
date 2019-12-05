@@ -6,13 +6,26 @@
 
 namespace cyclonite {
 RenderPass::RenderPass(VkInstance vkInstance,
-                       cyclonite::vulkan::Device const& device,
-                       cyclonite::Options::WindowProperties const& windowProperties,
+                       vulkan::Device const& device,
+                       Options::WindowProperties const& windowProperties,
                        VkSampleCountFlagBits sampleCount /* = VK_SAMPLE_COUNT_1_BIT*/)
   : surface_{ Surface{ vkInstance, device, windowProperties } }
   , vkRenderPass_{ device.handle(), vkDestroyRenderPass }
+  , frameSyncFences_(surface_->swapChainLength(), vulkan::Handle<VkFence>{ device.handle(), vkDestroyFence })
   , renderQueueSubmitInfo_{}
+  , frameNumber_{ 0 }
 {
+    {
+        VkFenceCreateInfo fenceInfo = {};
+        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+        for (auto& fence : frameSyncFences_) {
+            if (vkCreateFence(device.handle(), &fenceInfo, nullptr, &fence) != VK_SUCCESS) {
+                throw std::runtime_error("could not create sync fences for frame.");
+            }
+        }
+    }
+
     VkAttachmentDescription colorAttachment = {};
     colorAttachment.format = surface_->format();
     colorAttachment.samples = sampleCount;
@@ -63,5 +76,12 @@ RenderPass::RenderPass(VkInstance vkInstance,
 
         assert(false);
     }
+}
+
+auto RenderPass::begin() -> std::tuple<VkFence>
+{
+    auto i = static_cast<size_t>(frameNumber_++ % surface_->swapChainLength());
+
+    return std::make_tuple(static_cast<VkFence>(frameSyncFences_[i]));
 }
 }

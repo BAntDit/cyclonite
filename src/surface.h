@@ -36,6 +36,8 @@ public:
 
     [[nodiscard]] auto imageViews() const -> std::vector<vulkan::ImageView> const& { return imageViews_; }
 
+    [[nodiscard]] auto swapChainLength() const -> size_t { return imageViews_.size(); }
+
 private:
     sdl::SDLWindow window_;
     vulkan::platform_surface_t platformSurface_;
