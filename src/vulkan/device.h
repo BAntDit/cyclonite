@@ -28,6 +28,7 @@ public:
 
 public:
     Device(multithreading::TaskManager const& taskManager,
+           VkInstance vkInstance,
            VkPhysicalDevice const& vkPhysicalDevice,
            VkPhysicalDeviceProperties const& physicalDeviceProperties,
            std::vector<const char*> const& requiredExtensions);
@@ -44,6 +45,8 @@ public:
     auto operator=(Device &&) -> Device& = default;
 
 public:
+    [[nodiscard]] auto vulkanInstance() const -> VkInstance { return vkInstance_; }
+
     [[nodiscard]] auto physicalDevice() const -> VkPhysicalDevice { return vkPhysicalDevice_; }
 
     [[nodiscard]] auto handle() const -> VkDevice { return static_cast<VkDevice>(vkDevice_); }
@@ -74,6 +77,7 @@ public:
 
 private:
     Capabilities capabilities_;
+    VkInstance vkInstance_;
     VkPhysicalDevice vkPhysicalDevice_;
     uint32_t id_;
     std::string name_;

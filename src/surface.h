@@ -16,7 +16,7 @@ namespace cyclonite {
 class Surface
 {
 public:
-    Surface(VkInstance vkInstance, vulkan::Device const& device, Options::WindowProperties const& windowProperties);
+    Surface(vulkan::Device const& device, Options::WindowProperties const& windowProperties);
 
     Surface(Surface const&) = delete;
 

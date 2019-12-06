@@ -9,10 +9,12 @@
 
 namespace cyclonite::vulkan {
 Device::Device(multithreading::TaskManager const& taskManager,
+               VkInstance vkInstance,
                VkPhysicalDevice const& vkPhysicalDevice,
                VkPhysicalDeviceProperties const& physicalDeviceProperties,
                std::vector<const char*> const& requiredExtensions)
   : capabilities_{ physicalDeviceProperties.limits }
+  , vkInstance_{ vkInstance }
   , vkPhysicalDevice_{ vkPhysicalDevice }
   , id_{ physicalDeviceProperties.deviceID }
   , name_{ physicalDeviceProperties.deviceName }

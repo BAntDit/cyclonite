@@ -13,8 +13,7 @@ namespace cyclonite {
 class RenderPass
 {
 public:
-    RenderPass(VkInstance vkInstance,
-               vulkan::Device const& device,
+    RenderPass(vulkan::Device const& device,
                Options::WindowProperties const& windowProperties,
                VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
 
@@ -26,7 +25,8 @@ public:
     auto begin() -> std::tuple<VkFence>;
 
 private:
-    // TODO:: frame in flight count (define by swapChainLength or make possible to define manually in case render pass has no window)
+    // TODO:: frame in flight count (define by swapChainLength or make possible to define manually in case render pass
+    // has no window)
     std::optional<Surface> surface_;
     vulkan::Handle<VkRenderPass> vkRenderPass_;
     std::vector<vulkan::Handle<VkFence>> frameSyncFences_;

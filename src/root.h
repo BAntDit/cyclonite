@@ -6,6 +6,7 @@
 #define CYCLONITE_ROOT_H
 
 #include "config.h"
+#include "multithreading/taskManager.h"
 #include "options.h"
 #include "platform.h"
 #include "sdl/sdlSupport.h"
@@ -50,6 +51,7 @@ public:
 
 private:
     Capabilities capabilities_;
+    multithreading::TaskManager taskManager_;
     sdl::SDLSupport sdlSupport_;
     std::unique_ptr<vulkan::Instance> vulkanInstance_;
     std::unique_ptr<vulkan::Device> vulkanDevice_;
@@ -58,6 +60,7 @@ private:
 template<typename EcsConfig>
 Root<Config<EcsConfig>>::Root()
   : capabilities_{}
+  , taskManager_{}
   , sdlSupport_{}
   , vulkanInstance_{ nullptr }
   , vulkanDevice_{ nullptr }
@@ -126,10 +129,8 @@ void Root<Config<EcsConfig>>::init(Options const& options)
                 options.deviceId() == properties.deviceID) {
 
                 try {
-                    auto vulkanDevice =
-                      std::make_unique<vulkan::Device>(physicalDevice, properties, requiredExtensions);
-
-                    std::swap(vulkanDevice_, vulkanDevice);
+                    vulkanDevice_ = std::make_unique<vulkan::Device>(
+                      taskManager_, vulkanInstance_->handle(), physicalDevice, properties, requiredExtensions);
                 } catch (const std::exception& e) {
                     std::cout << "device " << properties.deviceName << " skipped, cause of: " << e.what() << std::endl;
                 }
@@ -138,10 +139,8 @@ void Root<Config<EcsConfig>>::init(Options const& options)
             } else if (options.deviceId() == std::numeric_limits<uint32_t>::max() &&
                        options.deviceName() == properties.deviceName) {
                 try {
-                    auto vulkanDevice =
-                      std::make_unique<vulkan::Device>(physicalDevice, properties, requiredExtensions);
-
-                    std::swap(vulkanDevice_, vulkanDevice);
+                    vulkanDevice_ = std::make_unique<vulkan::Device>(
+                      taskManager_, vulkanInstance_->handle(), physicalDevice, properties, requiredExtensions);
                 } catch (std::exception const& e) {
                     std::cout << "device " << properties.deviceName << " skipped, cause of: " << e.what() << std::endl;
                 }
@@ -160,10 +159,8 @@ void Root<Config<EcsConfig>>::init(Options const& options)
                 vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
                 try {
-                    auto vulkanDevice =
-                      std::make_unique<vulkan::Device>(physicalDevice, properties, requiredExtensions);
-
-                    std::swap(vulkanDevice_, vulkanDevice);
+                    vulkanDevice_ = std::make_unique<vulkan::Device>(
+                      taskManager_, vulkanInstance_->handle(), physicalDevice, properties, requiredExtensions);
 
                     std::cout << "device:" << properties.deviceName << ", id: (" << options.deviceId() << ") "
                               << " will set as device." << std::endl;
