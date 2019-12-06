@@ -25,9 +25,7 @@ public:
     auto begin() -> std::tuple<VkFence>;
 
 private:
-    // TODO:: frame in flight count (define by swapChainLength or make possible to define manually in case render pass
-    // has no window)
-    std::optional<Surface> surface_;
+    std::optional<Surface> surface_; // TODO:: make render target instead
     vulkan::Handle<VkRenderPass> vkRenderPass_;
     std::vector<vulkan::Handle<VkFence>> frameSyncFences_;
     std::vector<VkSubmitInfo> renderQueueSubmitInfo_;

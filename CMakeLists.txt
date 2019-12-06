@@ -62,6 +62,7 @@ set(PRIVATE_HEADERS
 set(SOURCES
     src/options.cpp
     src/surface.cpp
+    src/renderTarget.cpp
     src/renderPass.cpp
     src/vulkanRenderer.cpp
     src/sdl/sdlSupport.cpp
