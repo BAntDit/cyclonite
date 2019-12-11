@@ -5,12 +5,20 @@
 #ifndef CYCLONITE_RENDERTARGET_H
 #define CYCLONITE_RENDERTARGET_H
 
-#include <vulkan/vulkan.h>
+#include "surface.h"
 
 namespace cyclonite {
+// TODO:: adds enum class outputs
+
 class RenderTarget
 {
 public:
+    // template<typename DepthStencilAttachment, typename... ColorAttachments>
+    RenderTarget(VkRenderPass vkRenderPass);
+
+    // template<typename DepthStencilAttachment, typename ColorAttachment>
+    RenderTarget(VkRenderPass vkRenderPass, Surface& surface);
+
     RenderTarget(RenderTarget const&) = delete;
 
     RenderTarget(RenderTarget&&) = default;
@@ -19,7 +27,10 @@ public:
 
     auto operator=(RenderTarget const&) -> RenderTarget& = delete;
 
-    auto operator=(RenderTarget&&) -> RenderTarget& = default;
+    auto operator=(RenderTarget &&) -> RenderTarget& = default;
+
+private:
+    std::optional<Surface> surface_;
 };
 }
 

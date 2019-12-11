@@ -5,9 +5,8 @@
 #include "renderTarget.h"
 #include "renderPass.h"
 
-namespace cyclonite
-{
-RenderTarget::RenderTarget(RenderPass const& renderPass) {
-
-}
+namespace cyclonite {
+RenderTarget::RenderTarget(VkRenderPass vkRenderPass, Surface& surface)
+  : surface_{ std::move(surface) }
+{}
 }
