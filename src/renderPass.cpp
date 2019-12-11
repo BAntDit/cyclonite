@@ -8,7 +8,7 @@ namespace cyclonite {
 RenderPass::RenderPass(vulkan::Device const& device,
                        Options::WindowProperties const& windowProperties,
                        VkSampleCountFlagBits sampleCount /* = VK_SAMPLE_COUNT_1_BIT*/)
-  : surface_{ Surface{ device.vulkanInstance(), device, windowProperties } }
+  : surface_{ Surface{ device, windowProperties } }
   , vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , frameSyncFences_(surface_->swapChainLength(), vulkan::Handle<VkFence>{ device.handle(), vkDestroyFence })
   , renderQueueSubmitInfo_{}
