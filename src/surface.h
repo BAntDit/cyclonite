@@ -16,6 +16,17 @@ namespace cyclonite {
 class Surface
 {
 public:
+    struct Capabilities
+    {
+        uint32_t minImageCount;
+        uint32_t maxImageCount;
+        VkCompositeAlphaFlagsKHR supportedCompositeAlpha;
+        VkImageUsageFlags supportedUsageFlags;
+        VkSurfaceTransformFlagsKHR supportedTransforms;
+        VkSurfaceTransformFlagBitsKHR currentTransform;
+    };
+
+public:
     Surface(vulkan::Device const& device, Options::WindowProperties const& windowProperties);
 
     Surface(Surface const&) = delete;
@@ -29,6 +40,12 @@ public:
     auto operator=(Surface &&) -> Surface& = default;
 
     [[nodiscard]] auto handle() const -> VkSurfaceKHR { return platformSurface_.handle(); }
+
+    [[nodiscard]] auto width() const -> uint32_t { return extent_.width; }
+
+    [[nodiscard]] auto height() const -> uint32_t { return extent_.height; }
+
+    [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
 
     [[nodiscard]] auto format() const -> VkFormat { return vkFormat_; }
 
@@ -44,6 +61,8 @@ public:
     [[nodiscard]] auto swapChainLength() const -> size_t { return imageViews_.size(); }
 
 private:
+    Capabilities capabilities_;
+    VkExtent2D extent_;
     sdl::SDLWindow window_;
     vulkan::platform_surface_t platformSurface_;
     vulkan::Handle<VkSwapchainKHR> vkSwapchain_;

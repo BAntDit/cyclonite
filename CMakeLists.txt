@@ -49,7 +49,6 @@ set(PUBLIC_HEADERS
 )
 
 set(PRIVATE_HEADERS
-    src/internal/surfaceUtils.h
     src/vulkan/internal/deviceCreationFunctions.h
     src/vulkan/internal/fillBufferCreationInfo.h
     src/vulkan/internal/fillImageCreationInfo.h
