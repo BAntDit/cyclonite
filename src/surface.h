@@ -47,18 +47,12 @@ public:
 
     [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
 
-    [[nodiscard]] auto format() const -> VkFormat { return vkFormat_; }
-
-    [[nodiscard]] auto colorSpace() const -> VkColorSpaceKHR { return vkColorSpaceKHR_; }
-
     [[nodiscard]] auto imageViews() const -> std::vector<vulkan::ImageView> const& { return imageViews_; }
 
     [[nodiscard]] auto imageAvailableSemaphores() const -> std::vector<vulkan::Handle<VkSemaphore>> const&
     {
         return imageAvailableSemaphores_;
     }
-
-    [[nodiscard]] auto swapChainLength() const -> size_t { return imageViews_.size(); }
 
 private:
     Capabilities capabilities_;
@@ -68,8 +62,6 @@ private:
     vulkan::Handle<VkSwapchainKHR> vkSwapchain_;
     std::vector<vulkan::ImageView> imageViews_;
     std::vector<vulkan::Handle<VkSemaphore>> imageAvailableSemaphores_;
-    VkFormat vkFormat_;
-    VkColorSpaceKHR vkColorSpaceKHR_;
 };
 
 template<typename... SurfaceArgs>

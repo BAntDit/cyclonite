@@ -22,8 +22,6 @@ Surface::Surface(vulkan::Device const& device, Options::WindowProperties const& 
   , vkSwapchain_{ device.handle(), vkDestroySwapchainKHR }
   , imageViews_{}
   , imageAvailableSemaphores_{}
-  , vkFormat_{ VK_FORMAT_UNDEFINED }
-  , vkColorSpaceKHR_{ VK_COLOR_SPACE_MAX_ENUM_KHR }
 {
     VkBool32 presentationSupport = VK_FALSE;
 
@@ -72,24 +70,6 @@ Surface::Surface(vulkan::Device const& device, Options::WindowProperties const& 
     capabilities_.supportedUsageFlags = vkSurfaceCapabilitiesKHR.supportedUsageFlags;
     capabilities_.currentTransform = vkSurfaceCapabilitiesKHR.currentTransform;
     capabilities_.supportedTransforms = vkSurfaceCapabilitiesKHR.supportedTransforms;
-
-    uint32_t imageCount = 0;
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapchain_), &imageCount, nullptr);
-
-    std::vector<VkImage> vkImages(imageCount, VK_NULL_HANDLE);
-
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapchain_), &imageCount, vkImages.data());
-
-    imageViews_.reserve(imageCount);
-
-    for (auto vkImage : vkImages) {
-        imageViews_.emplace_back(
-          device,
-          std::make_shared<vulkan::Image>(vkImage, actualExtent.width, actualExtent.height, surfaceFormat.format));
-    }
-
-    vkFormat_ = surfaceFormat.format;
-    vkColorSpaceKHR_ = surfaceFormat.colorSpace;
 
     {
         imageAvailableSemaphores_.resize(imageCount,
