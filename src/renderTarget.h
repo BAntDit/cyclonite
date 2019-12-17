@@ -110,6 +110,7 @@ private:
     std::optional<Surface> surface_;
     vulkan::Handle<VkSwapchainKHR> vkSwapChain_;
     std::vector<vulkan::ImageView> imageViews_;
+    std::vector<vulkan::Handle<VkFramebuffer>> frameBuffers_;
 };
 
 template<typename DepthStencilOutputDescription, typename ColorOutputDescription, size_t modeCandidateCount>

@@ -41,6 +41,7 @@ set(PUBLIC_HEADERS
     src/vulkan/memoryManager.h
     src/vulkan/image.h
     src/vulkan/imageView.h
+    src/vulkan/frameBuffer.h
     src/vulkan/buffer.h
     src/vulkan/staging.h
     src/vulkan/shaderModule.h
