@@ -109,7 +109,6 @@ private:
     size_t currentChainIndex_;
     std::optional<Surface> surface_;
     vulkan::Handle<VkSwapchainKHR> vkSwapChain_;
-    std::vector<vulkan::ImageView> imageViews_;
     std::vector<vulkan::Handle<VkFramebuffer>> frameBuffers_;
 };
 
@@ -127,7 +126,7 @@ RenderTarget::RenderTarget(vulkan::Device const& device,
   , currentChainIndex_{ 0 }
   , surface_{ std::move(surface) }
   , vkSwapChain_{ device.handle(), vkDestroySwapchainKHR }
-  , imageViews_{}
+  , frameBuffers_{}
 {
     extent_.width = surface_->width();
     extent_.height = surface_->height();
@@ -174,11 +173,16 @@ RenderTarget::RenderTarget(vulkan::Device const& device,
 
     vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, vkImages.data());
 
-    imageViews_.reserve(swapChainLength_);
+    frameBuffers_.reserve(swapChainLength_);
 
     for (auto vkImage : vkImages) {
-        imageViews_.emplace_back(
-          device, std::make_shared<vulkan::Image>(vkImage, extent_.width, extent_.height, surfaceFormat));
+        frameBuffers_.emplace_back(
+          device,
+          vkRenderPass,
+          extent_.width,
+          extent_.height,
+          std::array<vulkan::ImageView, 1>{ vulkan::ImageView{
+            device, std::make_shared<vulkan::Image>(vkImage, extent_.width, extent_.height, surfaceFormat) } });
     }
 }
 
