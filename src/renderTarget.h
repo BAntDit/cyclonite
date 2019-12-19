@@ -52,6 +52,33 @@ public:
     };
 
 public:
+    template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+    class Builder
+    {
+    public:
+        constexpr static size_t attachmentCount = std::is_same_v<DepthStencilOutputDescription, void>
+                                                    ? sizeof...(ColorOutputDescriptions)
+                                                    : sizeof...(ColorOutputDescriptions) + 1;
+
+    public:
+        Builder();
+
+        void setRenderPass(VkRenderPass vkRenderPass) { vkRenderPass_ = vkRenderPass; }
+
+        auto getAttachments() const -> std::pair<std::array<VkAttachmentDescription, attachmentCount>,
+                                                 std::array<VkAttachmentReference, attachmentCount>>;
+
+        auto build() -> RenderTarget;
+
+    private:
+        std::optional<Surface> surface_;
+        vulkan::Handle<VkSwapchainKHR> vkSwapChain_;
+        VkRenderPass vkRenderPass_;
+        VkFormat vkDepthStencilOutputFormat_;
+        std::array<std::pair<VkFormat, VkColorSpaceKHR>, sizeof...(ColorOutputDescriptions)> colorOutputFormats_;
+    };
+
+public:
     // template<typename DepthStencilAttachment, typename... ColorAttachments>
     RenderTarget(VkRenderPass vkRenderPass);
 
