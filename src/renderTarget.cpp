@@ -5,33 +5,44 @@
 #include "renderTarget.h"
 
 namespace cyclonite {
-void RenderTarget::_swapChainCreationErrorHandling(VkResult result)
+RenderTarget::RenderTarget(vulkan::Device const& device,
+                           VkRenderPass vkRenderPass,
+                           Surface& surface,
+                           vulkan::Handle<VkSwapchainKHR> swapChain,
+                           VkFormat depthFormat,
+                           VkFormat surfaceFormat)
+  : extent_{}
+  , colorAttachmentCount_{ 1 }
+  , swapChainLength_{ 0 }
+  , currentChainIndex_{ 0 }
+  , surface_{ std::move(surface) }
+  , vkSwapChain_{ std::move(swapChain) }
+  , frameBuffers_{}
 {
-    if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
-        throw std::runtime_error("not enough RAM memory to create swap chain");
-    }
+    uint32_t imageCount = 0;
+    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, nullptr);
 
-    if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
-        throw std::runtime_error("not enough GPU memory to create swap chain");
-    }
+    swapChainLength_ = imageCount;
 
-    if (result == VK_ERROR_DEVICE_LOST) {
-        throw std::runtime_error("device lost on attempt to create swap chain");
-    }
+    std::vector<VkImage> vkImages(swapChainLength_, VK_NULL_HANDLE);
 
-    if (result == VK_ERROR_SURFACE_LOST_KHR) {
-        throw std::runtime_error("surface lost");
-    }
+    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, vkImages.data());
 
-    if (result == VK_ERROR_NATIVE_WINDOW_IN_USE_KHR) {
-        throw std::runtime_error("could not create swap chain - native window is in use");
-    }
+    frameBuffers_.reserve(swapChainLength_);
 
-    if (result == VK_ERROR_INITIALIZATION_FAILED) {
-        throw std::runtime_error("swap chain initialization failed");
+    if (depthFormat != VK_FORMAT_UNDEFINED) {
+        // TODO:: ...
+    } else {
+        for (auto vkImage : vkImages) {
+            frameBuffers_.emplace_back(
+              device,
+              vkRenderPass,
+              extent_.width,
+              extent_.height,
+              std::array<vulkan::ImageView, 1>{ vulkan::ImageView{
+                device, std::make_shared<vulkan::Image>(vkImage, extent_.width, extent_.height, surfaceFormat) } });
+        }
     }
-
-    assert(false);
 }
 
 auto RenderTarget::getColorAttachment(uint8_t attachmentIndex) const -> vulkan::ImageView const&
