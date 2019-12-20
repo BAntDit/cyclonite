@@ -61,7 +61,12 @@ public:
                                                     : sizeof...(ColorOutputDescriptions) + 1;
 
     public:
-        Builder();
+        template<size_t modeCandidateCount = 2>
+        Builder(vulkan::Device const& device,
+                Surface&& surface,
+                std::array<VkPresentModeKHR, modeCandidateCount> const& presentModeCandidates = {
+                  VK_PRESENT_MODE_MAILBOX_KHR,
+                  VK_PRESENT_MODE_FIFO_KHR });
 
         void setRenderPass(VkRenderPass vkRenderPass) { vkRenderPass_ = vkRenderPass; }
 
@@ -71,9 +76,23 @@ public:
         auto build() -> RenderTarget;
 
     private:
+        template<size_t candidateCount>
+        static auto _chooseSurfaceFormat(
+          std::vector<VkSurfaceFormatKHR> const& availableFormats,
+          std::array<std::pair<VkFormat, VkColorSpaceKHR>, candidateCount> const& candidates)
+          -> std::pair<VkFormat, VkColorSpaceKHR>;
+
+        template<size_t modeCount>
+        auto _choosePresentationMode(VkPhysicalDevice physicalDevice,
+                                     std::array<VkPresentModeKHR, modeCount> const& candidates) const
+          -> VkPresentModeKHR;
+
+    private:
         std::optional<Surface> surface_;
         vulkan::Handle<VkSwapchainKHR> vkSwapChain_;
+        VkExtent2D extent_;
         VkRenderPass vkRenderPass_;
+        VkPresentModeKHR vkPresentMode;
         VkFormat vkDepthStencilOutputFormat_;
         std::array<std::pair<VkFormat, VkColorSpaceKHR>, sizeof...(ColorOutputDescriptions)> colorOutputFormats_;
     };
@@ -120,15 +139,6 @@ public:
 private:
     static void _swapChainCreationErrorHandling(VkResult result);
 
-    template<size_t candidateCount>
-    auto _chooseSurfaceFormat(VkPhysicalDevice physicalDevice,
-                              std::array<std::pair<VkFormat, VkColorSpaceKHR>, candidateCount> const& candidates) const
-      -> std::pair<VkFormat, VkColorSpaceKHR>;
-
-    template<size_t modeCount>
-    auto _choosePresentationMode(VkPhysicalDevice physicalDevice,
-                                 std::array<VkPresentModeKHR, modeCount> const& candidates) const -> VkPresentModeKHR;
-
 private:
     VkExtent2D extent_;
     uint8_t colorAttachmentCount_;
@@ -155,17 +165,6 @@ RenderTarget::RenderTarget(vulkan::Device const& device,
   , vkSwapChain_{ device.handle(), vkDestroySwapchainKHR }
   , frameBuffers_{}
 {
-    extent_.width = surface_->width();
-    extent_.height = surface_->height();
-
-    auto [surfaceFormat, surfaceColorSpace] =
-      _chooseSurfaceFormat(device.physicalDevice(), ColorOutputDescription::format_candidate_list_v);
-
-    auto presentMode = _choosePresentationMode(device.physicalDevice(), presentModeCandidates);
-
-    assert((surface_->capabilities().supportedUsageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) ==
-           VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-
     assert((surface_->capabilities().supportedCompositeAlpha & vkCompositeAlphaFlags) == vkCompositeAlphaFlags);
 
     VkSwapchainCreateInfoKHR swapChainCreateInfoKHR = {};
@@ -213,37 +212,47 @@ RenderTarget::RenderTarget(vulkan::Device const& device,
     }
 }
 
-template<size_t candidateCount>
-auto RenderTarget::_chooseSurfaceFormat(
-  VkPhysicalDevice physicalDevice,
-  std::array<std::pair<VkFormat, VkColorSpaceKHR>, candidateCount> const& candidates) const
-  -> std::pair<VkFormat, VkColorSpaceKHR>
+template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+template<size_t modeCandidateCount>
+RenderTarget::Builder<DepthStencilOutputDescription, ColorOutputDescriptions...>::Builder(
+  cyclonite::vulkan::Device const& device,
+  cyclonite::Surface&& surface,
+  std::array<VkPresentModeKHR, modeCandidateCount> const& presentModeCandidates)
+  : surface_{ std::move(surface) }
+  , vkSwapChain_{ device.handle(), vkDestroySwapchainKHR }
+  , extent_{}
+  , vkRenderPass_{ VK_NULL_HANDLE }
+  , vkPresentMode{ VK_PRESENT_MODE_MAX_ENUM_KHR }
+  , vkDepthStencilOutputFormat_{ VK_FORMAT_UNDEFINED }
+  , colorOutputFormats_{}
 {
+    extent_.width = surface_->width();
+    extent_.height = surface_->height();
+
     uint32_t availableFormatCount = 0;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface_->handle(), &availableFormatCount, nullptr);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device.physicalDevice(), surface_->handle(), &availableFormatCount, nullptr);
 
     assert(availableFormatCount > 0);
 
     std::vector<VkSurfaceFormatKHR> availableFormats(availableFormatCount);
 
     vkGetPhysicalDeviceSurfaceFormatsKHR(
-      physicalDevice, surface_->handle(), &availableFormatCount, availableFormats.data());
+      device.physicalDevice(), surface_->handle(), &availableFormatCount, availableFormats.data());
 
-    for (auto&& [requiredFormat, requiredColorSpace] : candidates) {
-        for (auto&& availableFormat : availableFormats) {
-            if (requiredFormat == availableFormat.format && requiredColorSpace == availableFormat.colorSpace) {
-                return std::make_pair(availableFormat.format, availableFormat.colorSpace);
-            }
-        }
-    }
+    colorOutputFormats_ = { _chooseSurfaceFormat(availableFormats,
+                                                 ColorOutputDescriptions::format_candidate_list_v)... };
 
-    throw std::runtime_error("surface does not support required formats.");
+    auto presentMode = _choosePresentationMode(device.physicalDevice(), presentModeCandidates);
+
+    assert((surface_->capabilities().supportedUsageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) ==
+           VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 }
 
+template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
 template<size_t modeCount>
-auto RenderTarget::_choosePresentationMode(VkPhysicalDevice physicalDevice,
-                                           std::array<VkPresentModeKHR, modeCount> const& candidates) const
-  -> VkPresentModeKHR
+auto RenderTarget::Builder<DepthStencilOutputDescription, ColorOutputDescriptions...>::_choosePresentationMode(
+  VkPhysicalDevice physicalDevice,
+  std::array<VkPresentModeKHR, modeCount> const& candidates) const -> VkPresentModeKHR
 {
     uint32_t availableModeCount = 0;
     vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface_->handle(), &availableModeCount, nullptr);
@@ -264,6 +273,24 @@ auto RenderTarget::_choosePresentationMode(VkPhysicalDevice physicalDevice,
     }
 
     throw std::runtime_error("surface does support any required presentation modes");
+}
+
+template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+template<size_t candidateCount>
+auto RenderTarget::Builder<DepthStencilOutputDescription, ColorOutputDescriptions...>::_chooseSurfaceFormat(
+  std::vector<VkSurfaceFormatKHR> const& availableFormats,
+  std::array<std::pair<VkFormat, VkColorSpaceKHR>, candidateCount> const& candidates)
+  -> std::pair<VkFormat, VkColorSpaceKHR>
+{
+    for (auto&& [requiredFormat, requiredColorSpace] : candidates) {
+        for (auto&& availableFormat : availableFormats) {
+            if (requiredFormat == availableFormat.format && requiredColorSpace == availableFormat.colorSpace) {
+                return std::make_pair(availableFormat.format, availableFormat.colorSpace);
+            }
+        }
+    }
+
+    throw std::runtime_error("surface does not support required formats.");
 }
 }
 
