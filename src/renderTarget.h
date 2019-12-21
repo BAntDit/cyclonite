@@ -244,7 +244,8 @@ RenderTarget<hasDepth, colorOutputCount>::RenderTarget(vulkan::Device& device,
 }
 
 template<bool hasDepth, size_t colorOutputCount>
-auto RenderTarget<hasDepth, colorOutputCount>::getColorAttachment(uint8_t attachmentIndex) const -> vulkan::ImageView const&
+auto RenderTarget<hasDepth, colorOutputCount>::getColorAttachment(uint8_t attachmentIndex) const
+  -> vulkan::ImageView const&
 {
     if constexpr (hasDepth)
         return frameBuffers_[currentChainIndex_].getAttachment(attachmentIndex + 1);

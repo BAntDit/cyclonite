@@ -79,6 +79,7 @@ set(SOURCES
     src/vulkan/memoryManager.cpp
     src/vulkan/image.cpp
     src/vulkan/imageView.cpp
+    src/vulkan/frameBuffer.cpp
     src/vulkan/buffer.cpp
     src/vulkan/staging.cpp
     src/multithreading/taskManager.cpp
