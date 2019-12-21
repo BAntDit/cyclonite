@@ -51,10 +51,6 @@ public:
                          std::pair<std::array<VkAttachmentDescription, sizeof...(ColorOutputDescriptions) + 1>,
                                    std::array<VkAttachmentReference, sizeof...(ColorOutputDescriptions) + 1>>>;
 
-    using render_target_t = std::conditional_t<std::is_same_v<DepthStencilOutputDescription, void>,
-                                               RenderTarget<false, sizeof...(ColorOutputDescriptions)>,
-                                               RenderTarget<true, sizeof...(ColorOutputDescriptions)>>;
-
 public:
     template<size_t modeCandidateCount = 2>
     RenderTargetBuilder(vulkan::Device& device,
@@ -75,7 +71,7 @@ public:
 
     auto getAttachments() const -> attachment_list_t;
 
-    auto buildRenderPassTarget(VkRenderPass vkRenderPass) -> render_target_t;
+    auto buildRenderPassTarget(VkRenderPass vkRenderPass) -> RenderTarget;
 
 private:
     static void _swapChainCreationErrorHandling(VkResult result);
@@ -88,6 +84,10 @@ private:
     template<size_t modeCount>
     auto _choosePresentationMode(VkPhysicalDevice physicalDevice,
                                  std::array<VkPresentModeKHR, modeCount> const& candidates) const -> VkPresentModeKHR;
+
+    template<size_t... idx>
+    auto _get_output_semantic_format_pairs(std::index_sequence<idx...>) const
+      -> std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, sizeof...(idx)>;
 
     template<size_t... idx>
     auto _get_attachments(std::index_sequence<idx...>) const -> attachment_list_t;
@@ -104,6 +104,7 @@ private:
     VkPresentModeKHR vkPresentMode;
     VkFormat vkDepthStencilOutputFormat_;
     std::array<std::pair<VkFormat, VkColorSpaceKHR>, sizeof...(ColorOutputDescriptions)> colorOutputFormats_;
+    std::array<RenderTargetOutputSemantic, sizeof...(ColorOutputDescriptions)> outputSemantics_;
 };
 
 template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
@@ -120,6 +121,7 @@ RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::
   , vkPresentMode{ VK_PRESENT_MODE_MAX_ENUM_KHR }
   , vkDepthStencilOutputFormat_{ VK_FORMAT_UNDEFINED }
   , colorOutputFormats_{}
+  , outputSemantics_{ ColorOutputDescriptions::semantic_v... }
 {
     static_assert(sizeof...(ColorOutputDescriptions) > 0); // surface RT has no sense without color attachments
 
@@ -176,16 +178,41 @@ RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::
 
 template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
 auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::buildRenderPassTarget(
-  VkRenderPass vkRenderPass) -> render_target_t
+  VkRenderPass vkRenderPass) -> RenderTarget
 {
+    std::array<RenderTargetOutputSemantic, sizeof...(ColorOutputDescriptions)> outputSemantics = {
+        ColorOutputDescriptions::semantic_v...
+    };
+
     if (surface_) {
         auto [surfaceFormat, _] = colorOutputFormats_[0];
-
         (void)_;
 
-        return RenderTarget(device_, vkRenderPass, *surface_, vkSwapChain_, vkDepthStencilOutputFormat_, surfaceFormat);
+        if constexpr (std::is_same_v<void, DepthStencilOutputDescription>) {
+            return RenderTarget{ device_, vkRenderPass, *surface_, vkSwapChain_, surfaceFormat, outputSemantics[0] };
+        } else {
+            return RenderTarget{ device_,       vkRenderPass,      *surface_, vkSwapChain_, vkDepthStencilOutputFormat_,
+                                 surfaceFormat, outputSemantics[0] };
+        }
     } else {
-        // TODO:: ...
+        if constexpr (std::is_same_v<void, DepthStencilOutputDescription>) {
+            return RenderTarget{ device_,
+                                 vkRenderPass,
+                                 1,
+                                 extent_.width,
+                                 extent_.height,
+                                 _get_output_semantic_format_pairs(
+                                   std::make_index_sequence<sizeof...(ColorOutputDescriptions)>()) };
+        } else {
+            return RenderTarget{ device_,
+                                 vkRenderPass,
+                                 1,
+                                 extent_.width,
+                                 extent_.height,
+                                 vkDepthStencilOutputFormat_,
+                                 _get_output_semantic_format_pairs(
+                                   std::make_index_sequence<sizeof...(ColorOutputDescriptions)>()) };
+        }
     }
 }
 
@@ -271,6 +298,12 @@ auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions.
 
     throw std::runtime_error("surface does support any required presentation modes");
 }
+
+template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+template<size_t... idx>
+auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::_get_output_semantic_format_pairs(
+  std::index_sequence<idx...>) const -> std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, sizeof...(idx)>
+{}
 
 template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
 template<size_t... idx>
