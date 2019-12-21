@@ -51,6 +51,8 @@ public:
         return attachments_[attachmentIndex];
     }
 
+    [[nodiscard]] auto attachmentCount() const -> size_t { return attachments_.size(); }
+
 private:
     std::vector<vulkan::ImageView> attachments_;
     vulkan::Handle<VkFramebuffer> vkFrameBuffer_;

@@ -19,48 +19,41 @@ enum class RenderTargetOutputSemantic
     COUNT = MAX_VALUE + 1
 };
 
-template<bool hasDepth, size_t colorOutputCount>
 class RenderTarget
 {
 public:
-    using frame_buffer_t =
-      std::conditional_t<hasDepth, vulkan::FrameBuffer<colorOutputCount + 1>, vulkan::FrameBuffer<colorOutputCount>>;
-
-    template<bool Check = hasDepth && (colorOutputCount == 1)>
     RenderTarget(vulkan::Device& device,
                  VkRenderPass vkRenderPass,
                  Surface& surface,
                  vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
                  VkFormat depthFormat,
-                 std::array<VkFormat, colorOutputCount> surfaceFormats,
-                 std::enable_if_t<Check, void*> = nullptr);
+                 VkFormat surfaceFormat,
+                 RenderTargetOutputSemantic outputSemantic);
 
-    template<bool Check = !hasDepth && (colorOutputCount == 1)>
     RenderTarget(vulkan::Device& device,
                  VkRenderPass vkRenderPass,
                  Surface& surface,
                  vulkan::Handle<VkSwapchainKHR> vkSwapChain,
-                 std::array<VkFormat, colorOutputCount> surfaceFormats,
-                 std::enable_if_t<Check, void*> = nullptr);
+                 VkFormat surfaceFormat,
+                 RenderTargetOutputSemantic outputSemantic);
 
-    template<bool Check = hasDepth>
+    template<size_t count>
     RenderTarget(vulkan::Device& device,
                  VkRenderPass vkRenderPass,
                  uint32_t swapChainLength,
                  uint32_t width,
                  uint32_t height,
                  VkFormat depthFormat,
-                 std::array<VkFormat, colorOutputCount> surfaceFormats,
-                 std::enable_if_t<Check, void*> = nullptr);
+                 std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> colorOutputs);
 
-    template<bool Check = !hasDepth && (colorOutputCount > 0)>
+    template<size_t count>
     RenderTarget(vulkan::Device& device,
                  VkRenderPass vkRenderPass,
                  uint32_t swapChainLength,
                  uint32_t width,
                  uint32_t height,
-                 std::array<VkFormat, colorOutputCount> surfaceFormats,
-                 std::enable_if_t<Check, void*> = nullptr);
+                 std::array<VkFormat, count> surfaceFormats,
+                 std::enable_if_t<(count > 0), void*> = nullptr);
 
     RenderTarget(RenderTarget const&) = delete;
 
@@ -84,6 +77,16 @@ public:
 
     [[nodiscard]] auto getColorAttachment(uint8_t attachmentIndex) const -> vulkan::ImageView const&;
 
+    [[nodiscard]] auto getColorAttachment(RenderTargetOutputSemantic semantic) const -> vulkan::ImageView const&;
+
+    [[nodiscard]] auto getDepthAttachment() const -> vulkan::ImageView const&;
+
+    [[nodiscard]] auto hasAttachment(uint8_t attachmentIndex) const -> bool;
+
+    [[nodiscard]] auto hasAttachment(RenderTargetOutputSemantic semantic) const -> bool;
+
+    [[nodiscard]] auto hasDepth() const -> bool { return hasDepth_; }
+
 private:
     VkExtent2D extent_;
     uint8_t colorAttachmentCount_;
@@ -91,148 +94,56 @@ private:
     size_t currentChainIndex_;
     std::optional<Surface> surface_;
     vulkan::Handle<VkSwapchainKHR> vkSwapChain_;
-    std::vector<frame_buffer_t> frameBuffers_;
+    std::vector<vulkan::FrameBuffer> frameBuffers_;
+    std::unordered_map<RenderTargetOutputSemantic, size_t> outputSemantics_;
+    bool hasDepth_;
 };
 
-template<bool hasDepth, size_t colorOutputCount>
-template<bool Check>
-RenderTarget<hasDepth, colorOutputCount>::RenderTarget(vulkan::Device& device,
-                                                       VkRenderPass vkRenderPass,
-                                                       Surface& surface,
-                                                       vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
-                                                       VkFormat depthFormat,
-                                                       std::array<VkFormat, colorOutputCount> surfaceFormats,
-                                                       std::enable_if_t<Check, void*>)
+template<size_t count>
+RenderTarget::RenderTarget(vulkan::Device& device,
+                           VkRenderPass vkRenderPass,
+                           uint32_t swapChainLength,
+                           uint32_t width,
+                           uint32_t height,
+                           VkFormat depthFormat,
+                           std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> colorOutputs)
   : extent_{}
-  , colorAttachmentCount_{ colorOutputCount }
-  , swapChainLength_{ 0 }
-  , currentChainIndex_{ 0 }
-  , surface_{ std::move(surface) }
-  , vkSwapChain_{ std::move(vkSwapChain) }
-  , frameBuffers_{}
-{
-    extent_.width = surface_->width();
-    extent_.height = surface_->height();
-
-    uint32_t imageCount = 0;
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, nullptr);
-
-    swapChainLength_ = imageCount;
-
-    std::vector<VkImage> vkImages(swapChainLength_, VK_NULL_HANDLE);
-
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, vkImages.data());
-
-    frameBuffers_.reserve(swapChainLength_);
-
-    auto depthImagePtr = std::make_shared<vulkan::Image>(device,
-                                                         extent_.width,
-                                                         extent_.height,
-                                                         1,
-                                                         1,
-                                                         1,
-                                                         depthFormat,
-                                                         VK_IMAGE_TILING_OPTIMAL,
-                                                         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
-
-    for (auto vkImage : vkImages) {
-        frameBuffers_.emplace_back(
-          device,
-          vkRenderPass,
-          extent_.width,
-          extent_.height,
-          std::array<vulkan::ImageView, 2>{
-            vulkan::ImageView{ device, depthImagePtr },
-            vulkan::ImageView{
-              device, std::make_shared<vulkan::Image>(vkImage, extent_.width, extent_.height, surfaceFormats[0]) } });
-    }
-}
-
-template<bool hasDepth, size_t colorOutputCount>
-template<bool Check>
-RenderTarget<hasDepth, colorOutputCount>::RenderTarget(vulkan::Device& device,
-                                                       VkRenderPass vkRenderPass,
-                                                       Surface& surface,
-                                                       vulkan::Handle<VkSwapchainKHR> vkSwapChain,
-                                                       std::array<VkFormat, colorOutputCount> surfaceFormats,
-                                                       std::enable_if_t<Check, void*>)
-  : extent_{}
-  , colorAttachmentCount_{ colorOutputCount }
-  , swapChainLength_{ 0 }
-  , currentChainIndex_{ 0 }
-  , surface_{ std::move(surface) }
-  , vkSwapChain_{ std::move(vkSwapChain) }
-  , frameBuffers_{}
-{
-    extent_.width = surface_->width();
-    extent_.height = surface_->height();
-
-    uint32_t imageCount = 0;
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, nullptr);
-
-    swapChainLength_ = imageCount;
-
-    std::vector<VkImage> vkImages(swapChainLength_, VK_NULL_HANDLE);
-
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, vkImages.data());
-
-    frameBuffers_.reserve(swapChainLength_);
-
-    for (auto vkImage : vkImages) {
-        frameBuffers_.emplace_back(
-          device,
-          vkRenderPass,
-          extent_.width,
-          extent_.height,
-          std::array<vulkan::ImageView, 1>{ vulkan::ImageView{
-            device, std::make_shared<vulkan::Image>(vkImage, extent_.width, extent_.height, surfaceFormats[0]) } });
-    }
-}
-
-template<bool hasDepth, size_t colorOutputCount>
-template<bool Check>
-RenderTarget<hasDepth, colorOutputCount>::RenderTarget(vulkan::Device& device,
-                                                       VkRenderPass vkRenderPass,
-                                                       uint32_t swapChainLength,
-                                                       uint32_t width,
-                                                       uint32_t height,
-                                                       VkFormat depthFormat,
-                                                       std::array<VkFormat, colorOutputCount> surfaceFormats,
-                                                       std::enable_if_t<Check, void*>)
-  : extent_{}
-  , colorAttachmentCount_{ colorOutputCount }
+  , colorAttachmentCount_{ count }
   , swapChainLength_{ swapChainLength }
   , currentChainIndex_{ 0 }
   , surface_{}
   , vkSwapChain_{ device.handle(), vkDestroySwapchainKHR }
   , frameBuffers_{}
+  , outputSemantics_{}
+  , hasDepth_{ true }
 {
     // TODO::
     (void)vkRenderPass;
     (void)width;
     (void)height;
     (void)depthFormat;
-    (void)surfaceFormats;
+    (void)colorOutputs;
 
     throw std::runtime_error("not implemented yet");
 }
 
-template<bool hasDepth, size_t colorOutputCount>
-template<bool Check>
-RenderTarget<hasDepth, colorOutputCount>::RenderTarget(vulkan::Device& device,
-                                                       VkRenderPass vkRenderPass,
-                                                       uint32_t swapChainLength,
-                                                       uint32_t width,
-                                                       uint32_t height,
-                                                       std::array<VkFormat, colorOutputCount> surfaceFormats,
-                                                       std::enable_if_t<Check, void*>)
+template<size_t count>
+RenderTarget::RenderTarget(vulkan::Device& device,
+                           VkRenderPass vkRenderPass,
+                           uint32_t swapChainLength,
+                           uint32_t width,
+                           uint32_t height,
+                           std::array<VkFormat, count> surfaceFormats,
+                           std::enable_if_t<(count > 0), void*>)
   : extent_{}
-  , colorAttachmentCount_{ colorOutputCount }
+  , colorAttachmentCount_{ count }
   , swapChainLength_{ swapChainLength }
   , currentChainIndex_{ 0 }
   , surface_{}
   , vkSwapChain_{ device.handle(), vkDestroySwapchainKHR }
   , frameBuffers_{}
+  , outputSemantics_{}
+  , hasDepth_{ true }
 {
     // TODO::
     (void)vkRenderPass;
@@ -241,16 +152,6 @@ RenderTarget<hasDepth, colorOutputCount>::RenderTarget(vulkan::Device& device,
     (void)surfaceFormats;
 
     throw std::runtime_error("not implemented yet");
-}
-
-template<bool hasDepth, size_t colorOutputCount>
-auto RenderTarget<hasDepth, colorOutputCount>::getColorAttachment(uint8_t attachmentIndex) const
-  -> vulkan::ImageView const&
-{
-    if constexpr (hasDepth)
-        return frameBuffers_[currentChainIndex_].getAttachment(attachmentIndex + 1);
-    else
-        return frameBuffers_[currentChainIndex_].getAttachment(attachmentIndex);
 }
 }
 
