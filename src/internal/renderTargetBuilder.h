@@ -57,7 +57,7 @@ public:
 
 public:
     template<size_t modeCandidateCount = 2>
-    RenderTargetBuilder(vulkan::Device const& device,
+    RenderTargetBuilder(vulkan::Device& device,
                         Surface&& surface,
                         std::array<VkPresentModeKHR, modeCandidateCount> const& presentModeCandidates =
                           { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR },
@@ -97,7 +97,7 @@ private:
     [[nodiscard]] auto _get_attachment_ref(size_t idx) const -> VkAttachmentReference;
 
 private:
-    vulkan::Device const& device_;
+    vulkan::Device& device_;
     std::optional<Surface> surface_;
     vulkan::Handle<VkSwapchainKHR> vkSwapChain_;
     VkExtent2D extent_;
@@ -109,7 +109,7 @@ private:
 template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
 template<size_t modeCandidateCount>
 RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::RenderTargetBuilder(
-  cyclonite::vulkan::Device const& device,
+  cyclonite::vulkan::Device& device,
   cyclonite::Surface&& surface,
   std::array<VkPresentModeKHR, modeCandidateCount> const& presentModeCandidates,
   VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags)
@@ -176,7 +176,7 @@ RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::
 
 template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
 auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::buildRenderPassTarget(
-  VkRenderPass vkRenderPass) -> RenderTarget
+  VkRenderPass vkRenderPass) -> render_target_t
 {
     if (surface_) {
         auto [surfaceFormat, _] = colorOutputFormats_[0];

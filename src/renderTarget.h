@@ -23,40 +23,43 @@ template<bool hasDepth, size_t colorOutputCount>
 class RenderTarget
 {
 public:
-    // template<typename DepthStencilAttachment, typename... ColorAttachments>
-    RenderTarget(VkRenderPass vkRenderPass);
-
-    /* template<typename DepthStencilOutputDescription, typename ColorOutputDescription, size_t modeCandidateCount = 2>
-    RenderTarget(
-      vulkan::Device const& device,
-      VkRenderPass vkRenderPass,
-      Surface& surface,
-      DepthStencilOutputDescription depthStencilOutputDescription,
-      ColorOutputDescription colorOutputDescription = output_t<
-        easy_mp::type_list<output_format_candidate_t<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
-        RenderTargetOutputSemantic::DEFAULT>{},
-      std::array<VkPresentModeKHR, modeCandidateCount> const& presentModeCandidates = { VK_PRESENT_MODE_MAILBOX_KHR,
-                                                                                        VK_PRESENT_MODE_FIFO_KHR },
-      VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR); */
-
     using frame_buffer_t =
       std::conditional_t<hasDepth, vulkan::FrameBuffer<colorOutputCount + 1>, vulkan::FrameBuffer<colorOutputCount>>;
 
-    template<bool Check = hasDepth && (colorOutputCount > 0)>
-    RenderTarget(vulkan::Device const& device,
+    template<bool Check = hasDepth && (colorOutputCount == 1)>
+    RenderTarget(vulkan::Device& device,
                  VkRenderPass vkRenderPass,
                  Surface& surface,
-                 vulkan::Handle<VkSwapchainKHR> swapChain,
+                 vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
                  VkFormat depthFormat,
-                 std::array<VkFormat, colorOutputCount> surfaceFormat,
+                 std::array<VkFormat, colorOutputCount> surfaceFormats,
                  std::enable_if_t<Check, void*> = nullptr);
 
-    template<bool Check = hasDepth && (colorOutputCount > 0)>
-    RenderTarget(vulkan::Device const& device,
+    template<bool Check = !hasDepth && (colorOutputCount == 1)>
+    RenderTarget(vulkan::Device& device,
                  VkRenderPass vkRenderPass,
                  Surface& surface,
-                 vulkan::Handle<VkSwapchainKHR> swapChain,
-                 std::array<VkFormat, colorOutputCount> surfaceFormat,
+                 vulkan::Handle<VkSwapchainKHR> vkSwapChain,
+                 std::array<VkFormat, colorOutputCount> surfaceFormats,
+                 std::enable_if_t<Check, void*> = nullptr);
+
+    template<bool Check = hasDepth>
+    RenderTarget(vulkan::Device& device,
+                 VkRenderPass vkRenderPass,
+                 uint32_t swapChainLength,
+                 uint32_t width,
+                 uint32_t height,
+                 VkFormat depthFormat,
+                 std::array<VkFormat, colorOutputCount> surfaceFormats,
+                 std::enable_if_t<Check, void*> = nullptr);
+
+    template<bool Check = !hasDepth && (colorOutputCount > 0)>
+    RenderTarget(vulkan::Device& device,
+                 VkRenderPass vkRenderPass,
+                 uint32_t swapChainLength,
+                 uint32_t width,
+                 uint32_t height,
+                 std::array<VkFormat, colorOutputCount> surfaceFormats,
                  std::enable_if_t<Check, void*> = nullptr);
 
     RenderTarget(RenderTarget const&) = delete;
@@ -91,15 +94,79 @@ private:
     std::vector<frame_buffer_t> frameBuffers_;
 };
 
-RenderTarget::RenderTarget(vulkan::Device const& device, VkRenderPass vkRenderPass, Surface& surface)
+template<bool hasDepth, size_t colorOutputCount>
+template<bool Check>
+RenderTarget<hasDepth, colorOutputCount>::RenderTarget(vulkan::Device& device,
+                                                       VkRenderPass vkRenderPass,
+                                                       Surface& surface,
+                                                       vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
+                                                       VkFormat depthFormat,
+                                                       std::array<VkFormat, colorOutputCount> surfaceFormats,
+                                                       std::enable_if_t<Check, void*>)
   : extent_{}
-  , colorAttachmentCount_{ 1 }
+  , colorAttachmentCount_{ colorOutputCount }
   , swapChainLength_{ 0 }
   , currentChainIndex_{ 0 }
   , surface_{ std::move(surface) }
-  , vkSwapChain_{ device.handle(), vkDestroySwapchainKHR }
+  , vkSwapChain_{ std::move(vkSwapChain) }
   , frameBuffers_{}
 {
+    extent_.width = surface_->width();
+    extent_.height = surface_->height();
+
+    uint32_t imageCount = 0;
+    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, nullptr);
+
+    swapChainLength_ = imageCount;
+
+    std::vector<VkImage> vkImages(swapChainLength_, VK_NULL_HANDLE);
+
+    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, vkImages.data());
+
+    frameBuffers_.reserve(swapChainLength_);
+
+    auto depthImagePtr = std::make_shared<vulkan::Image>(device,
+                                                         extent_.width,
+                                                         extent_.height,
+                                                         1,
+                                                         1,
+                                                         1,
+                                                         depthFormat,
+                                                         VK_IMAGE_TILING_OPTIMAL,
+                                                         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+    for (auto vkImage : vkImages) {
+        frameBuffers_.emplace_back(
+          device,
+          vkRenderPass,
+          extent_.width,
+          extent_.height,
+          std::array<vulkan::ImageView, 2>{
+            vulkan::ImageView{ device, depthImagePtr },
+            vulkan::ImageView{
+              device, std::make_shared<vulkan::Image>(vkImage, extent_.width, extent_.height, surfaceFormats[0]) } });
+    }
+}
+
+template<bool hasDepth, size_t colorOutputCount>
+template<bool Check>
+RenderTarget<hasDepth, colorOutputCount>::RenderTarget(vulkan::Device& device,
+                                                       VkRenderPass vkRenderPass,
+                                                       Surface& surface,
+                                                       vulkan::Handle<VkSwapchainKHR> vkSwapChain,
+                                                       std::array<VkFormat, colorOutputCount> surfaceFormats,
+                                                       std::enable_if_t<Check, void*>)
+  : extent_{}
+  , colorAttachmentCount_{ colorOutputCount }
+  , swapChainLength_{ 0 }
+  , currentChainIndex_{ 0 }
+  , surface_{ std::move(surface) }
+  , vkSwapChain_{ std::move(vkSwapChain) }
+  , frameBuffers_{}
+{
+    extent_.width = surface_->width();
+    extent_.height = surface_->height();
+
     uint32_t imageCount = 0;
     vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, nullptr);
 
@@ -118,8 +185,71 @@ RenderTarget::RenderTarget(vulkan::Device const& device, VkRenderPass vkRenderPa
           extent_.width,
           extent_.height,
           std::array<vulkan::ImageView, 1>{ vulkan::ImageView{
-            device, std::make_shared<vulkan::Image>(vkImage, extent_.width, extent_.height, surfaceFormat) } });
+            device, std::make_shared<vulkan::Image>(vkImage, extent_.width, extent_.height, surfaceFormats[0]) } });
     }
+}
+
+template<bool hasDepth, size_t colorOutputCount>
+template<bool Check>
+RenderTarget<hasDepth, colorOutputCount>::RenderTarget(vulkan::Device& device,
+                                                       VkRenderPass vkRenderPass,
+                                                       uint32_t swapChainLength,
+                                                       uint32_t width,
+                                                       uint32_t height,
+                                                       VkFormat depthFormat,
+                                                       std::array<VkFormat, colorOutputCount> surfaceFormats,
+                                                       std::enable_if_t<Check, void*>)
+  : extent_{}
+  , colorAttachmentCount_{ colorOutputCount }
+  , swapChainLength_{ swapChainLength }
+  , currentChainIndex_{ 0 }
+  , surface_{}
+  , vkSwapChain_{ device.handle(), vkDestroySwapchainKHR }
+  , frameBuffers_{}
+{
+    // TODO::
+    (void)vkRenderPass;
+    (void)width;
+    (void)height;
+    (void)depthFormat;
+    (void)surfaceFormats;
+
+    throw std::runtime_error("not implemented yet");
+}
+
+template<bool hasDepth, size_t colorOutputCount>
+template<bool Check>
+RenderTarget<hasDepth, colorOutputCount>::RenderTarget(vulkan::Device& device,
+                                                       VkRenderPass vkRenderPass,
+                                                       uint32_t swapChainLength,
+                                                       uint32_t width,
+                                                       uint32_t height,
+                                                       std::array<VkFormat, colorOutputCount> surfaceFormats,
+                                                       std::enable_if_t<Check, void*>)
+  : extent_{}
+  , colorAttachmentCount_{ colorOutputCount }
+  , swapChainLength_{ swapChainLength }
+  , currentChainIndex_{ 0 }
+  , surface_{}
+  , vkSwapChain_{ device.handle(), vkDestroySwapchainKHR }
+  , frameBuffers_{}
+{
+    // TODO::
+    (void)vkRenderPass;
+    (void)width;
+    (void)height;
+    (void)surfaceFormats;
+
+    throw std::runtime_error("not implemented yet");
+}
+
+template<bool hasDepth, size_t colorOutputCount>
+auto RenderTarget<hasDepth, colorOutputCount>::getColorAttachment(uint8_t attachmentIndex) const -> vulkan::ImageView const&
+{
+    if constexpr (hasDepth)
+        return frameBuffers_[currentChainIndex_].getAttachment(attachmentIndex + 1);
+    else
+        return frameBuffers_[currentChainIndex_].getAttachment(attachmentIndex);
 }
 }
 
