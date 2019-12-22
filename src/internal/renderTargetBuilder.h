@@ -6,6 +6,7 @@
 #define CYCLONITE_RENDERTARGETBUILDER_H
 
 #include "../renderTarget.h"
+#include <vulkan/vulkan.h>
 
 namespace cyclonite::internal {
 using namespace easy_mp;
@@ -77,6 +78,13 @@ private:
     static void _swapChainCreationErrorHandling(VkResult result);
 
     template<size_t candidateCount>
+    static VkFormat _findSupportedFormat(
+      std::array<std::pair<VkFormat, VkColorSpaceKHR>, candidateCount> const& candidates,
+      VkPhysicalDevice physicalDevice,
+      VkImageTiling requiredTiling,
+      VkFormatFeatureFlags requiredFeatures);
+
+    template<size_t candidateCount>
     static auto _chooseSurfaceFormat(std::vector<VkSurfaceFormatKHR> const& availableFormats,
                                      std::array<std::pair<VkFormat, VkColorSpaceKHR>, candidateCount> const& candidates)
       -> std::pair<VkFormat, VkColorSpaceKHR>;
@@ -140,6 +148,13 @@ RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::
 
     colorOutputFormats_ = { _chooseSurfaceFormat(availableFormats,
                                                  ColorOutputDescriptions::format_candidate_list_v)... };
+
+    if constexpr (!std::is_same_v<void, DepthStencilOutputDescription>) {
+        vkDepthStencilOutputFormat_ = _findSupportedFormat(DepthStencilOutputDescription::format_candidate_list_v,
+                                                           device.physicalDevice(),
+                                                           VK_IMAGE_TILING_OPTIMAL,
+                                                           VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    }
 
     auto presentMode = _choosePresentationMode(device.physicalDevice(), presentModeCandidates);
 
@@ -252,6 +267,32 @@ void RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions.
     }
 
     assert(false);
+}
+
+template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+template<size_t candidateCount>
+VkFormat RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::_findSupportedFormat(
+  std::array<std::pair<VkFormat, VkColorSpaceKHR>, candidateCount> const& candidates,
+  VkPhysicalDevice physicalDevice,
+  VkImageTiling requiredTiling,
+  VkFormatFeatureFlags requiredFeatures)
+{
+    for (auto&& [candidate, _] : candidates) {
+        (void)_;
+
+        VkFormatProperties formatProperties = {};
+        vkGetPhysicalDeviceFormatProperties(physicalDevice, candidate, &formatProperties);
+
+        if (requiredTiling == VK_IMAGE_TILING_LINEAR &&
+            (formatProperties.linearTilingFeatures & requiredFeatures) == requiredFeatures) {
+            return candidate;
+        } else if (requiredTiling == VK_IMAGE_TILING_OPTIMAL &&
+                   (formatProperties.optimalTilingFeatures & requiredFeatures) == requiredFeatures) {
+            return candidate;
+        }
+    }
+
+    throw std::runtime_error("could not find suitable format for render target");
 }
 
 template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
