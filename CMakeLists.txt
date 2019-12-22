@@ -24,6 +24,7 @@ set(PUBLIC_HEADERS
     src/core/vertexAttribute.h
     src/core/geometry.h
     src/renderTarget.h
+    src/renderTargetBuilder.h
     src/renderPass.h
     src/vulkanRenderer.h
     src/sdl/sdlSupport.h
@@ -50,7 +51,6 @@ set(PUBLIC_HEADERS
 )
 
 set(PRIVATE_HEADERS
-    src/internal/renderTargetBuilder.h
     src/vulkan/internal/deviceCreationFunctions.h
     src/vulkan/internal/fillBufferCreationInfo.h
     src/vulkan/internal/fillImageCreationInfo.h

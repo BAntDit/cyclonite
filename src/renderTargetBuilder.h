@@ -5,10 +5,10 @@
 #ifndef CYCLONITE_RENDERTARGETBUILDER_H
 #define CYCLONITE_RENDERTARGETBUILDER_H
 
-#include "../renderTarget.h"
+#include "renderTarget.h"
 #include <vulkan/vulkan.h>
 
-namespace cyclonite::internal {
+namespace cyclonite {
 using namespace easy_mp;
 
 template<VkFormat vkFormat, VkColorSpaceKHR vkColorSpaceKHR = VK_COLOR_SPACE_MAX_ENUM_KHR>
@@ -18,7 +18,7 @@ struct render_target_output_candidate
     constexpr static VkColorSpaceKHR colorSpace = vkColorSpaceKHR;
 };
 
-template<typename Properties, RenderTargetOutputSemantic Semantic>
+template<typename Properties, RenderTargetOutputSemantic Semantic = RenderTargetOutputSemantic::UNDEFINED>
 struct render_target_output;
 
 template<RenderTargetOutputSemantic Semantic, VkFormat... format, VkColorSpaceKHR... colorSpace>
@@ -27,6 +27,8 @@ struct render_target_output<type_list<render_target_output_candidate<format, col
     constexpr static std::array<std::pair<VkFormat, VkColorSpaceKHR>, sizeof...(format)> format_candidate_list_v = {
         std::make_pair(format, colorSpace)...
     };
+
+    constexpr static bool is_empty_v = sizeof...(format) == 0;
 
     constexpr static RenderTargetOutputSemantic semantic_v = Semantic;
 };
@@ -37,6 +39,8 @@ struct render_target_output<type_list<render_target_output_candidate<format>...>
     constexpr static std::array<std::pair<VkFormat, VkColorSpaceKHR>, sizeof...(format)> format_candidate_list_v = {
         std::make_pair(format, render_target_output_candidate<format>::colorSpace)...
     };
+
+    constexpr static bool is_empty_v = sizeof...(format) == 0;
 
     constexpr static RenderTargetOutputSemantic semantic_v = Semantic;
 };
@@ -149,7 +153,7 @@ RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::
     colorOutputFormats_ = { _chooseSurfaceFormat(availableFormats,
                                                  ColorOutputDescriptions::format_candidate_list_v)... };
 
-    if constexpr (!std::is_same_v<void, DepthStencilOutputDescription>) {
+    if constexpr (!DepthStencilOutputDescription::is_empty_v) {
         vkDepthStencilOutputFormat_ = _findSupportedFormat(DepthStencilOutputDescription::format_candidate_list_v,
                                                            device.physicalDevice(),
                                                            VK_IMAGE_TILING_OPTIMAL,
@@ -203,14 +207,14 @@ auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions.
         auto [surfaceFormat, _] = colorOutputFormats_[0];
         (void)_;
 
-        if constexpr (std::is_same_v<void, DepthStencilOutputDescription>) {
+        if constexpr (DepthStencilOutputDescription::is_empty_v) {
             return RenderTarget{ device_, vkRenderPass, *surface_, vkSwapChain_, surfaceFormat, outputSemantics[0] };
         } else {
             return RenderTarget{ device_,       vkRenderPass,      *surface_, vkSwapChain_, vkDepthStencilOutputFormat_,
                                  surfaceFormat, outputSemantics[0] };
         }
     } else {
-        if constexpr (std::is_same_v<void, DepthStencilOutputDescription>) {
+        if constexpr (DepthStencilOutputDescription::is_empty_v) {
             return RenderTarget{ device_,
                                  vkRenderPass,
                                  1,
@@ -353,7 +357,7 @@ auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions.
 {
     constexpr size_t count = sizeof...(ColorOutputDescriptions);
 
-    if constexpr (std::is_same_v<DepthStencilOutputDescription, void>) {
+    if constexpr (DepthStencilOutputDescription::is_empty_v) {
         return std::make_pair(std::array<VkAttachmentDescription, count>{ _get_attachment(idx)... },
                               std::array<VkAttachmentReference, count>{ _get_attachment_ref(idx)... });
     } else {
@@ -374,7 +378,7 @@ auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions.
 
         return std::make_pair(
           std::array<VkAttachmentDescription, count + 1>{ depthAttachment, _get_attachment(idx)... },
-          std::array<VkAttachmentReference, count + 1>{ depthAttachmentRef, _get_attachment_ref(idx + 1)... });
+          std::array<VkAttachmentReference, count + 1>{ _get_attachment_ref(idx + 1)..., depthAttachmentRef });
     }
 }
 
