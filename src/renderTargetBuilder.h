@@ -56,6 +56,10 @@ public:
                          std::pair<std::array<VkAttachmentDescription, sizeof...(ColorOutputDescriptions) + 1>,
                                    std::array<VkAttachmentReference, sizeof...(ColorOutputDescriptions) + 1>>>;
 
+    static constexpr size_t color_attachment_count_v = sizeof...(ColorOutputDescriptions);
+
+    static constexpr size_t depth_attachment_idx_v = sizeof...(ColorOutputDescriptions);
+
 public:
     template<size_t modeCandidateCount = 2>
     RenderTargetBuilder(vulkan::Device& device,

@@ -28,18 +28,25 @@ public:
                  type_list<render_target_output_candidate<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
                  RenderTargetOutputSemantic::DEFAULT>{});
 
+    RenderPass(RenderPass const&) = delete;
+
+    RenderPass(RenderPass&&) = default;
+
+    ~RenderPass() = default;
+
+    auto operator=(RenderPass const&) -> RenderPass& = delete;
+
+    auto operator=(RenderPass&&) -> RenderPass& = default;
+
     [[nodiscard]] auto renderQueueSubmitInfo() const -> std::vector<VkSubmitInfo> const&
     {
         return renderQueueSubmitInfo_;
     }
 
-    auto begin() -> std::tuple<VkFence>;
-
 private:
     vulkan::Handle<VkRenderPass> vkRenderPass_;
-    std::vector<vulkan::Handle<VkFence>> frameSyncFences_;
+    std::unique_ptr<RenderTarget> renderTarget_;
     std::vector<VkSubmitInfo> renderQueueSubmitInfo_;
-    uint64_t frameNumber_;
 };
 
 template<size_t presentModeCandidateCount, typename... DepthStencilOutputCandidates, typename... ColorOutputCandidates>
@@ -50,17 +57,23 @@ RenderPass::RenderPass(vulkan::Device const& device,
                        render_target_output<type_list<DepthStencilOutputCandidates...>> const&,
                        render_target_output<type_list<ColorOutputCandidates...>> const&)
   : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
+  , renderTarget_{ nullptr }
+  , renderQueueSubmitInfo_{}
 {
-    RenderTargetBuilder<render_target_output<type_list<DepthStencilOutputCandidates...>>,
-                        render_target_output<type_list<ColorOutputCandidates...>>>
-      rtBuilder{ device, Surface{ device, windowProperties }, presentModeCandidates, vkCompositeAlphaFlags };
+    using rt_builder_t = RenderTargetBuilder<render_target_output<type_list<DepthStencilOutputCandidates...>>,
+                                             render_target_output<type_list<ColorOutputCandidates...>>>;
+
+    rt_builder_t rtBuilder{ device, Surface{ device, windowProperties }, presentModeCandidates, vkCompositeAlphaFlags };
 
     auto [attachments, references] = rtBuilder.getAttachments();
 
     VkSubpassDescription subPass = {};
-    // TODO:: ...
-    // subPass.colorAttachmentCount = rtBuilder;
+    subPass.colorAttachmentCount = rt_builder_t::color_attachment_count_v;
     subPass.pColorAttachments = references.data();
+
+    if constexpr (sizeof...(DepthStencilOutputCandidates) > 0) {
+        subPass.pDepthStencilAttachment = &references[rt_builder_t::depth_attachment_idx_v];
+    }
 
     VkSubpassDependency dependency = {};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -78,6 +91,23 @@ RenderPass::RenderPass(vulkan::Device const& device,
     renderPassInfo.pSubpasses = &subPass;
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
+
+    if (auto result = vkCreateRenderPass(device.handle(), &renderPassInfo, nullptr, &vkRenderPass_);
+        result != VK_SUCCESS) {
+
+        if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
+            throw std::runtime_error("not enough RAM memory to create render pass");
+        }
+
+        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+            throw std::runtime_error("not enough GPU memory to create render pass");
+        }
+
+        assert(false);
+    }
+
+    renderTarget_ =
+      std::make_unique<RenderTarget>(rtBuilder.buildRenderPassTarget(static_cast<VkRenderPass>(vkRenderPass_)));
 }
 }
 
