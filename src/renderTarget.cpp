@@ -19,6 +19,7 @@ RenderTarget::RenderTarget(vulkan::Device& device,
   , surface_{ std::move(surface) }
   , vkSwapChain_{ std::move(vkSwapChain) }
   , frameBuffers_{}
+  , imageAvailableSemaphores_{}
   , outputSemantics_{ { outputSemantic, 1 } }
   , hasDepth_{ true }
 {
@@ -35,6 +36,11 @@ RenderTarget::RenderTarget(vulkan::Device& device,
     vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, vkImages.data());
 
     frameBuffers_.reserve(swapChainLength_);
+
+    imageAvailableSemaphores_.reserve(swapChainLength_);
+
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     auto depthImagePtr = std::make_shared<vulkan::Image>(device,
                                                          extent_.width,
@@ -56,6 +62,15 @@ RenderTarget::RenderTarget(vulkan::Device& device,
             vulkan::ImageView{ device, depthImagePtr },
             vulkan::ImageView{
               device, std::make_shared<vulkan::Image>(vkImage, extent_.width, extent_.height, surfaceFormat) } });
+
+        if (auto result =
+              vkCreateSemaphore(device.handle(),
+                                &semaphoreCreateInfo,
+                                nullptr,
+                                &imageAvailableSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
+            result != VK_SUCCESS) {
+            throw std::runtime_error("could not create image available semaphore.");
+        }
     }
 }
 
@@ -72,6 +87,7 @@ RenderTarget::RenderTarget(vulkan::Device& device,
   , surface_{ std::move(surface) }
   , vkSwapChain_{ std::move(vkSwapChain) }
   , frameBuffers_{}
+  , imageAvailableSemaphores_{}
   , outputSemantics_{ { outputSemantic, 0 } }
   , hasDepth_{ false }
 {
@@ -88,6 +104,10 @@ RenderTarget::RenderTarget(vulkan::Device& device,
     vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, vkImages.data());
 
     frameBuffers_.reserve(swapChainLength_);
+    imageAvailableSemaphores_.reserve(swapChainLength_);
+
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     for (auto vkImage : vkImages) {
         frameBuffers_.emplace_back(
@@ -97,6 +117,15 @@ RenderTarget::RenderTarget(vulkan::Device& device,
           extent_.height,
           std::vector{ vulkan::ImageView{
             device, std::make_shared<vulkan::Image>(vkImage, extent_.width, extent_.height, surfaceFormat) } });
+
+        if (auto result =
+              vkCreateSemaphore(device.handle(),
+                                &semaphoreCreateInfo,
+                                nullptr,
+                                &imageAvailableSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
+            result != VK_SUCCESS) {
+            throw std::runtime_error("could not create image available semaphore.");
+        }
     }
 }
 
@@ -126,5 +155,19 @@ auto RenderTarget::getDepthAttachment() const -> vulkan::ImageView const&
 {
     assert(hasDepth());
     return frameBuffers_[currentChainIndex_].getAttachment(0);
+}
+
+[[nodiscard]] auto RenderTarget::getNextChainIndex(vulkan::Device const& device) const -> size_t
+{
+    uint32_t nextChainIndex = 0;
+
+    vkAcquireNextImageKHR(device.handle(),
+                          static_cast<VkSwapchainKHR>(vkSwapChain_),
+                          std::numeric_limits<uint64_t>::max(),
+                          static_cast<VkSemaphore>(imageAvailableSemaphores_[currentChainIndex_]),
+                          VK_NULL_HANDLE,
+                          &nextChainIndex);
+
+    return nextChainIndex;
 }
 }

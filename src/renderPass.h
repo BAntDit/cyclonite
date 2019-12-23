@@ -36,16 +36,20 @@ public:
 
     auto operator=(RenderPass const&) -> RenderPass& = delete;
 
-    auto operator=(RenderPass&&) -> RenderPass& = default;
+    auto operator=(RenderPass &&) -> RenderPass& = default;
 
     [[nodiscard]] auto renderQueueSubmitInfo() const -> std::vector<VkSubmitInfo> const&
     {
         return renderQueueSubmitInfo_;
     }
 
+    auto begin(vulkan::Device const& device) -> VkFence;
+
 private:
     vulkan::Handle<VkRenderPass> vkRenderPass_;
     std::unique_ptr<RenderTarget> renderTarget_;
+    std::vector<vulkan::Handle<VkFence>> frameFences_;
+    std::vector<VkFence> renderTargetFences_;
     std::vector<VkSubmitInfo> renderQueueSubmitInfo_;
 };
 
@@ -58,6 +62,8 @@ RenderPass::RenderPass(vulkan::Device const& device,
                        render_target_output<type_list<ColorOutputCandidates...>> const&)
   : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{ nullptr }
+  , frameFences_{}
+  , renderTargetFences_{}
   , renderQueueSubmitInfo_{}
 {
     using rt_builder_t = RenderTargetBuilder<render_target_output<type_list<DepthStencilOutputCandidates...>>,
@@ -108,6 +114,22 @@ RenderPass::RenderPass(vulkan::Device const& device,
 
     renderTarget_ =
       std::make_unique<RenderTarget>(rtBuilder.buildRenderPassTarget(static_cast<VkRenderPass>(vkRenderPass_)));
+
+    frameFences_.reserve(renderTarget_->swapChainLength());
+
+    VkFenceCreateInfo fenceCreateInfo = {};
+    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    for (size_t i = 0, count = renderTarget_->swapChainLength(); i < count; i++) {
+        if (auto result = vkCreateFence(
+              device.handle(), &fenceCreateInfo, nullptr, &frameFences_.emplace_back(device.handle(), vkDestroyFence));
+            result != VK_SUCCESS) {
+            throw std::runtime_error("could not create frame synchronization fence");
+        }
+    }
+
+    renderTargetFences_.resize(renderTarget_->swapChainLength(), VK_NULL_HANDLE);
 }
 }
 

@@ -11,19 +11,12 @@ VulkanRenderer::VulkanRenderer(cyclonite::vulkan::Device& device)
 
 void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
 {
-    auto&& [vkFrameFence] = renderPass.begin();
-
-    vkWaitForFences(
-      static_cast<VkDevice>(device_->handle()), 1, &vkFrameFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
-
-    if (auto result = vkResetFences(device_->handle(), 1, &vkFrameFence); result != VK_SUCCESS) {
-        throw std::runtime_error("error on attempt to reset frame synchronization fence");
-    }
+    auto currentFrameFence = renderPass.begin(*device_);
 
     auto const& renderQueueSubmitInfo = renderPass.renderQueueSubmitInfo();
 
     if (auto result = vkQueueSubmit(
-          device_->graphicsQueue(), renderQueueSubmitInfo.size(), renderQueueSubmitInfo.data(), vkFrameFence);
+          device_->graphicsQueue(), renderQueueSubmitInfo.size(), renderQueueSubmitInfo.data(), currentFrameFence);
         result != VK_SUCCESS) {
 
         if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
@@ -38,5 +31,7 @@ void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
             throw std::runtime_error("can not submit command buffers, device lost");
         }
     }
+
+    // renderPass.end();
 }
 }

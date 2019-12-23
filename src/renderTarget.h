@@ -19,6 +19,7 @@ enum class RenderTargetOutputSemantic
     COUNT = MAX_VALUE + 1
 };
 
+// TODO:: split SurfaceRenderTarget and FrameBufferRenderTarget
 class RenderTarget
 {
 public:
@@ -75,6 +76,8 @@ public:
 
     [[nodiscard]] auto currentChainIndex() const -> size_t { return currentChainIndex_; }
 
+    [[nodiscard]] auto getNextChainIndex(vulkan::Device const& device) const -> size_t;
+
     [[nodiscard]] auto getColorAttachment(uint8_t attachmentIndex) const -> vulkan::ImageView const&;
 
     [[nodiscard]] auto getColorAttachment(RenderTargetOutputSemantic semantic) const -> vulkan::ImageView const&;
@@ -95,6 +98,7 @@ private:
     std::optional<Surface> surface_;
     vulkan::Handle<VkSwapchainKHR> vkSwapChain_;
     std::vector<vulkan::FrameBuffer> frameBuffers_;
+    std::vector<vulkan::Handle<VkSemaphore>> imageAvailableSemaphores_;
     std::unordered_map<RenderTargetOutputSemantic, size_t> outputSemantics_;
     bool hasDepth_;
 };
@@ -114,6 +118,7 @@ RenderTarget::RenderTarget(vulkan::Device& device,
   , surface_{}
   , vkSwapChain_{ device.handle(), vkDestroySwapchainKHR }
   , frameBuffers_{}
+  , imageAvailableSemaphores_{}
   , outputSemantics_{}
   , hasDepth_{ true }
 {
@@ -142,6 +147,7 @@ RenderTarget::RenderTarget(vulkan::Device& device,
   , surface_{}
   , vkSwapChain_{ device.handle(), vkDestroySwapchainKHR }
   , frameBuffers_{}
+  , imageAvailableSemaphores_{}
   , outputSemantics_{}
   , hasDepth_{ true }
 {
