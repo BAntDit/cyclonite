@@ -106,7 +106,7 @@ foreach(source ${SHADER_SOURCES})
     get_filename_component(ext "${source}" LAST_EXT)
     file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${dir}")
     set(source "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
-    set(output "${CMAKE_CURRENT_BINARY_DIR}/${dir}/${name}.${ext}.spv.cpp.txt")
+    set(output "${CMAKE_CURRENT_BINARY_DIR}/${dir}/${name}${ext}.spv.cpp.txt")
 
     add_custom_command(
         OUTPUT "${output}"

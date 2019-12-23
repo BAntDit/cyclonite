@@ -16,9 +16,9 @@ Surface::Surface(vulkan::Device const& device, Options::WindowProperties const& 
              static_cast<uint32_t>(windowProperties.fullscreen
                                      ? SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS
                                      : SDL_WINDOW_SHOWN) }
-  , platformSurface_{ _createSurface(device.vulkanInstance(),
-                                     window_,
-                                     vulkan::platform_surface_argument_type_list_t{}) }
+  , platformSurface_{
+      _createSurface(device.vulkanInstance(), window_, vulkan::platform_surface_argument_type_list_t{})
+  }
 {
     VkBool32 presentationSupport = VK_FALSE;
 

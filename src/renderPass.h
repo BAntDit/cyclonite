@@ -17,7 +17,7 @@ public:
     template<size_t presentModeCandidateCount,
              typename... DepthStencilOutputCandidates,
              typename... ColorOutputCandidates>
-    RenderPass(vulkan::Device const& device,
+    RenderPass(vulkan::Device& device,
                Options::WindowProperties const& windowProperties,
                VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
                std::array<VkPresentModeKHR, presentModeCandidateCount> const& presentModeCandidates =
@@ -46,15 +46,20 @@ public:
     auto begin(vulkan::Device const& device) -> VkFence;
 
 private:
+    void _createDummyPipeline(vulkan::Device& device);
+
+private:
     vulkan::Handle<VkRenderPass> vkRenderPass_;
     std::unique_ptr<RenderTarget> renderTarget_;
     std::vector<vulkan::Handle<VkFence>> frameFences_;
     std::vector<VkFence> renderTargetFences_;
     std::vector<VkSubmitInfo> renderQueueSubmitInfo_;
+    // tmp...
+    vulkan::Handle<VkPipeline> vkDummyPipeline_;
 };
 
 template<size_t presentModeCandidateCount, typename... DepthStencilOutputCandidates, typename... ColorOutputCandidates>
-RenderPass::RenderPass(vulkan::Device const& device,
+RenderPass::RenderPass(vulkan::Device& device,
                        Options::WindowProperties const& windowProperties,
                        VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags,
                        std::array<VkPresentModeKHR, presentModeCandidateCount> const& presentModeCandidates,
@@ -65,6 +70,7 @@ RenderPass::RenderPass(vulkan::Device const& device,
   , frameFences_{}
   , renderTargetFences_{}
   , renderQueueSubmitInfo_{}
+  , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
 {
     using rt_builder_t = RenderTargetBuilder<render_target_output<type_list<DepthStencilOutputCandidates...>>,
                                              render_target_output<type_list<ColorOutputCandidates...>>>;

@@ -11,17 +11,16 @@ namespace cyclonite::vulkan {
 class ShaderModule
 {
 public:
-    template<size_t codeSize>
     ShaderModule(Device const& device,
-                 std::array<uint32_t, codeSize> const& code,
+                 std::vector<uint32_t> const& code,
                  VkShaderStageFlags stageFlags,
                  std::string const& entryPointName = u8"main",
                  uint32_t constantOffset = 0,
                  uint32_t constantSize = 0);
 
-    template<size_t bindingCount, size_t codeSize>
+    template<size_t bindingCount>
     ShaderModule(Device const& device,
-                 std::array<uint32_t, codeSize> const& code,
+                 std::vector<uint32_t> const& code,
                  VkShaderStageFlags stageFlags,
                  std::array<VkDescriptorType, bindingCount> const& bindings,
                  std::string const& entryPointName = u8"main",
@@ -59,9 +58,9 @@ private:
     Handle<VkDescriptorSetLayout> vkDescriptorSetLayout_;
 };
 
-template<size_t bindingCount, size_t codeSize>
+template<size_t bindingCount>
 ShaderModule::ShaderModule(Device const& device,
-                           std::array<uint32_t, codeSize> const& code,
+                           std::vector<uint32_t> const& code,
                            VkShaderStageFlags stageFlags,
                            std::array<VkDescriptorType, bindingCount> const& bindings,
                            std::string const& entryPointName,
@@ -102,9 +101,8 @@ ShaderModule::ShaderModule(Device const& device,
     }
 }
 
-template<size_t codeSize>
 ShaderModule::ShaderModule(Device const& device,
-                           std::array<uint32_t, codeSize> const& code,
+                           std::vector<uint32_t> const& code,
                            VkShaderStageFlags stageFlags,
                            std::string const& entryPointName,
                            uint32_t constantOffset,
