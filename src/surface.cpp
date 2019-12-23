@@ -19,9 +19,6 @@ Surface::Surface(vulkan::Device const& device, Options::WindowProperties const& 
   , platformSurface_{ _createSurface(device.vulkanInstance(),
                                      window_,
                                      vulkan::platform_surface_argument_type_list_t{}) }
-  , vkSwapchain_{ device.handle(), vkDestroySwapchainKHR }
-  , imageViews_{}
-  , imageAvailableSemaphores_{}
 {
     VkBool32 presentationSupport = VK_FALSE;
 
@@ -70,20 +67,5 @@ Surface::Surface(vulkan::Device const& device, Options::WindowProperties const& 
     capabilities_.supportedUsageFlags = vkSurfaceCapabilitiesKHR.supportedUsageFlags;
     capabilities_.currentTransform = vkSurfaceCapabilitiesKHR.currentTransform;
     capabilities_.supportedTransforms = vkSurfaceCapabilitiesKHR.supportedTransforms;
-
-    {
-        imageAvailableSemaphores_.resize(imageCount,
-                                         vulkan::Handle<VkSemaphore>{ device.handle(), vkDestroySemaphore });
-
-        VkSemaphoreCreateInfo semaphoreInfo = {};
-        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        for (auto& vkSemaphore : imageAvailableSemaphores_) {
-            if (auto result = vkCreateSemaphore(device.handle(), &semaphoreInfo, nullptr, &vkSemaphore);
-                result != VK_SUCCESS) {
-                throw std::runtime_error("failed to create acquire image synchronization semaphores");
-            }
-        }
-    }
 }
 }

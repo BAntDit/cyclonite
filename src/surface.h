@@ -47,21 +47,11 @@ public:
 
     [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
 
-    [[nodiscard]] auto imageViews() const -> std::vector<vulkan::ImageView> const& { return imageViews_; }
-
-    [[nodiscard]] auto imageAvailableSemaphores() const -> std::vector<vulkan::Handle<VkSemaphore>> const&
-    {
-        return imageAvailableSemaphores_;
-    }
-
 private:
     Capabilities capabilities_;
     VkExtent2D extent_;
     sdl::SDLWindow window_;
     vulkan::platform_surface_t platformSurface_;
-    vulkan::Handle<VkSwapchainKHR> vkSwapchain_;
-    std::vector<vulkan::ImageView> imageViews_;
-    std::vector<vulkan::Handle<VkSemaphore>> imageAvailableSemaphores_;
 };
 
 template<typename... SurfaceArgs>

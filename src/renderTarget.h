@@ -53,7 +53,7 @@ public:
                  uint32_t swapChainLength,
                  uint32_t width,
                  uint32_t height,
-                 std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> surfaceFormats,
+                 std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> colorOutputs,
                  std::enable_if_t<(count > 0), void*> = nullptr);
 
     RenderTarget(RenderTarget const&) = delete;
@@ -138,7 +138,7 @@ RenderTarget::RenderTarget(vulkan::Device& device,
                            uint32_t swapChainLength,
                            uint32_t width,
                            uint32_t height,
-                           std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> surfaceFormats,
+                           std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> colorOutputs,
                            std::enable_if_t<(count > 0), void*>)
   : extent_{}
   , colorAttachmentCount_{ count }
@@ -155,7 +155,7 @@ RenderTarget::RenderTarget(vulkan::Device& device,
     (void)vkRenderPass;
     (void)width;
     (void)height;
-    (void)surfaceFormats;
+    (void)colorOutputs;
 
     throw std::runtime_error("not implemented yet");
 }
