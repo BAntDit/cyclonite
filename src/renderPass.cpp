@@ -92,12 +92,13 @@ void RenderPass::_createDummyPipeline(vulkan::Device& device)
     VkPipelineMultisampleStateCreateInfo multisampleState = {};
     multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampleState.sampleShadingEnable = VK_FALSE;
-    multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // must come from render target
+    multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // TODO:: must come from render target
 
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates = {};
 
     colorBlendAttachmentStates.reserve(renderTarget_->colorAttachmentCount());
 
+    // TODO:: must come as structures array from renderTarget
     for (size_t i = 0, count = renderTarget_->colorAttachmentCount(); i < count; i++) {
         colorBlendAttachmentStates.emplace_back(VkPipelineColorBlendAttachmentState{
           VK_FALSE,
@@ -126,9 +127,10 @@ void RenderPass::_createDummyPipeline(vulkan::Device& device)
     pipelineLayoutInfo.setLayoutCount = 0;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-    // if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayoutInfo)) {
-    //
-    // }
+    if (auto result = vkCreatePipelineLayout(device.handle(), &pipelineLayoutInfo, nullptr, &vkDummyPipelineLayout_);
+        result != VK_SUCCESS) {
+        throw std::runtime_error("could not create graphics pipeline layout");
+    }
 
     VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
     graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -140,5 +142,15 @@ void RenderPass::_createDummyPipeline(vulkan::Device& device)
     graphicsPipelineCreateInfo.pRasterizationState = &rasterizationState;
     graphicsPipelineCreateInfo.pMultisampleState = &multisampleState;
     graphicsPipelineCreateInfo.pColorBlendState = &colorBlendState;
+    graphicsPipelineCreateInfo.layout = static_cast<VkPipelineLayout>(vkDummyPipelineLayout_);
+    graphicsPipelineCreateInfo.renderPass = static_cast<VkRenderPass>(vkRenderPass_);
+    graphicsPipelineCreateInfo.subpass = 0;
+    graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+    if (auto result = vkCreateGraphicsPipelines(
+          device.handle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &vkDummyPipeline_);
+        result != VK_SUCCESS) {
+        throw std::runtime_error("could not create graphics pipeline");
+    }
 }
 }

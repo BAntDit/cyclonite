@@ -55,6 +55,7 @@ private:
     std::vector<VkFence> renderTargetFences_;
     std::vector<VkSubmitInfo> renderQueueSubmitInfo_;
     // tmp...
+    // TODO:: combine them together into vulkan::Pipeline type
     vulkan::Handle<VkPipelineLayout> vkDummyPipelineLayout_;
     vulkan::Handle<VkPipeline> vkDummyPipeline_;
 };
@@ -138,6 +139,8 @@ RenderPass::RenderPass(vulkan::Device& device,
     }
 
     renderTargetFences_.resize(renderTarget_->swapChainLength(), VK_NULL_HANDLE);
+
+    _createDummyPipeline(device);
 }
 }
 
