@@ -55,6 +55,7 @@ private:
     std::vector<VkFence> renderTargetFences_;
     std::vector<VkSubmitInfo> renderQueueSubmitInfo_;
     // tmp...
+    vulkan::Handle<VkPipelineLayout> vkDummyPipelineLayout_;
     vulkan::Handle<VkPipeline> vkDummyPipeline_;
 };
 
@@ -70,6 +71,7 @@ RenderPass::RenderPass(vulkan::Device& device,
   , frameFences_{}
   , renderTargetFences_{}
   , renderQueueSubmitInfo_{}
+  , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
 {
     using rt_builder_t = RenderTargetBuilder<render_target_output<type_list<DepthStencilOutputCandidates...>>,

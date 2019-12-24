@@ -10,6 +10,7 @@
 #include <easy-mp/type_list.h>
 
 namespace cyclonite::vulkan {
+// TODO:: use std::variant with arrays insteadof std::vector<ViewImage> for [1, 8] colorAttachments
 class FrameBuffer
 {
 private:
@@ -26,12 +27,12 @@ public:
                 uint32_t height,
                 std::vector<vulkan::ImageView>&& attachments);
 
-    template<size_t attachmentCount, typename... ImageViewArg>
+    template<size_t attachmentsCount, typename... ImageViewArg>
     FrameBuffer(vulkan::Device const& device,
                 VkRenderPass vkRenderPass,
                 uint32_t width,
                 uint32_t height,
-                std::array<std::tuple<ImageViewArg...>, attachmentCount>&& attachmentArgs);
+                std::array<std::tuple<ImageViewArg...>, attachmentsCount>&& attachmentArgs);
 
     FrameBuffer(FrameBuffer const&) = delete;
 
@@ -58,12 +59,12 @@ private:
     vulkan::Handle<VkFramebuffer> vkFrameBuffer_;
 };
 
-template<size_t attachmentCount, typename... ImageViewArg>
+template<size_t attachmentsCount, typename... ImageViewArg>
 FrameBuffer::FrameBuffer(vulkan::Device const& device,
                          VkRenderPass vkRenderPass,
                          uint32_t width,
                          uint32_t height,
-                         std::array<std::tuple<ImageViewArg...>, attachmentCount>&& attachmentArgs)
+                         std::array<std::tuple<ImageViewArg...>, attachmentsCount>&& attachmentArgs)
   : FrameBuffer{ device, vkRenderPass, width, height, create_image_views(std::move(attachmentArgs)) }
 {}
 
