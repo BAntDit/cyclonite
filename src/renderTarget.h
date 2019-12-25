@@ -92,6 +92,8 @@ public:
 
     [[nodiscard]] auto hasDepth() const -> bool { return hasDepth_; }
 
+    [[nodiscard]] auto frameBuffers() const -> std::vector<vulkan::FrameBuffer> const& { return frameBuffers_; }
+
 private:
     VkExtent2D extent_;
     uint8_t colorAttachmentCount_;

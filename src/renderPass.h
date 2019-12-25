@@ -67,6 +67,9 @@ private:
 
     // tmp:: let it be here just for now
     vulkan::Handle<VkCommandPool> vkCommandPool_;
+
+    // tmp::
+    std::vector<VkCommandBuffer> commandBuffers_;
 };
 
 template<size_t presentModeCandidateCount, typename... DepthStencilOutputCandidates, typename... ColorOutputCandidates>
@@ -85,6 +88,7 @@ RenderPass::RenderPass(vulkan::Device& device,
   , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
   , vkCommandPool_{ device.handle(), vkDestroyCommandPool }
+  , commandBuffers_{}
 {
     using rt_builder_t = RenderTargetBuilder<render_target_output<type_list<DepthStencilOutputCandidates...>>,
                                              render_target_output<type_list<ColorOutputCandidates...>>>;
@@ -166,6 +170,55 @@ RenderPass::RenderPass(vulkan::Device& device,
     _createDummyPipeline(device);
 
     _createDummyCommandPool(device);
+
+    commandBuffers_.resize(renderTarget_->swapChainLength(), VK_NULL_HANDLE);
+
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandBufferAllocateInfo.commandPool = static_cast<VkCommandPool>(vkCommandPool_);
+    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBufferAllocateInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers_.size());
+
+    if (auto result = vkAllocateCommandBuffers(device.handle(), &commandBufferAllocateInfo, commandBuffers_.data());
+        result != VK_SUCCESS) {
+        std::runtime_error("could not allocate command buffers");
+    }
+
+    VkClearValue clearColor = { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
+
+    for (size_t i = 0, count = commandBuffers_.size(); i < count; i++) {
+        auto commandBuffer = commandBuffers_[i];
+
+        VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+        if (vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo) != VK_SUCCESS) {
+            throw std::runtime_error("could not begin recording command buffer!");
+        }
+
+        VkRenderPassBeginInfo renderPassBeginInfo = {};
+        renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassBeginInfo.renderPass = static_cast<VkRenderPass>(vkRenderPass_);
+        renderPassBeginInfo.framebuffer = renderTarget_->frameBuffers()[i].handle();
+        renderPassBeginInfo.renderArea.offset.x = 0;
+        renderPassBeginInfo.renderArea.offset.y = 0;
+        renderPassBeginInfo.renderArea.extent.width = renderTarget_->width();
+        renderPassBeginInfo.renderArea.extent.height = renderTarget_->height();
+        renderPassBeginInfo.clearValueCount = 1;
+        renderPassBeginInfo.pClearValues = &clearColor;
+
+        vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, static_cast<VkPipeline>(vkDummyPipeline_));
+
+        vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+        vkCmdEndRenderPass(commandBuffer);
+
+        if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS) {
+            throw std::runtime_error("could not record command buffer!");
+        }
+    }
 }
 }
 
