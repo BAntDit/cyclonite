@@ -15,7 +15,8 @@ RenderTarget::RenderTarget(vulkan::Device& device,
   : extent_{}
   , colorAttachmentCount_{ 1 }
   , swapChainLength_{ 0 }
-  , currentChainIndex_{ 0 }
+  , frontBufferIndex_{ 0 }
+  , backBufferIndex_{ 0 }
   , surface_{ std::move(surface) }
   , vkSwapChain_{ std::move(vkSwapChain) }
   , frameBuffers_{}
@@ -83,7 +84,8 @@ RenderTarget::RenderTarget(vulkan::Device& device,
   : extent_{}
   , colorAttachmentCount_{ 1 }
   , swapChainLength_{ 0 }
-  , currentChainIndex_{ 0 }
+  , frontBufferIndex_{ 0 }
+  , backBufferIndex_{ 0 }
   , surface_{ std::move(surface) }
   , vkSwapChain_{ std::move(vkSwapChain) }
   , frameBuffers_{}
@@ -142,32 +144,49 @@ auto RenderTarget::hasAttachment(uint8_t attachmentIndex) const -> bool
 auto RenderTarget::getColorAttachment(uint8_t attachmentIndex) const -> vulkan::ImageView const&
 {
     assert(hasAttachment(attachmentIndex));
-    return frameBuffers_[currentChainIndex_].getAttachment(hasDepth_ ? attachmentIndex + 1 : attachmentIndex);
+    return frameBuffers_[frontBufferIndex_].getAttachment(hasDepth_ ? attachmentIndex + 1 : attachmentIndex);
 }
 
 auto RenderTarget::getColorAttachment(RenderTargetOutputSemantic semantic) const -> vulkan::ImageView const&
 {
     assert(hasAttachment(semantic));
-    return frameBuffers_[currentChainIndex_].getAttachment(outputSemantics_.find(semantic)->second);
+    return frameBuffers_[frontBufferIndex_].getAttachment(outputSemantics_.find(semantic)->second);
 }
 
 auto RenderTarget::getDepthAttachment() const -> vulkan::ImageView const&
 {
     assert(hasDepth());
-    return frameBuffers_[currentChainIndex_].getAttachment(0);
+    return frameBuffers_[frontBufferIndex_].getAttachment(0);
 }
 
-[[nodiscard]] auto RenderTarget::getNextChainIndex(vulkan::Device const& device) const -> size_t
+[[nodiscard]] auto RenderTarget::getBackBufferIndex(vulkan::Device const& device) -> size_t
 {
-    uint32_t nextChainIndex = 0;
+    uint32_t iamgeIndex = 0;
 
     vkAcquireNextImageKHR(device.handle(),
                           static_cast<VkSwapchainKHR>(vkSwapChain_),
                           std::numeric_limits<uint64_t>::max(),
-                          static_cast<VkSemaphore>(imageAvailableSemaphores_[currentChainIndex_]),
+                          static_cast<VkSemaphore>(imageAvailableSemaphores_[frontBufferIndex_]),
                           VK_NULL_HANDLE,
-                          &nextChainIndex);
+                          &iamgeIndex);
 
-    return nextChainIndex;
+    return backBufferIndex_ = iamgeIndex;
+}
+
+void RenderTarget::swapBuffers(vulkan::Device const& device, VkSemaphore passFinishedSemaphore)
+{
+    auto imageIndex = static_cast<uint32_t>(backBufferIndex_);
+
+    VkPresentInfoKHR presentInfo = {};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = &passFinishedSemaphore;
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = &vkSwapChain_;
+    presentInfo.pImageIndices = &imageIndex;
+
+    vkQueuePresentKHR(device.graphicsQueue(), &presentInfo);
+
+    frontBufferIndex_ = (frontBufferIndex_ + 1) % swapChainLength_;
 }
 }

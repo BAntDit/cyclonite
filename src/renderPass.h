@@ -45,6 +45,8 @@ public:
 
     auto begin(vulkan::Device const& device) -> VkFence;
 
+    void end();
+
 private:
     void _createDummyPipeline(vulkan::Device& device);
 
@@ -53,7 +55,9 @@ private:
     std::unique_ptr<RenderTarget> renderTarget_;
     std::vector<vulkan::Handle<VkFence>> frameFences_;
     std::vector<VkFence> renderTargetFences_;
+    std::vector<VkSemaphore> passFinishedSemaphores_;
     std::vector<VkSubmitInfo> renderQueueSubmitInfo_;
+
     // tmp...
     // TODO:: combine them together into vulkan::Pipeline type
     vulkan::Handle<VkPipelineLayout> vkDummyPipelineLayout_;
@@ -71,6 +75,7 @@ RenderPass::RenderPass(vulkan::Device& device,
   , renderTarget_{ nullptr }
   , frameFences_{}
   , renderTargetFences_{}
+  , passFinishedSemaphores_{}
   , renderQueueSubmitInfo_{}
   , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
@@ -125,16 +130,28 @@ RenderPass::RenderPass(vulkan::Device& device,
       std::make_unique<RenderTarget>(rtBuilder.buildRenderPassTarget(static_cast<VkRenderPass>(vkRenderPass_)));
 
     frameFences_.reserve(renderTarget_->swapChainLength());
+    passFinishedSemaphores_.reserve(renderTarget_->swapChainLength());
 
     VkFenceCreateInfo fenceCreateInfo = {};
     fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     for (size_t i = 0, count = renderTarget_->swapChainLength(); i < count; i++) {
         if (auto result = vkCreateFence(
               device.handle(), &fenceCreateInfo, nullptr, &frameFences_.emplace_back(device.handle(), vkDestroyFence));
             result != VK_SUCCESS) {
             throw std::runtime_error("could not create frame synchronization fence");
+        }
+
+        if (auto result = vkCreateSemaphore(device.handle(),
+                                            &semaphoreCreateInfo,
+                                            nullptr,
+                                            &passFinishedSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
+            result != VK_SUCCESS) {
+            throw std::runtime_error("could not create pass end synchronization semaphore");
         }
     }
 

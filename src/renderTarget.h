@@ -66,6 +66,8 @@ public:
 
     auto operator=(RenderTarget &&) -> RenderTarget& = default;
 
+    void swapBuffers(vulkan::Device const& device, VkSemaphore passFinishedSemaphore);
+
     [[nodiscard]] auto width() const -> uint32_t { return extent_.width; }
 
     [[nodiscard]] auto height() const -> uint32_t { return extent_.height; }
@@ -74,9 +76,9 @@ public:
 
     [[nodiscard]] auto swapChainLength() const -> size_t { return swapChainLength_; }
 
-    [[nodiscard]] auto currentChainIndex() const -> size_t { return currentChainIndex_; }
+    [[nodiscard]] auto frontBufferIndex() const -> size_t { return frontBufferIndex_; }
 
-    [[nodiscard]] auto getNextChainIndex(vulkan::Device const& device) const -> size_t;
+    [[nodiscard]] auto getBackBufferIndex(vulkan::Device const& device) -> size_t;
 
     [[nodiscard]] auto getColorAttachment(uint8_t attachmentIndex) const -> vulkan::ImageView const&;
 
@@ -94,7 +96,8 @@ private:
     VkExtent2D extent_;
     uint8_t colorAttachmentCount_;
     size_t swapChainLength_;
-    size_t currentChainIndex_;
+    size_t frontBufferIndex_;
+    size_t backBufferIndex_;
     std::optional<Surface> surface_;
     vulkan::Handle<VkSwapchainKHR> vkSwapChain_;
     std::vector<vulkan::FrameBuffer> frameBuffers_;
@@ -114,7 +117,8 @@ RenderTarget::RenderTarget(vulkan::Device& device,
   : extent_{}
   , colorAttachmentCount_{ count }
   , swapChainLength_{ swapChainLength }
-  , currentChainIndex_{ 0 }
+  , frontBufferIndex_{ 0 }
+  , backBufferIndex_{ 0 }
   , surface_{}
   , vkSwapChain_{ device.handle(), vkDestroySwapchainKHR }
   , frameBuffers_{}
@@ -143,7 +147,8 @@ RenderTarget::RenderTarget(vulkan::Device& device,
   : extent_{}
   , colorAttachmentCount_{ count }
   , swapChainLength_{ swapChainLength }
-  , currentChainIndex_{ 0 }
+  , frontBufferIndex_{ 0 }
+  , backBufferIndex_{ 0 }
   , surface_{}
   , vkSwapChain_{ device.handle(), vkDestroySwapchainKHR }
   , frameBuffers_{}
