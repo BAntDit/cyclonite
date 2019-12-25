@@ -45,7 +45,7 @@ public:
 
     auto begin(vulkan::Device const& device) -> VkFence;
 
-    void end();
+    void end(vulkan::Device const& device);
 
 private:
     void _createDummyPipeline(vulkan::Device& device);

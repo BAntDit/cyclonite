@@ -32,9 +32,10 @@ auto RenderPass::begin(vulkan::Device const& device) -> VkFence
     return renderTargetFences_[nextChainIndex] = static_cast<VkFence>(frameFences_[currentCainIndex]);
 }
 
-void RenderPass::end()
+void RenderPass::end(vulkan::Device const& device)
 {
-    renderTarget_->swapBuffers();
+    renderTarget_->swapBuffers(device,
+                               static_cast<VkSemaphore>(passFinishedSemaphores_[renderTarget_->frontBufferIndex()]));
 }
 
 void RenderPass::_createDummyPipeline(vulkan::Device& device)

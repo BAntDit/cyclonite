@@ -32,6 +32,6 @@ void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
         }
     }
 
-    renderPass.end();
+    renderPass.end(*device_);
 }
 }
