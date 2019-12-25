@@ -48,7 +48,9 @@ public:
     void end(vulkan::Device const& device);
 
 private:
-    void _createDummyPipeline(vulkan::Device& device);
+    void _createDummyPipeline(vulkan::Device const& device);
+
+    void _createDummyCommandPool(vulkan::Device const& device);
 
 private:
     vulkan::Handle<VkRenderPass> vkRenderPass_;
@@ -62,6 +64,9 @@ private:
     // TODO:: combine them together into vulkan::Pipeline type
     vulkan::Handle<VkPipelineLayout> vkDummyPipelineLayout_;
     vulkan::Handle<VkPipeline> vkDummyPipeline_;
+
+    // tmp:: let it be here just for now
+    vulkan::Handle<VkCommandPool> vkCommandPool_;
 };
 
 template<size_t presentModeCandidateCount, typename... DepthStencilOutputCandidates, typename... ColorOutputCandidates>
@@ -79,6 +84,7 @@ RenderPass::RenderPass(vulkan::Device& device,
   , renderQueueSubmitInfo_{}
   , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
+  , vkCommandPool_{ device.handle(), vkDestroyCommandPool }
 {
     using rt_builder_t = RenderTargetBuilder<render_target_output<type_list<DepthStencilOutputCandidates...>>,
                                              render_target_output<type_list<ColorOutputCandidates...>>>;
@@ -158,6 +164,8 @@ RenderPass::RenderPass(vulkan::Device& device,
     renderTargetFences_.resize(renderTarget_->swapChainLength(), VK_NULL_HANDLE);
 
     _createDummyPipeline(device);
+
+    _createDummyCommandPool(device);
 }
 }
 

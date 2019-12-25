@@ -38,7 +38,7 @@ void RenderPass::end(vulkan::Device const& device)
                                static_cast<VkSemaphore>(passFinishedSemaphores_[renderTarget_->frontBufferIndex()]));
 }
 
-void RenderPass::_createDummyPipeline(vulkan::Device& device)
+void RenderPass::_createDummyPipeline(vulkan::Device const& device)
 {
     vulkan::ShaderModule vertexShaderModule{ device, defaultVertexShaderCode, VK_SHADER_STAGE_VERTEX_BIT };
     vulkan::ShaderModule fragmentShaderModule{ device, defaultFragmentShaderCode, VK_SHADER_STAGE_FRAGMENT_BIT };
@@ -159,6 +159,18 @@ void RenderPass::_createDummyPipeline(vulkan::Device& device)
           device.handle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &vkDummyPipeline_);
         result != VK_SUCCESS) {
         throw std::runtime_error("could not create graphics pipeline");
+    }
+}
+
+void RenderPass::_createDummyCommandPool(vulkan::Device const& device)
+{
+    VkCommandPoolCreateInfo commandPoolCreateInfo = {};
+    commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    commandPoolCreateInfo.queueFamilyIndex = device.graphicsQueueFamilyIndex();
+
+    if (auto result = vkCreateCommandPool(device.handle(), &commandPoolCreateInfo, nullptr, &vkCommandPool_);
+        result != VK_SUCCESS) {
+        throw std::runtime_error("could not create command pool");
     }
 }
 }
