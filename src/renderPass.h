@@ -38,10 +38,7 @@ public:
 
     auto operator=(RenderPass &&) -> RenderPass& = default;
 
-    [[nodiscard]] auto renderQueueSubmitInfo() const -> std::vector<VkSubmitInfo> const&
-    {
-        return renderQueueSubmitInfo_;
-    }
+    auto renderQueueSubmitInfo() -> VkSubmitInfo const&;
 
     auto begin(vulkan::Device const& device) -> VkFence;
 
@@ -58,7 +55,7 @@ private:
     std::vector<vulkan::Handle<VkFence>> frameFences_;
     std::vector<VkFence> renderTargetFences_;
     std::vector<VkSemaphore> passFinishedSemaphores_;
-    std::vector<VkSubmitInfo> renderQueueSubmitInfo_;
+    VkSubmitInfo renderQueueSubmitInfo_;
 
     // tmp...
     // TODO:: combine them together into vulkan::Pipeline type

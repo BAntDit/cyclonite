@@ -78,7 +78,7 @@ public:
 
     [[nodiscard]] auto frontBufferIndex() const -> size_t { return frontBufferIndex_; }
 
-    [[nodiscard]] auto getBackBufferIndex(vulkan::Device const& device) -> size_t;
+    [[nodiscard]] auto backBufferIndex() const -> size_t { return backBufferIndex_; }
 
     [[nodiscard]] auto getColorAttachment(uint8_t attachmentIndex) const -> vulkan::ImageView const&;
 
@@ -93,6 +93,10 @@ public:
     [[nodiscard]] auto hasDepth() const -> bool { return hasDepth_; }
 
     [[nodiscard]] auto frameBuffers() const -> std::vector<vulkan::FrameBuffer> const& { return frameBuffers_; }
+
+    [[nodiscard]] auto frontBufferAvailableSemaphore() const -> VkSemaphore;
+
+    auto acquireBackBufferIndex(vulkan::Device const& device) -> size_t;
 
 private:
     VkExtent2D extent_;

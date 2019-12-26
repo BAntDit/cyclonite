@@ -159,18 +159,23 @@ auto RenderTarget::getDepthAttachment() const -> vulkan::ImageView const&
     return frameBuffers_[frontBufferIndex_].getAttachment(0);
 }
 
-[[nodiscard]] auto RenderTarget::getBackBufferIndex(vulkan::Device const& device) -> size_t
+auto RenderTarget::frontBufferAvailableSemaphore() const -> VkSemaphore
 {
-    uint32_t iamgeIndex = 0;
+    return static_cast<VkSemaphore>(imageAvailableSemaphores_[frontBufferIndex_]);
+}
+
+auto RenderTarget::acquireBackBufferIndex(vulkan::Device const& device) -> size_t
+{
+    uint32_t imageIndex = 0;
 
     vkAcquireNextImageKHR(device.handle(),
                           static_cast<VkSwapchainKHR>(vkSwapChain_),
                           std::numeric_limits<uint64_t>::max(),
                           static_cast<VkSemaphore>(imageAvailableSemaphores_[frontBufferIndex_]),
                           VK_NULL_HANDLE,
-                          &iamgeIndex);
+                          &imageIndex);
 
-    return backBufferIndex_ = iamgeIndex;
+    return backBufferIndex_ = imageIndex;
 }
 
 void RenderTarget::swapBuffers(vulkan::Device const& device, VkSemaphore passFinishedSemaphore)

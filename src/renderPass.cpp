@@ -16,26 +16,27 @@ std::vector<uint32_t> const defaultFragmentShaderCode = {
 namespace cyclonite {
 auto RenderPass::begin(vulkan::Device const& device) -> VkFence
 {
-    auto currentCainIndex = renderTarget_->frontBufferIndex();
+    auto frontBufferIndex = renderTarget_->frontBufferIndex();
 
-    vkWaitForFences(device.handle(), 1, &frameFences_[currentCainIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkWaitForFences(device.handle(), 1, &frameFences_[frontBufferIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
 
-    auto nextChainIndex = renderTarget_->getBackBufferIndex(device);
+    auto backBufferIndex = renderTarget_->acquireBackBufferIndex(device);
 
-    if (renderTargetFences_[nextChainIndex] != VK_NULL_HANDLE) {
+    if (renderTargetFences_[backBufferIndex] != VK_NULL_HANDLE) {
         vkWaitForFences(
-          device.handle(), 1, &renderTargetFences_[nextChainIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
+          device.handle(), 1, &renderTargetFences_[backBufferIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
     }
 
-    vkResetFences(device.handle(), 1, &frameFences_[currentCainIndex]);
+    vkResetFences(device.handle(), 1, &frameFences_[frontBufferIndex]);
 
-    return renderTargetFences_[nextChainIndex] = static_cast<VkFence>(frameFences_[currentCainIndex]);
+    return renderTargetFences_[backBufferIndex] = static_cast<VkFence>(frameFences_[frontBufferIndex]);
 }
 
 void RenderPass::end(vulkan::Device const& device)
 {
-    renderTarget_->swapBuffers(device,
-                               static_cast<VkSemaphore>(passFinishedSemaphores_[renderTarget_->frontBufferIndex()]));
+    auto frontBufferIndex = renderTarget_->frontBufferIndex();
+
+    renderTarget_->swapBuffers(device, static_cast<VkSemaphore>(passFinishedSemaphores_[frontBufferIndex]));
 }
 
 void RenderPass::_createDummyPipeline(vulkan::Device const& device)
@@ -172,5 +173,31 @@ void RenderPass::_createDummyCommandPool(vulkan::Device const& device)
         result != VK_SUCCESS) {
         throw std::runtime_error("could not create command pool");
     }
+}
+
+auto RenderPass::renderQueueSubmitInfo() -> VkSubmitInfo const&
+{
+    auto backBufferIndex = renderTarget_->backBufferIndex();
+    auto frontBufferIndex = renderTarget_->frontBufferIndex();
+
+    memset(&renderQueueSubmitInfo_, 0, sizeof(renderQueueSubmitInfo_));
+
+    std::array<VkPipelineStageFlags, 1> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    std::array<VkSemaphore, 1> waitSemaphores = { renderTarget_->frontBufferAvailableSemaphore() };
+    std::array<VkSemaphore, 1> signalSemaphores = { static_cast<VkSemaphore>(
+      passFinishedSemaphores_[frontBufferIndex]) };
+
+    renderQueueSubmitInfo_.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    renderQueueSubmitInfo_.waitSemaphoreCount = waitSemaphores.size();
+    renderQueueSubmitInfo_.pWaitSemaphores = waitSemaphores.data();
+    renderQueueSubmitInfo_.pWaitDstStageMask = waitStages.data();
+
+    renderQueueSubmitInfo_.commandBufferCount = 1;
+    renderQueueSubmitInfo_.pCommandBuffers = &commandBuffers_[backBufferIndex];
+
+    renderQueueSubmitInfo_.signalSemaphoreCount = signalSemaphores.size();
+    renderQueueSubmitInfo_.pSignalSemaphores = signalSemaphores.data();
+
+    return renderQueueSubmitInfo_;
 }
 }
