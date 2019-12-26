@@ -33,18 +33,6 @@ struct render_target_output<type_list<render_target_output_candidate<format, col
     constexpr static RenderTargetOutputSemantic semantic_v = Semantic;
 };
 
-template<RenderTargetOutputSemantic Semantic, VkFormat... format>
-struct render_target_output<type_list<render_target_output_candidate<format>...>, Semantic>
-{
-    constexpr static std::array<std::pair<VkFormat, VkColorSpaceKHR>, sizeof...(format)> format_candidate_list_v = {
-        std::make_pair(format, render_target_output_candidate<format>::colorSpace)...
-    };
-
-    constexpr static bool is_empty_v = sizeof...(format) == 0;
-
-    constexpr static RenderTargetOutputSemantic semantic_v = Semantic;
-};
-
 template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
 class RenderTargetBuilder
 {

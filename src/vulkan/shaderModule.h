@@ -50,12 +50,15 @@ public:
         return static_cast<VkDescriptorSetLayout>(vkDescriptorSetLayout_);
     }
 
+    [[nodiscard]] auto entryPointName() const -> std::string const& { return entryPointName_; }
+
 private:
     Handle<VkShaderModule> vkShaderModule_;
     VkShaderStageFlags stageFlags_;
     uint32_t constantSize_;
     uint32_t constantOffset_;
     Handle<VkDescriptorSetLayout> vkDescriptorSetLayout_;
+    std::string entryPointName_;
 };
 
 template<size_t bindingCount>
@@ -112,6 +115,7 @@ ShaderModule::ShaderModule(Device const& device,
   , constantSize_{ constantSize }
   , constantOffset_{ constantOffset }
   , vkDescriptorSetLayout_{ device.handle(), vkDestroyDescriptorSetLayout }
+  , entryPointName_{ entryPointName }
 {
     constexpr uint32_t offsetAlign = 4;
 

@@ -138,7 +138,8 @@ auto RenderTarget::hasAttachment(RenderTargetOutputSemantic semantic) const -> b
 
 auto RenderTarget::hasAttachment(uint8_t attachmentIndex) const -> bool
 {
-    return hasDepth_ ? (attachmentIndex + 1) < outputSemantics_.size() : attachmentIndex < outputSemantics_.size();
+    return hasDepth_ ? static_cast<size_t>(attachmentIndex + 1) < outputSemantics_.size()
+                     : static_cast<size_t>(attachmentIndex) < outputSemantics_.size();
 }
 
 auto RenderTarget::getColorAttachment(uint8_t attachmentIndex) const -> vulkan::ImageView const&
