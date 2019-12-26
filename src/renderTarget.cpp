@@ -54,15 +54,15 @@ RenderTarget::RenderTarget(vulkan::Device& device,
                                                          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
     for (auto vkImage : vkImages) {
-        frameBuffers_.emplace_back(
-          device,
-          vkRenderPass,
-          extent_.width,
-          extent_.height,
-          std::vector{
-            vulkan::ImageView{ device, depthImagePtr },
-            vulkan::ImageView{
-              device, std::make_shared<vulkan::Image>(vkImage, extent_.width, extent_.height, surfaceFormat) } });
+        std::vector<vulkan::ImageView> attachments = {};
+
+        attachments.reserve(2);
+
+        attachments.emplace_back(device, depthImagePtr);
+        attachments.emplace_back(
+          device, std::make_shared<vulkan::Image>(vkImage, extent_.width, extent_.height, surfaceFormat));
+
+        frameBuffers_.emplace_back(device, vkRenderPass, extent_.width, extent_.height, std::move(attachments));
 
         if (auto result =
               vkCreateSemaphore(device.handle(),
@@ -112,13 +112,12 @@ RenderTarget::RenderTarget(vulkan::Device& device,
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     for (auto vkImage : vkImages) {
-        frameBuffers_.emplace_back(
-          device,
-          vkRenderPass,
-          extent_.width,
-          extent_.height,
-          std::vector{ vulkan::ImageView{
-            device, std::make_shared<vulkan::Image>(vkImage, extent_.width, extent_.height, surfaceFormat) } });
+        std::vector<vulkan::ImageView> attachments = {};
+
+        attachments.emplace_back(
+          device, std::make_shared<vulkan::Image>(vkImage, extent_.width, extent_.height, surfaceFormat));
+
+        frameBuffers_.emplace_back(device, vkRenderPass, extent_.width, extent_.height, std::move(attachments));
 
         if (auto result =
               vkCreateSemaphore(device.handle(),

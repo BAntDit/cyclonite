@@ -41,6 +41,16 @@ public:
               VkImageCreateFlags imageCreateFlags = 0,
               VkMemoryPropertyFlags memoryPropertiesFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
+    ImageView(ImageView const&) = delete;
+
+    ImageView(ImageView&&) = default;
+
+    ~ImageView() = default;
+
+    auto operator=(ImageView const&) -> ImageView& = delete;
+
+    auto operator=(ImageView &&) -> ImageView& = default;
+
     [[nodiscard]] auto handle() const -> VkImageView { return static_cast<VkImageView>(vkImageView_); }
 
     [[nodiscard]] auto type() const -> VkImageViewType { return vkImageViewType_; }
