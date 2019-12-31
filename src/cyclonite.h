@@ -7,5 +7,6 @@
 
 #include "app.h"
 #include "root.h"
+#include "event.h"
 
 #endif //CYCLONITE_CYCLONITE_H

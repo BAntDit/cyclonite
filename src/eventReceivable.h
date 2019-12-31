@@ -8,6 +8,7 @@
 #include <atomic>
 #include <memory>
 
+namespace cyclonite {
 class EventReceivable
 {
 public:
@@ -55,5 +56,6 @@ private:
 private:
     static std::atomic_uint_fast64_t lastId_;
 };
+}
 
 #endif // CYCLONITE_EVENTRECEIVABLE_H

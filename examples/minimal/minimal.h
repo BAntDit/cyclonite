@@ -9,7 +9,7 @@
 
 namespace examples
 {
-class Minimal final: public cyclonite::BaseApp<Minimal>
+class Minimal final: public cyclonite::BaseApp<Minimal>, public cyclonite::EventReceivable
 {
 public:
     Minimal();

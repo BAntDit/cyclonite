@@ -4,6 +4,7 @@
 
 #include "eventReceivable.h"
 
+namespace cyclonite {
 std::atomic_uint_fast64_t EventReceivable::lastId_{ 0 };
 
 EventReceivable::EventReceiver::EventReceiver(EventReceivable* instance)
@@ -32,4 +33,5 @@ EventReceivable& EventReceivable::operator=(EventReceivable&& rhs) noexcept
     rhs.id_ = 0;
 
     return *this;
+}
 }
