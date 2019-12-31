@@ -20,7 +20,10 @@ public:
 
     void done();
 
+    void onKeyDown(SDL_KeyboardEvent event);
+
 private:
+    bool shutdown_;
     std::unique_ptr<cyclonite::Root<config_t>> root_;
 };
 }

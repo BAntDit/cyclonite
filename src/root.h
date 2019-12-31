@@ -13,6 +13,7 @@
 #include "surface.h"
 #include "vulkan/device.h"
 #include "vulkan/instance.h"
+#include "input.h"
 
 #include <iostream>
 #include <memory>
@@ -49,12 +50,17 @@ public:
 
     [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
 
+    [[nodiscard]] auto input() const -> Input const& { return input_; }
+
+    [[nodiscard]] auto input() -> Input& { return input_; }
+
 private:
     Capabilities capabilities_;
     multithreading::TaskManager taskManager_;
     sdl::SDLSupport sdlSupport_;
     std::unique_ptr<vulkan::Instance> vulkanInstance_;
     std::unique_ptr<vulkan::Device> vulkanDevice_;
+    Input input_;
 };
 
 template<typename EcsConfig>
@@ -64,6 +70,7 @@ Root<Config<EcsConfig>>::Root()
   , sdlSupport_{}
   , vulkanInstance_{ nullptr }
   , vulkanDevice_{ nullptr }
+  , input_{}
 {}
 
 template<typename EcsConfig>
