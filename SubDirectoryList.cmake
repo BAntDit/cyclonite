@@ -1,0 +1,11 @@
+
+macro(SUBDIRLIST result currentdir)
+    file(GLOB children RELATIVE ${currentdir} ${currentdir}/*)
+    set(dirlist "")
+    foreach(child ${children})
+        if(IS_DIRECTORY ${currentdir}/${child})
+            list(APPEND dirlist ${child})
+        endif()
+    endforeach()
+    set(${result} ${dirlist})
+endmacro()

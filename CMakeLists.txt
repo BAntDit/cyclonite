@@ -185,3 +185,10 @@ set(ALL_SOURCES_FOR_STYLE_CORRECTION ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOUR
 
 include(ClangFormat.cmake)
 CODE_STYLE_CORRECTION("${ALL_SOURCES_FOR_STYLE_CORRECTION}")
+
+include(SubDirectoryList.cmake)
+
+SUBDIRLIST(EXANPLEDIRS "${CMAKE_CURRENT_SOURCE_DIR}/examples")
+foreach(example ${EXANPLEDIRS})
+    add_subdirectory("examples/${example}")
+endforeach()

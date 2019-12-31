@@ -6,5 +6,6 @@
 #define CYCLONITE_CYCLONITE_H
 
 #include "app.h"
+#include "root.h"
 
 #endif //CYCLONITE_CYCLONITE_H

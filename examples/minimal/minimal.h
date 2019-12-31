@@ -9,15 +9,20 @@
 
 namespace examples
 {
-    class Minimal final: public cyclonite::BaseApp<Minimal>
-    {
-    public:
-        auto init(cyclonite::Options const& options) -> Minimal&;
+class Minimal final: public cyclonite::BaseApp<Minimal>
+{
+public:
+    Minimal();
 
-        auto run() -> Minimal&;
+    auto init(cyclonite::Options const& options) -> Minimal&;
 
-        void done();
-    };
+    auto run() -> Minimal&;
+
+    void done();
+
+private:
+    std::unique_ptr<cyclonite::Root<config_t>> root_;
+};
 }
 
 #endif //CYCLONITE_MINIMAL_H

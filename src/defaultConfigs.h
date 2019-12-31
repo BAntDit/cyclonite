@@ -20,18 +20,6 @@
 namespace cyclonite {
 struct DefaultConfigs
 {
-#if defined(VK_USE_PLATFORM_XLIB_KHR)
-    using platform_config_t = PlatformConfig<vulkan::XlibSurface>;
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-    using platform_config_t = PlatformConfig<vulkan::WlSurface>;
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-    using platform_config_t = PlatformConfig<vulkan::AndroidSurface>;
-#elif defined(VK_USE_PLATFORM_WIN32_KHR)
-    using platform_config_t = PlatformConfig<vulkan::Win32Surface>;
-#else
-    using platform_config_t = PlatformConfig<void>;
-#endif
-
     using ecs_config_t =
       EcsConfig<easy_mp::type_list<core::Transform, core::PerspectiveCamera, core::OrthographicCamera>,
                 easy_mp::type_list<enttx::ComponentStorage<64, 8, core::Transform>,

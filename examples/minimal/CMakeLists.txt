@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(minimal.example VERSION 0.0.0.0)
 
-set(SOURCE_FILES minimal.h)
+set(SOURCE_FILES minimal.h minimal.cpp)
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
