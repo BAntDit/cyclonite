@@ -24,7 +24,7 @@ private:
         virtual void vFunc(){};
     };
 
-    using EventHandlerIdentifier =
+    using event_handler_identifier_t =
       std::array<std::byte, sizeof(uint_fast64_t) + std::max(sizeof(&Dummy::func), sizeof(&Dummy::vFunc))>;
 
 public:
@@ -93,11 +93,11 @@ public:
         }
 
     public:
-        auto identifier() const -> EventHandlerIdentifier const& { return identifier_; }
+        auto identifier() const -> event_handler_identifier_t const& { return identifier_; }
 
     private:
-        EventHandlerIdentifier identifier_;
-        std::function<bool (*)(Args...)> handler_;
+        event_handler_identifier_t identifier_;
+        std::function<bool(Args...)> handler_;
     };
 
 public:
@@ -150,7 +150,8 @@ public:
     }
 
 private:
-    std::unordered_map<EventHandlerIdentifier, EventHandler, boost::hash<EventHandlerIdentifier>> eventHandlers_;
+    std::unordered_map<event_handler_identifier_t, EventHandler, boost::hash<event_handler_identifier_t>>
+      eventHandlers_;
 };
 }
 

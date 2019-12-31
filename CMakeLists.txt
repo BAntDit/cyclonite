@@ -9,6 +9,7 @@ set(PUBLIC_HEADERS
     src/options.h
     src/event.h
     src/eventReceivable.h
+    src/input.h
     src/app.h
     src/updateStages.h
     src/root.h
@@ -65,6 +66,7 @@ set(PRIVATE_HEADERS
 set(SOURCES
     src/options.cpp
     src/eventReceivable.cpp
+    src/input.cpp
     src/surface.cpp
     src/renderTarget.cpp
     src/renderPass.cpp
