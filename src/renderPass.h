@@ -14,19 +14,12 @@ namespace cyclonite {
 class RenderPass
 {
 public:
-    template<size_t presentModeCandidateCount,
-             typename... DepthStencilOutputCandidates,
-             typename... ColorOutputCandidates>
+    // template<size_t presentModeCandidateCount,
+    //         typename... DepthStencilOutputCandidates,
+    //         typename... ColorOutputCandidates>
     RenderPass(vulkan::Device& device,
                Options::WindowProperties const& windowProperties,
-               VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-               std::array<VkPresentModeKHR, presentModeCandidateCount> const& presentModeCandidates =
-                 { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR },
-               render_target_output<type_list<DepthStencilOutputCandidates...>> const& =
-                 render_target_output<type_list<render_target_output_candidate<VK_FORMAT_D32_SFLOAT>>>{},
-               render_target_output<type_list<ColorOutputCandidates...>> const& = render_target_output<
-                 type_list<render_target_output_candidate<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
-                 RenderTargetOutputSemantic::DEFAULT>{});
+               VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
 
     RenderPass(RenderPass const&) = delete;
 
@@ -52,9 +45,9 @@ private:
 private:
     vulkan::Handle<VkRenderPass> vkRenderPass_;
     std::unique_ptr<RenderTarget> renderTarget_;
+    std::vector<vulkan::Handle<VkSemaphore>> passFinishedSemaphores_;
     std::vector<vulkan::Handle<VkFence>> frameFences_;
     std::vector<VkFence> renderTargetFences_;
-    std::vector<VkSemaphore> passFinishedSemaphores_;
     VkSubmitInfo renderQueueSubmitInfo_;
 
     // tmp...
@@ -69,26 +62,33 @@ private:
     std::vector<VkCommandBuffer> commandBuffers_;
 };
 
-template<size_t presentModeCandidateCount, typename... DepthStencilOutputCandidates, typename... ColorOutputCandidates>
+// template<size_t presentModeCandidateCount, typename... DepthStencilOutputCandidates, typename...
+// ColorOutputCandidates>
 RenderPass::RenderPass(vulkan::Device& device,
                        Options::WindowProperties const& windowProperties,
-                       VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags,
-                       std::array<VkPresentModeKHR, presentModeCandidateCount> const& presentModeCandidates,
-                       render_target_output<type_list<DepthStencilOutputCandidates...>> const&,
-                       render_target_output<type_list<ColorOutputCandidates...>> const&)
+                       VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags
+                       // std::array<VkPresentModeKHR, presentModeCandidateCount> const& presentModeCandidates,
+                       // render_target_output<type_list<DepthStencilOutputCandidates...>> const&,
+                       // render_target_output<type_list<ColorOutputCandidates...>> const&
+                       )
   : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{ nullptr }
+  , passFinishedSemaphores_{}
   , frameFences_{}
   , renderTargetFences_{}
-  , passFinishedSemaphores_{}
   , renderQueueSubmitInfo_{}
   , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
   , vkCommandPool_{ device.handle(), vkDestroyCommandPool }
   , commandBuffers_{}
 {
-    using rt_builder_t = RenderTargetBuilder<render_target_output<type_list<DepthStencilOutputCandidates...>>,
-                                             render_target_output<type_list<ColorOutputCandidates...>>>;
+    std::array<VkPresentModeKHR, 2> presentModeCandidates = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR };
+
+    using rt_builder_t = RenderTargetBuilder<
+      render_target_output<type_list<render_target_output_candidate<VK_FORMAT_D32_SFLOAT>>>,
+      render_target_output<
+        type_list<render_target_output_candidate<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
+        RenderTargetOutputSemantic::DEFAULT>>;
 
     rt_builder_t rtBuilder{ device, Surface{ device, windowProperties }, presentModeCandidates, vkCompositeAlphaFlags };
 
@@ -98,9 +98,9 @@ RenderPass::RenderPass(vulkan::Device& device,
     subPass.colorAttachmentCount = rt_builder_t::color_attachment_count_v;
     subPass.pColorAttachments = references.data();
 
-    if constexpr (sizeof...(DepthStencilOutputCandidates) > 0) {
-        subPass.pDepthStencilAttachment = &references[rt_builder_t::depth_attachment_idx_v];
-    }
+    // if constexpr (sizeof...(DepthStencilOutputCandidates) > 0) {
+    subPass.pDepthStencilAttachment = &references[rt_builder_t::depth_attachment_idx_v];
+    // }
 
     VkSubpassDependency dependency = {};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;

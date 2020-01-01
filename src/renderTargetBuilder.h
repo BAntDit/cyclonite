@@ -65,7 +65,6 @@ public:
     auto operator=(RenderTargetBuilder const&) -> RenderTargetBuilder& = delete;
 
     auto operator=(RenderTargetBuilder &&) -> RenderTargetBuilder& = delete;
-
     auto getAttachments() const -> attachment_list_t;
 
     auto buildRenderPassTarget(VkRenderPass vkRenderPass) -> RenderTarget;
@@ -340,7 +339,9 @@ template<typename DepthStencilOutputDescription, typename... ColorOutputDescript
 template<size_t... idx>
 auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::_get_output_semantic_format_pairs(
   std::index_sequence<idx...>) const -> std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, sizeof...(idx)>
-{}
+{
+    return std::array{ std::make_pair(colorOutputFormats_[idx].first, outputSemantics_[idx])... };
+}
 
 template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
 template<size_t... idx>

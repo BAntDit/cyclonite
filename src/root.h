@@ -6,6 +6,7 @@
 #define CYCLONITE_ROOT_H
 
 #include "config.h"
+#include "input.h"
 #include "multithreading/taskManager.h"
 #include "options.h"
 #include "platform.h"
@@ -13,7 +14,6 @@
 #include "surface.h"
 #include "vulkan/device.h"
 #include "vulkan/instance.h"
-#include "input.h"
 
 #include <iostream>
 #include <memory>
@@ -53,6 +53,10 @@ public:
     [[nodiscard]] auto input() const -> Input const& { return input_; }
 
     [[nodiscard]] auto input() -> Input& { return input_; }
+
+    [[nodiscard]] auto device() const -> vulkan::Device const& { return *vulkanDevice_; }
+
+    [[nodiscard]] auto device() -> vulkan::Device& { return *vulkanDevice_; }
 
 private:
     Capabilities capabilities_;

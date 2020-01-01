@@ -5,6 +5,7 @@
 #ifndef CYCLONITE_MINIMAL_H
 #define CYCLONITE_MINIMAL_H
 
+#include <renderPass.h>
 #include "cyclonite.h"
 
 namespace examples
@@ -25,6 +26,7 @@ public:
 private:
     bool shutdown_;
     std::unique_ptr<cyclonite::Root<config_t>> root_;
+    std::unique_ptr<cyclonite::RenderPass> renderPass_;
 };
 }
 

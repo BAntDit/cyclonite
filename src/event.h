@@ -41,8 +41,14 @@ public:
             auto id = instance->id();
 
             std::fill(identifier_.begin(), identifier_.end(), 0);
-            std::copy(static_cast<std::byte*>(&id), sizeof(uint_fast64_t), identifier_.begin());
-            std::copy(static_cast<std::byte*>(&member), sizeof(member), identifier_.begin() + sizeof(uint_fast64_t));
+
+            std::copy(reinterpret_cast<std::byte*>(&id),
+                      reinterpret_cast<std::byte*>(&id) + sizeof(uint_fast64_t),
+                      identifier_.begin());
+
+            std::copy(reinterpret_cast<std::byte*>(&member),
+                      reinterpret_cast<std::byte*>(&member) + sizeof(member),
+                      identifier_.begin() + sizeof(uint_fast64_t));
 
             auto eventReceiver = std::weak_ptr<EventReceivable::EventReceiver>{ instance->eventReceiver() };
 
@@ -60,7 +66,10 @@ public:
           , handler_{}
         {
             std::fill(identifier_.begin(), identifier_.end(), 0);
-            std::copy(static_cast<std::byte*>(handler), sizeof(handler), identifier_.begin() + sizeof(uint_fast64_t));
+
+            std::copy(reinterpret_cast<std::byte*>(handler),
+                      reinterpret_cast<std::byte*>(handler) + sizeof(handler),
+                      identifier_.begin() + sizeof(uint_fast64_t));
 
             handler_ = [handler](auto&&... args) -> bool {
                 handler(std::forward<decltype(args)>(args)...);
