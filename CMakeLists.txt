@@ -159,6 +159,9 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     VERSION_TWEAK=${PROJECT_VERSION_TWEAK}
 )
 
+find_package(Threads REQUIRED)
+target_link_libraries(${PROJECT_NAME} Threads::Threads)
+
 find_package(glm REQUIRED)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_ENABLE_EXPERIMENTAL)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_FORCE_RADIANS)

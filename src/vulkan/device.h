@@ -7,10 +7,10 @@
 
 #include "../multithreading/taskManager.h"
 #include "handle.h"
+#include "memoryManager.h"
 #include <memory>
 
 namespace cyclonite::vulkan {
-class MemoryManager;
 
 class Device
 {

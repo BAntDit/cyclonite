@@ -40,7 +40,7 @@ public:
         {
             auto id = instance->id();
 
-            std::fill(identifier_.begin(), identifier_.end(), 0);
+            std::fill(identifier_.begin(), identifier_.end(), std::byte{ 0 });
 
             std::copy(reinterpret_cast<std::byte*>(&id),
                       reinterpret_cast<std::byte*>(&id) + sizeof(uint_fast64_t),
@@ -65,7 +65,7 @@ public:
           : identifier_{}
           , handler_{}
         {
-            std::fill(identifier_.begin(), identifier_.end(), 0);
+            std::fill(identifier_.begin(), identifier_.end(), std::byte{ 0 });
 
             std::copy(reinterpret_cast<std::byte*>(handler),
                       reinterpret_cast<std::byte*>(handler) + sizeof(handler),

@@ -5,7 +5,6 @@
 #ifndef CYCLONITE_MINIMAL_H
 #define CYCLONITE_MINIMAL_H
 
-#include <renderPass.h>
 #include "cyclonite.h"
 
 namespace examples

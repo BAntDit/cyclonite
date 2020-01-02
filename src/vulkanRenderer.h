@@ -5,11 +5,12 @@
 #ifndef CYCLONITE_VULKANRENDERER_H
 #define CYCLONITE_VULKANRENDERER_H
 
-#include "renderPass.h"
 #include "vulkan/device.h"
 #include <array>
 
 namespace cyclonite {
+class RenderPass;
+
 class VulkanRenderer
 {
 public:

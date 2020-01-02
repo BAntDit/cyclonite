@@ -3,6 +3,7 @@
 //
 
 #include "vulkanRenderer.h"
+#include "renderPass.h"
 
 namespace cyclonite {
 VulkanRenderer::VulkanRenderer(cyclonite::vulkan::Device& device)

@@ -4,7 +4,6 @@
 
 #include "device.h"
 #include "internal/deviceCreationFunctions.h"
-#include "memoryManager.h"
 #include <boost/cstdfloat.hpp>
 
 namespace cyclonite::vulkan {
