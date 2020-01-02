@@ -38,7 +38,7 @@ auto MemoryManager::alloc(VkMemoryRequirements const& memoryRequirements, VkMemo
   -> MemoryPage::AllocatedMemory
 {
     auto align = memoryRequirements.alignment;
-    auto size = memoryRequirements.size;
+    auto size = memoryRequirements.size + (align - memoryRequirements.size % align);
 
     assert(size % align == 0);
 
@@ -48,7 +48,7 @@ auto MemoryManager::alloc(VkMemoryRequirements const& memoryRequirements, VkMemo
         auto bit = (static_cast<uint32_t>(1) << i);
 
         if ((memoryRequirements.memoryTypeBits & bit) != 0) {
-            if ((memoryType.propertyFlags & memoryPropertyFlags) != memoryPropertyFlags) {
+            if ((memoryType.propertyFlags & memoryPropertyFlags) == memoryPropertyFlags) {
                 memoryTypeIndex = i;
             }
         }
