@@ -9,7 +9,6 @@ namespace examples
 Minimal::Minimal()
   : shutdown_{ false }
   , root_{ std::make_unique<cyclonite::Root<config_t>>() }
-  , windowProperties_{}
 {}
 
 auto Minimal::init(cyclonite::Options const& options) -> Minimal& {
@@ -17,15 +16,22 @@ auto Minimal::init(cyclonite::Options const& options) -> Minimal& {
 
     root_->input().keyDown += cyclonite::Event<SDL_KeyboardEvent>::EventHandler(this, &Minimal::onKeyDown);
 
-    windowProperties_ = options.windows()[0];
-
     return *this;
 }
 
 auto Minimal::run() -> Minimal& {
+    cyclonite::Options::WindowProperties windowProperties{};
+
+    windowProperties.title = "minimal.example";
+    windowProperties.fullscreen = false;
+    windowProperties.left = 0x1FFF;
+    windowProperties.top = 0x1FFF;
+    windowProperties.width = 512;
+    windowProperties.height = 512;
+
     cyclonite::VulkanRenderer vulkanRenderer{ root_->device() };
 
-    cyclonite::RenderPass renderPass{ root_->device(), windowProperties_ };
+    cyclonite::RenderPass renderPass{ root_->device(), windowProperties };
 
     while(!shutdown_) {
         root_->input().pollEvent();
