@@ -43,6 +43,7 @@ RenderTarget::RenderTarget(vulkan::Device& device,
     VkSemaphoreCreateInfo semaphoreCreateInfo = {};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
+    // TODO:: fix depth buffer creation
     auto depthImagePtr = std::make_shared<vulkan::Image>(device,
                                                          extent_.width,
                                                          extent_.height,
