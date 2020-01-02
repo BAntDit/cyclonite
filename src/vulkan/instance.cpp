@@ -62,7 +62,7 @@ void Instance::createInstance(uint32_t layerCount,
 
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = PROJECT_NAME;
-    appInfo.apiVersion = VK_API_VERSION_1_1;
+    appInfo.apiVersion = VK_API_VERSION_1_0;
     appInfo.applicationVersion = VK_MAKE_VERSION(VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
 
     VkDebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo = {};
@@ -85,23 +85,23 @@ void Instance::createInstance(uint32_t layerCount,
     instanceInfo.enabledLayerCount = layerCount;
     instanceInfo.ppEnabledLayerNames = layerNames;
 
-    auto vkResult = vkCreateInstance(&instanceInfo, nullptr, &vkInstance_);
+    if (auto vkResult = vkCreateInstance(&instanceInfo, nullptr, &vkInstance_); vkResult != VK_SUCCESS) {
+        switch (vkResult) {
+            case VK_ERROR_OUT_OF_HOST_MEMORY:
+                throw std::runtime_error("system is running out of memory");
+            case VK_ERROR_OUT_OF_DEVICE_MEMORY:
+                throw std::runtime_error("device is running out of memory");
+            case VK_ERROR_LAYER_NOT_PRESENT:
+                throw std::runtime_error("layer is not presented");
+            case VK_ERROR_EXTENSION_NOT_PRESENT:
+                throw std::runtime_error("extension is not presented");
+            case VK_ERROR_INCOMPATIBLE_DRIVER:
+                throw std::runtime_error("incompatible driver");
+            default:
+                assert(false);
+        }
 
-    switch (vkResult) {
-        case VK_ERROR_OUT_OF_HOST_MEMORY:
-            throw std::runtime_error("system is running out of memory");
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY:
-            throw std::runtime_error("device is running out of memory");
-        case VK_ERROR_LAYER_NOT_PRESENT:
-            throw std::runtime_error("layer is not presented");
-        case VK_ERROR_EXTENSION_NOT_PRESENT:
-            throw std::runtime_error("extension is not presented");
-        case VK_ERROR_INCOMPATIBLE_DRIVER:
-            throw std::runtime_error("incompatible driver");
-        default:
-            assert(false);
+        throw std::runtime_error("vulkan instance creation failed"); // and no one knows why
     }
-
-    throw std::runtime_error("vulkan instance creation failed"); // and no one knows why
 }
 }
