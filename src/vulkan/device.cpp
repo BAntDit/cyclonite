@@ -115,6 +115,8 @@ Device::Device(multithreading::TaskManager const& taskManager,
     const uint32_t queueIndex = 0; // always create one queue per device for a while
                                    // so, queueIndex is constantly 0
 
+   vkQueues_.reserve(queueFamilyIndices_.size());
+
     for (uint32_t queueFamilyIndex : queueFamilyIndices_) {
         vkQueues_.emplace_back();
         vkGetDeviceQueue(static_cast<VkDevice>(vkDevice_), queueFamilyIndex, queueIndex, &vkQueues_.back());
