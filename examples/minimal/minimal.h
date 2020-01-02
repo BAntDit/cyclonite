@@ -25,7 +25,7 @@ public:
 private:
     bool shutdown_;
     std::unique_ptr<cyclonite::Root<config_t>> root_;
-    std::unique_ptr<cyclonite::RenderPass> renderPass_;
+    cyclonite::Options::WindowProperties windowProperties_;
 };
 }
 

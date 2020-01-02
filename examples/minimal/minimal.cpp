@@ -9,34 +9,30 @@ namespace examples
 Minimal::Minimal()
   : shutdown_{ false }
   , root_{ std::make_unique<cyclonite::Root<config_t>>() }
-  , renderPass_{ nullptr }
+  , windowProperties_{}
 {}
 
 auto Minimal::init(cyclonite::Options const& options) -> Minimal& {
-    auto const& windows = options.windows();
-
-    auto const& mainWindow = windows[0];
-
     root_->init(options);
 
     root_->input().keyDown += cyclonite::Event<SDL_KeyboardEvent>::EventHandler(this, &Minimal::onKeyDown);
 
-    renderPass_ = std::make_unique<cyclonite::RenderPass>(
-      root_->device(),
-      mainWindow,
-      VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
-
-    // TODO:: ...
+    windowProperties_ = options.windows()[0];
 
     return *this;
 }
 
 auto Minimal::run() -> Minimal& {
+    cyclonite::VulkanRenderer vulkanRenderer{ root_->device() };
+
+    cyclonite::RenderPass renderPass{ root_->device(), windowProperties_ };
+
     while(!shutdown_) {
         root_->input().pollEvent();
 
-        // TODO:: ...
+        vulkanRenderer.renderOneFrame(renderPass);
     }
+
     return *this;
 }
 

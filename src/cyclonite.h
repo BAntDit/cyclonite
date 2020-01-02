@@ -8,6 +8,7 @@
 #include "app.h"
 #include "root.h"
 #include "event.h"
+#include "vulkanRenderer.h"
 #include "renderPass.h"
 
 #endif //CYCLONITE_CYCLONITE_H

@@ -75,6 +75,7 @@ Options::Options(int argc /* = 0*/, const char* argv[] /* = {}*/)
   , deviceId_{ std::numeric_limits<uint32_t>::max() }
   , windows_{}
 {
+    // TODO:: move options parsing outside the engine
     po::options_description commandLineOptions{ "commandLineOptions" };
 
     commandLineOptions.add_options()("help, h", "show help")(
