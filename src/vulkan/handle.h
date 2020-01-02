@@ -41,7 +41,12 @@ public:
         };
     }
 
-    Handle(Handle&& handle) = default;
+    Handle(Handle&& handle) noexcept
+      : handle_{ handle.handle_ }
+      , deleter_{ std::move(handle.deleter_) }
+    {
+        handle.handle_ = VK_NULL_HANDLE;
+    }
 
     Handle(Handle const& handle) = delete;
 
