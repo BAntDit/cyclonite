@@ -70,6 +70,20 @@ Image::Image(Device& device,
 
         allocatedMemory_ = device.memoryManager().alloc(memoryRequirements, memoryPropertyFlags);
     }
+
+    if (auto result = vkBindImageMemory(device.handle(),
+                                        static_cast<VkImage>(vkImage_),
+                                        allocatedMemory_.memoryPage().handle(),
+                                        static_cast<VkDeviceSize>(allocatedMemory_.offset()));
+        result != VK_SUCCESS) {
+        if (result == VK_ERROR_OUT_OF_HOST_MEMORY)
+            throw std::runtime_error("not enough RAM to bind image to device memory");
+
+        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY)
+            throw std::runtime_error("not enough GPU Memory to bind image to device memory");
+
+        assert(false);
+    }
 }
 
 Image::Image(cyclonite::vulkan::Device& device,

@@ -58,7 +58,7 @@ RenderTarget::RenderTarget(vulkan::Device& device,
 
         attachments.reserve(2);
 
-        attachments.emplace_back(device, depthImagePtr, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_DEPTH_BIT );
+        attachments.emplace_back(device, depthImagePtr, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_DEPTH_BIT);
         attachments.emplace_back(
           device, std::make_shared<vulkan::Image>(vkImage, extent_.width, extent_.height, surfaceFormat));
 
