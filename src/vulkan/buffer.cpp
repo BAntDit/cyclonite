@@ -36,5 +36,19 @@ Buffer::Buffer(Device& device,
 
         allocatedMemory_ = device.memoryManager().alloc(memoryRequirements, memoryPropertyFlags);
     }
+
+    if (auto result = vkBindBufferMemory(device.handle(),
+                                         static_cast<VkBuffer>(vkBuffer_),
+                                         allocatedMemory_.memoryPage().handle(),
+                                         allocatedMemory_.offset());
+        result != VK_SUCCESS) {
+        if (result == VK_ERROR_OUT_OF_HOST_MEMORY)
+            throw std::runtime_error("not enough RAM to bind memory to buffer");
+
+        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY)
+            throw std::runtime_error("not enough GPU Memory to bind memory to buffer");
+
+        assert(false);
+    }
 }
 }
