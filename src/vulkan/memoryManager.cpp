@@ -50,6 +50,7 @@ auto MemoryManager::alloc(VkMemoryRequirements const& memoryRequirements, VkMemo
         if ((memoryRequirements.memoryTypeBits & bit) != 0) {
             if ((memoryType.propertyFlags & memoryPropertyFlags) == memoryPropertyFlags) {
                 memoryTypeIndex = i;
+                break;
             }
         }
     }

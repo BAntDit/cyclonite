@@ -54,11 +54,7 @@ auto TaskManager::submit(Task&& task) const -> std::future<std::result_of_t<Task
 
     std::packaged_task<result_type()> packagedTask(std::forward<Task>(task));
 
-    auto result = packagedTask.get_future();
-
-    boost::asio::post(ioContext_, std::move(packagedTask));
-
-    return result;
+    return boost::asio::post(ioContext_, std::move(packagedTask));
 }
 
 template<typename Task>
@@ -68,11 +64,7 @@ auto TaskManager::strand(Task&& task) const -> std::future<std::result_of_t<Task
 
     std::packaged_task<result_type()> packagedTask(std::forward<Task>(task));
 
-    auto result = packagedTask.get_future();
-
-    boost::asio::post(strand_, std::move(packagedTask));
-
-    return result;
+    return boost::asio::post(strand_, std::move(packagedTask));
 }
 }
 
