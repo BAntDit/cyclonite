@@ -135,8 +135,8 @@ RenderPass::RenderPass(vulkan::Device& device,
 
     // TODO:: must depends on render target
     std::array<VkClearValue, 2> clearValues = {};
-    clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
-    clearValues[1].depthStencil = {1.0f, 0};
+    clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+    clearValues[1].depthStencil = { 1.0f, 0 };
 
     for (size_t i = 0, count = commandBuffers_.size(); i < count; i++) {
         auto commandBuffer = commandBuffers_[i];
@@ -177,7 +177,11 @@ auto RenderPass::begin(vulkan::Device const& device) -> VkFence
 {
     auto frontBufferIndex = renderTarget_->frontBufferIndex();
 
-    vkWaitForFences(device.handle(), 1, &frameFences_[frontBufferIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkWaitForFences(device.handle(),
+                    1,
+                    &(std::as_const(frameFences_[frontBufferIndex])),
+                    VK_TRUE,
+                    std::numeric_limits<uint64_t>::max());
 
     auto backBufferIndex = renderTarget_->acquireBackBufferIndex(device);
 
@@ -186,7 +190,7 @@ auto RenderPass::begin(vulkan::Device const& device) -> VkFence
           device.handle(), 1, &renderTargetFences_[backBufferIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
     }
 
-    vkResetFences(device.handle(), 1, &frameFences_[frontBufferIndex]);
+    vkResetFences(device.handle(), 1, &(std::as_const(frameFences_[frontBufferIndex])));
 
     return renderTargetFences_[backBufferIndex] = static_cast<VkFence>(frameFences_[frontBufferIndex]);
 }
