@@ -6,7 +6,7 @@
 #include "vulkan/shaderModule.h"
 
 std::vector<uint32_t> const defaultVertexShaderCode = {
-#include "shaders/default.frag.spv.cpp.txt"
+#include "shaders/default.vert.spv.cpp.txt"
 };
 
 std::vector<uint32_t> const defaultFragmentShaderCode = {
@@ -311,6 +311,21 @@ void RenderPass::_createDummyPipeline(vulkan::Device const& device)
     graphicsPipelineCreateInfo.renderPass = static_cast<VkRenderPass>(vkRenderPass_);
     graphicsPipelineCreateInfo.subpass = 0;
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+    if (renderTarget_->hasDepth()) {
+        VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {};
+        depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencilStateCreateInfo.depthTestEnable = VK_FALSE;
+        depthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
+        depthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+        depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+        depthStencilStateCreateInfo.minDepthBounds = 0.0f;
+        depthStencilStateCreateInfo.maxDepthBounds = 1.0f;
+        depthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
+        depthStencilStateCreateInfo.front = {};
+        depthStencilStateCreateInfo.back = {};
+        graphicsPipelineCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
+    }
 
     if (auto result = vkCreateGraphicsPipelines(
           device.handle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &vkDummyPipeline_);
