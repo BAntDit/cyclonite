@@ -40,9 +40,9 @@ public:
 
         [[nodiscard]] auto size() const -> size_t { return size_; }
 
-    private:
         [[nodiscard]] auto offset() const -> size_t { return offset_; }
 
+    private:
         MemoryPage* memoryPage_;
         void* ptr_;
         size_t offset_;
