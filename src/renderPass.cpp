@@ -360,6 +360,7 @@ auto RenderPass::renderQueueSubmitInfo() -> VkSubmitInfo const&
 
     memset(&renderQueueSubmitInfo_, 0, sizeof(renderQueueSubmitInfo_));
 
+    // TODO:: waitSemaphores, signalSemaphores when we out from function, fix that
     std::array<VkPipelineStageFlags, 1> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     std::array<VkSemaphore, 1> waitSemaphores = { renderTarget_->frontBufferAvailableSemaphore() };
     std::array<VkSemaphore, 1> signalSemaphores = { static_cast<VkSemaphore>(
