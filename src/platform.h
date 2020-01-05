@@ -7,6 +7,7 @@
 
 #include <SDL2/SDL.h>
 
+// TODO:: fix undefined platform
 #if defined(SDL_VIDEO_DRIVER_X11)
 #define VK_USE_PLATFORM_XLIB_KHR
 #elif defined(SDL_VIDEO_DRIVER_WAYLAND)
