@@ -41,5 +41,3 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_ENABLE_EXPERIMENTAL)
 target_link_libraries(${PROJECT_NAME} glm)
 
 target_link_libraries(${PROJECT_NAME} SDL2)
-
-target_compile_definitions(${PROJECT_NAME} PRIVATE VK_USE_PLATFORM_XLIB_KHR)
