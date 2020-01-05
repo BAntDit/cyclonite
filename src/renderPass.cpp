@@ -28,6 +28,9 @@ RenderPass::RenderPass(vulkan::Device& device,
   , passFinishedSemaphores_{}
   , frameFences_{}
   , renderTargetFences_{}
+  , waitStage_{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
+  , vkWaitSemaphore_{ VK_NULL_HANDLE }
+  , vkSignalSemaphore_{ VK_NULL_HANDLE }
   , renderQueueSubmitInfo_{}
   , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
@@ -135,7 +138,7 @@ RenderPass::RenderPass(vulkan::Device& device,
 
     // TODO:: must depends on render target
     std::array<VkClearValue, 2> clearValues = {};
-    clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+    clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
     clearValues[1].depthStencil = { 1.0f, 0 };
 
     for (size_t i = 0, count = commandBuffers_.size(); i < count; i++) {
@@ -358,24 +361,21 @@ auto RenderPass::renderQueueSubmitInfo() -> VkSubmitInfo const&
     auto backBufferIndex = renderTarget_->backBufferIndex();
     auto frontBufferIndex = renderTarget_->frontBufferIndex();
 
-    memset(&renderQueueSubmitInfo_, 0, sizeof(renderQueueSubmitInfo_));
+    std::fill_n(reinterpret_cast<std::byte*>(&renderQueueSubmitInfo_), sizeof(renderQueueSubmitInfo_), std::byte{ 0 });
 
-    // TODO:: waitSemaphores, signalSemaphores when we out from function, fix that
-    std::array<VkPipelineStageFlags, 1> waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    std::array<VkSemaphore, 1> waitSemaphores = { renderTarget_->frontBufferAvailableSemaphore() };
-    std::array<VkSemaphore, 1> signalSemaphores = { static_cast<VkSemaphore>(
-      passFinishedSemaphores_[frontBufferIndex]) };
+    vkWaitSemaphore_ = renderTarget_->frontBufferAvailableSemaphore();
+    vkSignalSemaphore_ = static_cast<VkSemaphore>(passFinishedSemaphores_[frontBufferIndex]);
 
     renderQueueSubmitInfo_.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    renderQueueSubmitInfo_.waitSemaphoreCount = waitSemaphores.size();
-    renderQueueSubmitInfo_.pWaitSemaphores = waitSemaphores.data();
-    renderQueueSubmitInfo_.pWaitDstStageMask = waitStages.data();
+    renderQueueSubmitInfo_.waitSemaphoreCount = 1;
+    renderQueueSubmitInfo_.pWaitSemaphores = &vkWaitSemaphore_;
+    renderQueueSubmitInfo_.pWaitDstStageMask = &waitStage_;
 
     renderQueueSubmitInfo_.commandBufferCount = 1;
     renderQueueSubmitInfo_.pCommandBuffers = &commandBuffers_[backBufferIndex];
 
-    renderQueueSubmitInfo_.signalSemaphoreCount = signalSemaphores.size();
-    renderQueueSubmitInfo_.pSignalSemaphores = signalSemaphores.data();
+    renderQueueSubmitInfo_.signalSemaphoreCount = 1;
+    renderQueueSubmitInfo_.pSignalSemaphores = &vkSignalSemaphore_;
 
     return renderQueueSubmitInfo_;
 }

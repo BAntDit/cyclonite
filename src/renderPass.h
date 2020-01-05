@@ -48,6 +48,9 @@ private:
     std::vector<vulkan::Handle<VkSemaphore>> passFinishedSemaphores_;
     std::vector<vulkan::Handle<VkFence>> frameFences_;
     std::vector<VkFence> renderTargetFences_;
+    VkPipelineStageFlags waitStage_;
+    VkSemaphore vkWaitSemaphore_;
+    VkSemaphore vkSignalSemaphore_;
     VkSubmitInfo renderQueueSubmitInfo_;
 
     // tmp...

@@ -187,7 +187,7 @@ void RenderTarget::swapBuffers(vulkan::Device const& device, VkSemaphore passFin
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = &passFinishedSemaphore;
     presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = &vkSwapChain_;
+    presentInfo.pSwapchains = &std::as_const(vkSwapChain_);
     presentInfo.pImageIndices = &imageIndex;
 
     vkQueuePresentKHR(device.graphicsQueue(), &presentInfo);
