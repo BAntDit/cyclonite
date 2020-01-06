@@ -24,7 +24,7 @@ public:
         size_t minUniformBufferOffsetAlignment;
         size_t minTexelBufferOffsetAlignment;
         uint32_t maxPushConstantsSize;
-        uint32_t maxColorAttachments;
+        size_t maxColorAttachments;
     };
 
 public:
