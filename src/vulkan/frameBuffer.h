@@ -13,12 +13,6 @@ namespace cyclonite::vulkan {
 class FrameBuffer
 {
 private:
-    template<typename Args>
-    static auto create_image_view(Args&& args) -> ImageView;
-
-    template<typename Args>
-    static auto create_image_views(Args&& args);
-
     template<typename Indices>
     struct attachment_traits;
 
@@ -66,13 +60,6 @@ public:
                 uint32_t width,
                 uint32_t height,
                 std::array<vulkan::ImageView, colorAttachmentsCount>&& attachments);
-
-    template<size_t attachmentsCount, typename... ImageViewArg>
-    FrameBuffer(vulkan::Device const& device,
-                VkRenderPass vkRenderPass,
-                uint32_t width,
-                uint32_t height,
-                std::array<std::tuple<ImageViewArg...>, attachmentsCount>&& attachmentArgs);
 
     FrameBuffer(FrameBuffer const&) = delete;
 
@@ -208,40 +195,6 @@ FrameBuffer::FrameBuffer(vulkan::Device const& device,
                          std::array<vulkan::ImageView, colorAttachmentsCount>&& attachments)
   : FrameBuffer(device, vkRenderPass, width, height, std::optional<vulkan::ImageView>{}, std::move(attachments))
 {}
-
-template<size_t attachmentsCount, typename... ImageViewArg>
-FrameBuffer::FrameBuffer(vulkan::Device const& device,
-                         VkRenderPass vkRenderPass,
-                         uint32_t width,
-                         uint32_t height,
-                         std::array<std::tuple<ImageViewArg...>, attachmentsCount>&& attachmentArgs)
-  : FrameBuffer{ device,
-                 vkRenderPass,
-                 width,
-                 height,
-                 std::optional<vulkan::ImageView>{},
-                 create_image_views(std::move(attachmentArgs)) }
-{}
-
-template<typename Args>
-auto FrameBuffer::create_image_view(Args&& args) -> ImageView
-{
-    return std::apply(
-      [](auto&&... imageViewArgs) -> ImageView {
-          return ImageView{ std::forward<decltype(imageViewArgs)>(imageViewArgs)... };
-      },
-      std::forward<Args>(args));
-}
-
-template<typename Args>
-auto FrameBuffer::create_image_views(Args&& args)
-{
-    return std::apply(
-      [](auto&&... tupleArgs) -> std::array<ImageView, args.template size()> {
-          return std::array{ create_image_view(std::forward<decltype(tupleArgs)>(tupleArgs))... };
-      },
-      std::forward<Args>(args));
-}
 }
 
 #endif // CYCLONITE_FRAMEBUFFER_H
