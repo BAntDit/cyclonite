@@ -161,5 +161,6 @@ Device::Capabilities::Capabilities(VkPhysicalDeviceLimits const& vkPhysicalDevic
   , minUniformBufferOffsetAlignment{ vkPhysicalDeviceLimits.minUniformBufferOffsetAlignment }
   , minTexelBufferOffsetAlignment{ vkPhysicalDeviceLimits.minTexelBufferOffsetAlignment }
   , maxPushConstantsSize{ vkPhysicalDeviceLimits.maxPushConstantsSize }
+  , maxColorAttachments{ vkPhysicalDeviceLimits.maxColorAttachments }
 {}
 }
