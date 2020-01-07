@@ -27,6 +27,8 @@ set(PUBLIC_HEADERS
     src/core/vertexAttribute.h
     src/core/geometry.h
     src/renderTarget.h
+    src/baseRenderTarget.h
+    src/surfaceRenderTarget.h
     src/renderTargetBuilder.h
     src/renderPass.h
     src/vulkanRenderer.h
@@ -68,6 +70,8 @@ set(SOURCES
     src/eventReceivable.cpp
     src/input.cpp
     src/surface.cpp
+    src/baseRenderTarget.cpp
+    src/surfaceRenderTarget.cpp
     src/renderTarget.cpp
     src/renderPass.cpp
     src/vulkanRenderer.cpp

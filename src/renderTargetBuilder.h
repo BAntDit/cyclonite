@@ -38,7 +38,7 @@ class RenderTargetBuilder
 {
 public:
     using attachment_list_t =
-      std::conditional_t<std::is_same_v<DepthStencilOutputDescription, void>,
+      std::conditional_t<DepthStencilOutputDescription::is_empty_v,
                          std::pair<std::array<VkAttachmentDescription, sizeof...(ColorOutputDescriptions)>,
                                    std::array<VkAttachmentReference, sizeof...(ColorOutputDescriptions)>>,
                          std::pair<std::array<VkAttachmentDescription, sizeof...(ColorOutputDescriptions) + 1>,
