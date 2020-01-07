@@ -29,6 +29,7 @@ set(PUBLIC_HEADERS
     src/renderTarget.h
     src/baseRenderTarget.h
     src/surfaceRenderTarget.h
+    src/frameBufferRenderTarget.h
     src/renderTargetBuilder.h
     src/renderPass.h
     src/vulkanRenderer.h
@@ -71,6 +72,7 @@ set(SOURCES
     src/input.cpp
     src/surface.cpp
     src/baseRenderTarget.cpp
+    src/frameBufferRenderTarget.cpp
     src/surfaceRenderTarget.cpp
     src/renderTarget.cpp
     src/renderPass.cpp
