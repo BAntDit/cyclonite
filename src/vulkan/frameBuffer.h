@@ -142,15 +142,12 @@ FrameBuffer::FrameBuffer(vulkan::Device const& device,
 
     std::visit(
       [this, &framebufferInfo](auto& array) -> void {
-          size_t start = 0;
-
-          if constexpr (array.size() > colorAttachmentsCount) {
-              array[0] = depthStencilAttachments_->handle();
-              start = 1;
+          for (size_t i = 0; i < colorAttachmentsCount; i++) {
+              array[i] = attachment_list_traits::get_attachment(colorAttachments_, i).handle();
           }
 
-          for (size_t i = 0; i < colorAttachmentsCount; i++) {
-              array[i + start] = attachment_list_traits::get_attachment(colorAttachments_, i).handle();
+          if constexpr (array.size() > colorAttachmentsCount) {
+              array[colorAttachmentsCount] = depthStencilAttachments_->handle();
           }
 
           framebufferInfo.attachmentCount = static_cast<uint32_t>(array.size());

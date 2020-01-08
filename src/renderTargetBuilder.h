@@ -372,12 +372,12 @@ auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions.
         depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         VkAttachmentReference depthAttachmentRef = {};
-        depthAttachmentRef.attachment = 0;
+        depthAttachmentRef.attachment = depth_attachment_idx_v;
         depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         return std::make_pair(
-          std::array<VkAttachmentDescription, count + 1>{ depthAttachment, _get_attachment(idx)... },
-          std::array<VkAttachmentReference, count + 1>{ _get_attachment_ref(idx + 1)..., depthAttachmentRef });
+          std::array<VkAttachmentDescription, count + 1>{ _get_attachment(idx)..., depthAttachment },
+          std::array<VkAttachmentReference, count + 1>{ _get_attachment_ref(idx)..., depthAttachmentRef });
     }
 }
 
