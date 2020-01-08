@@ -24,7 +24,7 @@ RenderPass::RenderPass(vulkan::Device& device,
                        // render_target_output<type_list<ColorOutputCandidates...>> const&
                        )
   : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
-  , renderTarget_{ nullptr }
+  , renderTarget_{}
   , passFinishedSemaphores_{}
   , frameFences_{}
   , renderTargetFences_{}
@@ -88,11 +88,13 @@ RenderPass::RenderPass(vulkan::Device& device,
         assert(false);
     }
 
-    renderTarget_ =
-      std::make_unique<RenderTarget>(rtBuilder.buildRenderPassTarget(static_cast<VkRenderPass>(vkRenderPass_)));
+    std::visit([this](auto&& rt) -> void { renderTarget_ = std::forward<decltype(rt)>(rt); },
+               rtBuilder.buildRenderPassTarget(static_cast<VkRenderPass>(vkRenderPass_)));
 
-    frameFences_.reserve(renderTarget_->swapChainLength());
-    passFinishedSemaphores_.reserve(renderTarget_->swapChainLength());
+    auto swapChainLength = _getSwapChainLength();
+
+    frameFences_.reserve(swapChainLength);
+    passFinishedSemaphores_.reserve(swapChainLength);
 
     VkFenceCreateInfo fenceCreateInfo = {};
     fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -101,7 +103,7 @@ RenderPass::RenderPass(vulkan::Device& device,
     VkSemaphoreCreateInfo semaphoreCreateInfo = {};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    for (size_t i = 0, count = renderTarget_->swapChainLength(); i < count; i++) {
+    for (size_t i = 0; i < swapChainLength; i++) {
         if (auto result = vkCreateFence(
               device.handle(), &fenceCreateInfo, nullptr, &frameFences_.emplace_back(device.handle(), vkDestroyFence));
             result != VK_SUCCESS) {
@@ -117,13 +119,13 @@ RenderPass::RenderPass(vulkan::Device& device,
         }
     }
 
-    renderTargetFences_.resize(renderTarget_->swapChainLength(), VK_NULL_HANDLE);
+    renderTargetFences_.resize(swapChainLength, VK_NULL_HANDLE);
 
     _createDummyPipeline(device);
 
     _createDummyCommandPool(device);
 
-    commandBuffers_.resize(renderTarget_->swapChainLength(), VK_NULL_HANDLE);
+    commandBuffers_.resize(swapChainLength, VK_NULL_HANDLE);
 
     VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
     commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -141,6 +143,10 @@ RenderPass::RenderPass(vulkan::Device& device,
     clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
     clearValues[1].depthStencil = { 1.0f, 0 };
 
+    auto&& frameBuffers = _getFrameBuffers();
+
+    auto&& [width, height] = _getSize();
+
     for (size_t i = 0, count = commandBuffers_.size(); i < count; i++) {
         auto commandBuffer = commandBuffers_[i];
 
@@ -154,11 +160,11 @@ RenderPass::RenderPass(vulkan::Device& device,
         VkRenderPassBeginInfo renderPassBeginInfo = {};
         renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassBeginInfo.renderPass = static_cast<VkRenderPass>(vkRenderPass_);
-        renderPassBeginInfo.framebuffer = renderTarget_->frameBuffers()[i].handle();
+        renderPassBeginInfo.framebuffer = frameBuffers[i].handle();
         renderPassBeginInfo.renderArea.offset.x = 0;
         renderPassBeginInfo.renderArea.offset.y = 0;
-        renderPassBeginInfo.renderArea.extent.width = renderTarget_->width();
-        renderPassBeginInfo.renderArea.extent.height = renderTarget_->height();
+        renderPassBeginInfo.renderArea.extent.width = width;
+        renderPassBeginInfo.renderArea.extent.height = height;
         renderPassBeginInfo.clearValueCount = clearValues.size();
         renderPassBeginInfo.pClearValues = clearValues.data();
 
@@ -178,35 +184,63 @@ RenderPass::RenderPass(vulkan::Device& device,
 
 auto RenderPass::begin(vulkan::Device const& device) -> VkFence
 {
-    auto frontBufferIndex = renderTarget_->frontBufferIndex();
+    return std::visit(
+      [&, this](auto&& rt) -> VkFence {
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget>) {
+              auto frontBufferIndex = rt.frontBufferIndex();
 
-    vkWaitForFences(device.handle(),
-                    1,
-                    &(std::as_const(frameFences_[frontBufferIndex])),
-                    VK_TRUE,
-                    std::numeric_limits<uint64_t>::max());
+              vkWaitForFences(device.handle(),
+                              1,
+                              &(std::as_const(frameFences_[frontBufferIndex])),
+                              VK_TRUE,
+                              std::numeric_limits<uint64_t>::max());
 
-    auto backBufferIndex = renderTarget_->acquireBackBufferIndex(device);
+              auto backBufferIndex = rt.acquireBackBufferIndex(device);
 
-    if (renderTargetFences_[backBufferIndex] != VK_NULL_HANDLE) {
-        vkWaitForFences(
-          device.handle(), 1, &renderTargetFences_[backBufferIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
-    }
+              if (renderTargetFences_[backBufferIndex] != VK_NULL_HANDLE) {
+                  vkWaitForFences(device.handle(),
+                                  1,
+                                  &renderTargetFences_[backBufferIndex],
+                                  VK_TRUE,
+                                  std::numeric_limits<uint64_t>::max());
+              }
 
-    vkResetFences(device.handle(), 1, &(std::as_const(frameFences_[frontBufferIndex])));
+              vkResetFences(device.handle(), 1, &(std::as_const(frameFences_[frontBufferIndex])));
 
-    return renderTargetFences_[backBufferIndex] = static_cast<VkFence>(frameFences_[frontBufferIndex]);
+              return renderTargetFences_[backBufferIndex] = static_cast<VkFence>(frameFences_[frontBufferIndex]);
+          }
+
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
+              throw std::runtime_error("not implemented yet");
+          }
+
+          throw std::runtime_error("empty render target");
+      },
+      renderTarget_);
 }
 
 void RenderPass::end(vulkan::Device const& device)
 {
-    auto frontBufferIndex = renderTarget_->frontBufferIndex();
+    std::visit(
+      [&, this](auto&& rt) -> void {
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
+                        std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
+              rt.swapBuffers(device, static_cast<VkSemaphore>(passFinishedSemaphores_[rt.frontBufferIndex()]));
 
-    renderTarget_->swapBuffers(device, static_cast<VkSemaphore>(passFinishedSemaphores_[frontBufferIndex]));
+              return;
+          }
+
+          throw std::runtime_error("empty render target");
+      },
+      renderTarget_);
 }
 
 void RenderPass::_createDummyPipeline(vulkan::Device const& device)
 {
+    auto&& [width, height] = _getSize();
+
+    auto colorAttachmentCount = _getColorAttachmentCount();
+
     vulkan::ShaderModule vertexShaderModule{ device, defaultVertexShaderCode, VK_SHADER_STAGE_VERTEX_BIT };
     vulkan::ShaderModule fragmentShaderModule{ device, defaultFragmentShaderCode, VK_SHADER_STAGE_FRAGMENT_BIT };
 
@@ -237,14 +271,14 @@ void RenderPass::_createDummyPipeline(vulkan::Device const& device)
     VkViewport viewport = {};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = renderTarget_->width();
-    viewport.height = renderTarget_->height();
+    viewport.width = width;
+    viewport.height = height;
     viewport.minDepth = 0.0;
     viewport.maxDepth = 1.0;
 
     VkRect2D scissor = {};
     scissor.offset = { 0, 0 };
-    scissor.extent = { renderTarget_->width(), renderTarget_->height() };
+    scissor.extent = { width, height };
 
     VkPipelineViewportStateCreateInfo viewportState = {};
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -271,10 +305,10 @@ void RenderPass::_createDummyPipeline(vulkan::Device const& device)
 
     std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates = {};
 
-    colorBlendAttachmentStates.reserve(renderTarget_->colorAttachmentCount());
+    colorBlendAttachmentStates.reserve(colorAttachmentCount);
 
     // TODO:: must come as structures array from renderTarget
-    for (size_t i = 0, count = renderTarget_->colorAttachmentCount(); i < count; i++) {
+    for (size_t i = 0; i < colorAttachmentCount; i++) {
         colorBlendAttachmentStates.emplace_back(VkPipelineColorBlendAttachmentState{
           VK_FALSE,
           VK_BLEND_FACTOR_ONE,
@@ -322,7 +356,7 @@ void RenderPass::_createDummyPipeline(vulkan::Device const& device)
     graphicsPipelineCreateInfo.subpass = 0;
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if (renderTarget_->hasDepth()) {
+    if (_hasDepthStencil()) {
         VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {};
         depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
         depthStencilStateCreateInfo.depthTestEnable = VK_FALSE;
@@ -356,26 +390,110 @@ void RenderPass::_createDummyCommandPool(vulkan::Device const& device)
     }
 }
 
+auto RenderPass::_getSwapChainLength() const -> size_t
+{
+    return std::visit(
+      [](auto&& rt) -> size_t {
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
+                        std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
+              return rt.swapChainLength();
+          }
+
+          throw std::runtime_error("empty render target");
+      },
+      renderTarget_);
+}
+
+auto RenderPass::_getFrameBuffers() const -> std::vector<vulkan::FrameBuffer> const&
+{
+    return std::visit(
+      [](auto&& rt) -> std::vector<vulkan::FrameBuffer> const& {
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
+                        std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
+              return rt.frameBuffers();
+          }
+
+          throw std::runtime_error("empty render target");
+      },
+      renderTarget_);
+}
+
+auto RenderPass::_getSize() const -> std::pair<uint32_t, uint32_t>
+{
+    return std::visit(
+      [](auto&& rt) -> std::pair<uint32_t, uint32_t> {
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
+                        std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
+              return std::make_pair(rt.width(), rt.height());
+          }
+
+          throw std::runtime_error("empty render target");
+      },
+      renderTarget_);
+}
+
+auto RenderPass::_getColorAttachmentCount() const -> size_t
+{
+    return std::visit(
+      [](auto&& rt) -> size_t {
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
+                        std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
+              return rt.colorAttachmentCount();
+          }
+
+          throw std::runtime_error("empty render target");
+      },
+      renderTarget_);
+}
+
+auto RenderPass::_hasDepthStencil() const -> bool
+{
+    return std::visit(
+      [](auto&& rt) -> bool {
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
+                        std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
+              return rt.hasDepthStencil();
+          }
+
+          throw std::runtime_error("empty render target");
+      },
+      renderTarget_);
+}
+
 auto RenderPass::renderQueueSubmitInfo() -> VkSubmitInfo const&
 {
-    auto backBufferIndex = renderTarget_->backBufferIndex();
-    auto frontBufferIndex = renderTarget_->frontBufferIndex();
-
     std::fill_n(reinterpret_cast<std::byte*>(&renderQueueSubmitInfo_), sizeof(renderQueueSubmitInfo_), std::byte{ 0 });
 
-    vkWaitSemaphore_ = renderTarget_->frontBufferAvailableSemaphore();
-    vkSignalSemaphore_ = static_cast<VkSemaphore>(passFinishedSemaphores_[frontBufferIndex]);
+    std::visit(
+      [this](auto&& rt) -> void {
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget>) {
+              auto backBufferIndex = rt.backBufferIndex();
+              auto frontBufferIndex = rt.frontBufferIndex();
 
-    renderQueueSubmitInfo_.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    renderQueueSubmitInfo_.waitSemaphoreCount = 1;
-    renderQueueSubmitInfo_.pWaitSemaphores = &vkWaitSemaphore_;
-    renderQueueSubmitInfo_.pWaitDstStageMask = &waitStage_;
+              vkWaitSemaphore_ = rt.frontBufferAvailableSemaphore();
+              vkSignalSemaphore_ = static_cast<VkSemaphore>(passFinishedSemaphores_[frontBufferIndex]);
 
-    renderQueueSubmitInfo_.commandBufferCount = 1;
-    renderQueueSubmitInfo_.pCommandBuffers = &commandBuffers_[backBufferIndex];
+              renderQueueSubmitInfo_.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+              renderQueueSubmitInfo_.waitSemaphoreCount = 1;
+              renderQueueSubmitInfo_.pWaitSemaphores = &vkWaitSemaphore_;
+              renderQueueSubmitInfo_.pWaitDstStageMask = &waitStage_;
 
-    renderQueueSubmitInfo_.signalSemaphoreCount = 1;
-    renderQueueSubmitInfo_.pSignalSemaphores = &vkSignalSemaphore_;
+              renderQueueSubmitInfo_.commandBufferCount = 1;
+              renderQueueSubmitInfo_.pCommandBuffers = &commandBuffers_[backBufferIndex];
+
+              renderQueueSubmitInfo_.signalSemaphoreCount = 1;
+              renderQueueSubmitInfo_.pSignalSemaphores = &vkSignalSemaphore_;
+
+              return;
+          }
+
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
+              throw std::runtime_error("not implemented yet");
+          }
+
+          throw std::runtime_error("empty render target");
+      },
+      renderTarget_);
 
     return renderQueueSubmitInfo_;
 }

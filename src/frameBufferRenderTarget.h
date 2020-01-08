@@ -32,11 +32,11 @@ public:
 
     FrameBufferRenderTarget(FrameBufferRenderTarget&&) = default;
 
-    ~FrameBufferRenderTarget() = delete;
+    ~FrameBufferRenderTarget() = default;
 
     auto operator=(FrameBufferRenderTarget const&) -> FrameBufferRenderTarget& = delete;
 
-    auto operator=(FrameBufferRenderTarget&&) -> FrameBufferRenderTarget& = default;
+    auto operator=(FrameBufferRenderTarget &&) -> FrameBufferRenderTarget& = default;
 
     void swapBuffers(vulkan::Device const& device, VkSemaphore passFinishedSemaphore);
 };
@@ -52,7 +52,7 @@ FrameBufferRenderTarget::FrameBufferRenderTarget(
   std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> const& colorOutputs)
   : BaseRenderTarget(width, height)
 {
-    colorAttachmentCount_ = count;
+    colorAttachmentCount_ = 2;
 
     hasDepthStencil_ = depthStencilFormat != VK_FORMAT_UNDEFINED;
 
@@ -64,7 +64,7 @@ FrameBufferRenderTarget::FrameBufferRenderTarget(
     (void)height;
     (void)colorOutputs;
 
-    throw std::runtime_error("no implemented yet");
+    throw std::runtime_error("not implemented yet");
 }
 
 template<size_t count>

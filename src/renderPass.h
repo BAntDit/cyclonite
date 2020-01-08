@@ -21,6 +21,9 @@ public:
                Options::WindowProperties const& windowProperties,
                VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
 
+    // TODO::
+    // RenderPass(vulkan::Device& device);
+
     RenderPass(RenderPass const&) = delete;
 
     RenderPass(RenderPass&&) = default;
@@ -42,9 +45,19 @@ private:
 
     void _createDummyCommandPool(vulkan::Device const& device);
 
+    [[nodiscard]] auto _getSwapChainLength() const -> size_t;
+
+    [[nodiscard]] auto _getFrameBuffers() const -> std::vector<vulkan::FrameBuffer> const&;
+
+    [[nodiscard]] auto _getSize() const -> std::pair<uint32_t, uint32_t>;
+
+    [[nodiscard]] auto _getColorAttachmentCount() const -> size_t;
+
+    [[nodiscard]] auto _hasDepthStencil() const -> bool;
+
 private:
     vulkan::Handle<VkRenderPass> vkRenderPass_;
-    std::unique_ptr<RenderTarget> renderTarget_;
+    std::variant<std::monostate, SurfaceRenderTarget, FrameBufferRenderTarget> renderTarget_;
     std::vector<vulkan::Handle<VkSemaphore>> passFinishedSemaphores_;
     std::vector<vulkan::Handle<VkFence>> frameFences_;
     std::vector<VkFence> renderTargetFences_;

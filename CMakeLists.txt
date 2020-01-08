@@ -26,7 +26,6 @@ set(PUBLIC_HEADERS
     src/core/primitiveType.h
     src/core/vertexAttribute.h
     src/core/geometry.h
-    src/renderTarget.h
     src/baseRenderTarget.h
     src/surfaceRenderTarget.h
     src/frameBufferRenderTarget.h
@@ -74,7 +73,6 @@ set(SOURCES
     src/baseRenderTarget.cpp
     src/frameBufferRenderTarget.cpp
     src/surfaceRenderTarget.cpp
-    src/renderTarget.cpp
     src/renderPass.cpp
     src/vulkanRenderer.cpp
     src/sdl/sdlSupport.cpp

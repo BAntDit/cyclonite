@@ -5,8 +5,8 @@
 #ifndef CYCLONITE_RENDERTARGETBUILDER_H
 #define CYCLONITE_RENDERTARGETBUILDER_H
 
-#include "renderTarget.h"
-#include <vulkan/vulkan.h>
+#include "frameBufferRenderTarget.h"
+#include "surfaceRenderTarget.h"
 
 namespace cyclonite {
 using namespace easy_mp;
@@ -56,6 +56,8 @@ public:
                           { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR },
                         VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
 
+    // RenderTargetBuilder(vulkan::Device& device); TODO:: ...
+
     RenderTargetBuilder(RenderTargetBuilder const&) = delete;
 
     RenderTargetBuilder(RenderTargetBuilder&&) = delete;
@@ -65,9 +67,10 @@ public:
     auto operator=(RenderTargetBuilder const&) -> RenderTargetBuilder& = delete;
 
     auto operator=(RenderTargetBuilder &&) -> RenderTargetBuilder& = delete;
+
     auto getAttachments() const -> attachment_list_t;
 
-    auto buildRenderPassTarget(VkRenderPass vkRenderPass) -> RenderTarget;
+    auto buildRenderPassTarget(VkRenderPass vkRenderPass) -> std::variant<SurfaceRenderTarget, FrameBufferRenderTarget>;
 
 private:
     static void _swapChainCreationErrorHandling(VkResult result);
@@ -188,7 +191,7 @@ RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::
 
 template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
 auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::buildRenderPassTarget(
-  VkRenderPass vkRenderPass) -> RenderTarget
+  VkRenderPass vkRenderPass) -> std::variant<SurfaceRenderTarget, FrameBufferRenderTarget>
 {
     std::array<RenderTargetOutputSemantic, sizeof...(ColorOutputDescriptions)> outputSemantics = {
         ColorOutputDescriptions::semantic_v...
@@ -199,29 +202,32 @@ auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions.
         (void)_;
 
         if constexpr (DepthStencilOutputDescription::is_empty_v) {
-            return RenderTarget{ device_, vkRenderPass, *surface_, vkSwapChain_, surfaceFormat, outputSemantics[0] };
+            return SurfaceRenderTarget{ device_,      vkRenderPass,  *surface_,
+                                        vkSwapChain_, surfaceFormat, outputSemantics[0] };
         } else {
-            return RenderTarget{ device_,       vkRenderPass,      *surface_, vkSwapChain_, vkDepthStencilOutputFormat_,
-                                 surfaceFormat, outputSemantics[0] };
+            return SurfaceRenderTarget{
+                device_,       vkRenderPass,      *surface_, vkSwapChain_, vkDepthStencilOutputFormat_,
+                surfaceFormat, outputSemantics[0]
+            };
         }
     } else {
         if constexpr (DepthStencilOutputDescription::is_empty_v) {
-            return RenderTarget{ device_,
-                                 vkRenderPass,
-                                 1,
-                                 extent_.width,
-                                 extent_.height,
-                                 _get_output_semantic_format_pairs(
-                                   std::make_index_sequence<sizeof...(ColorOutputDescriptions)>()) };
+            return FrameBufferRenderTarget{ device_,
+                                            vkRenderPass,
+                                            1,
+                                            extent_.width,
+                                            extent_.height,
+                                            _get_output_semantic_format_pairs(
+                                              std::make_index_sequence<sizeof...(ColorOutputDescriptions)>()) };
         } else {
-            return RenderTarget{ device_,
-                                 vkRenderPass,
-                                 1,
-                                 extent_.width,
-                                 extent_.height,
-                                 vkDepthStencilOutputFormat_,
-                                 _get_output_semantic_format_pairs(
-                                   std::make_index_sequence<sizeof...(ColorOutputDescriptions)>()) };
+            return FrameBufferRenderTarget{ device_,
+                                            vkRenderPass,
+                                            1,
+                                            extent_.width,
+                                            extent_.height,
+                                            vkDepthStencilOutputFormat_,
+                                            _get_output_semantic_format_pairs(
+                                              std::make_index_sequence<sizeof...(ColorOutputDescriptions)>()) };
         }
     }
 }
