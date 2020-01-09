@@ -5,20 +5,6 @@
 #include "baseRenderTarget.h"
 
 namespace cyclonite {
-BaseRenderTarget::BaseRenderTarget(uint32_t width, uint32_t height)
-  : extent_{}
-  , colorAttachmentCount_{ 0 }
-  , swapChainLength_{ 0 }
-  , frontBufferIndex_{ 0 }
-  , backBufferIndex_{ 0 }
-  , frameBuffers_{}
-  , outputSemantics_{}
-  , hasDepthStencil_{ false }
-{
-    extent_.width = width;
-    extent_.height = height;
-}
-
 auto BaseRenderTarget::getColorAttachment(size_t attachmentIndex) const -> vulkan::ImageView const&
 {
     assert(attachmentIndex < colorAttachmentCount_);

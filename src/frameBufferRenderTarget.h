@@ -18,7 +18,9 @@ public:
                             uint32_t width,
                             uint32_t height,
                             VkFormat depthStencilFormat,
-                            std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> const& colorOutputs);
+                            VkClearDepthStencilValue clearDepthStencilValue,
+                            std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> const& colorOutputs,
+                            std::array<VkClearColorValue, count> const& clearColorValues);
 
     template<size_t count>
     FrameBufferRenderTarget(vulkan::Device& device,
@@ -26,7 +28,8 @@ public:
                             uint32_t swapChainLength,
                             uint32_t width,
                             uint32_t height,
-                            std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> const& colorOutputs);
+                            std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> const& colorOutputs,
+                            std::array<VkClearColorValue, count> const& clearColorValues);
 
     FrameBufferRenderTarget(FrameBufferRenderTarget const&) = delete;
 
@@ -49,19 +52,16 @@ FrameBufferRenderTarget::FrameBufferRenderTarget(
   uint32_t width,
   uint32_t height,
   VkFormat depthStencilFormat,
-  std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> const& colorOutputs)
-  : BaseRenderTarget(width, height)
+  VkClearDepthStencilValue clearDepthStencilValue,
+  std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> const& colorOutputs,
+  std::array<VkClearColorValue, count> const& clearColorValues)
+  : BaseRenderTarget(width, height, clearDepthStencilValue, clearColorValues)
 {
-    colorAttachmentCount_ = 2;
-
-    hasDepthStencil_ = depthStencilFormat != VK_FORMAT_UNDEFINED;
-
     swapChainLength_ = swapChainLength;
 
+    (void)depthStencilFormat;
     (void)device;
     (void)vkRenderPass;
-    (void)width;
-    (void)height;
     (void)colorOutputs;
 
     throw std::runtime_error("not implemented yet");
@@ -74,9 +74,16 @@ FrameBufferRenderTarget::FrameBufferRenderTarget(
   uint32_t swapChainLength,
   uint32_t width,
   uint32_t height,
-  std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> const& colorOutputs)
-  : FrameBufferRenderTarget(device, vkRenderPass, swapChainLength, width, height, VK_FORMAT_UNDEFINED, colorOutputs)
-{}
+  std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> const& colorOutputs,
+  std::array<VkClearColorValue, count> const& clearColorValues)
+  : BaseRenderTarget(width, height, clearColorValues)
+{
+    swapChainLength_ = swapChainLength;
+
+    (void)device;
+    (void)vkRenderPass;
+    (void)colorOutputs;
+}
 }
 
 #endif // CYCLONITE_FRAMEBUFFERRENDERTARGET_H

@@ -52,6 +52,8 @@ public:
     template<size_t modeCandidateCount = 2>
     RenderTargetBuilder(vulkan::Device& device,
                         Surface&& surface,
+                        std::array<VkClearColorValue, sizeof...(ColorOutputDescriptions)> const& clearColorValues = {},
+                        VkClearDepthStencilValue clearDepthStencilValue = { 1.0f, 0 },
                         std::array<VkPresentModeKHR, modeCandidateCount> const& presentModeCandidates =
                           { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR },
                         VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
@@ -111,6 +113,8 @@ private:
     VkFormat vkDepthStencilOutputFormat_;
     std::array<std::pair<VkFormat, VkColorSpaceKHR>, sizeof...(ColorOutputDescriptions)> colorOutputFormats_;
     std::array<RenderTargetOutputSemantic, sizeof...(ColorOutputDescriptions)> outputSemantics_;
+    VkClearDepthStencilValue clearDepthStencilValue_;
+    std::array<VkClearColorValue, sizeof...(ColorOutputDescriptions)> clearColorValues_;
 };
 
 template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
@@ -118,6 +122,8 @@ template<size_t modeCandidateCount>
 RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::RenderTargetBuilder(
   cyclonite::vulkan::Device& device,
   cyclonite::Surface&& surface,
+  std::array<VkClearColorValue, sizeof...(ColorOutputDescriptions)> const& clearColorValues,
+  VkClearDepthStencilValue clearDepthStencilValue,
   std::array<VkPresentModeKHR, modeCandidateCount> const& presentModeCandidates,
   VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags)
   : device_{ device }
@@ -128,6 +134,8 @@ RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::
   , vkDepthStencilOutputFormat_{ VK_FORMAT_UNDEFINED }
   , colorOutputFormats_{}
   , outputSemantics_{ ColorOutputDescriptions::semantic_v... }
+  , clearDepthStencilValue_{ clearDepthStencilValue }
+  , clearColorValues_{ clearColorValues }
 {
     static_assert(sizeof...(ColorOutputDescriptions) > 0); // surface RT has no sense without color attachments
 
@@ -202,13 +210,18 @@ auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions.
         (void)_;
 
         if constexpr (DepthStencilOutputDescription::is_empty_v) {
-            return SurfaceRenderTarget{ device_,      vkRenderPass,  *surface_,
-                                        vkSwapChain_, surfaceFormat, outputSemantics[0] };
+            return SurfaceRenderTarget{ device_,       vkRenderPass,         *surface_,         vkSwapChain_,
+                                        surfaceFormat, clearColorValues_[0], outputSemantics[0] };
         } else {
-            return SurfaceRenderTarget{
-                device_,       vkRenderPass,      *surface_, vkSwapChain_, vkDepthStencilOutputFormat_,
-                surfaceFormat, outputSemantics[0]
-            };
+            return SurfaceRenderTarget{ device_,
+                                        vkRenderPass,
+                                        *surface_,
+                                        vkSwapChain_,
+                                        vkDepthStencilOutputFormat_,
+                                        clearDepthStencilValue_,
+                                        surfaceFormat,
+                                        clearColorValues_[0],
+                                        outputSemantics[0] };
         }
     } else {
         if constexpr (DepthStencilOutputDescription::is_empty_v) {
@@ -218,7 +231,8 @@ auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions.
                                             extent_.width,
                                             extent_.height,
                                             _get_output_semantic_format_pairs(
-                                              std::make_index_sequence<sizeof...(ColorOutputDescriptions)>()) };
+                                              std::make_index_sequence<sizeof...(ColorOutputDescriptions)>()),
+                                            clearColorValues_ };
         } else {
             return FrameBufferRenderTarget{ device_,
                                             vkRenderPass,
@@ -226,8 +240,10 @@ auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions.
                                             extent_.width,
                                             extent_.height,
                                             vkDepthStencilOutputFormat_,
+                                            clearDepthStencilValue_,
                                             _get_output_semantic_format_pairs(
-                                              std::make_index_sequence<sizeof...(ColorOutputDescriptions)>()) };
+                                              std::make_index_sequence<sizeof...(ColorOutputDescriptions)>()),
+                                            clearColorValues_ };
         }
     }
 }

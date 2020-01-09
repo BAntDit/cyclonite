@@ -10,18 +10,16 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
                                          Surface& surface,
                                          vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
                                          VkFormat depthStencilFormat,
+                                         VkClearDepthStencilValue clearDepthStencilValue,
                                          VkFormat surfaceFormat,
+                                         VkClearColorValue clearSurfaceValue,
                                          RenderTargetOutputSemantic outputSemantic)
-  : BaseRenderTarget(surface.width(), surface.height())
+  : BaseRenderTarget(surface.width(), surface.height(), clearDepthStencilValue, std::array{ clearSurfaceValue })
   , surface_{ std::move(surface) }
   , vkSwapChain_{ std::move(vkSwapChain) }
   , imageAvailableSemaphores_{}
 {
-    colorAttachmentCount_ = 1;
-
     outputSemantics_[outputSemantic] = 0;
-
-    hasDepthStencil_ = depthStencilFormat != VK_FORMAT_UNDEFINED;
 
     uint32_t imageCount = 0;
     vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, nullptr);
@@ -36,42 +34,28 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
 
     imageAvailableSemaphores_.reserve(swapChainLength_);
 
-    vulkan::ImagePtr depthImagePtr = nullptr;
-
-    if (hasDepthStencil_) {
-        depthImagePtr = std::make_shared<vulkan::Image>(device,
-                                                        width(),
-                                                        height(),
-                                                        1,
-                                                        1,
-                                                        1,
-                                                        depthStencilFormat,
-                                                        VK_IMAGE_TILING_OPTIMAL,
-                                                        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
-    }
+    auto depthImagePtr = std::make_shared<vulkan::Image>(device,
+                                                         width(),
+                                                         height(),
+                                                         1,
+                                                         1,
+                                                         1,
+                                                         depthStencilFormat,
+                                                         VK_IMAGE_TILING_OPTIMAL,
+                                                         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
     VkSemaphoreCreateInfo semaphoreCreateInfo = {};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     for (auto vkImage : vkImages) {
-        if (hasDepthStencil_) {
-            frameBuffers_.emplace_back(
-              device,
-              vkRenderPass,
-              width(),
-              height(),
-              vulkan::ImageView{ device, depthImagePtr, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_DEPTH_BIT },
-              std::array{ vulkan::ImageView{
-                device, std::make_shared<vulkan::Image>(vkImage, width(), height(), surfaceFormat) } });
-        } else {
-            frameBuffers_.emplace_back(
-              device,
-              vkRenderPass,
-              width(),
-              height(),
-              std::array{ vulkan::ImageView{
-                device, std::make_shared<vulkan::Image>(vkImage, width(), height(), surfaceFormat) } });
-        }
+        frameBuffers_.emplace_back(
+          device,
+          vkRenderPass,
+          width(),
+          height(),
+          vulkan::ImageView{ device, depthImagePtr, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_DEPTH_BIT },
+          std::array{
+            vulkan::ImageView{ device, std::make_shared<vulkan::Image>(vkImage, width(), height(), surfaceFormat) } });
 
         if (auto result =
               vkCreateSemaphore(device.handle(),
@@ -89,9 +73,50 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
                                          Surface& surface,
                                          vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
                                          VkFormat surfaceFormat,
+                                         VkClearColorValue clearSurfaceValue,
                                          RenderTargetOutputSemantic outputSemantic)
-  : SurfaceRenderTarget(device, vkRenderPass, surface, vkSwapChain, VK_FORMAT_UNDEFINED, surfaceFormat, outputSemantic)
-{}
+  : BaseRenderTarget(surface.width(), surface.height(), std::array{ clearSurfaceValue })
+  , surface_{ std::move(surface) }
+  , vkSwapChain_{ std::move(vkSwapChain) }
+  , imageAvailableSemaphores_{}
+{
+    outputSemantics_[outputSemantic] = 0;
+
+    uint32_t imageCount = 0;
+    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, nullptr);
+
+    swapChainLength_ = imageCount;
+
+    std::vector<VkImage> vkImages(swapChainLength_, VK_NULL_HANDLE);
+
+    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, vkImages.data());
+
+    frameBuffers_.reserve(swapChainLength_);
+
+    imageAvailableSemaphores_.reserve(swapChainLength_);
+
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    for (auto vkImage : vkImages) {
+        frameBuffers_.emplace_back(
+          device,
+          vkRenderPass,
+          width(),
+          height(),
+          std::array{
+            vulkan::ImageView{ device, std::make_shared<vulkan::Image>(vkImage, width(), height(), surfaceFormat) } });
+
+        if (auto result =
+              vkCreateSemaphore(device.handle(),
+                                &semaphoreCreateInfo,
+                                nullptr,
+                                &imageAvailableSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
+            result != VK_SUCCESS) {
+            throw std::runtime_error("could not create image available semaphore.");
+        }
+    }
+}
 
 auto SurfaceRenderTarget::acquireBackBufferIndex(vulkan::Device const& device) -> size_t
 {

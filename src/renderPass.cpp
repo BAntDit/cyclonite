@@ -45,7 +45,12 @@ RenderPass::RenderPass(vulkan::Device& device,
         type_list<render_target_output_candidate<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
         RenderTargetOutputSemantic::DEFAULT>>;
 
-    rt_builder_t rtBuilder{ device, Surface{ device, windowProperties }, presentModeCandidates, vkCompositeAlphaFlags };
+    rt_builder_t rtBuilder{ device,
+                            Surface{ device, windowProperties },
+                            std::array<VkClearColorValue, 1>{ VkClearColorValue{ { 0.0f, 0.0f, 0.0f, 1.0f } } },
+                            VkClearDepthStencilValue{ 1.0f, 0 },
+                            presentModeCandidates,
+                            vkCompositeAlphaFlags };
 
     auto [attachments, references] = rtBuilder.getAttachments();
 
@@ -138,14 +143,26 @@ RenderPass::RenderPass(vulkan::Device& device,
         std::runtime_error("could not allocate command buffers");
     }
 
-    // TODO:: must depends on render target
-    std::array<VkClearValue, 2> clearValues = {};
-    clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-    clearValues[1].depthStencil = { 1.0f, 0 };
-
     auto&& frameBuffers = _getFrameBuffers();
 
     auto&& [width, height] = _getSize();
+
+    std::array<VkClearValue, 2> clearValues = {}; // for now
+
+    std::visit(
+      [&](auto&& rt) -> void {
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget>) {
+              rt.getClearValues(clearValues);
+              return;
+          }
+
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
+              throw std::runtime_error("not implemented yet");
+          }
+
+          throw std::runtime_error("empty render target");
+      },
+      renderTarget_);
 
     for (size_t i = 0, count = commandBuffers_.size(); i < count; i++) {
         auto commandBuffer = commandBuffers_[i];
