@@ -102,7 +102,9 @@ public:
 
     void setColorAttachmentClearValue(RenderTargetOutputSemantic semantic, VkClearColorValue clearValue);
 
-    // TODO:: getters for depth / color clear values
+    [[nodiscard]] auto getDepthStencilClearValue() const -> VkClearDepthStencilValue;
+
+    [[nodiscard]] auto getColorAttachmentClearValue(RenderTargetOutputSemantic semantic) const -> VkClearColorValue;
 
 private:
     VkExtent2D extent_;
