@@ -98,6 +98,12 @@ public:
           clearValues_);
     }
 
+    void setDepthStencilClearValue(VkClearDepthStencilValue clearValue);
+
+    void setColorAttachmentClearValue(RenderTargetOutputSemantic semantic, VkClearColorValue clearValue);
+
+    // TODO:: getters for depth / color clear values
+
 private:
     VkExtent2D extent_;
     clear_value_list_t clearValues_;

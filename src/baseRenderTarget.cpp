@@ -27,4 +27,21 @@ auto BaseRenderTarget::hasAttachment(RenderTargetOutputSemantic semantic) const 
 {
     return outputSemantics_.count(semantic) > 0;
 }
+
+void BaseRenderTarget::setDepthStencilClearValue(VkClearDepthStencilValue clearValue)
+{
+    assert(hasDepthStencil_);
+
+    std::visit([&](auto&& clearValues) -> void { clearValues[clearValues.size() - 1].depthStencil = clearValue; },
+               clearValues_);
+}
+
+void BaseRenderTarget::setColorAttachmentClearValue(RenderTargetOutputSemantic semantic, VkClearColorValue clearValue)
+{
+    assert(hasAttachment(semantic));
+
+    auto idx = outputSemantics_.find(semantic)->second;
+
+    std::visit([&](auto&& clearValues) -> void { clearValues[idx].color = clearValue; }, clearValues_);
+}
 }
