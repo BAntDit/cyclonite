@@ -41,19 +41,31 @@ public:
     void end(vulkan::Device const& device);
 
 private:
-    void _createDummyPipeline(vulkan::Device const& device);
+    template<typename DepthStencilOutput, typename ColorOutput, size_t presentModeCandidateCount>
+    RenderPass(
+      vulkan::Device& device,
+      Options::WindowProperties const& windowProperties,
+      DepthStencilOutput&& = render_target_output<type_list<render_target_output_candidate<VK_FORMAT_D32_SFLOAT>>>{},
+      ColorOutput&& = render_target_output<
+        type_list<render_target_output_candidate<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
+        RenderTargetOutputSemantic::DEFAULT>{},
+      VkClearDepthStencilValue const& clearDepthStencilValue = { 1.0f, 0 },
+      VkClearColorValue const& clearColorValue = { { 0.0f, 0.0f, 0.0f, 1.0f } },
+      std::array<VkPresentModeKHR, presentModeCandidateCount> const& presentModeCandidates =
+        { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR },
+      VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
+
+    void _createSyncObjects(vulkan::Device const& device, size_t swapChainLength);
+
+    void _createDummyPipeline(vulkan::Device const& device,
+                              uint32_t renderTargetWidth,
+                              uint32_t renderTargetHeight,
+                              bool hasDepthStencil,
+                              VkPipelineColorBlendStateCreateInfo const& colorBlendState);
 
     void _createDummyCommandPool(vulkan::Device const& device);
 
-    [[nodiscard]] auto _getSwapChainLength() const -> size_t;
-
-    [[nodiscard]] auto _getFrameBuffers() const -> std::vector<vulkan::FrameBuffer> const&;
-
-    [[nodiscard]] auto _getSize() const -> std::pair<uint32_t, uint32_t>;
-
-    [[nodiscard]] auto _getColorAttachmentCount() const -> size_t;
-
-    [[nodiscard]] auto _hasDepthStencil() const -> bool;
+    void _createDummyCommandBuffers(vulkan::Device const& device, size_t swapChainLength);
 
 private:
     vulkan::Handle<VkRenderPass> vkRenderPass_;
@@ -77,6 +89,133 @@ private:
     // tmp::
     std::vector<VkCommandBuffer> commandBuffers_;
 };
+
+template<typename DepthStencilOutput, typename ColorOutput, size_t presentModeCandidateCount>
+RenderPass::RenderPass(vulkan::Device& device,
+                       Options::WindowProperties const& windowProperties,
+                       DepthStencilOutput&&,
+                       ColorOutput&&,
+                       VkClearDepthStencilValue const& clearDepthStencilValue,
+                       VkClearColorValue const& clearColorValue,
+                       std::array<VkPresentModeKHR, presentModeCandidateCount> const& presentModeCandidates,
+                       VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags)
+  : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
+  , renderTarget_{}
+  , passFinishedSemaphores_{}
+  , frameFences_{}
+  , renderTargetFences_{}
+  , waitStage_{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
+  , vkWaitSemaphore_{ VK_NULL_HANDLE }
+  , vkSignalSemaphore_{ VK_NULL_HANDLE }
+  , renderQueueSubmitInfo_{}
+  , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
+  , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
+  , vkCommandPool_{ device.handle(), vkDestroyCommandPool }
+  , commandBuffers_{}
+{
+    using render_target_builder_t = SurfaceRenderTargetBuilder<DepthStencilOutput, ColorOutput>;
+
+    constexpr size_t all_attachment_count_v = render_target_builder_t::all_attachment_count_v;
+
+    constexpr size_t color_attachment_count_v = render_target_builder_t::color_attachment_count_v;
+
+    constexpr size_t depth_attachment_idx_v = render_target_builder_t::depth_attachment_idx_v;
+
+    constexpr bool has_depth_stencil_attachment_v = !DepthStencilOutput::is_empty_v;
+
+    render_target_builder_t renderTargetBuilder{ device,
+                                                 Surface{ device, windowProperties },
+                                                 clearColorValue,
+                                                 clearDepthStencilValue,
+                                                 presentModeCandidates,
+                                                 vkCompositeAlphaFlags };
+
+    auto&& [attachments, references] = renderTargetBuilder.getAttachments();
+
+    VkSubpassDescription subPassDescription = {};
+
+    subPassDescription.colorAttachmentCount = color_attachment_count_v;
+    subPassDescription.pColorAttachments = references.data();
+
+    if constexpr (has_depth_stencil_attachment_v) {
+        subPassDescription.pDepthStencilAttachment = &references[depth_attachment_idx_v];
+    }
+
+    VkSubpassDependency dependency = {};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    VkRenderPassCreateInfo renderPassInfo = {};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = attachments.size();
+    renderPassInfo.pAttachments = attachments.data();
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subPassDescription;
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies = &dependency;
+
+    if (auto result = vkCreateRenderPass(device.handle(), &renderPassInfo, nullptr, &vkRenderPass_);
+        result != VK_SUCCESS) {
+
+        if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
+            throw std::runtime_error("not enough RAM memory to create render pass");
+        }
+
+        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+            throw std::runtime_error("not enough GPU memory to create render pass");
+        }
+
+        assert(false);
+    }
+
+    auto&& renderTarget = renderTargetBuilder.buildRenderPassTarget(static_cast<VkRenderPass>(vkRenderPass_));
+
+    _createSyncObjects(device, renderTarget.swapChainLength());
+
+    // TODO:: it must come from render target builder
+    VkPipelineColorBlendStateCreateInfo colorBlendState = {};
+
+    std::array<VkPipelineColorBlendAttachmentState, color_attachment_count_v> colorBlendAttachmentStates = {};
+
+    for (size_t i = 0; i < color_attachment_count_v; i++) {
+        colorBlendAttachmentStates[i] =
+          VkPipelineColorBlendAttachmentState{ VK_FALSE,
+                                               VK_BLEND_FACTOR_ONE,
+                                               VK_BLEND_FACTOR_ZERO,
+                                               VK_BLEND_OP_ADD,
+                                               VK_BLEND_FACTOR_ONE,
+                                               VK_BLEND_FACTOR_ZERO,
+                                               VK_BLEND_OP_ADD,
+                                               VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                                 VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT };
+    }
+
+    colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colorBlendState.logicOpEnable = VK_FALSE;
+    colorBlendState.logicOp = VK_LOGIC_OP_COPY;
+    colorBlendState.attachmentCount = colorBlendAttachmentStates.size();
+    colorBlendState.pAttachments = colorBlendAttachmentStates.data();
+    colorBlendState.blendConstants[0] = 0.0f;
+    colorBlendState.blendConstants[1] = 0.0f;
+    colorBlendState.blendConstants[2] = 0.0f;
+    colorBlendState.blendConstants[3] = 0.0f;
+
+    _createDummyPipeline(
+      device, renderTarget.width(), renderTarget.height(), has_depth_stencil_attachment_v, colorBlendState);
+
+    _createDummyCommandPool(device);
+
+    _createDummyCommandBuffers(device, renderTarget.swapChainLength());
+
+    for (size_t i = 0, count = commandBuffers_.size(); i < count; i++) {
+    }
+
+    renderTarget_ = std::move(renderTarget);
+}
 }
 
 #endif // CYCLONITE_RENDERPASS_H

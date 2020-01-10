@@ -14,6 +14,53 @@ std::vector<uint32_t> const defaultFragmentShaderCode = {
 };
 
 namespace cyclonite {
+void RenderPass::_createSyncObjects(vulkan::Device const& device, size_t swapChainLength)
+{
+    frameFences_.reserve(swapChainLength);
+    passFinishedSemaphores_.reserve(swapChainLength);
+
+    VkFenceCreateInfo fenceCreateInfo = {};
+    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    for (size_t i = 0; i < swapChainLength; i++) {
+        if (auto result = vkCreateFence(
+              device.handle(), &fenceCreateInfo, nullptr, &frameFences_.emplace_back(device.handle(), vkDestroyFence));
+            result != VK_SUCCESS) {
+            throw std::runtime_error("could not create frame synchronization fence");
+        }
+
+        if (auto result = vkCreateSemaphore(device.handle(),
+                                            &semaphoreCreateInfo,
+                                            nullptr,
+                                            &passFinishedSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
+            result != VK_SUCCESS) {
+            throw std::runtime_error("could not create pass end synchronization semaphore");
+        }
+    }
+
+    renderTargetFences_.resize(swapChainLength, VK_NULL_HANDLE);
+}
+
+void RenderPass::_createDummyCommandBuffers(vulkan::Device const& device, size_t swapChainLength)
+{
+    commandBuffers_.resize(swapChainLength, VK_NULL_HANDLE);
+
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandBufferAllocateInfo.commandPool = static_cast<VkCommandPool>(vkCommandPool_);
+    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBufferAllocateInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers_.size());
+
+    if (auto result = vkAllocateCommandBuffers(device.handle(), &commandBufferAllocateInfo, commandBuffers_.data());
+        result != VK_SUCCESS) {
+        throw std::runtime_error("could not allocate command buffers");
+    }
+}
+
 // template<size_t presentModeCandidateCount, typename... DepthStencilOutputCandidates, typename...
 // ColorOutputCandidates>
 RenderPass::RenderPass(vulkan::Device& device,
@@ -130,19 +177,6 @@ RenderPass::RenderPass(vulkan::Device& device,
 
     _createDummyCommandPool(device);
 
-    commandBuffers_.resize(swapChainLength, VK_NULL_HANDLE);
-
-    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
-    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    commandBufferAllocateInfo.commandPool = static_cast<VkCommandPool>(vkCommandPool_);
-    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    commandBufferAllocateInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers_.size());
-
-    if (auto result = vkAllocateCommandBuffers(device.handle(), &commandBufferAllocateInfo, commandBuffers_.data());
-        result != VK_SUCCESS) {
-        std::runtime_error("could not allocate command buffers");
-    }
-
     auto&& frameBuffers = _getFrameBuffers();
 
     auto&& [width, height] = _getSize();
@@ -252,12 +286,12 @@ void RenderPass::end(vulkan::Device const& device)
       renderTarget_);
 }
 
-void RenderPass::_createDummyPipeline(vulkan::Device const& device)
+void RenderPass::_createDummyPipeline(vulkan::Device const& device,
+                                      uint32_t renderTargetWidth,
+                                      uint32_t renderTargetHeight,
+                                      bool hasDepthStencil,
+                                      VkPipelineColorBlendStateCreateInfo const& colorBlendState)
 {
-    auto&& [width, height] = _getSize();
-
-    auto colorAttachmentCount = _getColorAttachmentCount();
-
     vulkan::ShaderModule vertexShaderModule{ device, defaultVertexShaderCode, VK_SHADER_STAGE_VERTEX_BIT };
     vulkan::ShaderModule fragmentShaderModule{ device, defaultFragmentShaderCode, VK_SHADER_STAGE_FRAGMENT_BIT };
 
@@ -288,14 +322,14 @@ void RenderPass::_createDummyPipeline(vulkan::Device const& device)
     VkViewport viewport = {};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = width;
-    viewport.height = height;
+    viewport.width = renderTargetWidth;
+    viewport.height = renderTargetHeight;
     viewport.minDepth = 0.0;
     viewport.maxDepth = 1.0;
 
     VkRect2D scissor = {};
     scissor.offset = { 0, 0 };
-    scissor.extent = { width, height };
+    scissor.extent = { renderTargetWidth, renderTargetHeight };
 
     VkPipelineViewportStateCreateInfo viewportState = {};
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -319,34 +353,6 @@ void RenderPass::_createDummyPipeline(vulkan::Device const& device)
     multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampleState.sampleShadingEnable = VK_FALSE;
     multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // TODO:: must come from render target
-
-    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates = {};
-
-    colorBlendAttachmentStates.reserve(colorAttachmentCount);
-
-    // TODO:: must come as structures array from renderTarget
-    for (size_t i = 0; i < colorAttachmentCount; i++) {
-        colorBlendAttachmentStates.emplace_back(VkPipelineColorBlendAttachmentState{
-          VK_FALSE,
-          VK_BLEND_FACTOR_ONE,
-          VK_BLEND_FACTOR_ZERO,
-          VK_BLEND_OP_ADD,
-          VK_BLEND_FACTOR_ONE,
-          VK_BLEND_FACTOR_ZERO,
-          VK_BLEND_OP_ADD,
-          VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT });
-    }
-
-    VkPipelineColorBlendStateCreateInfo colorBlendState = {};
-    colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    colorBlendState.logicOpEnable = VK_FALSE;
-    colorBlendState.logicOp = VK_LOGIC_OP_COPY;
-    colorBlendState.attachmentCount = colorBlendAttachmentStates.size();
-    colorBlendState.pAttachments = colorBlendAttachmentStates.data();
-    colorBlendState.blendConstants[0] = 0.0f;
-    colorBlendState.blendConstants[1] = 0.0f;
-    colorBlendState.blendConstants[2] = 0.0f;
-    colorBlendState.blendConstants[3] = 0.0f;
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -373,7 +379,7 @@ void RenderPass::_createDummyPipeline(vulkan::Device const& device)
     graphicsPipelineCreateInfo.subpass = 0;
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if (_hasDepthStencil()) {
+    if (hasDepthStencil) {
         VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {};
         depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
         depthStencilStateCreateInfo.depthTestEnable = VK_FALSE;
@@ -405,76 +411,6 @@ void RenderPass::_createDummyCommandPool(vulkan::Device const& device)
         result != VK_SUCCESS) {
         throw std::runtime_error("could not create command pool");
     }
-}
-
-auto RenderPass::_getSwapChainLength() const -> size_t
-{
-    return std::visit(
-      [](auto&& rt) -> size_t {
-          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
-                        std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
-              return rt.swapChainLength();
-          }
-
-          throw std::runtime_error("empty render target");
-      },
-      renderTarget_);
-}
-
-auto RenderPass::_getFrameBuffers() const -> std::vector<vulkan::FrameBuffer> const&
-{
-    return std::visit(
-      [](auto&& rt) -> std::vector<vulkan::FrameBuffer> const& {
-          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
-                        std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
-              return rt.frameBuffers();
-          }
-
-          throw std::runtime_error("empty render target");
-      },
-      renderTarget_);
-}
-
-auto RenderPass::_getSize() const -> std::pair<uint32_t, uint32_t>
-{
-    return std::visit(
-      [](auto&& rt) -> std::pair<uint32_t, uint32_t> {
-          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
-                        std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
-              return std::make_pair(rt.width(), rt.height());
-          }
-
-          throw std::runtime_error("empty render target");
-      },
-      renderTarget_);
-}
-
-auto RenderPass::_getColorAttachmentCount() const -> size_t
-{
-    return std::visit(
-      [](auto&& rt) -> size_t {
-          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
-                        std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
-              return rt.colorAttachmentCount();
-          }
-
-          throw std::runtime_error("empty render target");
-      },
-      renderTarget_);
-}
-
-auto RenderPass::_hasDepthStencil() const -> bool
-{
-    return std::visit(
-      [](auto&& rt) -> bool {
-          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
-                        std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
-              return rt.hasDepthStencil();
-          }
-
-          throw std::runtime_error("empty render target");
-      },
-      renderTarget_);
 }
 
 auto RenderPass::renderQueueSubmitInfo() -> VkSubmitInfo const&

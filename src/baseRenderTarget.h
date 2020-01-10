@@ -106,6 +106,8 @@ public:
 
     [[nodiscard]] auto getColorAttachmentClearValue(RenderTargetOutputSemantic semantic) const -> VkClearColorValue;
 
+    [[nodiscard]] auto getColorAttachmentClearValue(size_t attachmentIndex) const -> VkClearColorValue;
+
 private:
     VkExtent2D extent_;
     clear_value_list_t clearValues_;

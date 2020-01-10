@@ -62,4 +62,12 @@ auto BaseRenderTarget::getColorAttachmentClearValue(RenderTargetOutputSemantic s
 
     return std::visit([&](auto&& clearValues) -> VkClearColorValue { return clearValues[idx].color; }, clearValues_);
 }
+
+auto BaseRenderTarget::getColorAttachmentClearValue(size_t attachmentIndex) const -> VkClearColorValue
+{
+    assert(attachmentIndex < colorAttachmentCount_);
+
+    return std::visit([&](auto&& clearValues) -> VkClearColorValue { return clearValues[attachmentIndex].color; },
+                      clearValues_);
+}
 }

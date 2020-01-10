@@ -33,7 +33,7 @@ struct render_target_output<type_list<render_target_output_candidate<format, col
     constexpr static RenderTargetOutputSemantic semantic_v = Semantic;
 };
 
-template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+template<typename TargetType, typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
 class RenderTargetBuilder
 {
 public:
@@ -44,21 +44,18 @@ public:
                          std::pair<std::array<VkAttachmentDescription, sizeof...(ColorOutputDescriptions) + 1>,
                                    std::array<VkAttachmentReference, sizeof...(ColorOutputDescriptions) + 1>>>;
 
+    static constexpr size_t all_attachment_count_v = std::tuple_size_v<attachment_list_t::first_type>;
+
     static constexpr size_t color_attachment_count_v = sizeof...(ColorOutputDescriptions);
 
     static constexpr size_t depth_attachment_idx_v = sizeof...(ColorOutputDescriptions);
 
 public:
-    template<size_t modeCandidateCount = 2>
     RenderTargetBuilder(vulkan::Device& device,
-                        Surface&& surface,
-                        std::array<VkClearColorValue, sizeof...(ColorOutputDescriptions)> const& clearColorValues = {},
-                        VkClearDepthStencilValue clearDepthStencilValue = { 1.0f, 0 },
-                        std::array<VkPresentModeKHR, modeCandidateCount> const& presentModeCandidates =
-                          { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR },
-                        VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
-
-    // RenderTargetBuilder(vulkan::Device& device); TODO:: ...
+                        uint32_t width,
+                        uint32_t height,
+                        std::array<VkClearColorValue, sizeof...(ColorOutputDescriptions)> const& clearColorValues,
+                        VkClearDepthStencilValue clearDepthStencilValue);
 
     RenderTargetBuilder(RenderTargetBuilder const&) = delete;
 
@@ -72,26 +69,12 @@ public:
 
     auto getAttachments() const -> attachment_list_t;
 
-    auto buildRenderPassTarget(VkRenderPass vkRenderPass) -> std::variant<SurfaceRenderTarget, FrameBufferRenderTarget>;
-
 private:
-    static void _swapChainCreationErrorHandling(VkResult result);
-
     template<size_t candidateCount>
-    static VkFormat _findSupportedFormat(
-      std::array<std::pair<VkFormat, VkColorSpaceKHR>, candidateCount> const& candidates,
-      VkPhysicalDevice physicalDevice,
-      VkImageTiling requiredTiling,
-      VkFormatFeatureFlags requiredFeatures);
-
-    template<size_t candidateCount>
-    static auto _chooseSurfaceFormat(std::vector<VkSurfaceFormatKHR> const& availableFormats,
-                                     std::array<std::pair<VkFormat, VkColorSpaceKHR>, candidateCount> const& candidates)
-      -> std::pair<VkFormat, VkColorSpaceKHR>;
-
-    template<size_t modeCount>
-    auto _choosePresentationMode(VkPhysicalDevice physicalDevice,
-                                 std::array<VkPresentModeKHR, modeCount> const& candidates) const -> VkPresentModeKHR;
+    static auto _findSupportedFormat(std::array<std::pair<VkFormat, VkColorSpaceKHR>, candidateCount> const& candidates,
+                                     VkPhysicalDevice physicalDevice,
+                                     VkImageTiling requiredTiling,
+                                     VkFormatFeatureFlags requiredFeatures) -> VkFormat;
 
     template<size_t... idx>
     auto _get_output_semantic_format_pairs(std::index_sequence<idx...>) const
@@ -104,12 +87,9 @@ private:
 
     [[nodiscard]] auto _get_attachment_ref(size_t idx) const -> VkAttachmentReference;
 
-private:
+protected:
     vulkan::Device& device_;
-    std::optional<Surface> surface_;
-    vulkan::Handle<VkSwapchainKHR> vkSwapChain_;
     VkExtent2D extent_;
-    VkPresentModeKHR vkPresentMode;
     VkFormat vkDepthStencilOutputFormat_;
     std::array<std::pair<VkFormat, VkColorSpaceKHR>, sizeof...(ColorOutputDescriptions)> colorOutputFormats_;
     std::array<RenderTargetOutputSemantic, sizeof...(ColorOutputDescriptions)> outputSemantics_;
@@ -117,43 +97,81 @@ private:
     std::array<VkClearColorValue, sizeof...(ColorOutputDescriptions)> clearColorValues_;
 };
 
+template<typename DepthStencilOutputDescription, typename ColorOutputDescription>
+class SurfaceRenderTargetBuilder
+  : public RenderTargetBuilder<SurfaceRenderTarget, DepthStencilOutputDescription, ColorOutputDescription>
+{
+public:
+    using base_render_target_builder_t =
+      RenderTargetBuilder<SurfaceRenderTarget, DepthStencilOutputDescription, ColorOutputDescription>;
+
+    template<size_t modeCandidateCount>
+    SurfaceRenderTargetBuilder(vulkan::Device& device,
+                               Surface&& surface,
+                               VkClearColorValue const& clearColorValue,
+                               VkClearDepthStencilValue const& clearDepthStencilValue,
+                               std::array<VkPresentModeKHR, modeCandidateCount> const& presentModeCandidates,
+                               VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags);
+
+    auto buildRenderPassTarget(VkRenderPass vkRenderPass) -> SurfaceRenderTarget;
+
+private:
+    static void _swapChainCreationErrorHandling(VkResult result);
+
+    template<size_t candidateCount>
+    static auto _chooseSurfaceFormat(std::vector<VkSurfaceFormatKHR> const& availableFormats,
+                                     std::array<std::pair<VkFormat, VkColorSpaceKHR>, candidateCount> const& candidates)
+      -> std::pair<VkFormat, VkColorSpaceKHR>;
+
+    template<size_t modeCount>
+    auto _choosePresentationMode(VkPhysicalDevice physicalDevice,
+                                 std::array<VkPresentModeKHR, modeCount> const& candidates) const -> VkPresentModeKHR;
+
+private:
+    Surface surface_;
+    vulkan::Handle<VkSwapchainKHR> vkSwapChain_;
+    VkPresentModeKHR vkPresentMode;
+};
+
 template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
-template<size_t modeCandidateCount>
-RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::RenderTargetBuilder(
-  cyclonite::vulkan::Device& device,
-  cyclonite::Surface&& surface,
+class FrameBufferRenderTargetBuilder
+  : public RenderTargetBuilder<FrameBufferRenderTarget, DepthStencilOutputDescription, ColorOutputDescriptions...>
+{
+public:
+    using base_render_target_builder_t =
+      RenderTargetBuilder<FrameBufferRenderTarget, DepthStencilOutputDescription, ColorOutputDescriptions...>;
+
+    FrameBufferRenderTargetBuilder(
+      vulkan::Device& device,
+      uint32_t swapChainLength,
+      uint32_t width,
+      uint32_t height,
+      std::array<VkClearColorValue, sizeof...(ColorOutputDescriptions)> const& clearColorValues,
+      VkClearDepthStencilValue clearDepthStencilValue);
+
+    auto buildRenderPassTarget(VkRenderPass vkRenderPass) -> FrameBufferRenderTargetBuilder;
+
+private:
+    uint32_t swapChainLength_;
+};
+
+template<typename TargetType, typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+RenderTargetBuilder<TargetType, DepthStencilOutputDescription, ColorOutputDescriptions...>::RenderTargetBuilder(
+  vulkan::Device& device,
+  uint32_t width,
+  uint32_t height,
   std::array<VkClearColorValue, sizeof...(ColorOutputDescriptions)> const& clearColorValues,
-  VkClearDepthStencilValue clearDepthStencilValue,
-  std::array<VkPresentModeKHR, modeCandidateCount> const& presentModeCandidates,
-  VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags)
+  VkClearDepthStencilValue clearDepthStencilValue)
   : device_{ device }
-  , surface_{ std::move(surface) }
-  , vkSwapChain_{ device.handle(), vkDestroySwapchainKHR }
   , extent_{}
-  , vkPresentMode{ VK_PRESENT_MODE_MAX_ENUM_KHR }
   , vkDepthStencilOutputFormat_{ VK_FORMAT_UNDEFINED }
   , colorOutputFormats_{}
   , outputSemantics_{ ColorOutputDescriptions::semantic_v... }
   , clearDepthStencilValue_{ clearDepthStencilValue }
   , clearColorValues_{ clearColorValues }
 {
-    static_assert(sizeof...(ColorOutputDescriptions) > 0); // surface RT has no sense without color attachments
-
-    extent_.width = surface_->width();
-    extent_.height = surface_->height();
-
-    uint32_t availableFormatCount = 0;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device.physicalDevice(), surface_->handle(), &availableFormatCount, nullptr);
-
-    assert(availableFormatCount > 0);
-
-    std::vector<VkSurfaceFormatKHR> availableFormats(availableFormatCount);
-
-    vkGetPhysicalDeviceSurfaceFormatsKHR(
-      device.physicalDevice(), surface_->handle(), &availableFormatCount, availableFormats.data());
-
-    colorOutputFormats_ = { _chooseSurfaceFormat(availableFormats,
-                                                 ColorOutputDescriptions::format_candidate_list_v)... };
+    extent_.width = width;
+    extent_.height = height;
 
     if constexpr (!DepthStencilOutputDescription::is_empty_v) {
         vkDepthStencilOutputFormat_ = _findSupportedFormat(DepthStencilOutputDescription::format_candidate_list_v,
@@ -161,31 +179,110 @@ RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::
                                                            VK_IMAGE_TILING_OPTIMAL,
                                                            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     }
+}
+
+template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+FrameBufferRenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::
+  FrameBufferRenderTargetBuilder(
+    vulkan::Device& device,
+    uint32_t swapChainLength,
+    uint32_t width,
+    uint32_t height,
+    std::array<VkClearColorValue, sizeof...(ColorOutputDescriptions)> const& clearColorValues,
+    VkClearDepthStencilValue clearDepthStencilValue)
+  : base_render_target_builder_t{ device, width, height, clearColorValues, clearDepthStencilValue }
+  , swapChainLength_{ swapChainLength }
+{
+    base_render_target_builder_t::colorOutputFormats_ = { std::make_pair(
+      base_render_target_builder_t::_findSupportedFormat(ColorOutputDescriptions::format_candidate_list_v,
+                                                         device.physicalDevice(),
+                                                         VK_IMAGE_TILING_OPTIMAL,
+                                                         VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT),
+      VK_COLOR_SPACE_MAX_ENUM_KHR)... };
+}
+
+template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+auto FrameBufferRenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::buildRenderPassTarget(
+  VkRenderPass vkRenderPass) -> FrameBufferRenderTargetBuilder
+{
+    if constexpr (DepthStencilOutputDescription::is_empty_v) {
+        return FrameBufferRenderTarget{ base_render_target_builder_t::device_,
+                                        vkRenderPass,
+                                        swapChainLength_,
+                                        base_render_target_builder_t::extent_.width,
+                                        base_render_target_builder_t::extent_.height,
+                                        base_render_target_builder_t::_get_output_semantic_format_pairs(
+                                          std::make_index_sequence<sizeof...(ColorOutputDescriptions)>{}),
+                                        base_render_target_builder_t::clearColorValues_ };
+    } else {
+        return FrameBufferRenderTarget{ base_render_target_builder_t::device_,
+                                        vkRenderPass,
+                                        swapChainLength_,
+                                        base_render_target_builder_t::extent_.width,
+                                        base_render_target_builder_t::extent_.height,
+                                        base_render_target_builder_t::vkDepthStencilOutputFormat_,
+                                        base_render_target_builder_t::clearDepthStencilValue_,
+                                        base_render_target_builder_t::_get_output_semantic_format_pairs(
+                                          std::make_index_sequence<sizeof...(ColorOutputDescriptions)>{}),
+                                        base_render_target_builder_t::clearColorValues_ };
+    }
+}
+
+template<typename DepthStencilOutputDescription, typename ColorOutputDescription>
+template<size_t modeCandidateCount>
+SurfaceRenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescription>::SurfaceRenderTargetBuilder(
+  vulkan::Device& device,
+  Surface&& surface,
+  VkClearColorValue const& clearColorValue,
+  VkClearDepthStencilValue const& clearDepthStencilValue,
+  std::array<VkPresentModeKHR, modeCandidateCount> const& presentModeCandidates,
+  VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags)
+  : base_render_target_builder_t{ device,
+                                  surface.width(),
+                                  surface.height(),
+                                  std::array{ clearColorValue },
+                                  clearDepthStencilValue }
+  , surface_{ std::move(surface) }
+  , vkSwapChain_{ device.handle(), vkDestroySwapchainKHR }
+  , vkPresentMode{ VK_PRESENT_MODE_MAX_ENUM_KHR }
+{
+    uint32_t availableFormatCount = 0;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device.physicalDevice(), surface_.handle(), &availableFormatCount, nullptr);
+
+    assert(availableFormatCount > 0);
+
+    std::vector<VkSurfaceFormatKHR> availableFormats(availableFormatCount);
+
+    vkGetPhysicalDeviceSurfaceFormatsKHR(
+      device.physicalDevice(), surface_.handle(), &availableFormatCount, availableFormats.data());
+
+    base_render_target_builder_t::colorOutputFormats_ = { _chooseSurfaceFormat(
+      availableFormats, ColorOutputDescription::format_candidate_list_v) };
+
+    assert((surface_.capabilities().supportedUsageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) ==
+           VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+
+    assert((surface_.capabilities().supportedCompositeAlpha & vkCompositeAlphaFlags) == vkCompositeAlphaFlags);
 
     auto presentMode = _choosePresentationMode(device.physicalDevice(), presentModeCandidates);
 
-    assert((surface_->capabilities().supportedUsageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) ==
-           VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-
-    assert((surface_->capabilities().supportedCompositeAlpha & vkCompositeAlphaFlags) == vkCompositeAlphaFlags);
-
-    auto [surfaceFormat, surfaceColorSpace] = colorOutputFormats_[0];
+    auto [surfaceFormat, surfaceColorSpace] = base_render_target_builder_t::colorOutputFormats_[0];
 
     VkSwapchainCreateInfoKHR swapChainCreateInfoKHR = {};
     swapChainCreateInfoKHR.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    swapChainCreateInfoKHR.surface = surface_->handle();
+    swapChainCreateInfoKHR.surface = surface_.handle();
     swapChainCreateInfoKHR.minImageCount =
-      std::min(surface_->capabilities().minImageCount + 1,
-               surface_->capabilities().maxImageCount > 0 ? surface_->capabilities().maxImageCount
-                                                          : std::numeric_limits<uint32_t>::max());
+      std::min(surface_.capabilities().minImageCount + 1,
+               surface_.capabilities().maxImageCount > 0 ? surface_.capabilities().maxImageCount
+                                                         : std::numeric_limits<uint32_t>::max());
 
     swapChainCreateInfoKHR.imageFormat = surfaceFormat;
     swapChainCreateInfoKHR.imageColorSpace = surfaceColorSpace;
-    swapChainCreateInfoKHR.imageExtent = extent_;
+    swapChainCreateInfoKHR.imageExtent = base_render_target_builder_t::extent_;
     swapChainCreateInfoKHR.imageArrayLayers = 1;
     swapChainCreateInfoKHR.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     swapChainCreateInfoKHR.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    swapChainCreateInfoKHR.preTransform = surface_->capabilities().currentTransform;
+    swapChainCreateInfoKHR.preTransform = surface_.capabilities().currentTransform;
     swapChainCreateInfoKHR.compositeAlpha = vkCompositeAlphaFlags;
     swapChainCreateInfoKHR.presentMode = presentMode;
     swapChainCreateInfoKHR.clipped = VK_TRUE;
@@ -197,66 +294,8 @@ RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::
     }
 }
 
-template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
-auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::buildRenderPassTarget(
-  VkRenderPass vkRenderPass) -> std::variant<SurfaceRenderTarget, FrameBufferRenderTarget>
-{
-    std::array<RenderTargetOutputSemantic, sizeof...(ColorOutputDescriptions)> outputSemantics = {
-        ColorOutputDescriptions::semantic_v...
-    };
-
-    if (surface_) {
-        auto [surfaceFormat, _] = colorOutputFormats_[0];
-        (void)_;
-
-        if constexpr (DepthStencilOutputDescription::is_empty_v) {
-            return SurfaceRenderTarget{ device_,       vkRenderPass,         *surface_,         vkSwapChain_,
-                                        surfaceFormat, clearColorValues_[0], outputSemantics[0] };
-        } else {
-            return SurfaceRenderTarget{ device_,
-                                        vkRenderPass,
-                                        *surface_,
-                                        vkSwapChain_,
-                                        vkDepthStencilOutputFormat_,
-                                        clearDepthStencilValue_,
-                                        surfaceFormat,
-                                        clearColorValues_[0],
-                                        outputSemantics[0] };
-        }
-    } else {
-        if constexpr (DepthStencilOutputDescription::is_empty_v) {
-            return FrameBufferRenderTarget{ device_,
-                                            vkRenderPass,
-                                            1,
-                                            extent_.width,
-                                            extent_.height,
-                                            _get_output_semantic_format_pairs(
-                                              std::make_index_sequence<sizeof...(ColorOutputDescriptions)>()),
-                                            clearColorValues_ };
-        } else {
-            return FrameBufferRenderTarget{ device_,
-                                            vkRenderPass,
-                                            1,
-                                            extent_.width,
-                                            extent_.height,
-                                            vkDepthStencilOutputFormat_,
-                                            clearDepthStencilValue_,
-                                            _get_output_semantic_format_pairs(
-                                              std::make_index_sequence<sizeof...(ColorOutputDescriptions)>()),
-                                            clearColorValues_ };
-        }
-    }
-}
-
-template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
-auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::getAttachments() const
-  -> attachment_list_t
-{
-    return _get_attachments(std::make_index_sequence<sizeof...(ColorOutputDescriptions)>());
-}
-
-template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
-void RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::_swapChainCreationErrorHandling(
+template<typename DepthStencilOutputDescription, typename ColorOutputDescription>
+void SurfaceRenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescription>::_swapChainCreationErrorHandling(
   VkResult result)
 {
     if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
@@ -286,13 +325,92 @@ void RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions.
     assert(false);
 }
 
-template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+template<typename DepthStencilOutputDescription, typename ColorOutputDescription>
 template<size_t candidateCount>
-VkFormat RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::_findSupportedFormat(
+auto SurfaceRenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescription>::_chooseSurfaceFormat(
+  std::vector<VkSurfaceFormatKHR> const& availableFormats,
+  std::array<std::pair<VkFormat, VkColorSpaceKHR>, candidateCount> const& candidates)
+  -> std::pair<VkFormat, VkColorSpaceKHR>
+{
+    for (auto&& [requiredFormat, requiredColorSpace] : candidates) {
+        for (auto&& availableFormat : availableFormats) {
+            if (requiredFormat == availableFormat.format && requiredColorSpace == availableFormat.colorSpace) {
+                return std::make_pair(availableFormat.format, availableFormat.colorSpace);
+            }
+        }
+    }
+
+    throw std::runtime_error("surface does not support required formats.");
+}
+
+template<typename DepthStencilOutputDescription, typename ColorOutputDescription>
+template<size_t modeCount>
+auto SurfaceRenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescription>::_choosePresentationMode(
+  VkPhysicalDevice physicalDevice,
+  std::array<VkPresentModeKHR, modeCount> const& candidates) const -> VkPresentModeKHR
+{
+    uint32_t availableModeCount = 0;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface_.handle(), &availableModeCount, nullptr);
+
+    assert(availableModeCount > 0);
+
+    std::vector<VkPresentModeKHR> availablePresentModes(availableModeCount);
+
+    vkGetPhysicalDeviceSurfacePresentModesKHR(
+      physicalDevice, surface_.handle(), &availableModeCount, availablePresentModes.data());
+
+    for (auto&& candidate : candidates) {
+        for (auto&& availableMode : availablePresentModes) {
+            if (availableMode == candidate) {
+                return availableMode;
+            }
+        }
+    }
+
+    throw std::runtime_error("surface does support any required presentation modes");
+}
+
+template<typename DepthStencilOutputDescription, typename ColorOutputDescription>
+auto SurfaceRenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescription>::buildRenderPassTarget(
+  VkRenderPass vkRenderPass) -> SurfaceRenderTarget
+{
+    auto [surfaceFormat, _] = base_render_target_builder_t::colorOutputFormats_[0];
+
+    if constexpr (DepthStencilOutputDescription::is_empty_v) {
+        return SurfaceRenderTarget{ base_render_target_builder_t::device_,
+                                    vkRenderPass,
+                                    *surface_,
+                                    vkSwapChain_,
+                                    surfaceFormat,
+                                    base_render_target_builder_t::clearColorValues_[0],
+                                    base_render_target_builder_t::outputSemantics[0] };
+    } else {
+        return SurfaceRenderTarget{ base_render_target_builder_t::device_,
+                                    vkRenderPass,
+                                    *surface_,
+                                    vkSwapChain_,
+                                    base_render_target_builder_t::vkDepthStencilOutputFormat_,
+                                    base_render_target_builder_t::clearDepthStencilValue_,
+                                    surfaceFormat,
+                                    base_render_target_builder_t::clearColorValues_[0],
+                                    base_render_target_builder_t::outputSemantics[0] };
+    }
+}
+
+template<typename TargetType, typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+auto RenderTargetBuilder<TargetType, DepthStencilOutputDescription, ColorOutputDescriptions...>::getAttachments() const
+  -> attachment_list_t
+{
+    return _get_attachments(std::make_index_sequence<sizeof...(ColorOutputDescriptions)>());
+}
+
+template<typename TargetType, typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+template<size_t candidateCount>
+auto RenderTargetBuilder<TargetType, DepthStencilOutputDescription, ColorOutputDescriptions...>::_findSupportedFormat(
   std::array<std::pair<VkFormat, VkColorSpaceKHR>, candidateCount> const& candidates,
   VkPhysicalDevice physicalDevice,
   VkImageTiling requiredTiling,
-  VkFormatFeatureFlags requiredFeatures)
+  VkFormatFeatureFlags requiredFeatures) -> VkFormat
 {
     for (auto&& [candidate, _] : candidates) {
         (void)_;
@@ -312,62 +430,18 @@ VkFormat RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescripti
     throw std::runtime_error("could not find suitable format for render target");
 }
 
-template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
-template<size_t candidateCount>
-auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::_chooseSurfaceFormat(
-  std::vector<VkSurfaceFormatKHR> const& availableFormats,
-  std::array<std::pair<VkFormat, VkColorSpaceKHR>, candidateCount> const& candidates)
-  -> std::pair<VkFormat, VkColorSpaceKHR>
-{
-    for (auto&& [requiredFormat, requiredColorSpace] : candidates) {
-        for (auto&& availableFormat : availableFormats) {
-            if (requiredFormat == availableFormat.format && requiredColorSpace == availableFormat.colorSpace) {
-                return std::make_pair(availableFormat.format, availableFormat.colorSpace);
-            }
-        }
-    }
-
-    throw std::runtime_error("surface does not support required formats.");
-}
-
-template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
-template<size_t modeCount>
-auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::_choosePresentationMode(
-  VkPhysicalDevice physicalDevice,
-  std::array<VkPresentModeKHR, modeCount> const& candidates) const -> VkPresentModeKHR
-{
-    uint32_t availableModeCount = 0;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface_->handle(), &availableModeCount, nullptr);
-
-    assert(availableModeCount > 0);
-
-    std::vector<VkPresentModeKHR> availablePresentModes(availableModeCount);
-
-    vkGetPhysicalDeviceSurfacePresentModesKHR(
-      physicalDevice, surface_->handle(), &availableModeCount, availablePresentModes.data());
-
-    for (auto&& candidate : candidates) {
-        for (auto&& availableMode : availablePresentModes) {
-            if (availableMode == candidate) {
-                return availableMode;
-            }
-        }
-    }
-
-    throw std::runtime_error("surface does support any required presentation modes");
-}
-
-template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+template<typename TargetType, typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
 template<size_t... idx>
-auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::_get_output_semantic_format_pairs(
-  std::index_sequence<idx...>) const -> std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, sizeof...(idx)>
+auto RenderTargetBuilder<TargetType, DepthStencilOutputDescription, ColorOutputDescriptions...>::
+  _get_output_semantic_format_pairs(std::index_sequence<idx...>) const
+  -> std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, sizeof...(idx)>
 {
     return std::array{ std::make_pair(colorOutputFormats_[idx].first, outputSemantics_[idx])... };
 }
 
-template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+template<typename TargetType, typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
 template<size_t... idx>
-auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::_get_attachments(
+auto RenderTargetBuilder<TargetType, DepthStencilOutputDescription, ColorOutputDescriptions...>::_get_attachments(
   std::index_sequence<idx...>) const -> attachment_list_t
 {
     constexpr size_t count = sizeof...(ColorOutputDescriptions);
@@ -397,8 +471,8 @@ auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions.
     }
 }
 
-template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
-auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::_get_attachment_ref(
+template<typename TargetType, typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+auto RenderTargetBuilder<TargetType, DepthStencilOutputDescription, ColorOutputDescriptions...>::_get_attachment_ref(
   size_t idx) const -> VkAttachmentReference
 {
     VkAttachmentReference reference = {};
@@ -409,9 +483,9 @@ auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions.
     return reference;
 }
 
-template<typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
-auto RenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescriptions...>::_get_attachment(size_t idx) const
-  -> VkAttachmentDescription
+template<typename TargetType, typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+auto RenderTargetBuilder<TargetType, DepthStencilOutputDescription, ColorOutputDescriptions...>::_get_attachment(
+  size_t idx) const -> VkAttachmentDescription
 {
     VkAttachmentDescription attachment = {};
 
