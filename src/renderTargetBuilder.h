@@ -44,7 +44,9 @@ public:
                          std::pair<std::array<VkAttachmentDescription, sizeof...(ColorOutputDescriptions) + 1>,
                                    std::array<VkAttachmentReference, sizeof...(ColorOutputDescriptions) + 1>>>;
 
-    static constexpr size_t all_attachment_count_v = std::tuple_size_v<attachment_list_t::first_type>;
+    using clear_value_list_t = std::conditional_t<DepthStencilOutputDescription::is_empty_v,
+                                                  std::array<VkClearValue, sizeof...(ColorOutputDescriptions)>,
+                                                  std::array<VkClearValue, sizeof...(ColorOutputDescriptions) + 1>>;
 
     static constexpr size_t color_attachment_count_v = sizeof...(ColorOutputDescriptions);
 
@@ -69,6 +71,8 @@ public:
 
     auto getAttachments() const -> attachment_list_t;
 
+    auto getClearValues() const -> clear_value_list_t;
+
 private:
     template<size_t candidateCount>
     static auto _findSupportedFormat(std::array<std::pair<VkFormat, VkColorSpaceKHR>, candidateCount> const& candidates,
@@ -82,6 +86,9 @@ private:
 
     template<size_t... idx>
     auto _get_attachments(std::index_sequence<idx...>) const -> attachment_list_t;
+
+    template<size_t... idx>
+    [[nodiscard]] auto _get_clear_values(std::index_sequence<idx...>) const -> clear_value_list_t;
 
     [[nodiscard]] auto _get_attachment(size_t idx) const -> VkAttachmentDescription;
 
@@ -405,6 +412,13 @@ auto RenderTargetBuilder<TargetType, DepthStencilOutputDescription, ColorOutputD
 }
 
 template<typename TargetType, typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+auto RenderTargetBuilder<TargetType, DepthStencilOutputDescription, ColorOutputDescriptions...>::getClearValues() const
+  -> clear_value_list_t
+{
+    return _get_clear_values(std::make_index_sequence<sizeof...(ColorOutputDescriptions)>{});
+}
+
+template<typename TargetType, typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
 template<size_t candidateCount>
 auto RenderTargetBuilder<TargetType, DepthStencilOutputDescription, ColorOutputDescriptions...>::_findSupportedFormat(
   std::array<std::pair<VkFormat, VkColorSpaceKHR>, candidateCount> const& candidates,
@@ -503,6 +517,18 @@ auto RenderTargetBuilder<TargetType, DepthStencilOutputDescription, ColorOutputD
     attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     return attachment;
+}
+
+template<typename TargetType, typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+template<size_t... idx>
+auto RenderTargetBuilder<TargetType, DepthStencilOutputDescription, ColorOutputDescriptions...>::_get_clear_values(
+  std::index_sequence<idx...>) const -> clear_value_list_t
+{
+    if constexpr (DepthStencilOutputDescription::is_empty_v) {
+        return std::array{ VkClearValue{ clearColorValues_[idx] }... };
+    } else {
+        return std::array{ VkClearValue{ clearColorValues_[idx] }..., VkClearValue{ clearDepthStencilValue_ } };
+    }
 }
 }
 

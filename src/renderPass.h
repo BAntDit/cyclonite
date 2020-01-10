@@ -55,6 +55,8 @@ private:
         { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR },
       VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
 
+    void _createRenderPass(vulkan::Device const& device, VkRenderPassCreateInfo const& renderPassCreateInfo);
+
     void _createSyncObjects(vulkan::Device const& device, size_t swapChainLength);
 
     void _createDummyPipeline(vulkan::Device const& device,
@@ -115,8 +117,6 @@ RenderPass::RenderPass(vulkan::Device& device,
 {
     using render_target_builder_t = SurfaceRenderTargetBuilder<DepthStencilOutput, ColorOutput>;
 
-    constexpr size_t all_attachment_count_v = render_target_builder_t::all_attachment_count_v;
-
     constexpr size_t color_attachment_count_v = render_target_builder_t::color_attachment_count_v;
 
     constexpr size_t depth_attachment_idx_v = render_target_builder_t::depth_attachment_idx_v;
@@ -158,19 +158,7 @@ RenderPass::RenderPass(vulkan::Device& device,
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
 
-    if (auto result = vkCreateRenderPass(device.handle(), &renderPassInfo, nullptr, &vkRenderPass_);
-        result != VK_SUCCESS) {
-
-        if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
-            throw std::runtime_error("not enough RAM memory to create render pass");
-        }
-
-        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
-            throw std::runtime_error("not enough GPU memory to create render pass");
-        }
-
-        assert(false);
-    }
+    _createRenderPass(device, renderPassInfo);
 
     auto&& renderTarget = renderTargetBuilder.buildRenderPassTarget(static_cast<VkRenderPass>(vkRenderPass_));
 
@@ -211,7 +199,42 @@ RenderPass::RenderPass(vulkan::Device& device,
 
     _createDummyCommandBuffers(device, renderTarget.swapChainLength());
 
+    auto clearValues = renderTargetBuilder.getClearValues();
+
+    auto&& frameBuffers = renderTarget.frameBuffers();
+
     for (size_t i = 0, count = commandBuffers_.size(); i < count; i++) {
+        auto commandBuffer = commandBuffers_[i];
+
+        VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+        if (vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo) != VK_SUCCESS) {
+            throw std::runtime_error("could not begin recording command buffer!");
+        }
+
+        VkRenderPassBeginInfo renderPassBeginInfo = {};
+        renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassBeginInfo.renderPass = static_cast<VkRenderPass>(vkRenderPass_);
+        renderPassBeginInfo.framebuffer = frameBuffers()[i].handle();
+        renderPassBeginInfo.renderArea.offset.x = 0;
+        renderPassBeginInfo.renderArea.offset.y = 0;
+        renderPassBeginInfo.renderArea.extent.width = renderTarget.width();
+        renderPassBeginInfo.renderArea.extent.height = renderTarget.height();
+        renderPassBeginInfo.clearValueCount = clearValues.size();
+        renderPassBeginInfo.pClearValues = clearValues.data();
+
+        vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, static_cast<VkPipeline>(vkDummyPipeline_));
+
+        vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+        vkCmdEndRenderPass(commandBuffer);
+
+        if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS) {
+            throw std::runtime_error("could not record command buffer!");
+        }
     }
 
     renderTarget_ = std::move(renderTarget);

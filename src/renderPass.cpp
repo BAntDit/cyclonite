@@ -14,6 +14,23 @@ std::vector<uint32_t> const defaultFragmentShaderCode = {
 };
 
 namespace cyclonite {
+void RenderPass::_createRenderPass(vulkan::Device const& device, VkRenderPassCreateInfo const& renderPassCreateInfo)
+{
+    if (auto result = vkCreateRenderPass(device.handle(), &renderPassCreateInfo, nullptr, &vkRenderPass_);
+        result != VK_SUCCESS) {
+
+        if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
+            throw std::runtime_error("not enough RAM memory to create render pass");
+        }
+
+        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+            throw std::runtime_error("not enough GPU memory to create render pass");
+        }
+
+        assert(false);
+    }
+}
+
 void RenderPass::_createSyncObjects(vulkan::Device const& device, size_t swapChainLength)
 {
     frameFences_.reserve(swapChainLength);
@@ -58,178 +75,6 @@ void RenderPass::_createDummyCommandBuffers(vulkan::Device const& device, size_t
     if (auto result = vkAllocateCommandBuffers(device.handle(), &commandBufferAllocateInfo, commandBuffers_.data());
         result != VK_SUCCESS) {
         throw std::runtime_error("could not allocate command buffers");
-    }
-}
-
-// template<size_t presentModeCandidateCount, typename... DepthStencilOutputCandidates, typename...
-// ColorOutputCandidates>
-RenderPass::RenderPass(vulkan::Device& device,
-                       Options::WindowProperties const& windowProperties,
-                       VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags
-                       // std::array<VkPresentModeKHR, presentModeCandidateCount> const& presentModeCandidates,
-                       // render_target_output<type_list<DepthStencilOutputCandidates...>> const&,
-                       // render_target_output<type_list<ColorOutputCandidates...>> const&
-                       )
-  : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
-  , renderTarget_{}
-  , passFinishedSemaphores_{}
-  , frameFences_{}
-  , renderTargetFences_{}
-  , waitStage_{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
-  , vkWaitSemaphore_{ VK_NULL_HANDLE }
-  , vkSignalSemaphore_{ VK_NULL_HANDLE }
-  , renderQueueSubmitInfo_{}
-  , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
-  , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
-  , vkCommandPool_{ device.handle(), vkDestroyCommandPool }
-  , commandBuffers_{}
-{
-    std::array<VkPresentModeKHR, 2> presentModeCandidates = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR };
-
-    using rt_builder_t = RenderTargetBuilder<
-      render_target_output<type_list<render_target_output_candidate<VK_FORMAT_D32_SFLOAT>>>,
-      render_target_output<
-        type_list<render_target_output_candidate<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
-        RenderTargetOutputSemantic::DEFAULT>>;
-
-    rt_builder_t rtBuilder{ device,
-                            Surface{ device, windowProperties },
-                            std::array<VkClearColorValue, 1>{ VkClearColorValue{ { 0.0f, 0.0f, 0.0f, 1.0f } } },
-                            VkClearDepthStencilValue{ 1.0f, 0 },
-                            presentModeCandidates,
-                            vkCompositeAlphaFlags };
-
-    auto [attachments, references] = rtBuilder.getAttachments();
-
-    VkSubpassDescription subPass = {};
-    subPass.colorAttachmentCount = rt_builder_t::color_attachment_count_v;
-    subPass.pColorAttachments = references.data();
-
-    // if constexpr (sizeof...(DepthStencilOutputCandidates) > 0) {
-    subPass.pDepthStencilAttachment = &references[rt_builder_t::depth_attachment_idx_v];
-    // }
-
-    VkSubpassDependency dependency = {};
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    VkRenderPassCreateInfo renderPassInfo = {};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = attachments.size();
-    renderPassInfo.pAttachments = attachments.data();
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subPass;
-    renderPassInfo.dependencyCount = 1;
-    renderPassInfo.pDependencies = &dependency;
-
-    if (auto result = vkCreateRenderPass(device.handle(), &renderPassInfo, nullptr, &vkRenderPass_);
-        result != VK_SUCCESS) {
-
-        if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
-            throw std::runtime_error("not enough RAM memory to create render pass");
-        }
-
-        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
-            throw std::runtime_error("not enough GPU memory to create render pass");
-        }
-
-        assert(false);
-    }
-
-    std::visit([this](auto&& rt) -> void { renderTarget_ = std::forward<decltype(rt)>(rt); },
-               rtBuilder.buildRenderPassTarget(static_cast<VkRenderPass>(vkRenderPass_)));
-
-    auto swapChainLength = _getSwapChainLength();
-
-    frameFences_.reserve(swapChainLength);
-    passFinishedSemaphores_.reserve(swapChainLength);
-
-    VkFenceCreateInfo fenceCreateInfo = {};
-    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
-    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-    for (size_t i = 0; i < swapChainLength; i++) {
-        if (auto result = vkCreateFence(
-              device.handle(), &fenceCreateInfo, nullptr, &frameFences_.emplace_back(device.handle(), vkDestroyFence));
-            result != VK_SUCCESS) {
-            throw std::runtime_error("could not create frame synchronization fence");
-        }
-
-        if (auto result = vkCreateSemaphore(device.handle(),
-                                            &semaphoreCreateInfo,
-                                            nullptr,
-                                            &passFinishedSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
-            result != VK_SUCCESS) {
-            throw std::runtime_error("could not create pass end synchronization semaphore");
-        }
-    }
-
-    renderTargetFences_.resize(swapChainLength, VK_NULL_HANDLE);
-
-    _createDummyPipeline(device);
-
-    _createDummyCommandPool(device);
-
-    auto&& frameBuffers = _getFrameBuffers();
-
-    auto&& [width, height] = _getSize();
-
-    std::array<VkClearValue, 2> clearValues = {}; // for now
-
-    std::visit(
-      [&](auto&& rt) -> void {
-          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget>) {
-              rt.getClearValues(clearValues);
-              return;
-          }
-
-          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
-              throw std::runtime_error("not implemented yet");
-          }
-
-          throw std::runtime_error("empty render target");
-      },
-      renderTarget_);
-
-    for (size_t i = 0, count = commandBuffers_.size(); i < count; i++) {
-        auto commandBuffer = commandBuffers_[i];
-
-        VkCommandBufferBeginInfo commandBufferBeginInfo = {};
-        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-        if (vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("could not begin recording command buffer!");
-        }
-
-        VkRenderPassBeginInfo renderPassBeginInfo = {};
-        renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassBeginInfo.renderPass = static_cast<VkRenderPass>(vkRenderPass_);
-        renderPassBeginInfo.framebuffer = frameBuffers[i].handle();
-        renderPassBeginInfo.renderArea.offset.x = 0;
-        renderPassBeginInfo.renderArea.offset.y = 0;
-        renderPassBeginInfo.renderArea.extent.width = width;
-        renderPassBeginInfo.renderArea.extent.height = height;
-        renderPassBeginInfo.clearValueCount = clearValues.size();
-        renderPassBeginInfo.pClearValues = clearValues.data();
-
-        vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, static_cast<VkPipeline>(vkDummyPipeline_));
-
-        vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-
-        vkCmdEndRenderPass(commandBuffer);
-
-        if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS) {
-            throw std::runtime_error("could not record command buffer!");
-        }
     }
 }
 

@@ -84,20 +84,6 @@ public:
 
     [[nodiscard]] auto colorAttachmentCount() const -> size_t { return colorAttachmentCount_; }
 
-    template<size_t count>
-    void getClearValues(std::array<VkClearValue, count>& output) const // :( very ugly
-    {
-        std::visit(
-          [&](auto const& clearValues) -> void {
-              if constexpr (clearValues.size() == count) {
-                  std::copy(clearValues.begin(), clearValues.end(), output.begin());
-                  return;
-              }
-              std::terminate();
-          },
-          clearValues_);
-    }
-
     void setDepthStencilClearValue(VkClearDepthStencilValue clearValue);
 
     void setColorAttachmentClearValue(RenderTargetOutputSemantic semantic, VkClearColorValue clearValue);
