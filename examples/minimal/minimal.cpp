@@ -31,7 +31,18 @@ auto Minimal::run() -> Minimal& {
 
     cyclonite::VulkanRenderer vulkanRenderer{ root_->device() };
 
-    cyclonite::RenderPass renderPass{ root_->device(), windowProperties };
+    cyclonite::RenderPass renderPass{
+        root_->device(),
+        windowProperties,
+        cyclonite::render_target_output<
+            easy_mp::type_list<cyclonite::render_target_output_candidate<VK_FORMAT_D32_SFLOAT>>>{},
+        cyclonite::render_target_output<
+            easy_mp::type_list<
+                cyclonite::render_target_output_candidate<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
+                cyclonite::RenderTargetOutputSemantic::DEFAULT>{},
+        VkClearDepthStencilValue{ 1.0f, 0 },
+        VkClearColorValue{ { 0.0f, 0.0f, 0.0f, 1.0f } },
+        std::array{ VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR } };
 
     while(!shutdown_) {
         root_->input().pollEvent();

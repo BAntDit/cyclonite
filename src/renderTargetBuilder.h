@@ -80,6 +80,12 @@ private:
                                      VkImageTiling requiredTiling,
                                      VkFormatFeatureFlags requiredFeatures) -> VkFormat;
 
+    template<typename T>
+    static auto _make_clear_value(T&& t)
+      -> std::enable_if_t<std::is_same_v<std::decay_t<T>, VkClearDepthStencilValue> ||
+                            std::is_same_v<std::decay_t<T>, VkClearColorValue>,
+                          VkClearValue>;
+
     template<size_t... idx>
     auto _get_output_semantic_format_pairs(std::index_sequence<idx...>) const
       -> std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, sizeof...(idx)>;
@@ -386,21 +392,21 @@ auto SurfaceRenderTargetBuilder<DepthStencilOutputDescription, ColorOutputDescri
     if constexpr (DepthStencilOutputDescription::is_empty_v) {
         return SurfaceRenderTarget{ base_render_target_builder_t::device_,
                                     vkRenderPass,
-                                    *surface_,
+                                    surface_,
                                     vkSwapChain_,
                                     surfaceFormat,
                                     base_render_target_builder_t::clearColorValues_[0],
-                                    base_render_target_builder_t::outputSemantics[0] };
+                                    base_render_target_builder_t::outputSemantics_[0] };
     } else {
         return SurfaceRenderTarget{ base_render_target_builder_t::device_,
                                     vkRenderPass,
-                                    *surface_,
+                                    surface_,
                                     vkSwapChain_,
                                     base_render_target_builder_t::vkDepthStencilOutputFormat_,
                                     base_render_target_builder_t::clearDepthStencilValue_,
                                     surfaceFormat,
                                     base_render_target_builder_t::clearColorValues_[0],
-                                    base_render_target_builder_t::outputSemantics[0] };
+                                    base_render_target_builder_t::outputSemantics_[0] };
     }
 }
 
@@ -520,14 +526,32 @@ auto RenderTargetBuilder<TargetType, DepthStencilOutputDescription, ColorOutputD
 }
 
 template<typename TargetType, typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
+template<typename T>
+auto RenderTargetBuilder<TargetType, DepthStencilOutputDescription, ColorOutputDescriptions...>::_make_clear_value(
+  T&& t) -> std::enable_if_t<std::is_same_v<std::decay_t<T>, VkClearDepthStencilValue> ||
+                               std::is_same_v<std::decay_t<T>, VkClearColorValue>,
+                             VkClearValue>
+{
+    VkClearValue clearColorValue = {};
+
+    if constexpr (std::is_same_v<std::decay_t<T>, VkClearColorValue>) {
+        clearColorValue.color = std::forward<T>(t);
+    } else {
+        clearColorValue.depthStencil = std::forward<T>(t);
+    }
+
+    return clearColorValue;
+}
+
+template<typename TargetType, typename DepthStencilOutputDescription, typename... ColorOutputDescriptions>
 template<size_t... idx>
 auto RenderTargetBuilder<TargetType, DepthStencilOutputDescription, ColorOutputDescriptions...>::_get_clear_values(
   std::index_sequence<idx...>) const -> clear_value_list_t
 {
     if constexpr (DepthStencilOutputDescription::is_empty_v) {
-        return std::array{ VkClearValue{ clearColorValues_[idx] }... };
+        return std::array{ _make_clear_value(clearColorValues_[idx])... };
     } else {
-        return std::array{ VkClearValue{ clearColorValues_[idx] }..., VkClearValue{ clearDepthStencilValue_ } };
+        return std::array{ _make_clear_value(clearColorValues_[idx])..., _make_clear_value(clearDepthStencilValue_) };
     }
 }
 }

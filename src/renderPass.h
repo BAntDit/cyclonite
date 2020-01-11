@@ -327,7 +327,7 @@ RenderPass::RenderPass(vulkan::Device& device,
         VkRenderPassBeginInfo renderPassBeginInfo = {};
         renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassBeginInfo.renderPass = static_cast<VkRenderPass>(vkRenderPass_);
-        renderPassBeginInfo.framebuffer = frameBuffers()[i].handle();
+        renderPassBeginInfo.framebuffer = frameBuffers[i].handle();
         renderPassBeginInfo.renderArea.offset.x = 0;
         renderPassBeginInfo.renderArea.offset.y = 0;
         renderPassBeginInfo.renderArea.extent.width = renderTarget.width();

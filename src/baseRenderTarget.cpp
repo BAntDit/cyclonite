@@ -49,7 +49,7 @@ auto BaseRenderTarget::getDepthStencilClearValue() const -> VkClearDepthStencilV
 {
     assert(hasDepthStencil_);
 
-    std::visit(
+    return std::visit(
       [](auto&& clearValues) -> VkClearDepthStencilValue { return clearValues[clearValues.size() - 1].depthStencil; },
       clearValues_);
 }
