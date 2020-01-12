@@ -11,12 +11,15 @@ set(PUBLIC_HEADERS
     src/eventReceivable.h
     src/input.h
     src/app.h
-    src/updateStages.h
     src/root.h
     src/surface.h
     src/arena.h
     src/error.h
     src/typedefs.h
+    src/scene.h
+    src/components/transform.h
+    src/systems/updateStages.h
+    src/systems/transformSystem.h
     src/core/bufferView.h
     src/core/transform.h
     src/core/camera.h
@@ -74,6 +77,7 @@ set(SOURCES
     src/frameBufferRenderTarget.cpp
     src/surfaceRenderTarget.cpp
     src/renderPass.cpp
+    src/components/transform.cpp
     src/vulkanRenderer.cpp
     src/sdl/sdlSupport.cpp
     src/sdl/sdlWindow.cpp

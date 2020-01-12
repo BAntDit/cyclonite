@@ -9,7 +9,7 @@
 #include "core/camera.h"
 #include "core/transform.h"
 #include "platform.h"
-#include "updateStages.h"
+#include "systems/updateStages.h"
 #include "vulkan/androidSurface.h"
 #include "vulkan/win32Surface.h"
 #include "vulkan/wlSurface.h"
