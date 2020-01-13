@@ -8,9 +8,9 @@
 #include "../components/transform.h"
 #include "../vulkan/staging.h"
 #include "updateStages.h"
+#include <boost/dynamic_bitset.hpp>
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
-#include <boost/dynamic_bitset.hpp>
 
 namespace cyclonite::systems {
 class TransformSystem : public enttx::BaseSystem<TransformSystem>

@@ -18,6 +18,7 @@ set(PUBLIC_HEADERS
     src/typedefs.h
     src/scene.h
     src/components/transform.h
+    src/components/transformStorage.h
     src/systems/updateStages.h
     src/systems/transformSystem.h
     src/core/bufferView.h
