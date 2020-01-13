@@ -10,6 +10,7 @@
 #include "updateStages.h"
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
+#include <boost/dynamic_bitset.hpp>
 
 namespace cyclonite::systems {
 class TransformSystem : public enttx::BaseSystem<TransformSystem>
@@ -17,7 +18,7 @@ class TransformSystem : public enttx::BaseSystem<TransformSystem>
 public:
     using tag_t = easy_mp::type_list<components::Transform>;
 
-    TransformSystem() noexcept = default;
+    TransformSystem() = default;
 
     template<typename... Args>
     void init(Args&&... args);
@@ -31,6 +32,7 @@ private:
     static const size_t needsUpdateWorldMatrixBit = 3;
 
     std::vector<mat4> worldMatrices_;
+    boost::dynamic_bitset<> updateStatus_;
 };
 
 template<typename SystemManager, typename EntityManager, size_t STAGE>
@@ -57,9 +59,14 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
                 // TODO:: ...
             }
 
-            if (flags.test(needsUpdateWorldMatrixBit)) {
+            if (flags.test(needsUpdateWorldMatrixBit) || updateStatus_.test(parentIndex)) {
                 assert(worldMatrices_.size() < globalIndex);
+
                 worldMatrices_[globalIndex] = parentMatrix * matrix;
+
+                updateStatus_.set(globalIndex);
+            } else {
+                updateStatus_.reset(globalIndex);
             }
 
             flags.reset();
