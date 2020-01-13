@@ -8,8 +8,8 @@
 #include "../components/transform.h"
 #include "../vulkan/staging.h"
 #include "updateStages.h"
-#include <enttx/enttx.h>
 #include <easy-mp/enum.h>
+#include <enttx/enttx.h>
 
 namespace cyclonite::systems {
 class TransformSystem : public enttx::BaseSystem<TransformSystem>
@@ -39,13 +39,13 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
     if constexpr (STAGE == easy_mp::value_cast(UpdateStage::EARLY_UPDATE)) {
         auto view = entityManager.template getView<components::Transform>();
 
-        for (auto&[entity, transform] : view) {
-            (void) entity;
+        for (auto& [entity, transform] : view) {
+            (void)entity;
 
-            auto&[position, scale, orientation, matrix, flags, globalIndex, parentIndex] = transform;
+            auto& [position, scale, orientation, matrix, flags, globalIndex, parentIndex] = transform;
 
-            auto const &parentMatrix =
-                    parentIndex != std::numeric_limits<size_t>::max() ? worldMatrices_[parentIndex] : mat4{1.0f};
+            auto const& parentMatrix =
+              parentIndex != std::numeric_limits<size_t>::max() ? worldMatrices_[parentIndex] : mat4{ 1.0f };
 
             assert(!(flags.test(needsUpdateTransformComponentsBit) && flags.test(needsUpdateLocalMatrixBit)));
 
