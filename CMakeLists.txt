@@ -79,6 +79,7 @@ set(SOURCES
     src/surfaceRenderTarget.cpp
     src/renderPass.cpp
     src/components/transform.cpp
+    src/systems/transformSystem.cpp
     src/vulkanRenderer.cpp
     src/sdl/sdlSupport.cpp
     src/sdl/sdlWindow.cpp

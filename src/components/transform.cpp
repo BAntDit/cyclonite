@@ -12,7 +12,7 @@ Transform::Transform() noexcept
   , orientation{ glm::angleAxis(glm::radians(0.0f), vec3{ 0.0f, 1.0f, 1.0f }) }
   , matrix{ 1.0f }
   , flags{ 4 }
-  , depth_{ 0 }
+  , depth{ 0 }
   , globalIndex{ std::numeric_limits<size_t>::max() }
   , parentIndex{ std::numeric_limits<size_t>::max() }
 {}
@@ -23,7 +23,7 @@ Transform::Transform(vec3 localPosition, vec3 localScale, quat localOrientation)
   , orientation{ localOrientation }
   , matrix{ glm::translate(localPosition) * glm::mat4_cast(localOrientation) * glm::scale(localScale) } // TRS
   , flags{ 4 }
-  , depth_{ 0 }
+  , depth{ 0 }
   , globalIndex{ std::numeric_limits<size_t>::max() }
   , parentIndex{ std::numeric_limits<size_t>::max() }
 {}
@@ -34,7 +34,7 @@ Transform::Transform(mat4 localMatrix)
   , orientation{ glm::angleAxis(glm::radians(0.0f), vec3{ 0.0f, 1.0f, 1.0f }) }
   , matrix{ localMatrix }
   , flags{ 4 }
-  , depth_{ 0 }
+  , depth{ 0 }
   , globalIndex{ std::numeric_limits<size_t>::max() }
   , parentIndex{ std::numeric_limits<size_t>::max() }
 {
