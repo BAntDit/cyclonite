@@ -9,14 +9,21 @@
 #include <bitset>
 
 namespace cyclonite::components {
+class TransformSystem;
+
 struct Transform
 {
+    friend class TransformSystem;
+
     Transform() noexcept;
 
     Transform(vec3 localPosition, vec3 localScale, quat localOrientation) noexcept;
 
     explicit Transform(mat4 localMatrix);
 
+    [[nodiscard]] auto depth() const -> size_t { return depth_; }
+
+private:
     vec3 position;
     vec3 scale;
     quat orientation;
@@ -24,6 +31,7 @@ struct Transform
 
     std::bitset<3> flags;
 
+    size_t depth_;
     size_t globalIndex;
     size_t parentIndex;
 };

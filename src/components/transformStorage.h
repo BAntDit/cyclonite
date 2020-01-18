@@ -21,7 +21,7 @@ public:
     auto get(uint32_t index) -> Transform&;
 
     template<typename... Args>
-    auto create(uint32_t index, Args&&... args) -> Transform&;
+    auto create(uint32_t index, size_t depth, Args&&... args) -> Transform&;
 
     void destroy(uint32_t index);
 
@@ -38,7 +38,7 @@ public:
     auto end() { return store_.end(); }
 
 private:
-    void _reserveStoreIfNecessary(uint32_t pos);
+    void _reserveStoreIfNecessary();
 
     void _resizeIndicesIfNecessary(uint32_t index);
 
@@ -83,7 +83,7 @@ auto TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>::get(uint32_t index) -> T
 
 template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT>
 template<typename... Args>
-auto TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>::create(uint32_t index, Args&&... args) -> Transform&
+auto TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>::create(uint32_t index, size_t depth, Args&&... args) -> Transform&
 {
     assert(index != maxValidIndex_ || index >= indices_.size() ||
            indices_[index] == std::numeric_limits<uint32_t>::max());
@@ -102,44 +102,30 @@ auto TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>::create(uint32_t index, A
         _reserveStoreIfNecessary(pos);
 
         it = store_.emplace(store_.cbegin(), std::forward<Args>(args)...);
-    } else if (index > maxValidIndex_) {
-        auto pos = indices_[maxValidIndex_];
+    } else {
+        auto posIt = std::lower_bound(store_.begin(), store_.end(), depth, [](size_t lhs, auto const& rhs) -> bool {
+            return lhs < rhs.depth;
+        });
 
-        maxValidIndex_ = index;
-
-        assert(pos < store_.size());
+        if (index > maxValidIndex_) {
+            maxValidIndex_ = index;
+        }
 
         _resizeIndicesIfNecessary(index);
 
-        indices_[index] = ++pos;
+        it = store_.insert(posIt, Transform{ std::forward<Args>(args)... });
 
-        _reserveStoreIfNecessary(pos);
+        auto pos = static_cast<uint32_t>(std::distance(store_.begin(), it));
 
-        it = store_.emplace(std::next(store_.cbegin(), pos), std::forward<Args>(args)...);
-    } else {
-        assert(indices_[maxValidIndex_] < store_.size());
-
-        _reserveStoreIfNecessary(indices_[maxValidIndex_] + 1);
-
-        auto pos = std::numeric_limits<uint32_t>::max();
-
-        for (auto it = std::next(indices_.begin(), index); it != std::next(indices_.begin(), maxValidIndex_ + 1);
-             it++) {
-            if (*it == std::numeric_limits<uint32_t>::max())
+        for (auto iit = indices_.begin(); iit != std::next(indices_.begin(), maxValidIndex_ + 1); iit++) {
+            if (*iit == std::numeric_limits<uint32_t>::max())
                 continue;
 
-            if (pos == std::numeric_limits<uint32_t>::max()) {
-                pos = *it;
-            }
-
-            (*it)++;
+            if (*iit >= pos)
+                (*iit)++;
         }
 
-        assert(pos < store_.size());
-
         indices_[index] = pos;
-
-        it = store_.emplace(std::next(store_.cbegin(), pos), std::forward<Args>(args)...);
     }
 
     assert(it != store_.end());
@@ -162,11 +148,12 @@ void TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>::destroy(uint32_t index)
 
     indices_[index] = std::numeric_limits<uint32_t>::max();
 
-    for (auto it = std::next(indices_.begin(), index); it != std::next(indices_.begin(), maxValidIndex_ + 1); it++) {
+    for (auto it = indices_.begin(); it != std::next(indices_.begin(), maxValidIndex_ + 1); it++) {
         if (*it == std::numeric_limits<uint32_t>::max())
             continue;
 
-        (*it)--;
+        if (*it > pos)
+            (*it)--;
     }
 
     if (index == maxValidIndex_) {
@@ -184,12 +171,13 @@ void TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>::destroy(uint32_t index)
 }
 
 template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT>
-void TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>::_reserveStoreIfNecessary(uint32_t pos)
+void TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>::_reserveStoreIfNecessary()
 {
     auto capacity = store_.capacity();
+    auto size = store_.size();
 
-    if (pos >= capacity) {
-        capacity = pos + 1;
+    if ((size + 1) >= capacity) {
+        capacity = size + 1;
         capacity = capacity + CHUNK_SIZE - capacity % CHUNK_SIZE;
 
         store_.reserve(capacity);
