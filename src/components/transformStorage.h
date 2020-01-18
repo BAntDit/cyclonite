@@ -14,6 +14,10 @@ class TransformStorage
   : public enttx::BaseComponentStorage<TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>, Transform>
 {
 public:
+    constexpr static size_t chunkSize = CHUNK_SIZE;
+
+    constexpr static size_t initialChunkCount = INITIAL_CHUNK_COUNT;
+
     TransformStorage();
 
     auto get(uint32_t index) const -> Transform const&;

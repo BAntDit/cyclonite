@@ -35,6 +35,9 @@ public:
     void destroy(EntityManager& entityManager, enttx::Entity const& entity);
 
 private:
+    template<typename EntityManager>
+    void _reserveVectorsIfNecessary(EntityManager& entityManager, size_t globalIndex);
+
     void _decompose(mat4& mat, vec3& position, vec3& scale, quat& orientation);
 
 private:
@@ -120,6 +123,11 @@ auto TransformSystem::create(EntityManager& entityManager,
         }
     }
 
+    _reserveVectorsIfNecessary(entityManager, globalIndex);
+
+    worldMatrices_.insert(std::next(worldMatrices_.begin(), globalIndex), mat4{ 1.0 });
+    updateStatus_.insert(std::next(updateStatus_.begin(), globalIndex), 0);
+
     return transform;
 }
 
@@ -133,6 +141,9 @@ void TransformSystem::destroy(EntityManager& entityManager, enttx::Entity const&
 
     auto globalIndex = transform->globalIndex;
 
+    worldMatrices_.erase(std::next(worldMatrices_.begin(), globalIndex));
+    updateStatus_.erase(std::next(updateStatus_.begin(), globalIndex));
+
     for (auto cit = std::next(transforms.begin(), globalIndex + 1); cit != transforms.end(); cit++) {
         (*cit).globalIndex--;
 
@@ -144,6 +155,23 @@ void TransformSystem::destroy(EntityManager& entityManager, enttx::Entity const&
     }
 
     entityManager.template destroy<components::Transform>(entity);
+}
+
+template<typename EntityManager>
+void TransformSystem::_reserveVectorsIfNecessary(EntityManager& entityManager, size_t globalIndex)
+{
+    (void)entityManager;
+
+    constexpr size_t chunkSize = EntityManager::template component_storage_t<components::Transform>::chunkSize;
+
+    auto capacity = globalIndex + 1;
+
+    if (worldMatrices_.capacity() <= globalIndex) {
+        capacity = capacity + chunkSize - capacity % chunkSize;
+
+        worldMatrices_.reserve(capacity);
+        updateStatus_.reserve(capacity);
+    }
 }
 }
 
