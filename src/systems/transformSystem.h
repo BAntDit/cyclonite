@@ -19,6 +19,8 @@ public:
 
     TransformSystem() = default;
 
+    ~TransformSystem() = default;
+
     template<typename... Args>
     void init(Args&&... args);
 
@@ -47,6 +49,7 @@ private:
 
     std::vector<mat4> worldMatrices_;
     std::vector<uint8_t> updateStatus_;
+    std::vector<enttx::Entity> entities_;
 };
 
 template<typename SystemManager, typename EntityManager, size_t STAGE>
@@ -102,9 +105,15 @@ auto TransformSystem::create(EntityManager& entityManager,
       std::as_const(entityManager).template getComponent<components::Transform>(parentEntity);
 
     auto depth = parentTransform->depth + 1;
+    auto parentIndex = parentTransform->globalIndex;
 
-    auto it = std::upper_bound(
-      transforms.begin(), transforms.end(), depth, [](size_t lhs, auto const& rhs) -> bool { return lhs < rhs.depth; });
+    auto it = std::upper_bound(transforms.begin(),
+                               transforms.end(),
+                               std::make_pair(depth, parentIndex),
+                               [](auto&& lhs, auto const& rhs) -> bool {
+                                   auto&& [depth, parentIndex] = lhs;
+                                   return (depth < rhs.depth) || (depth == rhs.depth && parentIndex < rhs.parentIndex);
+                               });
 
     auto globalIndex = std::distance(transforms.begin(), it);
 
@@ -136,8 +145,7 @@ void TransformSystem::destroy(EntityManager& entityManager, enttx::Entity const&
 {
     auto& transforms = entityManager.template getStorage<components::Transform>();
 
-    auto const* transform =
-        std::as_const(entityManager).template getComponent<components::Transform>(entity);
+    auto const* transform = std::as_const(entityManager).template getComponent<components::Transform>(entity);
 
     auto globalIndex = transform->globalIndex;
 
@@ -171,6 +179,7 @@ void TransformSystem::_reserveVectorsIfNecessary(EntityManager& entityManager, s
 
         worldMatrices_.reserve(capacity);
         updateStatus_.reserve(capacity);
+        entities_.reserve(capacity);
     }
 }
 }

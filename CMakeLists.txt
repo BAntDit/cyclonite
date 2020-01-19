@@ -17,6 +17,7 @@ set(PUBLIC_HEADERS
     src/error.h
     src/typedefs.h
     src/scene.h
+    src/sceneNode.h
     src/components/transform.h
     src/components/transformStorage.h
     src/systems/updateStages.h

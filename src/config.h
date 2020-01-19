@@ -23,7 +23,7 @@ struct EcsConfig<easy_mp::type_list<Components...>,
     using scene_system_list_t = easy_mp::type_list<Systems...>;
 
     using entity_manager_t = enttx::EntityManagerConfig<scene_component_list_t, scene_storage_list_t>;
-    using scene_manager_t = enttx::SystemManagerConfig<updateStageCount, entity_manager_t, scene_system_list_t>;
+    using system_manager_t = enttx::SystemManagerConfig<updateStageCount, entity_manager_t, scene_system_list_t>;
 };
 
 template<typename EcsConfig>
