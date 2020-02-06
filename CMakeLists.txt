@@ -22,6 +22,7 @@ set(PUBLIC_HEADERS
     src/components/transformStorage.h
     src/systems/updateStages.h
     src/systems/transformSystem.h
+    src/systems/meshSystem.h
     src/core/bufferView.h
     src/core/transform.h
     src/core/camera.h

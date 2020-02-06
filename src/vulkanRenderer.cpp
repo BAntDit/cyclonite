@@ -16,7 +16,8 @@ void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
 
     auto const& renderQueueSubmitInfo = renderPass.renderQueueSubmitInfo();
 
-    if (auto result = vkQueueSubmit(device_->graphicsQueue(), 1, &renderQueueSubmitInfo, currentFrameFence);
+    if (auto result = vkQueueSubmit(
+            device_->graphicsQueue(), 1, &renderQueueSubmitInfo, currentFrameFence);
         result != VK_SUCCESS) {
 
         if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {

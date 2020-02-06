@@ -314,6 +314,7 @@ RenderPass::RenderPass(vulkan::Device& device,
 
     auto&& frameBuffers = renderTarget.frameBuffers();
 
+    // TODO:: create frame patch
     for (size_t i = 0, count = commandBuffers_.size(); i < count; i++) {
         auto commandBuffer = commandBuffers_[i];
 
@@ -337,7 +338,7 @@ RenderPass::RenderPass(vulkan::Device& device,
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, static_cast<VkPipeline>(vkDummyPipeline_));
+        vkCmdBindPipeline(commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,static_cast<VkPipeline>(vkDummyPipeline_));
 
         vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
