@@ -25,7 +25,7 @@ public:
     auto get(uint32_t index) -> Transform&;
 
     template<typename... Args>
-    auto create(uint32_t index, size_t depth, Args&&... args) -> Transform&;
+    auto create(uint32_t index, size_t pos, Args&&... args) -> Transform&;
 
     void destroy(uint32_t index);
 
@@ -87,15 +87,11 @@ auto TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>::get(uint32_t index) -> T
 
 template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT>
 template<typename... Args>
-auto TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>::create(uint32_t index, size_t globalIndex, Args&&... args)
+auto TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>::create(uint32_t index, size_t pos, Args&&... args)
   -> Transform&
 {
     assert(index != maxValidIndex_ || index >= indices_.size() ||
            indices_[index] == std::numeric_limits<uint32_t>::max());
-
-    auto it = store_.end();
-
-    auto pos = globalIndex;
 
     if (maxValidIndex_ == std::numeric_limits<uint32_t>::max() || index > maxValidIndex_)
         maxValidIndex_ = index;
@@ -103,7 +99,7 @@ auto TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>::create(uint32_t index, s
     _resizeIndicesIfNecessary(index);
     _reserveStoreIfNecessary(pos);
 
-    it = store_.insert(std::next(store_.begin(), pos), Transform{ std::forward<Args>(args)... });
+    auto it = store_.insert(std::next(store_.begin(), pos), Transform{ std::forward<Args>(args)... });
 
     for (auto iit = indices_.begin(); iit != std::next(indices_.begin(), maxValidIndex_ + 1); iit++) {
         if (*iit == std::numeric_limits<uint32_t>::max())
@@ -114,8 +110,6 @@ auto TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>::create(uint32_t index, s
     }
 
     indices_[index] = pos;
-
-    assert(it != store_.end());
 
     return *it;
 }
