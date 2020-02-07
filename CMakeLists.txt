@@ -101,7 +101,7 @@ set(SOURCES
     src/multithreading/taskManager.cpp
     src/loaders/glTF/loader.cpp
     src/loaders/glTF/internal/base64Decode.cpp
-)
+        src/systems/meshSystem.cpp)
 
 set(SHADER_SOURCES
     src/shaders/default.vert

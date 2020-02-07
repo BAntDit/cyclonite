@@ -12,9 +12,10 @@ enum class UpdateStage : size_t
 {
     EARLY_UPDATE = 0,
     LATE_UPDATE = 1,
+    TRANSFER_STAGE = 2,
     MIN_VALUE = EARLY_UPDATE,
-    MAX_VALUE = LATE_UPDATE,
-    COUNT = 2
+    MAX_VALUE = TRANSFER_STAGE,
+    COUNT = MAX_VALUE + 1
 };
 }
 

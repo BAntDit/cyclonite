@@ -87,8 +87,7 @@ auto TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>::get(uint32_t index) -> T
 
 template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT>
 template<typename... Args>
-auto TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>::create(uint32_t index, size_t pos, Args&&... args)
-  -> Transform&
+auto TransformStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT>::create(uint32_t index, size_t pos, Args&&... args) -> Transform&
 {
     assert(index != maxValidIndex_ || index >= indices_.size() ||
            indices_[index] == std::numeric_limits<uint32_t>::max());

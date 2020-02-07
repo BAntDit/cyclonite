@@ -24,8 +24,8 @@ public:
         RenderTargetOutputSemantic::DEFAULT>{},
       VkClearDepthStencilValue const& clearDepthStencilValue = { 1.0f, 0 },
       VkClearColorValue const& clearColorValue = { { 0.0f, 0.0f, 0.0f, 1.0f } },
-      std::array<VkPresentModeKHR, presentModeCandidateCount> const& presentModeCandidates =
-        { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR },
+      std::array<VkPresentModeKHR, presentModeCandidateCount> const&
+        presentModeCandidates = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR },
       VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
 
     template<typename ColorOutput, size_t presentModeCandidateCount>
@@ -35,8 +35,8 @@ public:
                  type_list<render_target_output_candidate<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
                  RenderTargetOutputSemantic::DEFAULT>{},
                VkClearColorValue const& clearColorValue = { { 0.0f, 0.0f, 0.0f, 1.0f } },
-               std::array<VkPresentModeKHR, presentModeCandidateCount> const& presentModeCandidates =
-                 { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR },
+               std::array<VkPresentModeKHR, presentModeCandidateCount> const&
+                 presentModeCandidates = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR },
                VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
 
     template<typename DepthStencilOutput, typename... ColorOutputs>
@@ -338,7 +338,7 @@ RenderPass::RenderPass(vulkan::Device& device,
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,static_cast<VkPipeline>(vkDummyPipeline_));
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, static_cast<VkPipeline>(vkDummyPipeline_));
 
         vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
