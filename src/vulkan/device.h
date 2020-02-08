@@ -76,6 +76,8 @@ public:
 
     [[nodiscard]] auto memoryManager() -> MemoryManager& { return *memoryManager_; }
 
+    [[nodiscard]] auto queueFamilyIndices() const -> std::vector<uint32_t> const& { return queueFamilyIndices_; }
+
 private:
     Capabilities capabilities_;
     VkInstance vkInstance_;

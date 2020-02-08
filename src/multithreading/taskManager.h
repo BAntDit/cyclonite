@@ -37,6 +37,8 @@ public:
 
     auto getTaskCount(size_t countItems) const -> std::pair<size_t, size_t>;
 
+    auto pool() const -> std::vector<std::thread> const& { return pool_; }
+
 private:
     boost::asio::io_context ioContext_;
 

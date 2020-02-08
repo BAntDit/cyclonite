@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 project(cyclonite VERSION 0.0.0.0)
 
 set(PUBLIC_HEADERS
+    src/hash.h
     src/platform.h
     src/config.h
     src/defaultConfigs.h
@@ -43,6 +44,8 @@ set(PUBLIC_HEADERS
     src/vulkan/handle.h
     src/vulkan/instance.h
     src/vulkan/device.h
+    src/vulkan/commandBuffer.h
+    src/vulkan/commandPool.h
     src/vulkan/baseSurface.h
     src/vulkan/xlibSurface.h
     src/vulkan/win32Surface.h
@@ -87,6 +90,8 @@ set(SOURCES
     src/sdl/sdlWindow.cpp
     src/vulkan/instance.cpp
     src/vulkan/device.cpp
+    src/vulkan/commandBuffer.cpp
+    src/vulkan/commandPool.cpp
     src/vulkan/baseSurface.cpp
     src/vulkan/xlibSurface.cpp
     src/vulkan/win32Surface.cpp
@@ -101,7 +106,7 @@ set(SOURCES
     src/multithreading/taskManager.cpp
     src/loaders/glTF/loader.cpp
     src/loaders/glTF/internal/base64Decode.cpp
-        src/systems/meshSystem.cpp)
+    src/systems/meshSystem.cpp)
 
 set(SHADER_SOURCES
     src/shaders/default.vert
