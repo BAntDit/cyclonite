@@ -6,7 +6,7 @@
 #include "device.h"
 
 namespace cyclonite::vulkan {
-CommandPool::CommandPool(vulkan::Device const& device, multithreading::TaskManager const& taskManager)
+CommandPool::CommandPool(multithreading::TaskManager const& taskManager, vulkan::Device const& device)
   : device_{ device.handle() }
   , taskManager_{ &taskManager }
   , commandPools_{}

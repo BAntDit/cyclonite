@@ -25,6 +25,7 @@ Device::Device(multithreading::TaskManager const& taskManager,
   , queueFamilyIndices_{}
   , vkQueues_{}
   , memoryManager_{ nullptr }
+  , commandPool_{ nullptr }
 {
     uint32_t familyCount = 0;
 
@@ -123,6 +124,8 @@ Device::Device(multithreading::TaskManager const& taskManager,
     }
 
     memoryManager_ = std::make_unique<MemoryManager>(taskManager, *this);
+
+    commandPool_ = std::make_unique<CommandPool>(taskManager, *this);
 }
 
 auto Device::graphicsQueue() const -> VkQueue

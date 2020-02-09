@@ -19,7 +19,7 @@ class Device;
 class CommandPool
 {
 public:
-    CommandPool(vulkan::Device const& device, multithreading::TaskManager const& taskManager);
+    CommandPool(multithreading::TaskManager const& taskManager, vulkan::Device const& device);
 
     CommandPool(CommandPool const&) = delete;
 

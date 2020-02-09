@@ -7,6 +7,7 @@
 
 #include "../multithreading/taskManager.h"
 #include "handle.h"
+#include "commandPool.h"
 #include "memoryManager.h"
 #include <memory>
 
@@ -78,6 +79,8 @@ public:
 
     [[nodiscard]] auto queueFamilyIndices() const -> std::vector<uint32_t> const& { return queueFamilyIndices_; }
 
+    [[nodiscard]] auto commandPool() -> CommandPool& { return *commandPool_; }
+
 private:
     Capabilities capabilities_;
     VkInstance vkInstance_;
@@ -92,6 +95,7 @@ private:
     std::vector<uint32_t> queueFamilyIndices_;
     std::vector<Handle<VkQueue>> vkQueues_;
     std::unique_ptr<MemoryManager> memoryManager_;
+    std::unique_ptr<CommandPool> commandPool_;
 };
 }
 
