@@ -40,7 +40,10 @@ public:
                             std::is_invocable_v<AllocationCallback, Container&&>,
                           Container&&>;
 
-    auto releaseCommandBuffer(CommandBuffer commandBuffer) -> std::future<void>;
+    template<typename Container>
+    auto releaseCommandBuffers(Container&& commandBuffers)
+      -> std::enable_if_t<easy_mp::is_iterable_v<Container> && std::is_same_v<Container::value_type, CommandBuffer>,
+                          std::future<void>>;
 
 private:
     using pool_key_t = std::tuple<std::thread::id, uint32_t, VkCommandPoolCreateFlags>;
@@ -131,6 +134,40 @@ auto CommandPool::allocCommandBuffers(Container&& container,
     callback(std::forward<Container>(container));
 
     return std::forward<Container>(container);
+}
+
+template<typename Container>
+auto CommandPool::releaseCommandBuffers(Container&& commandBuffers)
+  -> std::enable_if_t<easy_mp::is_iterable_v<Container> && std::is_same_v<Container::value_type, CommandBuffer>,
+                      std::future<void>>
+{
+    assert(commandBuffers.size() > 0);
+
+    auto& cb = commandBuffers[0];
+
+    auto threadId = cb.threadId();
+    auto queueFamilyIndex = cb.queueFamilyIndex();
+    auto flags = cb.flags();
+
+    auto it = commandPools_.find(std::make_tuple(threadId, queueFamilyIndex, flags));
+
+    auto& [key, value] = (*it);
+    auto& [pool, buffers] = value;
+
+    (void)key;
+    (void)pool;
+
+    return taskManager_->strand([&, &buffers = buffers]() -> void {
+        buffers.reserve(buffers.size() + commandBuffers.size());
+
+        for (auto&& buffer : commandBuffers) {
+            assert(buffer.vkCommandBuffer_ != VK_NULL_HANDLE);
+
+            buffers.push_back(buffer.vkCommandBuffer_);
+
+            buffer.vkCommandBuffer_ = VK_NULL_HANDLE;
+        }
+    });
 }
 }
 

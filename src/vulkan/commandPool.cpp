@@ -48,22 +48,4 @@ CommandPool::CommandPool(vulkan::Device const& device, multithreading::TaskManag
         }
     }
 }
-
-auto CommandPool::releaseCommandBuffer(CommandBuffer commandBuffer) -> std::future<void>
-{
-    assert(commandBuffer.flags() != 0); // do not release persistent buffer
-
-    auto it = commandPools_.find(
-      std::make_tuple(commandBuffer.threadId(), commandBuffer.queueFamilyIndex(), commandBuffer.flags()));
-
-    assert(it != commandPools_.end());
-
-    auto& [key, value] = (*it);
-    auto& [pool, buffers] = value;
-
-    (void)key;
-    (void)pool;
-
-    return taskManager_->strand([&, &buffers = buffers]() -> void { buffers.push_back(std::move(commandBuffer)); });
-}
 }
