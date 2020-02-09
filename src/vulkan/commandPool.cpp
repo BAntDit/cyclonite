@@ -7,14 +7,15 @@
 
 namespace cyclonite::vulkan {
 CommandPool::CommandPool(vulkan::Device const& device, multithreading::TaskManager const& taskManager)
-  : taskManager_{ &taskManager }
+  : device_{ device.handle() }
+  , taskManager_{ &taskManager }
   , commandPools_{}
 {
     auto createPool = [&, this](std::thread::id id, uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags) -> void {
         auto [it, success] =
           commandPools_.emplace(std::make_tuple(id, queueFamilyIndex, flags),
                                 std::make_tuple(Handle<VkCommandPool>{ device.handle(), vkDestroyCommandPool },
-                                                std::vector<CommandBuffer>{}));
+                                                std::vector<VkCommandBuffer>{}));
 
         assert(success);
 
@@ -64,37 +65,5 @@ auto CommandPool::releaseCommandBuffer(CommandBuffer commandBuffer) -> std::futu
     (void)pool;
 
     return taskManager_->strand([&, &buffers = buffers]() -> void { buffers.push_back(std::move(commandBuffer)); });
-}
-
-template<typename AllocationCallback>
-auto CommandPool::allocCommandBuffer(uint32_t queueFamilyIndex,
-                                     VkCommandPoolCreateFlags flags,
-                                     AllocationCallback&& callback)
-  -> std::enable_if_t<std::is_invocable_v<AllocationCallback, VkCommandBuffer>, CommandBuffer>
-{
-    auto it = commandPools_.find(std::make_tuple(std::this_thread::get_id(), queueFamilyIndex, flags));
-
-    auto& [key, value] = (*it);
-    auto& [pool, buffers] = value;
-
-    (void)key;
-
-    auto future = taskManager_->strand([&, &buffers = buffers, &pool = pool]() -> CommandBuffer {
-        if (buffers.size() > 0) {
-            auto buffer = std::move(buffers.back());
-
-            // TODO:: ...
-
-            return buffer;
-        } else {
-            // TODO:: ...
-        }
-    });
-
-    auto buffer = std::move(future.get());
-
-    callback(buffer.vkCommandBuffer_);
-
-    return buffer;
 }
 }

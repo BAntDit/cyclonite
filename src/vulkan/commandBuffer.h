@@ -16,6 +16,8 @@ class CommandBuffer
 public:
     friend class CommandPool;
 
+    CommandBuffer() noexcept;
+
     CommandBuffer(CommandBuffer const&) = delete;
 
     CommandBuffer(CommandBuffer&& commandBuffer) noexcept;
@@ -31,12 +33,6 @@ public:
     [[nodiscard]] auto flags() const -> VkCommandPoolCreateFlags { return flags_; }
 
     [[nodiscard]] auto queueFamilyIndex() const -> uint32_t { return queueFamilyIndex_; }
-
-private:
-    CommandBuffer(VkCommandBuffer commandBuffer,
-                  std::thread::id threadId,
-                  uint32_t queueFamilyIndex,
-                  VkCommandPoolCreateFlags flags) noexcept;
 
 private:
     VkCommandBuffer vkCommandBuffer_;

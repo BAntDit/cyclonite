@@ -6,14 +6,11 @@
 #include "commandPool.h"
 
 namespace cyclonite::vulkan {
-CommandBuffer::CommandBuffer(VkCommandBuffer commandBuffer,
-                             std::thread::id threadId,
-                             uint32_t queueFamilyIndex,
-                             VkCommandPoolCreateFlags flags) noexcept
-  : vkCommandBuffer_{ commandBuffer }
-  , threadId_{ threadId }
-  , queueFamilyIndex_{ queueFamilyIndex }
-  , flags_{ flags }
+CommandBuffer::CommandBuffer() noexcept
+  : vkCommandBuffer_{ VK_NULL_HANDLE }
+  , threadId_{ std::this_thread::get_id() }
+  , queueFamilyIndex_{ 0 }
+  , flags_{ 0 }
 {}
 
 CommandBuffer::CommandBuffer(CommandBuffer&& commandBuffer) noexcept
