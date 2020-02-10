@@ -16,10 +16,13 @@ class CommandPool;
 template<typename Container>
 class CommandBufferSet
 {
-    static_assert(easy_mp::is_contiguous_v<Container> && std::is_same_v<Container::value_type, VkCommandBuffer>);
+    static_assert(easy_mp::is_contiguous_v<Container> &&
+                  std::is_same_v<typename Container::value_type, VkCommandBuffer>);
 
 public:
     friend class CommandPool;
+
+    CommandBufferSet() noexcept;
 
     CommandBufferSet(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags, Container&& buffers) noexcept;
 
@@ -45,6 +48,14 @@ private:
     VkCommandPoolCreateFlags flags_;
     Container commandBuffers_;
 };
+
+template<typename Container>
+CommandBufferSet<Container>::CommandBufferSet() noexcept
+  : threadId_{ std::this_thread::get_id() }
+  , queueFamilyIndex_{ 0 }
+  , flags_{ 0 }
+  , commandBuffers_{}
+{}
 
 template<typename Container>
 CommandBufferSet<Container>::CommandBufferSet(uint32_t queueFamilyIndex,

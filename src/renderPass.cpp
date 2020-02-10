@@ -62,22 +62,6 @@ void RenderPass::_createSyncObjects(vulkan::Device const& device, size_t swapCha
     renderTargetFences_.resize(swapChainLength, VK_NULL_HANDLE);
 }
 
-void RenderPass::_createDummyCommandBuffers(vulkan::Device const& device, size_t swapChainLength)
-{
-    commandBuffers_.resize(swapChainLength, VK_NULL_HANDLE);
-
-    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
-    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    commandBufferAllocateInfo.commandPool = static_cast<VkCommandPool>(vkCommandPool_);
-    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    commandBufferAllocateInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers_.size());
-
-    if (auto result = vkAllocateCommandBuffers(device.handle(), &commandBufferAllocateInfo, commandBuffers_.data());
-        result != VK_SUCCESS) {
-        throw std::runtime_error("could not allocate command buffers");
-    }
-}
-
 auto RenderPass::begin(vulkan::Device const& device) -> VkFence
 {
     return std::visit(
@@ -243,18 +227,6 @@ void RenderPass::_createDummyPipeline(vulkan::Device const& device,
           device.handle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &vkDummyPipeline_);
         result != VK_SUCCESS) {
         throw std::runtime_error("could not create graphics pipeline");
-    }
-}
-
-void RenderPass::_createDummyCommandPool(vulkan::Device const& device)
-{
-    VkCommandPoolCreateInfo commandPoolCreateInfo = {};
-    commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    commandPoolCreateInfo.queueFamilyIndex = device.graphicsQueueFamilyIndex();
-
-    if (auto result = vkCreateCommandPool(device.handle(), &commandPoolCreateInfo, nullptr, &vkCommandPool_);
-        result != VK_SUCCESS) {
-        throw std::runtime_error("could not create command pool");
     }
 }
 

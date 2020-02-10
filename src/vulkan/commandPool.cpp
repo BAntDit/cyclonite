@@ -7,7 +7,7 @@
 
 namespace cyclonite::vulkan {
 CommandPool::CommandPool(multithreading::TaskManager const& taskManager, vulkan::Device const& device)
-  : vkDevice_{device.handle() }
+  : vkDevice_{ device.handle() }
   , taskManager_{ &taskManager }
   , commandPools_{}
 {

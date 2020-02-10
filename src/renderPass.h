@@ -8,6 +8,7 @@
 #include "options.h"
 #include "renderTargetBuilder.h"
 #include "surface.h"
+#include "vulkan/commandBufferSet.h"
 #include <optional>
 
 namespace cyclonite {
@@ -83,10 +84,6 @@ private:
                               bool hasDepthStencil,
                               VkPipelineColorBlendStateCreateInfo const& colorBlendState);
 
-    void _createDummyCommandPool(vulkan::Device const& device);
-
-    void _createDummyCommandBuffers(vulkan::Device const& device, size_t swapChainLength);
-
 private:
     vulkan::Handle<VkRenderPass> vkRenderPass_;
     std::variant<std::monostate, SurfaceRenderTarget, FrameBufferRenderTarget> renderTarget_;
@@ -103,11 +100,7 @@ private:
     vulkan::Handle<VkPipelineLayout> vkDummyPipelineLayout_;
     vulkan::Handle<VkPipeline> vkDummyPipeline_;
 
-    // tmp:: let it be here just for now
-    vulkan::Handle<VkCommandPool> vkCommandPool_;
-
-    // tmp::
-    std::vector<VkCommandBuffer> commandBuffers_;
+    vulkan::CommandBufferSet<std::vector<VkCommandBuffer>> commandBufferSet_;
 };
 
 template<typename DepthStencilOutput, typename... ColorOutputs>
@@ -130,8 +123,7 @@ RenderPass::RenderPass(vulkan::Device& device,
   , renderQueueSubmitInfo_{}
   , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
-  , vkCommandPool_{ device.handle(), vkDestroyCommandPool }
-  , commandBuffers_{}
+  , commandBufferSet_{}
 {
     using render_target_builder_t = FrameBufferRenderTargetBuilder<DepthStencilOutput, ColorOutputs...>;
 
@@ -223,8 +215,7 @@ RenderPass::RenderPass(vulkan::Device& device,
   , renderQueueSubmitInfo_{}
   , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
-  , vkCommandPool_{ device.handle(), vkDestroyCommandPool }
-  , commandBuffers_{}
+  , commandBufferSet_{}
 {
     using render_target_builder_t = SurfaceRenderTargetBuilder<DepthStencilOutput, ColorOutput>;
 
@@ -306,9 +297,27 @@ RenderPass::RenderPass(vulkan::Device& device,
     _createDummyPipeline(
       device, renderTarget.width(), renderTarget.height(), has_depth_stencil_attachment_v, colorBlendState);
 
-    _createDummyCommandPool(device);
+    // TODO:: create command buffers here
 
-    _createDummyCommandBuffers(device, renderTarget.swapChainLength());
+    commandBufferSet_ = device.commandPool().allocCommandBuffers(
+      vulkan::CommandBufferSet<std::vector<VkCommandBuffer>>{
+        device.hostTransferQueueFamilyIndex(),
+        VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT,
+        std::vector<VkCommandBuffer>(renderTarget.swapChainLength(), VK_NULL_HANDLE) },
+      [](std::vector<VkCommandBuffer>& vkCommandBuffers) -> void {
+          for (size_t i = 0, count = vkCommandBuffers.size(); i < count; i++) {
+              auto commandBuffer = vkCommandBuffers[i];
+
+              VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+              commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+              if (vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo) != VK_SUCCESS) {
+                  throw std::runtime_error("could not begin recording command buffer!");
+              }
+
+              // TODO:: ...
+          }
+      });
 
     auto clearValues = renderTargetBuilder.getClearValues();
 

@@ -148,7 +148,7 @@ auto CommandPool::releaseCommandBuffers(BufferSet<Container>& commandBufferSet)
 
             dst.push_back(src[i]);
 
-             src[i] = VK_NULL_HANDLE;
+            src[i] = VK_NULL_HANDLE;
         }
     });
 }
