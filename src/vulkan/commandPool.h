@@ -77,7 +77,7 @@ auto CommandPool::allocCommandBuffers(BufferSet<Container>&& commandBufferSet, A
           return dst;
       });
 
-    auto&& commandBuffers = std::move(future.get());
+    auto&& commandBuffers = future.get();
 
     bool needsResets = true;
     size_t allocateForm = 0;
