@@ -46,7 +46,7 @@ private:
     using pool_key_t = std::tuple<std::thread::id, uint32_t, VkCommandPoolCreateFlags>;
     using command_pool_t = std::tuple<vulkan::Handle<VkCommandPool>, std::vector<VkCommandBuffer>>;
 
-    VkDevice device_;
+    VkDevice vkDevice_;
     multithreading::TaskManager const* taskManager_;
     std::unordered_map<pool_key_t, command_pool_t, hash> commandPools_;
 };
@@ -98,7 +98,7 @@ auto CommandPool::allocCommandBuffers(BufferSet<Container>&& commandBufferSet, A
             commandBufferAllocateInfo.commandBufferCount = static_cast<uint32_t>(count - allocateForm);
 
             if (auto result =
-                  vkAllocateCommandBuffers(device_, &commandBufferAllocateInfo, commandBuffers.data() + allocateForm);
+                  vkAllocateCommandBuffers(vkDevice_, &commandBufferAllocateInfo, commandBuffers.data() + allocateForm);
                 result != VK_SUCCESS) {
                 throw std::runtime_error("could not allocate command buffers");
             }
