@@ -6,8 +6,8 @@
 #define CYCLONITE_DEVICE_H
 
 #include "../multithreading/taskManager.h"
-#include "handle.h"
 #include "commandPool.h"
+#include "handle.h"
 #include "memoryManager.h"
 #include <memory>
 

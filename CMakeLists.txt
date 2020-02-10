@@ -44,7 +44,7 @@ set(PUBLIC_HEADERS
     src/vulkan/handle.h
     src/vulkan/instance.h
     src/vulkan/device.h
-    src/vulkan/commandBuffer.h
+    src/vulkan/commandBufferSet.h
     src/vulkan/commandPool.h
     src/vulkan/baseSurface.h
     src/vulkan/xlibSurface.h
@@ -90,7 +90,6 @@ set(SOURCES
     src/sdl/sdlWindow.cpp
     src/vulkan/instance.cpp
     src/vulkan/device.cpp
-    src/vulkan/commandBuffer.cpp
     src/vulkan/commandPool.cpp
     src/vulkan/baseSurface.cpp
     src/vulkan/xlibSurface.cpp

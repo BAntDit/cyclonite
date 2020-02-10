@@ -7,7 +7,7 @@
 
 #include "../hash.h"
 #include "../multithreading/taskManager.h"
-#include "commandBuffer.h"
+#include "commandBufferSet.h"
 #include "handle.h"
 #include <easy-mp/containers.h>
 #include <thread>
@@ -31,18 +31,15 @@ public:
 
     auto operator=(CommandPool &&) -> CommandPool& = default;
 
-    template<typename AllocationCallback, typename Container>
-    auto allocCommandBuffers(Container&& container,
-                             uint32_t queueFamilyIndex,
-                             VkCommandPoolCreateFlags flags,
-                             AllocationCallback&& callback)
-      -> std::enable_if_t<easy_mp::is_iterable_v<Container> && std::is_same_v<Container::value_type, CommandBuffer> &&
+    template<typename AllocationCallback, template<typename> typename BufferSet, typename Container>
+    auto allocCommandBuffers(BufferSet<Container>&& commandBufferSet, AllocationCallback&& callback)
+      -> std::enable_if_t<std::is_same_v<std::decay_t<BufferSet<Container>>, CommandBufferSet<Container>> &&
                             std::is_invocable_v<AllocationCallback, Container&&>,
-                          Container&&>;
+                          BufferSet<Container>&&>;
 
-    template<typename Container>
-    auto releaseCommandBuffers(Container&& commandBuffers)
-      -> std::enable_if_t<easy_mp::is_iterable_v<Container> && std::is_same_v<Container::value_type, CommandBuffer>,
+    template<template<typename> typename BufferSet, typename Container>
+    auto releaseCommandBuffers(BufferSet<Container>& commandBufferSet)
+      -> std::enable_if_t<std::is_same_v<std::decay_t<BufferSet<Container>>, CommandBufferSet<Container>>,
                           std::future<void>>;
 
 private:
@@ -54,40 +51,33 @@ private:
     std::unordered_map<pool_key_t, command_pool_t, hash> commandPools_;
 };
 
-template<typename AllocationCallback, typename Container>
-auto CommandPool::allocCommandBuffers(Container&& container,
-                                      uint32_t queueFamilyIndex,
-                                      VkCommandPoolCreateFlags flags,
-                                      AllocationCallback&& callback)
-  -> std::enable_if_t<easy_mp::is_iterable_v<Container> && std::is_same_v<Container::value_type, CommandBuffer> &&
+template<typename AllocationCallback, template<typename> typename BufferSet, typename Container>
+auto CommandPool::allocCommandBuffers(BufferSet<Container>&& commandBufferSet, AllocationCallback&& callback)
+  -> std::enable_if_t<std::is_same_v<std::decay_t<BufferSet<Container>>, CommandBufferSet<Container>> &&
                         std::is_invocable_v<AllocationCallback, Container&&>,
-                      Container&&>
+                      BufferSet<Container>&&>
 {
-    auto threadId = std::this_thread::get_id();
-
-    auto it = commandPools_.find(std::make_tuple(threadId, queueFamilyIndex, flags));
+    auto it = commandPools_.find(
+      std::make_tuple(commandBufferSet.threadId(), commandBufferSet.queueFamilyIndex(), commandBufferSet.flags()));
 
     auto& [key, value] = (*it);
     auto& [pool, buffers] = value;
 
     (void)key;
 
-    auto countBuffers = container.size();
+    auto future =
+      taskManager_->strand([&, &src = buffers, dst = std::move(commandBufferSet.commandBuffers_)]() -> Container {
+          auto count = std::min(src.size(), static_cast<size_t>(dst.size()));
+          auto first = src.size() - count;
 
-    auto future = taskManager_->strand([&, &buffers = buffers]() -> std::vector<VkCommandBuffer> {
-        std::vector<VkCommandBuffer> res(countBuffers, VK_NULL_HANDLE);
+          std::copy(std::next(src.begin(), first), src.end(), dst.begin());
 
-        auto count = std::min(buffers.size(), res.size());
-        auto first = buffers.size() - count;
+          src.erase(std::next(src.begin(), first), src.end());
 
-        std::copy(std::next(buffers.begin(), first), buffers.end(), res.begin());
+          return dst;
+      });
 
-        buffers.erase(std::next(buffers.begin(), first), buffers.end());
-
-        return res;
-    });
-
-    auto&& commandBuffers = future.get();
+    auto&& commandBuffers = std::move(future.get());
 
     bool needsResets = true;
     size_t allocateForm = 0;
@@ -114,40 +104,33 @@ auto CommandPool::allocCommandBuffers(Container&& container,
             }
         }
 
-        if (needsResets && (flags & VK_COMMAND_POOL_CREATE_TRANSIENT_BIT) != 0) {
+        if (needsResets && (commandBufferSet.flags() & VK_COMMAND_POOL_CREATE_TRANSIENT_BIT) != 0) {
             if (auto result = vkResetCommandPool(buffer, 0); result != VK_SUCCESS) {
                 throw std::runtime_error("could not release command buffer");
             }
-        } else if (needsResets && (flags & VK_COMMAND_POOL_CREATE_TRANSIENT_BIT) == 0) {
+        } else if (needsResets && (commandBufferSet.flags() & VK_COMMAND_POOL_CREATE_TRANSIENT_BIT) == 0) {
             if (auto result = vkResetCommandPool(buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
                 result != VK_SUCCESS) {
                 throw std::runtime_error("could not release command buffer");
             }
         }
-
-        container[i].vkCommandBuffer_ = buffer;
-        container[i].threadId_ = threadId;
-        container[i].queueFamilyIndex_ = queueFamilyIndex;
-        container[i].flags_ = flags;
     }
 
-    callback(std::forward<Container>(container));
+    callback(commandBuffers);
 
-    return std::forward<Container>(container);
+    commandBufferSet.commandBuffers_ = std::move(commandBuffers);
+
+    return std::forward<BufferSet<Container>>(commandBufferSet);
 }
 
-template<typename Container>
-auto CommandPool::releaseCommandBuffers(Container&& commandBuffers)
-  -> std::enable_if_t<easy_mp::is_iterable_v<Container> && std::is_same_v<Container::value_type, CommandBuffer>,
+template<template<typename> typename BufferSet, typename Container>
+auto CommandPool::releaseCommandBuffers(BufferSet<Container>& commandBufferSet)
+  -> std::enable_if_t<std::is_same_v<std::decay_t<BufferSet<Container>>, CommandBufferSet<Container>>,
                       std::future<void>>
 {
-    assert(commandBuffers.size() > 0);
-
-    auto& cb = commandBuffers[0];
-
-    auto threadId = cb.threadId();
-    auto queueFamilyIndex = cb.queueFamilyIndex();
-    auto flags = cb.flags();
+    auto threadId = commandBufferSet.threadId();
+    auto queueFamilyIndex = commandBufferSet.queueFamilyIndex();
+    auto flags = commandBufferSet.flags();
 
     auto it = commandPools_.find(std::make_tuple(threadId, queueFamilyIndex, flags));
 
@@ -157,15 +140,15 @@ auto CommandPool::releaseCommandBuffers(Container&& commandBuffers)
     (void)key;
     (void)pool;
 
-    return taskManager_->strand([&, &buffers = buffers]() -> void {
-        buffers.reserve(buffers.size() + commandBuffers.size());
+    return taskManager_->strand([&, &dst = buffers, &src = commandBufferSet.commandBuffers_]() -> void {
+        dst.reserve(dst.size() + src.size());
 
-        for (auto&& buffer : commandBuffers) {
-            assert(buffer.vkCommandBuffer_ != VK_NULL_HANDLE);
+        for (size_t i = 0, count = src.size(); i < count; i++) {
+            assert(src[i] != VK_NULL_HANDLE);
 
-            buffers.push_back(buffer.vkCommandBuffer_);
+            dst.push_back(src[i]);
 
-            buffer.vkCommandBuffer_ = VK_NULL_HANDLE;
+             src[i] = VK_NULL_HANDLE;
         }
     });
 }
