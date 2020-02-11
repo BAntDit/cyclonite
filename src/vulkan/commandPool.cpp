@@ -36,6 +36,18 @@ CommandPool::CommandPool(multithreading::TaskManager const& taskManager, vulkan:
         }
     };
 
+    // pool for main thread:
+    for (auto& queueFamilyIndex : device.queueFamilyIndices()) {
+        createPool(std::this_thread::get_id(), queueFamilyIndex, 0);
+
+        createPool(std::this_thread::get_id(),
+                   queueFamilyIndex,
+                   VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+
+        createPool(std::this_thread::get_id(), queueFamilyIndex, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+    }
+
+    // pool for each thread of thread pool:
     for (auto& thread : taskManager.pool()) {
         for (auto& queueFamilyIndex : device.queueFamilyIndices()) {
             createPool(thread.get_id(), queueFamilyIndex, 0); // for persistent buffers

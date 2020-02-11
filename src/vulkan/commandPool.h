@@ -67,15 +67,14 @@ auto CommandPool::allocCommandBuffers(BufferSet<Container>&& commandBufferSet, A
 
     (void)key;
 
-    auto future =
-      taskManager_->strand([&, &src = buffers, &dst = commandBufferSet.commandBuffers_]() -> void {
-          auto count = std::min(src.size(), static_cast<size_t>(dst.size()));
-          auto first = src.size() - count;
+    auto future = taskManager_->strand([&, &src = buffers, &dst = commandBufferSet.commandBuffers_]() -> void {
+        auto count = std::min(src.size(), static_cast<size_t>(dst.size()));
+        auto first = src.size() - count;
 
-          std::copy(std::next(src.begin(), first), src.end(), dst.begin());
+        std::copy(std::next(src.begin(), first), src.end(), dst.begin());
 
-          src.erase(std::next(src.begin(), first), src.end());
-      });
+        src.erase(std::next(src.begin(), first), src.end());
+    });
 
     future.get();
 
