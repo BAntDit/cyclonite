@@ -9,6 +9,7 @@
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
 #include <vulkan/buffer.h>
+#include <vulkan/commandBufferSet.h>
 #include <vulkan/staging.h>
 
 namespace cyclonite::systems {
@@ -28,6 +29,7 @@ private:
     std::unique_ptr<vulkan::Staging> commandBuffer_;
     std::unique_ptr<vulkan::Buffer> gpuCommandBuffer_;
     std::unique_ptr<vulkan::Buffer> gpuIndicesBuffer_;
+    std::unique_ptr<vulkan::CommandBufferSet<std::array<VkCommandBuffer, 1>>> transferCommands_;
 };
 
 template<typename SystemManager, typename EntityManager, size_t STAGE>

@@ -26,6 +26,8 @@ public:
 
     [[nodiscard]] auto ptr() const -> void*;
 
+    [[nodiscard]] auto handle() const -> VkBuffer { return buffer_.handle(); }
+
 private:
     Buffer buffer_;
 };
