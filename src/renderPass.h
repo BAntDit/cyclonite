@@ -297,14 +297,16 @@ RenderPass::RenderPass(vulkan::Device& device,
     _createDummyPipeline(
       device, renderTarget.width(), renderTarget.height(), has_depth_stencil_attachment_v, colorBlendState);
 
-    // TODO:: create command buffers here
+    auto clearValues = renderTargetBuilder.getClearValues();
+
+    auto&& frameBuffers = renderTarget.frameBuffers();
 
     commandBufferSet_ = device.commandPool().allocCommandBuffers(
       vulkan::CommandBufferSet<std::vector<VkCommandBuffer>>{
-        device.hostTransferQueueFamilyIndex(),
-        VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT,
+        device.graphicsQueueFamilyIndex(),
+        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
         std::vector<VkCommandBuffer>(renderTarget.swapChainLength(), VK_NULL_HANDLE) },
-      [](std::vector<VkCommandBuffer>& vkCommandBuffers) -> void {
+      [&, this](std::vector<VkCommandBuffer>& vkCommandBuffers) -> void {
           for (size_t i = 0, count = vkCommandBuffers.size(); i < count; i++) {
               auto commandBuffer = vkCommandBuffers[i];
 
@@ -315,48 +317,31 @@ RenderPass::RenderPass(vulkan::Device& device,
                   throw std::runtime_error("could not begin recording command buffer!");
               }
 
-              // TODO:: ...
+              VkRenderPassBeginInfo renderPassBeginInfo = {};
+              renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+              renderPassBeginInfo.renderPass = static_cast<VkRenderPass>(vkRenderPass_);
+              renderPassBeginInfo.framebuffer = frameBuffers[i].handle();
+              renderPassBeginInfo.renderArea.offset.x = 0;
+              renderPassBeginInfo.renderArea.offset.y = 0;
+              renderPassBeginInfo.renderArea.extent.width = renderTarget.width();
+              renderPassBeginInfo.renderArea.extent.height = renderTarget.height();
+              renderPassBeginInfo.clearValueCount = clearValues.size();
+              renderPassBeginInfo.pClearValues = clearValues.data();
+
+              vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+              vkCmdBindPipeline(
+                commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, static_cast<VkPipeline>(vkDummyPipeline_));
+
+              vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+              vkCmdEndRenderPass(commandBuffer);
+
+              if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS) {
+                  throw std::runtime_error("could not record command buffer!");
+              }
           }
       });
-
-    auto clearValues = renderTargetBuilder.getClearValues();
-
-    auto&& frameBuffers = renderTarget.frameBuffers();
-
-    // TODO:: create frame patch
-    for (size_t i = 0, count = commandBuffers_.size(); i < count; i++) {
-        auto commandBuffer = commandBuffers_[i];
-
-        VkCommandBufferBeginInfo commandBufferBeginInfo = {};
-        commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-        if (vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("could not begin recording command buffer!");
-        }
-
-        VkRenderPassBeginInfo renderPassBeginInfo = {};
-        renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassBeginInfo.renderPass = static_cast<VkRenderPass>(vkRenderPass_);
-        renderPassBeginInfo.framebuffer = frameBuffers[i].handle();
-        renderPassBeginInfo.renderArea.offset.x = 0;
-        renderPassBeginInfo.renderArea.offset.y = 0;
-        renderPassBeginInfo.renderArea.extent.width = renderTarget.width();
-        renderPassBeginInfo.renderArea.extent.height = renderTarget.height();
-        renderPassBeginInfo.clearValueCount = clearValues.size();
-        renderPassBeginInfo.pClearValues = clearValues.data();
-
-        vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, static_cast<VkPipeline>(vkDummyPipeline_));
-
-        vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-
-        vkCmdEndRenderPass(commandBuffer);
-
-        if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS) {
-            throw std::runtime_error("could not record command buffer!");
-        }
-    }
 
     renderTarget_ = std::move(renderTarget);
 }
