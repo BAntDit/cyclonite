@@ -8,7 +8,7 @@ namespace examples
 {
 Minimal::Minimal()
   : shutdown_{ false }
-  , root_{ std::make_unique<cyclonite::Root<config_t>>() }
+  , root_{ std::make_unique<cyclonite::Root>() }
 {}
 
 auto Minimal::init(cyclonite::Options const& options) -> Minimal& {

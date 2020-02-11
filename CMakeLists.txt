@@ -78,6 +78,7 @@ set(SOURCES
     src/options.cpp
     src/eventReceivable.cpp
     src/input.cpp
+    src/root.cpp
     src/surface.cpp
     src/baseRenderTarget.cpp
     src/frameBufferRenderTarget.cpp
