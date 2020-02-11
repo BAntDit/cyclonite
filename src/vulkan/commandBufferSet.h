@@ -42,6 +42,8 @@ public:
 
     [[nodiscard]] auto flags() const -> VkCommandPoolCreateFlags { return flags_; }
 
+    [[nodiscard]] auto getCommandBuffer(size_t index) const -> VkCommandBuffer const& { return commandBuffers_[index]; }
+
 private:
     std::thread::id threadId_;
     uint32_t queueFamilyIndex_;

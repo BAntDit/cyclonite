@@ -100,6 +100,7 @@ private:
     vulkan::Handle<VkPipelineLayout> vkDummyPipelineLayout_;
     vulkan::Handle<VkPipeline> vkDummyPipeline_;
 
+    // TODO:: create unique pointer with custom deleter
     vulkan::CommandBufferSet<std::vector<VkCommandBuffer>> commandBufferSet_;
 };
 

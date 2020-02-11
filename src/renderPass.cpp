@@ -249,7 +249,7 @@ auto RenderPass::renderQueueSubmitInfo() -> VkSubmitInfo const&
               renderQueueSubmitInfo_.pWaitDstStageMask = &waitStage_;
 
               renderQueueSubmitInfo_.commandBufferCount = 1;
-              renderQueueSubmitInfo_.pCommandBuffers = &commandBuffers_[backBufferIndex];
+              renderQueueSubmitInfo_.pCommandBuffers = &commandBufferSet_.getCommandBuffer(backBufferIndex);
 
               renderQueueSubmitInfo_.signalSemaphoreCount = 1;
               renderQueueSubmitInfo_.pSignalSemaphores = &vkSignalSemaphore_;
