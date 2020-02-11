@@ -60,6 +60,8 @@ auto CommandPool::allocCommandBuffers(BufferSet<Container>&& commandBufferSet, A
     auto it = commandPools_.find(
       std::make_tuple(commandBufferSet.threadId(), commandBufferSet.queueFamilyIndex(), commandBufferSet.flags()));
 
+    assert(it != commandPools_.end());
+
     auto& [key, value] = (*it);
     auto& [pool, buffers] = value;
 
