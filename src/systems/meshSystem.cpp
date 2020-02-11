@@ -32,5 +32,7 @@ void MeshSystem::init(vulkan::Device& device)
             vkCmdCopyBuffer(
               transferCommandBuffer[0], commandBuffer_->handle(), gpuCommandBuffer_->handle(), 1, &region);
         }));
+
+    // TODO:: prepare indices of the cube
 }
 }
