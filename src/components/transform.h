@@ -9,8 +9,6 @@
 #include <bitset>
 
 namespace cyclonite::components {
-class TransformSystem;
-
 struct Transform
 {
     Transform() noexcept;

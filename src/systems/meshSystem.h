@@ -6,6 +6,7 @@
 #define CYCLONITE_MESHSYSTEM_H
 
 #include "updateStages.h"
+#include "../components/mesh.h"
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
 #include <vulkan/buffer.h>
@@ -16,6 +17,8 @@ namespace cyclonite::systems {
 class MeshSystem : public enttx::BaseSystem<MeshSystem>
 {
 public:
+    using tag_t = easy_mp::type_list<components::Mesh>;
+
     MeshSystem() = default;
 
     ~MeshSystem() = default;

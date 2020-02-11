@@ -21,6 +21,7 @@ set(PUBLIC_HEADERS
     src/sceneNode.h
     src/components/transform.h
     src/components/transformStorage.h
+    src/components/mesh.h
     src/systems/updateStages.h
     src/systems/transformSystem.h
     src/systems/meshSystem.h
@@ -106,7 +107,8 @@ set(SOURCES
     src/multithreading/taskManager.cpp
     src/loaders/glTF/loader.cpp
     src/loaders/glTF/internal/base64Decode.cpp
-    src/systems/meshSystem.cpp)
+    src/systems/meshSystem.cpp
+)
 
 set(SHADER_SOURCES
     src/shaders/default.vert
