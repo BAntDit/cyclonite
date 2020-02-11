@@ -34,7 +34,7 @@ public:
     template<typename AllocationCallback, template<typename> typename BufferSet, typename Container>
     auto allocCommandBuffers(BufferSet<Container>&& commandBufferSet, AllocationCallback&& callback)
       -> std::enable_if_t<std::is_same_v<std::decay_t<BufferSet<Container>>, CommandBufferSet<Container>> &&
-                            std::is_invocable_v<AllocationCallback, Container&&>,
+                            std::is_invocable_v<AllocationCallback, Container&>,
                           BufferSet<Container>&&>;
 
     template<template<typename> typename BufferSet, typename Container>
@@ -54,7 +54,7 @@ private:
 template<typename AllocationCallback, template<typename> typename BufferSet, typename Container>
 auto CommandPool::allocCommandBuffers(BufferSet<Container>&& commandBufferSet, AllocationCallback&& callback)
   -> std::enable_if_t<std::is_same_v<std::decay_t<BufferSet<Container>>, CommandBufferSet<Container>> &&
-                        std::is_invocable_v<AllocationCallback, Container&&>,
+                        std::is_invocable_v<AllocationCallback, Container&>,
                       BufferSet<Container>&&>
 {
     auto it = commandPools_.find(
@@ -66,18 +66,18 @@ auto CommandPool::allocCommandBuffers(BufferSet<Container>&& commandBufferSet, A
     (void)key;
 
     auto future =
-      taskManager_->strand([&, &src = buffers, dst = std::move(commandBufferSet.commandBuffers_)]() -> Container {
+      taskManager_->strand([&, &src = buffers, &dst = commandBufferSet.commandBuffers_]() -> void {
           auto count = std::min(src.size(), static_cast<size_t>(dst.size()));
           auto first = src.size() - count;
 
           std::copy(std::next(src.begin(), first), src.end(), dst.begin());
 
           src.erase(std::next(src.begin(), first), src.end());
-
-          return dst;
       });
 
-    auto&& commandBuffers = future.get();
+    future.get();
+
+    auto& commandBuffers = commandBufferSet.commandBuffers_;
 
     bool needsResets = true;
     size_t allocateForm = 0;
@@ -105,11 +105,11 @@ auto CommandPool::allocCommandBuffers(BufferSet<Container>&& commandBufferSet, A
         }
 
         if (needsResets && (commandBufferSet.flags() & VK_COMMAND_POOL_CREATE_TRANSIENT_BIT) != 0) {
-            if (auto result = vkResetCommandPool(buffer, 0); result != VK_SUCCESS) {
+            if (auto result = vkResetCommandBuffer(buffer, 0); result != VK_SUCCESS) {
                 throw std::runtime_error("could not release command buffer");
             }
         } else if (needsResets && (commandBufferSet.flags() & VK_COMMAND_POOL_CREATE_TRANSIENT_BIT) == 0) {
-            if (auto result = vkResetCommandPool(buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+            if (auto result = vkResetCommandBuffer(buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
                 result != VK_SUCCESS) {
                 throw std::runtime_error("could not release command buffer");
             }
@@ -117,8 +117,6 @@ auto CommandPool::allocCommandBuffers(BufferSet<Container>&& commandBufferSet, A
     }
 
     callback(commandBuffers);
-
-    commandBufferSet.commandBuffers_ = std::move(commandBuffers);
 
     return std::forward<BufferSet<Container>>(commandBufferSet);
 }

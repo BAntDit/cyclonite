@@ -16,18 +16,14 @@ auto tuple_hash(Tuple&& tuple, std::index_sequence<idx...> &&) -> size_t;
 template<typename T>
 auto hash_value(T&& value) -> size_t
 {
-    return std::hash<std::decay_t<T>>{}(std::forward<T>(value));
+    std::hash<std::decay_t<T>> hash_;
+    return hash_(std::forward<T>(value));
 }
 
-template<template<typename...> class T, typename... Args>
-auto hash_value(T<Args...>&& value) -> size_t
+template<typename... Args>
+auto hash_value(std::tuple<Args...> const& value) -> size_t
 {
-    return tuple_hash(std::forward<T<Args...>>(value), std::make_index_sequence<sizeof...(Args)>{});
-}
-
-auto hash_value(std::tuple<> const&) -> size_t
-{
-    return 1;
+    return tuple_hash(value, std::make_index_sequence<sizeof...(Args)>{});
 }
 
 template<typename Tuple, size_t... idx>
@@ -40,12 +36,12 @@ auto tuple_hash(Tuple&& tuple, std::index_sequence<idx...> &&) -> size_t
     }
 
     return result;
-};
+}
 
 struct hash
 {
     template<typename T>
-    auto operator()(T&& value) -> size_t
+    auto operator()(T&& value) const -> size_t
     {
         return hash_value(std::forward<T>(value));
     }
