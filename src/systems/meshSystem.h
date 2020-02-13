@@ -41,11 +41,19 @@ template<typename SystemManager, typename EntityManager, size_t STAGE>
 void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManager)
 {
     if constexpr (STAGE == easy_mp::value_cast(UpdateStage::LATE_UPDATE)) {
+        auto& commands = *reinterpret_cast<VkDrawIndexedIndirectCommand*>(commandBuffer_->ptr());
         auto const& transformSystem = std::as_const(systemManager).template get<TransformSystem>();
+
+        commands.indexCount = 36;
+        commands.instanceCount = 0;
+        commands.firstIndex = 0;
+        commands.vertexOffset = 0;
+        commands.firstInstance = 0;
 
         auto view = entityManager.template getView<components::Transform, components::Mesh>();
 
         for (auto& [entity, transform, mesh] : view) {
+            commands.instanceCount++;
         }
     }
 }
