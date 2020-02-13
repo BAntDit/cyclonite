@@ -13,6 +13,9 @@ void MeshSystem::init(vulkan::Device& device)
 
     indicesBuffer_ = std::make_unique<vulkan::Staging>(device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(uint32_t) * 36);
 
+    transformBuffer_ =
+      std::make_unique<vulkan::Staging>(device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(mat3x4) * 100);
+
     gpuCommandBuffer_ = std::make_unique<vulkan::Buffer>(
       device,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
