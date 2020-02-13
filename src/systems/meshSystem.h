@@ -5,8 +5,8 @@
 #ifndef CYCLONITE_MESHSYSTEM_H
 #define CYCLONITE_MESHSYSTEM_H
 
-#include "updateStages.h"
 #include "../components/mesh.h"
+#include "updateStages.h"
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
 #include <vulkan/buffer.h>
@@ -30,6 +30,7 @@ public:
 
 private:
     std::unique_ptr<vulkan::Staging> commandBuffer_;
+    std::unique_ptr<vulkan::Staging> indicesBuffer_;
     std::unique_ptr<vulkan::Buffer> gpuCommandBuffer_;
     std::unique_ptr<vulkan::Buffer> gpuIndicesBuffer_;
     std::unique_ptr<vulkan::CommandBufferSet<std::array<VkCommandBuffer, 1>>> transferCommands_;

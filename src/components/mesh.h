@@ -5,9 +5,9 @@
 #ifndef CYCLONITE_MESH_H
 #define CYCLONITE_MESH_H
 
-namespace cyclonite::components
-{
-struct Mesh {};
+namespace cyclonite::components {
+struct Mesh
+{};
 }
 
-#endif //CYCLONITE_MESH_H
+#endif // CYCLONITE_MESH_H
