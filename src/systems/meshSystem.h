@@ -6,7 +6,8 @@
 #define CYCLONITE_MESHSYSTEM_H
 
 #include "../components/mesh.h"
-#include "updateStages.h"
+#include "../components/transform.h"
+#include "transformSystem.h"
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
 #include <vulkan/buffer.h>
@@ -38,7 +39,16 @@ private:
 
 template<typename SystemManager, typename EntityManager, size_t STAGE>
 void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManager)
-{}
+{
+    if constexpr (STAGE == easy_mp::value_cast(UpdateStage::LATE_UPDATE)) {
+        auto const& transformSystem = std::as_const(systemManager).template get<TransformSystem>();
+
+        auto view = entityManager.template getView<components::Transform, components::Mesh>();
+
+        for (auto& [entity, transform, mesh] : view) {
+        }
+    }
+}
 }
 
 #endif // CYCLONITE_MESHSYSTEM_H
