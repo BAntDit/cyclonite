@@ -30,6 +30,13 @@ void MeshSystem::init(vulkan::Device& device)
       sizeof(uint32_t) * 36,
       std::array{ device.hostTransferQueueFamilyIndex(), device.graphicsQueueFamilyIndex() });
 
+    gpuTransformBuffer_ = std::make_unique<vulkan::Buffer>(
+      device,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+      VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+      sizeof(mat3x4) * 100,
+      std::array{ device.hostTransferQueueFamilyIndex(), device.graphicsQueueFamilyIndex() });
+
     {
         std::array<uint32_t, 36> indices = { // front
                                              0,
@@ -78,12 +85,40 @@ void MeshSystem::init(vulkan::Device& device)
         std::copy_n(indices.begin(), 36, reinterpret_cast<uint32_t*>(indicesBuffer_->ptr()));
     }
 
-    transferCommands_ = std::make_unique<vulkan::CommandBufferSet<std::array<VkCommandBuffer, 1>>>(
+    vertexInputTransfer_ = std::make_unique<vulkan::CommandBufferSet<std::array<VkCommandBuffer, 1>>>(
       device.commandPool().allocCommandBuffers(
         vulkan::CommandBufferSet<std::array<VkCommandBuffer, 1>>{ device.hostTransferQueueFamilyIndex(),
                                                                   VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
                                                                   std::array<VkCommandBuffer, 1>{} },
-        [&, this](std::array<VkCommandBuffer, 1>& transferCommandBuffer) -> void {
+        [&, this](std::array<VkCommandBuffer, 1>& transferCommandBuffers) -> void {
+            auto& transferCommandBuffer = transferCommandBuffers[0];
+
+            VkBufferCopy region = {};
+            region.srcOffset = 0;
+            region.dstOffset = 0;
+            region.size = indicesBuffer_->size();
+
+            vkCmdCopyBuffer(transferCommandBuffer, indicesBuffer_->handle(), gpuIndicesBuffer_->handle(), 1, &region);
+        }));
+
+    renderCommandsTransfer_ = std::make_unique<vulkan::CommandBufferSet<std::array<VkCommandBuffer, 1>>>(
+      device.commandPool().allocCommandBuffers(
+        vulkan::CommandBufferSet<std::array<VkCommandBuffer, 1>>{ device.hostTransferQueueFamilyIndex(),
+                                                                  VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+                                                                  std::array<VkCommandBuffer, 1>{} },
+        [&, this](std::array<VkCommandBuffer, 1>& transferCommandBuffers) -> void {
+            auto& transferCommandBuffer = transferCommandBuffers[0];
+
+            {
+                VkBufferCopy region = {};
+                region.srcOffset = 0;
+                region.dstOffset = 0;
+                region.size = transformBuffer_->size();
+
+                vkCmdCopyBuffer(
+                  transferCommandBuffer, transformBuffer_->handle(), gpuTransformBuffer_->handle(), 1, &region);
+            }
+
             {
                 VkBufferCopy region = {};
                 region.srcOffset = 0;
@@ -91,17 +126,7 @@ void MeshSystem::init(vulkan::Device& device)
                 region.size = commandBuffer_->size();
 
                 vkCmdCopyBuffer(
-                  transferCommandBuffer[0], commandBuffer_->handle(), gpuCommandBuffer_->handle(), 1, &region);
-            }
-
-            {
-                VkBufferCopy region = {};
-                region.srcOffset = 0;
-                region.dstOffset = 0;
-                region.size = indicesBuffer_->size();
-
-                vkCmdCopyBuffer(
-                  transferCommandBuffer[0], indicesBuffer_->handle(), gpuIndicesBuffer_->handle(), 1, &region);
+                  transferCommandBuffer, commandBuffer_->handle(), gpuCommandBuffer_->handle(), 1, &region);
             }
         }));
 }

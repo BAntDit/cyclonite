@@ -34,9 +34,11 @@ private:
     std::unique_ptr<vulkan::Staging> commandBuffer_;
     std::unique_ptr<vulkan::Staging> indicesBuffer_;
     std::unique_ptr<vulkan::Staging> transformBuffer_;
+    std::unique_ptr<vulkan::Buffer> gpuTransformBuffer_;
     std::unique_ptr<vulkan::Buffer> gpuCommandBuffer_;
     std::unique_ptr<vulkan::Buffer> gpuIndicesBuffer_;
-    std::unique_ptr<vulkan::CommandBufferSet<std::array<VkCommandBuffer, 1>>> transferCommands_;
+    std::unique_ptr<vulkan::CommandBufferSet<std::array<VkCommandBuffer, 1>>> vertexInputTransfer_;
+    std::unique_ptr<vulkan::CommandBufferSet<std::array<VkCommandBuffer, 1>>> renderCommandsTransfer_;
 };
 
 template<typename SystemManager, typename EntityManager, size_t STAGE>
@@ -66,8 +68,7 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
 
             auto srcIndex = transform.globalIndex;
 
-            std::copy_n(
-              glm::value_ptr(glm::transpose(transforms[srcIndex])), 12, transforms3x4 + 12 * dstIndex++);
+            std::copy_n(glm::value_ptr(glm::transpose(transforms[srcIndex])), 12, transforms3x4 + 12 * dstIndex++);
         }
     }
 }
