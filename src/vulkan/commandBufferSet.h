@@ -5,14 +5,14 @@
 #ifndef CYCLONITE_COMMANDBUFFERSET_H
 #define CYCLONITE_COMMANDBUFFERSET_H
 
+#include "baseCommandBufferSet.h"
 #include <cassert>
 #include <easy-mp/containers.h>
 #include <thread>
-#include <vulkan/vulkan.h>
 
 namespace cyclonite::vulkan {
 template<typename CommandPool, typename Container>
-class CommandBufferSet
+class CommandBufferSet : public BaseCommandBufferSet
 {
     static_assert(easy_mp::is_contiguous_v<Container> &&
                   std::is_same_v<typename Container::value_type, VkCommandBuffer>);
@@ -40,7 +40,10 @@ public:
 
     [[nodiscard]] auto flags() const -> VkCommandPoolCreateFlags { return flags_; }
 
-    [[nodiscard]] auto getCommandBuffer(size_t index) const -> VkCommandBuffer const& { return commandBuffers_[index]; }
+    [[nodiscard]] auto getCommandBuffer(size_t index) const -> VkCommandBuffer const& override
+    {
+        return commandBuffers_[index];
+    }
 
 private:
     std::weak_ptr<CommandPool> commandPoolPtr_;

@@ -45,6 +45,7 @@ set(PUBLIC_HEADERS
     src/vulkan/handle.h
     src/vulkan/instance.h
     src/vulkan/device.h
+    src/vulkan/baseCommandBufferSet.h
     src/vulkan/commandBufferSet.h
     src/vulkan/commandPool.h
     src/vulkan/baseSurface.h
