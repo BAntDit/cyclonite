@@ -12,7 +12,7 @@
 
 namespace cyclonite::vulkan {
 template<typename CommandPool, typename Container>
-class CommandBufferSet : public BaseCommandBufferSet
+class CommandBufferSet final : public BaseCommandBufferSet
 {
     static_assert(easy_mp::is_contiguous_v<Container> &&
                   std::is_same_v<typename Container::value_type, VkCommandBuffer>);
@@ -28,7 +28,7 @@ public:
 
     CommandBufferSet(CommandBufferSet&&) = default;
 
-    ~CommandBufferSet() noexcept;
+    ~CommandBufferSet() noexcept override;
 
     auto operator=(CommandBufferSet const&) -> CommandBufferSet& = delete;
 
