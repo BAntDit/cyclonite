@@ -125,7 +125,7 @@ Device::Device(multithreading::TaskManager const& taskManager,
 
     memoryManager_ = std::make_unique<MemoryManager>(taskManager, *this);
 
-    commandPool_ = std::make_unique<CommandPool>(taskManager, *this);
+    commandPool_ = std::make_shared<CommandPool>(taskManager, *this);
 }
 
 auto Device::graphicsQueue() const -> VkQueue

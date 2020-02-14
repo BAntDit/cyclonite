@@ -81,6 +81,8 @@ public:
 
     [[nodiscard]] auto commandPool() -> CommandPool& { return *commandPool_; }
 
+    [[nodiscard]] auto commandPoolPtr() -> std::shared_ptr<CommandPool>& { return commandPool_; }
+
 private:
     Capabilities capabilities_;
     VkInstance vkInstance_;
@@ -95,7 +97,7 @@ private:
     std::vector<uint32_t> queueFamilyIndices_;
     std::vector<Handle<VkQueue>> vkQueues_;
     std::unique_ptr<MemoryManager> memoryManager_;
-    std::unique_ptr<CommandPool> commandPool_;
+    std::shared_ptr<CommandPool> commandPool_;
 };
 }
 

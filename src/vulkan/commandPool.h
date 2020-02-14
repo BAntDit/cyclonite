@@ -16,7 +16,7 @@
 namespace cyclonite::vulkan {
 class Device;
 
-class CommandPool
+class CommandPool : public std::enable_shared_from_this<CommandPool>
 {
 public:
     CommandPool(multithreading::TaskManager const& taskManager, vulkan::Device const& device);
@@ -31,16 +31,17 @@ public:
 
     auto operator=(CommandPool &&) -> CommandPool& = default;
 
-    template<typename AllocationCallback, template<typename> typename BufferSet, typename Container>
-    auto allocCommandBuffers(BufferSet<Container>&& commandBufferSet, AllocationCallback&& callback)
-      -> std::enable_if_t<std::is_same_v<std::decay_t<BufferSet<Container>>, CommandBufferSet<Container>> &&
-                            std::is_invocable_v<AllocationCallback, Container&>,
-                          BufferSet<Container>&&>;
+    template<typename AllocationCallback, template<typename, typename> typename BufferSet, typename Container>
+    auto allocCommandBuffers(BufferSet<CommandPool, Container>&& commandBufferSet, AllocationCallback&& callback)
+      -> std::enable_if_t<
+        std::is_same_v<std::decay_t<BufferSet<CommandPool, Container>>, CommandBufferSet<CommandPool, Container>> &&
+          std::is_invocable_v<AllocationCallback, Container&>,
+        BufferSet<CommandPool, Container>&&>;
 
-    template<template<typename> typename BufferSet, typename Container>
-    auto releaseCommandBuffers(BufferSet<Container>& commandBufferSet)
-      -> std::enable_if_t<std::is_same_v<std::decay_t<BufferSet<Container>>, CommandBufferSet<Container>>,
-                          std::future<void>>;
+    template<template<typename, typename> typename BufferSet, typename Container>
+    auto releaseCommandBuffers(BufferSet<CommandPool, Container>& commandBufferSet) -> std::enable_if_t<
+      std::is_same_v<std::decay_t<BufferSet<CommandPool, Container>>, CommandBufferSet<CommandPool, Container>>,
+      std::future<void>>;
 
 private:
     using pool_key_t = std::tuple<std::thread::id, uint32_t, VkCommandPoolCreateFlags>;
@@ -51,11 +52,13 @@ private:
     std::unordered_map<pool_key_t, command_pool_t, hash> commandPools_;
 };
 
-template<typename AllocationCallback, template<typename> typename BufferSet, typename Container>
-auto CommandPool::allocCommandBuffers(BufferSet<Container>&& commandBufferSet, AllocationCallback&& callback)
-  -> std::enable_if_t<std::is_same_v<std::decay_t<BufferSet<Container>>, CommandBufferSet<Container>> &&
-                        std::is_invocable_v<AllocationCallback, Container&>,
-                      BufferSet<Container>&&>
+template<typename AllocationCallback, template<typename, typename> typename BufferSet, typename Container>
+auto CommandPool::allocCommandBuffers(BufferSet<CommandPool, Container>&& commandBufferSet,
+                                      AllocationCallback&& callback)
+  -> std::enable_if_t<
+    std::is_same_v<std::decay_t<BufferSet<CommandPool, Container>>, CommandBufferSet<CommandPool, Container>> &&
+      std::is_invocable_v<AllocationCallback, Container&>,
+    BufferSet<CommandPool, Container>&&>
 {
     auto it = commandPools_.find(
       std::make_tuple(commandBufferSet.threadId(), commandBufferSet.queueFamilyIndex(), commandBufferSet.flags()));
@@ -119,13 +122,15 @@ auto CommandPool::allocCommandBuffers(BufferSet<Container>&& commandBufferSet, A
 
     callback(commandBuffers);
 
-    return std::forward<BufferSet<Container>>(commandBufferSet);
+    commandBufferSet.commandPoolPtr_ = shared_from_this();
+
+    return std::forward<BufferSet<CommandPool, Container>>(commandBufferSet);
 }
 
-template<template<typename> typename BufferSet, typename Container>
-auto CommandPool::releaseCommandBuffers(BufferSet<Container>& commandBufferSet)
-  -> std::enable_if_t<std::is_same_v<std::decay_t<BufferSet<Container>>, CommandBufferSet<Container>>,
-                      std::future<void>>
+template<template<typename, typename> typename BufferSet, typename Container>
+auto CommandPool::releaseCommandBuffers(BufferSet<CommandPool, Container>& commandBufferSet) -> std::enable_if_t<
+  std::is_same_v<std::decay_t<BufferSet<CommandPool, Container>>, CommandBufferSet<CommandPool, Container>>,
+  std::future<void>>
 {
     auto threadId = commandBufferSet.threadId();
     auto queueFamilyIndex = commandBufferSet.queueFamilyIndex();

@@ -85,49 +85,53 @@ void MeshSystem::init(vulkan::Device& device)
         std::copy_n(indices.begin(), 36, reinterpret_cast<uint32_t*>(indicesBuffer_->ptr()));
     }
 
-    vertexInputTransfer_ = std::make_unique<vulkan::CommandBufferSet<std::array<VkCommandBuffer, 1>>>(
-      device.commandPool().allocCommandBuffers(
-        vulkan::CommandBufferSet<std::array<VkCommandBuffer, 1>>{ device.hostTransferQueueFamilyIndex(),
-                                                                  VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-                                                                  std::array<VkCommandBuffer, 1>{} },
-        [&, this](std::array<VkCommandBuffer, 1>& transferCommandBuffers) -> void {
-            auto& transferCommandBuffer = transferCommandBuffers[0];
+    vertexInputTransfer_ =
+      std::make_unique<vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>>(
+        device.commandPool().allocCommandBuffers(
+          vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>{
+            device.hostTransferQueueFamilyIndex(),
+            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+            std::array<VkCommandBuffer, 1>{} },
+          [&, this](std::array<VkCommandBuffer, 1>& transferCommandBuffers) -> void {
+              auto& transferCommandBuffer = transferCommandBuffers[0];
 
-            VkBufferCopy region = {};
-            region.srcOffset = 0;
-            region.dstOffset = 0;
-            region.size = indicesBuffer_->size();
+              VkBufferCopy region = {};
+              region.srcOffset = 0;
+              region.dstOffset = 0;
+              region.size = indicesBuffer_->size();
 
-            vkCmdCopyBuffer(transferCommandBuffer, indicesBuffer_->handle(), gpuIndicesBuffer_->handle(), 1, &region);
-        }));
+              vkCmdCopyBuffer(transferCommandBuffer, indicesBuffer_->handle(), gpuIndicesBuffer_->handle(), 1, &region);
+          }));
 
-    renderCommandsTransfer_ = std::make_unique<vulkan::CommandBufferSet<std::array<VkCommandBuffer, 1>>>(
-      device.commandPool().allocCommandBuffers(
-        vulkan::CommandBufferSet<std::array<VkCommandBuffer, 1>>{ device.hostTransferQueueFamilyIndex(),
-                                                                  VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-                                                                  std::array<VkCommandBuffer, 1>{} },
-        [&, this](std::array<VkCommandBuffer, 1>& transferCommandBuffers) -> void {
-            auto& transferCommandBuffer = transferCommandBuffers[0];
+    renderCommandsTransfer_ =
+      std::make_unique<vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>>(
+        device.commandPool().allocCommandBuffers(
+          vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>{
+            device.hostTransferQueueFamilyIndex(),
+            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+            std::array<VkCommandBuffer, 1>{} },
+          [&, this](std::array<VkCommandBuffer, 1>& transferCommandBuffers) -> void {
+              auto& transferCommandBuffer = transferCommandBuffers[0];
 
-            {
-                VkBufferCopy region = {};
-                region.srcOffset = 0;
-                region.dstOffset = 0;
-                region.size = transformBuffer_->size();
+              {
+                  VkBufferCopy region = {};
+                  region.srcOffset = 0;
+                  region.dstOffset = 0;
+                  region.size = transformBuffer_->size();
 
-                vkCmdCopyBuffer(
-                  transferCommandBuffer, transformBuffer_->handle(), gpuTransformBuffer_->handle(), 1, &region);
-            }
+                  vkCmdCopyBuffer(
+                    transferCommandBuffer, transformBuffer_->handle(), gpuTransformBuffer_->handle(), 1, &region);
+              }
 
-            {
-                VkBufferCopy region = {};
-                region.srcOffset = 0;
-                region.dstOffset = 0;
-                region.size = commandBuffer_->size();
+              {
+                  VkBufferCopy region = {};
+                  region.srcOffset = 0;
+                  region.dstOffset = 0;
+                  region.size = commandBuffer_->size();
 
-                vkCmdCopyBuffer(
-                  transferCommandBuffer, commandBuffer_->handle(), gpuCommandBuffer_->handle(), 1, &region);
-            }
-        }));
+                  vkCmdCopyBuffer(
+                    transferCommandBuffer, commandBuffer_->handle(), gpuCommandBuffer_->handle(), 1, &region);
+              }
+          }));
 }
 }

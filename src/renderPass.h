@@ -100,8 +100,7 @@ private:
     vulkan::Handle<VkPipelineLayout> vkDummyPipelineLayout_;
     vulkan::Handle<VkPipeline> vkDummyPipeline_;
 
-    // TODO:: create unique pointer with custom deleter
-    vulkan::CommandBufferSet<std::vector<VkCommandBuffer>> commandBufferSet_;
+    vulkan::CommandBufferSet<vulkan::CommandPool, std::vector<VkCommandBuffer>> commandBufferSet_;
 };
 
 template<typename DepthStencilOutput, typename... ColorOutputs>
@@ -303,7 +302,7 @@ RenderPass::RenderPass(vulkan::Device& device,
     auto&& frameBuffers = renderTarget.frameBuffers();
 
     commandBufferSet_ = device.commandPool().allocCommandBuffers(
-      vulkan::CommandBufferSet<std::vector<VkCommandBuffer>>{
+      vulkan::CommandBufferSet<vulkan::CommandPool, std::vector<VkCommandBuffer>>{
         device.graphicsQueueFamilyIndex(),
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
         std::vector<VkCommandBuffer>(renderTarget.swapChainLength(), VK_NULL_HANDLE) },
