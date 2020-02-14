@@ -25,7 +25,7 @@ public:
 
     CommandPool(CommandPool&&) = default;
 
-    ~CommandPool() = default;
+    ~CommandPool() noexcept;
 
     auto operator=(CommandPool const&) -> CommandPool& = delete;
 

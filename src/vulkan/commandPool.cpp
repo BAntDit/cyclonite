@@ -60,4 +60,18 @@ CommandPool::CommandPool(multithreading::TaskManager const& taskManager, vulkan:
         }
     }
 }
+
+CommandPool::~CommandPool() noexcept {
+    for (auto& [k, v] : commandPools_) {
+        (void)k;
+
+        auto& [pool, buffers] = v;
+
+        vkFreeCommandBuffers(vkDevice_, static_cast<VkCommandPool>(pool), buffers.size(), buffers.data());
+
+        buffers.clear();
+    }
+
+    commandPools_.clear();
+}
 }
