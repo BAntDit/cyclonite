@@ -8,6 +8,8 @@
 namespace cyclonite::systems {
 void MeshSystem::init(vulkan::Device& device)
 {
+    vkDevice_ = device.handle();
+
     commandBuffer_ =
       std::make_unique<vulkan::Staging>(device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(VkDrawIndexedIndirectCommand));
 

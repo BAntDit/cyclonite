@@ -8,12 +8,56 @@
 #include "options.h"
 #include "renderTargetBuilder.h"
 #include "surface.h"
-#include "vulkan/commandBufferSet.h"
+#include "vulkan/baseCommandBufferSet.h"
 #include <optional>
 
 namespace cyclonite {
 class RenderPass
 {
+private:
+    using graphics_queue_commands_t = vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>;
+
+public:
+    class FrameCommands
+    {
+    public:
+        FrameCommands();
+
+        FrameCommands(FrameCommands const&) = delete;
+
+        FrameCommands(FrameCommands&&) = default;
+
+        ~FrameCommands() = default;
+
+        auto operator=(FrameCommands const&) -> FrameCommands& = delete;
+
+        auto operator=(FrameCommands &&) -> FrameCommands& = default;
+
+        [[nodiscard]] auto hasDrawCommandsTransferCommands() const -> bool;
+
+        void addTransientTransferCommands(std::unique_ptr<vulkan::BaseCommandBufferSet>&& bufferSet,
+                                          vulkan::Handle<VkSemaphore>&& semaphore,
+                                          VkPipelineStageFlags dstWaitFlag);
+
+        void patch(FrameCommands& patch); // TODO::
+
+        auto transferQueueSubmitInfo() -> std::unique_ptr<VkSubmitInfo> const&;
+
+        auto graphicsQueueSubmitInfo() -> std::unique_ptr<VkSubmitInfo> const&;
+
+    private:
+        size_t drawCommandsTransferCommandsIndex_;
+        std::unique_ptr<graphics_queue_commands_t> graphicsCommands_;
+        std::vector<VkCommandBuffer> transferCommands_;
+        std::vector<VkSemaphore> transferSemaphores_;
+        std::vector<VkPipelineStageFlags> dstWaitFlags_;
+        std::vector<std::unique_ptr<vulkan::BaseCommandBufferSet>> transientCommandBuffers_;
+        std::vector<vulkan::Handle<VkSemaphore>> transientSemaphores_;
+        std::vector<VkPipelineStageFlags> transientDstWaitFlags_;
+        std::unique_ptr<VkSubmitInfo> transferQueueSubmitInfo_;
+        std::unique_ptr<VkSubmitInfo> graphicsQueueSubmitInfo_;
+    };
+
 public:
     template<typename DepthStencilOutput, typename ColorOutput, size_t presentModeCandidateCount>
     RenderPass(
@@ -73,6 +117,8 @@ public:
 
     void end(vulkan::Device const& device);
 
+    // TODO:: update(scene, dt)
+
 private:
     void _createRenderPass(vulkan::Device const& device, VkRenderPassCreateInfo const& renderPassCreateInfo);
 
@@ -101,6 +147,9 @@ private:
     vulkan::Handle<VkPipeline> vkDummyPipeline_;
 
     vulkan::CommandBufferSet<vulkan::CommandPool, std::vector<VkCommandBuffer>> commandBufferSet_;
+
+    FrameCommands patch_;
+    std::vector<FrameCommands> frameCommands_;
 };
 
 template<typename DepthStencilOutput, typename... ColorOutputs>

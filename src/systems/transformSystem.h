@@ -24,8 +24,8 @@ public:
     template<typename... Args>
     void init(Args&&... args);
 
-    template<typename SystemManager, typename EntityManager, size_t STAGE>
-    void update(SystemManager& systemManager, EntityManager& entityManager);
+    template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
+    void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
 
     template<typename EntityManager, typename... Args>
     auto create(EntityManager& entityManager,
@@ -54,9 +54,11 @@ private:
     std::vector<enttx::Entity> entities_;
 };
 
-template<typename SystemManager, typename EntityManager, size_t STAGE>
-void TransformSystem::update(SystemManager& systemManager, EntityManager& entityManager)
+template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
+void TransformSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
+    ((void)args, ...);
+
     if constexpr (STAGE == easy_mp::value_cast(UpdateStage::EARLY_UPDATE)) {
         auto view = entityManager.template getView<components::Transform>();
 

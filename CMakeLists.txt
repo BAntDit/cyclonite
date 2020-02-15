@@ -86,6 +86,7 @@ set(SOURCES
     src/frameBufferRenderTarget.cpp
     src/surfaceRenderTarget.cpp
     src/renderPass.cpp
+    src/renderPassSubmitInfo.cpp
     src/components/transform.cpp
     src/systems/transformSystem.cpp
     src/vulkanRenderer.cpp

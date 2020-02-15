@@ -28,10 +28,11 @@ public:
 
     void init(vulkan::Device& device);
 
-    template<typename SystemManager, typename EntityManager, size_t STAGE>
-    void update(SystemManager& systemManager, EntityManager& entityManager);
+    template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
+    void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
 
 private:
+    VkDevice vkDevice_;
     std::unique_ptr<vulkan::Staging> commandBuffer_;
     std::unique_ptr<vulkan::Staging> indicesBuffer_;
     std::unique_ptr<vulkan::Staging> transformBuffer_;
@@ -43,9 +44,30 @@ private:
       renderCommandsTransfer_;
 };
 
-template<typename SystemManager, typename EntityManager, size_t STAGE>
-void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManager)
+template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
+void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
+    if constexpr (STAGE == easy_mp::value_cast(UpdateStage::EARLY_UPDATE)) {
+        auto&& [submitInfo, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
+
+        (void)dt;
+
+        if (vertexInputTransfer_) {
+            vulkan::Handle<VkSemaphore> semaphore{ vkDevice_, vkDestroySemaphore };
+
+            VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+            semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+            if (auto result = vkCreateSemaphore(vkDevice_, &semaphoreCreateInfo, nullptr, &semaphore);
+                result != VK_SUCCESS) {
+                throw std::runtime_error("could not create vertices transfer semaphore.");
+            }
+
+            submitInfo.addTransientTransfer(
+              std::move(vertexInputTransfer_), std::move(semaphore), VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
+        }
+    }
+
     if constexpr (STAGE == easy_mp::value_cast(UpdateStage::LATE_UPDATE)) {
         auto* transforms3x4 = reinterpret_cast<real*>(transformBuffer_->ptr());
         auto& commands = *reinterpret_cast<VkDrawIndexedIndirectCommand*>(commandBuffer_->ptr());
@@ -71,6 +93,12 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
             auto srcIndex = transform.globalIndex;
 
             std::copy_n(glm::value_ptr(glm::transpose(transforms[srcIndex])), 12, transforms3x4 + 12 * dstIndex++);
+        }
+
+        auto&& [submitInfo, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
+        (void)dt;
+
+        if (!submitInfo.hasDrawCommandsTransferCommands()) {
         }
     }
 }

@@ -61,7 +61,8 @@ CommandPool::CommandPool(multithreading::TaskManager const& taskManager, vulkan:
     }
 }
 
-CommandPool::~CommandPool() noexcept {
+CommandPool::~CommandPool() noexcept
+{
     // if we're here, it's over and we don't care if something write into pool in some other threads
 
     for (auto& [k, v] : commandPools_) {
