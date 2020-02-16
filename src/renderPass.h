@@ -164,7 +164,6 @@ private:
     vulkan::Handle<VkRenderPass> vkRenderPass_;
     std::variant<std::monostate, SurfaceRenderTarget, FrameBufferRenderTarget> renderTarget_;
     std::vector<vulkan::Handle<VkSemaphore>> passFinishedSemaphores_;
-    std::vector<vulkan::Handle<VkFence>> frameFences_;
     std::vector<VkFence> renderTargetFences_;
     VkPipelineStageFlags waitStage_;
     VkSemaphore vkWaitSemaphore_;
@@ -194,7 +193,6 @@ RenderPass::RenderPass(vulkan::Device& device,
   : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{}
   , passFinishedSemaphores_{}
-  , frameFences_{}
   , renderTargetFences_{}
   , waitStage_{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
   , vkWaitSemaphore_{ VK_NULL_HANDLE }
@@ -286,7 +284,6 @@ RenderPass::RenderPass(vulkan::Device& device,
   : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{}
   , passFinishedSemaphores_{}
-  , frameFences_{}
   , renderTargetFences_{}
   , waitStage_{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
   , vkWaitSemaphore_{ VK_NULL_HANDLE }

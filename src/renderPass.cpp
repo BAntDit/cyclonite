@@ -33,23 +33,12 @@ void RenderPass::_createRenderPass(vulkan::Device const& device, VkRenderPassCre
 
 void RenderPass::_createSyncObjects(vulkan::Device const& device, size_t swapChainLength)
 {
-    frameFences_.reserve(swapChainLength);
     passFinishedSemaphores_.reserve(swapChainLength);
-
-    VkFenceCreateInfo fenceCreateInfo = {};
-    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     VkSemaphoreCreateInfo semaphoreCreateInfo = {};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     for (size_t i = 0; i < swapChainLength; i++) {
-        if (auto result = vkCreateFence(
-              device.handle(), &fenceCreateInfo, nullptr, &frameFences_.emplace_back(device.handle(), vkDestroyFence));
-            result != VK_SUCCESS) {
-            throw std::runtime_error("could not create frame synchronization fence");
-        }
-
         if (auto result = vkCreateSemaphore(device.handle(),
                                             &semaphoreCreateInfo,
                                             nullptr,
