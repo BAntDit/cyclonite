@@ -172,12 +172,9 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
                   throw std::runtime_error("could not record command buffer!");
               }
           }));
-
-        if (waitSemaphores_.empty()) {
-            dstWaitFlags_.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT );
-            waitSemaphores_.push_back(VK_NULL_HANDLE);
-        }
     }
+
+    assert(!waitSemaphores_.empty());
 
     waitSemaphores_.back() = frameBufferAvailableSemaphore;
 
