@@ -75,6 +75,7 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
 
               auto& frame = frameCommands_[backBufferIndex];
               auto framebuffer = rt.frameBuffers()[backBufferIndex].handle();
+              auto semaphore = rt.frameBufferAvailableSemaphore();
 
               renderTargetFences_[backBufferIndex] = frameFence;
 
@@ -82,6 +83,7 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
                            static_cast<VkRenderPass>(vkRenderPass_),
                            framebuffer,
                            std::array<uint32_t, 4>{ 0, 0, rt.width(), rt.height() },
+                           semaphore,
                            frameUpdate_);
 
               return std::forward_as_tuple(frame, frameFence);

@@ -22,11 +22,9 @@ void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
         }
     }
 
-    if (frame.graphicsQueueSubmitInfo()) {
-        if (auto result = vkQueueSubmit(device_->graphicsQueue(), 1, frame.graphicsQueueSubmitInfo().get(), fence);
-            result != VK_SUCCESS) {
-            _handleSubmitError(result);
-        }
+    if (auto result = vkQueueSubmit(device_->graphicsQueue(), 1, &frame.graphicsQueueSubmitInfo(), fence);
+        result != VK_SUCCESS) {
+        _handleSubmitError(result);
     }
 
     renderPass.end(*device_);

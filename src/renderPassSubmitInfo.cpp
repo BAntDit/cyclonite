@@ -10,9 +10,10 @@ RenderPass::FrameCommands::FrameCommands() noexcept
   , fence_{}
   , drawCommandsTransferCommandsIndex_{ std::numeric_limits<size_t>::max() }
   , graphicsCommands_{ nullptr }
+  , waitSemaphores_{}
+  , dstWaitFlags_{}
   , transferCommands_{}
   , transferSemaphores_{}
-  , transferDstWaitFlags_{}
   , transientCommandBuffers_{}
   , transientSemaphores_{}
   , transientDstWaitFlags_{}
@@ -25,9 +26,10 @@ RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   , fence_{ device.handle(), vkDestroyFence }
   , drawCommandsTransferCommandsIndex_{ std::numeric_limits<size_t>::max() }
   , graphicsCommands_{ nullptr }
+  , waitSemaphores_{}
+  , dstWaitFlags_{}
   , transferCommands_{}
   , transferSemaphores_{}
-  , transferDstWaitFlags_{}
   , transientCommandBuffers_{}
   , transientSemaphores_{}
   , transientDstWaitFlags_{}
@@ -69,6 +71,7 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
                                        VkRenderPass renderPass,
                                        VkFramebuffer framebuffer,
                                        std::array<uint32_t, 4>&& viewport,
+                                       VkSemaphore frameBufferAvailableSemaphore,
                                        FrameCommands& frameUpdate)
 {
     if (version() == frameUpdate.version())
@@ -80,11 +83,11 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
         _clearTransientTransfer();
 
         transferQueueSubmitInfo_.reset();
-        graphicsQueueSubmitInfo_.reset(); // because of new semaphores list
 
         transferCommands_ = frameUpdate.transferCommands_;
         transferSemaphores_ = frameUpdate.transferSemaphores_;
-        transferDstWaitFlags_ = frameUpdate.transientDstWaitFlags_;
+        waitSemaphores_ = frameUpdate.transferSemaphores_;
+        dstWaitFlags_ = frameUpdate.dstWaitFlags_;
 
         if (!frameUpdate.transientCommandBuffers_.empty()) {
             // transient commands stay actual one frame only
@@ -101,11 +104,13 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
             // ...
 
             transferSemaphores_.reserve(transferSemaphores_.size() + transientSemaphores_.size());
-            transientDstWaitFlags_.reserve(transientDstWaitFlags_.size() + transientDstWaitFlags_.size());
+            waitSemaphores_.reserve(waitSemaphores_.size() + transientSemaphores_.size() + 1);
+            dstWaitFlags_.reserve(dstWaitFlags_.size() + transientDstWaitFlags_.size() + 1);
 
             for (size_t i = 0, count = transientCommandBuffers_.size(); i < count; i++) {
                 transferSemaphores_.push_back(static_cast<VkSemaphore>(transientSemaphores_[i]));
-                transferDstWaitFlags_.push_back(transferDstWaitFlags_[i]);
+                waitSemaphores_.push_back(static_cast<VkSemaphore>(transientSemaphores_[i]));
+                dstWaitFlags_.push_back(transientDstWaitFlags_[i]);
 
                 for (size_t k = 0, bufferCount = transientCommandBuffers_[i]->commandBufferCount(); k < bufferCount;
                      k++) {
@@ -128,11 +133,12 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
             transferQueueSubmitInfo_->signalSemaphoreCount = static_cast<uint32_t>(transferSemaphores_.size());
             transferQueueSubmitInfo_->pSignalSemaphores = transferSemaphores_.data();
         }
+
+        waitSemaphores_.push_back(frameBufferAvailableSemaphore);
+        dstWaitFlags_.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT );
     }
 
     if (graphicsSubmitVersion() != frameUpdate.graphicsSubmitVersion()) {
-        graphicsQueueSubmitInfo_.reset(); // it could be still alive here
-
         graphicsCommands_ = std::make_unique<graphics_queue_commands_t>(device.commandPool().allocCommandBuffers(
           vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>{
             device.graphicsQueueFamilyIndex(),
@@ -171,9 +177,15 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
           }));
     }
 
-    if (!graphicsQueueSubmitInfo_) {
-        // TODO::
-    }
+    std::fill_n(&graphicsQueueSubmitInfo_, 1, VkSubmitInfo{});
+
+    graphicsQueueSubmitInfo_.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    graphicsQueueSubmitInfo_.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores_.size());
+    graphicsQueueSubmitInfo_.pWaitSemaphores = waitSemaphores_.data();
+    graphicsQueueSubmitInfo_.pWaitDstStageMask = dstWaitFlags_.data();
+
+    // TODO::
+
 
     version_ = version;
 }

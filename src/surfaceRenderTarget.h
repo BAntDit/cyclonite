@@ -40,7 +40,7 @@ public:
 
     auto operator=(SurfaceRenderTarget &&) -> SurfaceRenderTarget& = default;
 
-    [[nodiscard]] auto frontBufferAvailableSemaphore() const -> VkSemaphore
+    [[nodiscard]] auto frameBufferAvailableSemaphore() const -> VkSemaphore
     {
         return static_cast<VkSemaphore>(imageAvailableSemaphores_[frontBufferIndex_]);
     }
