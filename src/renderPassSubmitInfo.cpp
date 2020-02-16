@@ -74,9 +74,6 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
                                        VkSemaphore frameBufferAvailableSemaphore,
                                        FrameCommands& frameUpdate)
 {
-    if (version() == frameUpdate.version())
-        return;
-
     auto version = frameUpdate.version();
 
     if (transferSubmitVersion() != frameUpdate.transferSubmitVersion()) {
@@ -134,8 +131,8 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
             transferQueueSubmitInfo_->pSignalSemaphores = transferSemaphores_.data();
         }
 
-        waitSemaphores_.push_back(frameBufferAvailableSemaphore);
         dstWaitFlags_.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT );
+        waitSemaphores_.push_back(VK_NULL_HANDLE);
     }
 
     if (graphicsSubmitVersion() != frameUpdate.graphicsSubmitVersion()) {
@@ -175,7 +172,14 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
                   throw std::runtime_error("could not record command buffer!");
               }
           }));
+
+        if (waitSemaphores_.empty()) {
+            dstWaitFlags_.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT );
+            waitSemaphores_.push_back(VK_NULL_HANDLE);
+        }
     }
+
+    waitSemaphores_.back() = frameBufferAvailableSemaphore;
 
     std::fill_n(&graphicsQueueSubmitInfo_, 1, VkSubmitInfo{});
 
