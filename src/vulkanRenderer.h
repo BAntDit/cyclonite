@@ -21,6 +21,9 @@ public:
     void renderOneFrame(RenderPass& renderPass);
 
 private:
+    void _handleSubmitError(VkResult result);
+
+private:
     vulkan::Device* device_;
 };
 }

@@ -40,10 +40,12 @@ public:
 
     [[nodiscard]] auto flags() const -> VkCommandPoolCreateFlags { return flags_; }
 
-    [[nodiscard]] auto getCommandBuffer(size_t index) const -> VkCommandBuffer const& override
+    [[nodiscard]] auto getCommandBuffer(size_t index) const -> VkCommandBuffer override
     {
         return commandBuffers_[index];
     }
+
+    [[nodiscard]] auto commandBufferCount() const -> size_t override { return commandBuffers_.size(); }
 
 private:
     std::weak_ptr<CommandPool> commandPoolPtr_;

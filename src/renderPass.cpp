@@ -62,18 +62,17 @@ void RenderPass::_createSyncObjects(vulkan::Device const& device, size_t swapCha
     renderTargetFences_.resize(swapChainLength, VK_NULL_HANDLE);
 }
 
-auto RenderPass::begin(vulkan::Device const& device) -> VkFence
+auto RenderPass::begin(vulkan::Device const& device) -> std::tuple<FrameCommands&, VkFence&>
 {
     return std::visit(
-      [&, this](auto&& rt) -> VkFence {
+      [&, this](auto&& rt) -> std::tuple<FrameCommands&, VkFence&> {
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget>) {
               auto frontBufferIndex = rt.frontBufferIndex();
 
-              vkWaitForFences(device.handle(),
-                              1,
-                              &(std::as_const(frameFences_[frontBufferIndex])),
-                              VK_TRUE,
-                              std::numeric_limits<uint64_t>::max());
+              auto& frame = frameCommands_[frontBufferIndex];
+              auto frameFence = frame.fence();
+
+              vkWaitForFences(device.handle(), 1, &frameFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
 
               auto backBufferIndex = rt.acquireBackBufferIndex(device);
 
@@ -85,9 +84,13 @@ auto RenderPass::begin(vulkan::Device const& device) -> VkFence
                                   std::numeric_limits<uint64_t>::max());
               }
 
-              vkResetFences(device.handle(), 1, &(std::as_const(frameFences_[frontBufferIndex])));
+              vkResetFences(device.handle(), 1, &frameFence);
 
-              return renderTargetFences_[backBufferIndex] = static_cast<VkFence>(frameFences_[frontBufferIndex]);
+              renderTargetFences_[backBufferIndex] = frameFence;
+
+              frame.update(frameUpdate_);
+
+              return std::forward_as_tuple(frame, frameFence);
           }
 
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {

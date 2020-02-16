@@ -21,7 +21,9 @@ public:
     class FrameCommands
     {
     public:
-        FrameCommands();
+        FrameCommands() noexcept;
+
+        explicit FrameCommands(vulkan::Device const& device);
 
         FrameCommands(FrameCommands const&) = delete;
 
@@ -35,26 +37,54 @@ public:
 
         [[nodiscard]] auto hasDrawCommandsTransferCommands() const -> bool;
 
+        [[nodiscard]] auto version() const -> uint64_t { return version_; }
+
+        [[nodiscard]] auto transferSubmitVersion() const -> uint32_t
+        {
+            return static_cast<uint32_t>(version_ & 0xffffffffUL);
+        }
+
+        [[nodiscard]] auto graphicsSubmitVersion() const -> uint32_t { return static_cast<uint32_t>(version_ >> 32UL); }
+
         void addTransientTransferCommands(std::unique_ptr<vulkan::BaseCommandBufferSet>&& bufferSet,
                                           vulkan::Handle<VkSemaphore>&& semaphore,
                                           VkPipelineStageFlags dstWaitFlag);
 
-        void patch(FrameCommands& patch); // TODO::
+        void update(FrameCommands& frameUpdate);
 
-        auto transferQueueSubmitInfo() -> std::unique_ptr<VkSubmitInfo> const&;
+        [[nodiscard]] auto transferQueueSubmitInfo() const -> std::unique_ptr<VkSubmitInfo> const&
+        {
+            return transferQueueSubmitInfo_;
+        }
 
-        auto graphicsQueueSubmitInfo() -> std::unique_ptr<VkSubmitInfo> const&;
+        [[nodiscard]] auto graphicsQueueSubmitInfo() const -> std::unique_ptr<VkSubmitInfo> const&
+        {
+            return graphicsQueueSubmitInfo_;
+        }
+
+        [[nodiscard]] auto fence() const -> VkFence { return static_cast<VkFence>(fence_); }
 
     private:
+        void _clearTransientTransfer();
+
+    private:
+        uint64_t version_;
+
+        vulkan::Handle<VkFence> fence_;
+
         size_t drawCommandsTransferCommandsIndex_;
         std::unique_ptr<graphics_queue_commands_t> graphicsCommands_;
+
         std::vector<VkCommandBuffer> transferCommands_;
         std::vector<VkSemaphore> transferSemaphores_;
-        std::vector<VkPipelineStageFlags> dstWaitFlags_;
+        std::vector<VkPipelineStageFlags> transferDstWaitFlags_;
         std::vector<std::unique_ptr<vulkan::BaseCommandBufferSet>> transientCommandBuffers_;
+
         std::vector<vulkan::Handle<VkSemaphore>> transientSemaphores_;
         std::vector<VkPipelineStageFlags> transientDstWaitFlags_;
+
         std::unique_ptr<VkSubmitInfo> transferQueueSubmitInfo_;
+
         std::unique_ptr<VkSubmitInfo> graphicsQueueSubmitInfo_;
     };
 
@@ -113,7 +143,7 @@ public:
 
     auto renderQueueSubmitInfo() -> VkSubmitInfo const&;
 
-    auto begin(vulkan::Device const& device) -> VkFence;
+    auto begin(vulkan::Device const& device) -> std::tuple<FrameCommands&, VkFence&>;
 
     void end(vulkan::Device const& device);
 
@@ -148,7 +178,7 @@ private:
 
     vulkan::CommandBufferSet<vulkan::CommandPool, std::vector<VkCommandBuffer>> commandBufferSet_;
 
-    FrameCommands patch_;
+    FrameCommands frameUpdate_;
     std::vector<FrameCommands> frameCommands_;
 };
 
