@@ -18,7 +18,7 @@ RenderPass::FrameCommands::FrameCommands() noexcept
   , transientSemaphores_{}
   , transientDstWaitFlags_{}
   , transferQueueSubmitInfo_{ nullptr }
-  , graphicsQueueSubmitInfo_{ nullptr }
+  , graphicsQueueSubmitInfo_{}
 {}
 
 RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
@@ -34,7 +34,7 @@ RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   , transientSemaphores_{}
   , transientDstWaitFlags_{}
   , transferQueueSubmitInfo_{ nullptr }
-  , graphicsQueueSubmitInfo_{ nullptr }
+  , graphicsQueueSubmitInfo_{}
 {
     VkFenceCreateInfo fenceCreateInfo = {};
     fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
