@@ -51,10 +51,10 @@ void RenderPass::_createSyncObjects(vulkan::Device const& device, size_t swapCha
     renderTargetFences_.resize(swapChainLength, VK_NULL_HANDLE);
 }
 
-auto RenderPass::begin(vulkan::Device const& device) -> std::tuple<FrameCommands&, VkFence&>
+auto RenderPass::begin(vulkan::Device const& device) -> std::tuple<FrameCommands&, VkFence>
 {
     return std::visit(
-      [&, this](auto&& rt) -> std::tuple<FrameCommands&, VkFence&> {
+      [&, this](auto&& rt) -> std::tuple<FrameCommands&, VkFence> {
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget>) {
               auto frontBufferIndex = rt.frontBufferIndex();
 

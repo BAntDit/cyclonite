@@ -143,7 +143,7 @@ public:
 
     auto renderQueueSubmitInfo() -> VkSubmitInfo const&;
 
-    auto begin(vulkan::Device const& device) -> std::tuple<FrameCommands&, VkFence&>;
+    auto begin(vulkan::Device const& device) -> std::tuple<FrameCommands&, VkFence>;
 
     void end(vulkan::Device const& device);
 
