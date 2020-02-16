@@ -65,7 +65,11 @@ void RenderPass::FrameCommands::_clearTransientTransfer()
     transientDstWaitFlags_.clear();
 }
 
-void RenderPass::FrameCommands::update(vulkan::Device& device, FrameCommands& frameUpdate)
+void RenderPass::FrameCommands::update(vulkan::Device& device,
+                                       VkRenderPass renderPass,
+                                       VkFramebuffer framebuffer,
+                                       std::array<uint32_t, 4>&& viewport,
+                                       FrameCommands& frameUpdate)
 {
     if (version() == frameUpdate.version())
         return;
@@ -134,8 +138,9 @@ void RenderPass::FrameCommands::update(vulkan::Device& device, FrameCommands& fr
             device.graphicsQueueFamilyIndex(),
             VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
             std::array<VkCommandBuffer, 1>{} },
-          [](auto&& graphicsCommands) -> void {
+          [=](auto&& graphicsCommands) -> void {
               auto [commandBuffer] = graphicsCommands;
+              auto [x, y, width, height] = viewport;
 
               VkCommandBufferBeginInfo commandBufferBeginInfo = {};
               commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -144,7 +149,21 @@ void RenderPass::FrameCommands::update(vulkan::Device& device, FrameCommands& fr
                   throw std::runtime_error("could not begin recording command buffer!");
               }
 
+              VkRenderPassBeginInfo renderPassBeginInfo = {};
+              renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+              renderPassBeginInfo.renderPass = renderPass;
+              renderPassBeginInfo.framebuffer = framebuffer;
+              renderPassBeginInfo.renderArea.offset.x = x;
+              renderPassBeginInfo.renderArea.offset.y = y;
+              renderPassBeginInfo.renderArea.extent.width = width;
+              renderPassBeginInfo.renderArea.extent.height = height;
+              // TODO:: clear values
+
+              vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
               // TODO:: THE MAIN TODO for the next time!!!
+
+              vkCmdEndRenderPass(commandBuffer);
 
               if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS) {
                   throw std::runtime_error("could not record command buffer!");

@@ -57,9 +57,7 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
       [&, this](auto&& rt) -> std::tuple<FrameCommands&, VkFence> {
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget>) {
               auto frontBufferIndex = rt.frontBufferIndex();
-
-              auto& frame = frameCommands_[frontBufferIndex];
-              auto frameFence = frame.fence();
+              auto frameFence = frameCommands_[frontBufferIndex].fence();
 
               vkWaitForFences(device.handle(), 1, &frameFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
 
@@ -75,9 +73,16 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
 
               vkResetFences(device.handle(), 1, &frameFence);
 
+              auto& frame = frameCommands_[backBufferIndex];
+              auto framebuffer = rt.frameBuffers()[backBufferIndex].handle();
+
               renderTargetFences_[backBufferIndex] = frameFence;
 
-              frame.update(device, frameUpdate_);
+              frame.update(device,
+                           static_cast<VkRenderPass>(vkRenderPass_),
+                           framebuffer,
+                           std::array<uint32_t, 4>{ 0, 0, rt.width(), rt.height() },
+                           frameUpdate_);
 
               return std::forward_as_tuple(frame, frameFence);
           }
