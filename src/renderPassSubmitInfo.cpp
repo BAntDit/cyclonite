@@ -65,7 +65,7 @@ void RenderPass::FrameCommands::_clearTransientTransfer()
     transientDstWaitFlags_.clear();
 }
 
-void RenderPass::FrameCommands::update(FrameCommands& frameUpdate)
+void RenderPass::FrameCommands::update(vulkan::Device& device, FrameCommands& frameUpdate)
 {
     if (version() == frameUpdate.version())
         return;
@@ -76,12 +76,14 @@ void RenderPass::FrameCommands::update(FrameCommands& frameUpdate)
         _clearTransientTransfer();
 
         transferQueueSubmitInfo_.reset();
+        graphicsQueueSubmitInfo_.reset(); // because of new semaphores list
 
         transferCommands_ = frameUpdate.transferCommands_;
         transferSemaphores_ = frameUpdate.transferSemaphores_;
         transferDstWaitFlags_ = frameUpdate.transientDstWaitFlags_;
 
         if (!frameUpdate.transientCommandBuffers_.empty()) {
+            // transient commands stay actual one frame only
             // move transient commands ownership
             transientCommandBuffers_ = std::move(frameUpdate.transientCommandBuffers_);
             transientSemaphores_ = std::move(frameUpdate.transientSemaphores_);
@@ -125,7 +127,33 @@ void RenderPass::FrameCommands::update(FrameCommands& frameUpdate)
     }
 
     if (graphicsSubmitVersion() != frameUpdate.graphicsSubmitVersion()) {
-        graphicsQueueSubmitInfo_.reset();
+        graphicsQueueSubmitInfo_.reset(); // it could be still alive here
+
+        graphicsCommands_ = std::make_unique<graphics_queue_commands_t>(device.commandPool().allocCommandBuffers(
+          vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>{
+            device.graphicsQueueFamilyIndex(),
+            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+            std::array<VkCommandBuffer, 1>{} },
+          [](auto&& graphicsCommands) -> void {
+              auto [commandBuffer] = graphicsCommands;
+
+              VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+              commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+              if (vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo) != VK_SUCCESS) {
+                  throw std::runtime_error("could not begin recording command buffer!");
+              }
+
+              // TODO:: THE MAIN TODO for the next time!!!
+
+              if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS) {
+                  throw std::runtime_error("could not record command buffer!");
+              }
+          }));
+    }
+
+    if (!graphicsQueueSubmitInfo_) {
+        // TODO::
     }
 
     version_ = version;

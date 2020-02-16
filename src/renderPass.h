@@ -50,7 +50,7 @@ public:
                                           vulkan::Handle<VkSemaphore>&& semaphore,
                                           VkPipelineStageFlags dstWaitFlag);
 
-        void update(FrameCommands& frameUpdate);
+        void update(vulkan::Device& device, FrameCommands& frameUpdate);
 
         [[nodiscard]] auto transferQueueSubmitInfo() const -> std::unique_ptr<VkSubmitInfo> const&
         {
@@ -143,7 +143,7 @@ public:
 
     auto renderQueueSubmitInfo() -> VkSubmitInfo const&;
 
-    auto begin(vulkan::Device const& device) -> std::tuple<FrameCommands&, VkFence>;
+    auto begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkFence>;
 
     void end(vulkan::Device const& device);
 

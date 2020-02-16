@@ -51,7 +51,7 @@ void RenderPass::_createSyncObjects(vulkan::Device const& device, size_t swapCha
     renderTargetFences_.resize(swapChainLength, VK_NULL_HANDLE);
 }
 
-auto RenderPass::begin(vulkan::Device const& device) -> std::tuple<FrameCommands&, VkFence>
+auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkFence>
 {
     return std::visit(
       [&, this](auto&& rt) -> std::tuple<FrameCommands&, VkFence> {
@@ -77,7 +77,7 @@ auto RenderPass::begin(vulkan::Device const& device) -> std::tuple<FrameCommands
 
               renderTargetFences_[backBufferIndex] = frameFence;
 
-              frame.update(frameUpdate_);
+              frame.update(device, frameUpdate_);
 
               return std::forward_as_tuple(frame, frameFence);
           }
