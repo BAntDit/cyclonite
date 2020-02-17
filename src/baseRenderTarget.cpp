@@ -70,4 +70,13 @@ auto BaseRenderTarget::getColorAttachmentClearValue(size_t attachmentIndex) cons
     return std::visit([&](auto&& clearValues) -> VkClearColorValue { return clearValues[attachmentIndex].color; },
                       clearValues_);
 }
+
+auto BaseRenderTarget::getClearValues() const -> std::pair<size_t, VkClearValue const*>
+{
+    return std::visit(
+      [](auto&& clearValues) -> std::pair<size_t, VkClearValue const*> {
+          return std::make_pair(clearValues.size(), clearValues.data());
+      },
+      clearValues_);
+}
 }

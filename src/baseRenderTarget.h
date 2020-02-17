@@ -94,6 +94,8 @@ public:
 
     [[nodiscard]] auto getColorAttachmentClearValue(size_t attachmentIndex) const -> VkClearColorValue;
 
+    [[nodiscard]] auto getClearValues() const -> std::pair<size_t, VkClearValue const*>;
+
 private:
     VkExtent2D extent_;
     clear_value_list_t clearValues_;
