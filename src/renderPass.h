@@ -195,6 +195,8 @@ RenderPass::RenderPass(vulkan::Device& device,
   , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
   , commandBufferSet_{}
+  , frameUpdate_{}
+  , frameCommands_{}
 {
     using render_target_builder_t = FrameBufferRenderTargetBuilder<DepthStencilOutput, ColorOutputs...>;
 
@@ -281,6 +283,8 @@ RenderPass::RenderPass(vulkan::Device& device,
   , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
   , commandBufferSet_{}
+  , frameUpdate_{}
+  , frameCommands_{}
 {
     using render_target_builder_t = SurfaceRenderTargetBuilder<DepthStencilOutput, ColorOutput>;
 
@@ -407,6 +411,12 @@ RenderPass::RenderPass(vulkan::Device& device,
               }
           }
       });
+
+    frameCommands_.reserve(renderTarget.swapChainLength());
+
+    for (size_t i = 0, frameCount = renderTarget.swapChainLength(); i < frameCount; i++) {
+        frameCommands_.emplace_back(device);
+    }
 
     renderTarget_ = std::move(renderTarget);
 }
