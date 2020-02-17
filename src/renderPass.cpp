@@ -31,11 +31,6 @@ void RenderPass::_createRenderPass(vulkan::Device const& device, VkRenderPassCre
     }
 }
 
-void RenderPass::_createSyncObjects(vulkan::Device const& device, size_t swapChainLength)
-{
-    renderTargetFences_.resize(swapChainLength, VK_NULL_HANDLE);
-}
-
 auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkFence, VkSemaphore>
 {
     return std::visit(

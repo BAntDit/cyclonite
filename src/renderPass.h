@@ -157,8 +157,6 @@ public:
 private:
     void _createRenderPass(vulkan::Device const& device, VkRenderPassCreateInfo const& renderPassCreateInfo);
 
-    void _createSyncObjects(vulkan::Device const& device, size_t swapChainLength);
-
     void _createDummyPipeline(vulkan::Device const& device,
                               uint32_t renderTargetWidth,
                               uint32_t renderTargetHeight,
@@ -330,7 +328,7 @@ RenderPass::RenderPass(vulkan::Device& device,
 
     auto&& renderTarget = renderTargetBuilder.buildRenderPassTarget(static_cast<VkRenderPass>(vkRenderPass_));
 
-    _createSyncObjects(device, renderTarget.swapChainLength());
+    renderTargetFences_.resize(renderTarget.swapChainLength(), VK_NULL_HANDLE);
 
     // tmp for dummy pipeline
     VkPipelineColorBlendStateCreateInfo colorBlendState = {};
