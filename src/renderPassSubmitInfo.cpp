@@ -8,6 +8,8 @@ namespace cyclonite {
 RenderPass::FrameCommands::FrameCommands() noexcept
   : version_{ 0 }
   , fence_{}
+  , passFinishedSemaphore_{}
+  , vkSignalSemaphore_{ VK_NULL_HANDLE }
   , drawCommandsTransferCommandsIndex_{ std::numeric_limits<size_t>::max() }
   , graphicsCommands_{ nullptr }
   , waitSemaphores_{}
@@ -24,6 +26,8 @@ RenderPass::FrameCommands::FrameCommands() noexcept
 RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   : version_{ 0 }
   , fence_{ device.handle(), vkDestroyFence }
+  , passFinishedSemaphore_{ device.handle(), vkDestroySemaphore }
+  , vkSignalSemaphore_{ VK_NULL_HANDLE }
   , drawCommandsTransferCommandsIndex_{ std::numeric_limits<size_t>::max() }
   , graphicsCommands_{ nullptr }
   , waitSemaphores_{}
@@ -42,6 +46,14 @@ RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
 
     if (auto result = vkCreateFence(device.handle(), &fenceCreateInfo, nullptr, &fence_); result != VK_SUCCESS) {
         throw std::runtime_error("could not create frame synchronization fence");
+    }
+
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    if (auto result = vkCreateSemaphore(device.handle(), &semaphoreCreateInfo, nullptr, &passFinishedSemaphore_);
+        result != VK_SUCCESS) {
+        throw std::runtime_error("could not create pass end synchronization semaphore");
     }
 }
 
@@ -72,9 +84,12 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
                                        VkFramebuffer framebuffer,
                                        std::array<uint32_t, 4>&& viewport,
                                        VkSemaphore frameBufferAvailableSemaphore,
+                                       VkSemaphore passFinishedSemaphore,
                                        FrameCommands& frameUpdate)
 {
     auto version = frameUpdate.version();
+
+    vkSignalSemaphore_ = passFinishedSemaphore;
 
     if (transferSubmitVersion() != frameUpdate.transferSubmitVersion()) {
         _clearTransientTransfer();
@@ -131,7 +146,7 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
             transferQueueSubmitInfo_->pSignalSemaphores = transferSemaphores_.data();
         }
 
-        dstWaitFlags_.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT );
+        dstWaitFlags_.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
         waitSemaphores_.push_back(VK_NULL_HANDLE);
     }
 
@@ -184,9 +199,10 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
     graphicsQueueSubmitInfo_.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores_.size());
     graphicsQueueSubmitInfo_.pWaitSemaphores = waitSemaphores_.data();
     graphicsQueueSubmitInfo_.pWaitDstStageMask = dstWaitFlags_.data();
-
-    // TODO::
-
+    graphicsQueueSubmitInfo_.commandBufferCount = static_cast<uint32_t>(graphicsCommands_->commandBufferCount());
+    graphicsQueueSubmitInfo_.pCommandBuffers = graphicsCommands_->pCommandBuffers();
+    graphicsQueueSubmitInfo_.signalSemaphoreCount = 1;
+    graphicsQueueSubmitInfo_.pSignalSemaphores = &vkSignalSemaphore_;
 
     version_ = version;
 }

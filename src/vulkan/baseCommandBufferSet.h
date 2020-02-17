@@ -18,6 +18,8 @@ public:
     [[nodiscard]] virtual auto getCommandBuffer(size_t) const -> VkCommandBuffer = 0;
 
     [[nodiscard]] virtual auto commandBufferCount() const -> size_t = 0;
+
+    [[nodiscard]] virtual auto pCommandBuffers() const -> VkCommandBuffer const* = 0;
 };
 }
 

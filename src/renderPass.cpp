@@ -33,31 +33,17 @@ void RenderPass::_createRenderPass(vulkan::Device const& device, VkRenderPassCre
 
 void RenderPass::_createSyncObjects(vulkan::Device const& device, size_t swapChainLength)
 {
-    passFinishedSemaphores_.reserve(swapChainLength);
-
-    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
-    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-    for (size_t i = 0; i < swapChainLength; i++) {
-        if (auto result = vkCreateSemaphore(device.handle(),
-                                            &semaphoreCreateInfo,
-                                            nullptr,
-                                            &passFinishedSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
-            result != VK_SUCCESS) {
-            throw std::runtime_error("could not create pass end synchronization semaphore");
-        }
-    }
-
     renderTargetFences_.resize(swapChainLength, VK_NULL_HANDLE);
 }
 
-auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkFence>
+auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkFence, VkSemaphore>
 {
     return std::visit(
-      [&, this](auto&& rt) -> std::tuple<FrameCommands&, VkFence> {
+      [&, this](auto&& rt) -> std::tuple<FrameCommands&, VkFence, VkSemaphore> {
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget>) {
               auto frontBufferIndex = rt.frontBufferIndex();
               auto frameFence = frameCommands_[frontBufferIndex].fence();
+              auto passFinishedSemaphore = frameCommands_[frontBufferIndex].semaphore();
 
               vkWaitForFences(device.handle(), 1, &frameFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
 
@@ -75,7 +61,7 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
 
               auto& frame = frameCommands_[backBufferIndex];
               auto framebuffer = rt.frameBuffers()[backBufferIndex].handle();
-              auto semaphore = rt.frameBufferAvailableSemaphore();
+              auto bufferAvailableSemaphore = rt.frameBufferAvailableSemaphore();
 
               renderTargetFences_[backBufferIndex] = frameFence;
 
@@ -83,10 +69,11 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
                            static_cast<VkRenderPass>(vkRenderPass_),
                            framebuffer,
                            std::array<uint32_t, 4>{ 0, 0, rt.width(), rt.height() },
-                           semaphore,
+                           bufferAvailableSemaphore,
+                           passFinishedSemaphore,
                            frameUpdate_);
 
-              return std::forward_as_tuple(frame, frameFence);
+              return std::forward_as_tuple(frame, frameFence, passFinishedSemaphore);
           }
 
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
@@ -98,13 +85,13 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
       renderTarget_);
 }
 
-void RenderPass::end(vulkan::Device const& device)
+void RenderPass::end(vulkan::Device const& device, VkSemaphore passFinishedSemaphore)
 {
     std::visit(
-      [&, this](auto&& rt) -> void {
+      [&](auto&& rt) -> void {
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
                         std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
-              rt.swapBuffers(device, static_cast<VkSemaphore>(passFinishedSemaphores_[rt.frontBufferIndex()]));
+              rt.swapBuffers(device, static_cast<VkSemaphore>(passFinishedSemaphore));
 
               return;
           }
@@ -227,43 +214,5 @@ void RenderPass::_createDummyPipeline(vulkan::Device const& device,
         result != VK_SUCCESS) {
         throw std::runtime_error("could not create graphics pipeline");
     }
-}
-
-auto RenderPass::renderQueueSubmitInfo() -> VkSubmitInfo const&
-{
-    std::fill_n(reinterpret_cast<std::byte*>(&renderQueueSubmitInfo_), sizeof(renderQueueSubmitInfo_), std::byte{ 0 });
-
-    std::visit(
-      [this](auto&& rt) -> void {
-          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget>) {
-              auto backBufferIndex = rt.backBufferIndex();
-              auto frontBufferIndex = rt.frontBufferIndex();
-
-              vkWaitSemaphore_ = rt.frontBufferAvailableSemaphore();
-              vkSignalSemaphore_ = static_cast<VkSemaphore>(passFinishedSemaphores_[frontBufferIndex]);
-
-              renderQueueSubmitInfo_.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-              renderQueueSubmitInfo_.waitSemaphoreCount = 1;
-              renderQueueSubmitInfo_.pWaitSemaphores = &vkWaitSemaphore_;
-              renderQueueSubmitInfo_.pWaitDstStageMask = &waitStage_;
-
-              renderQueueSubmitInfo_.commandBufferCount = 1;
-              renderQueueSubmitInfo_.pCommandBuffers = &commandBufferSet_.getCommandBuffer(backBufferIndex);
-
-              renderQueueSubmitInfo_.signalSemaphoreCount = 1;
-              renderQueueSubmitInfo_.pSignalSemaphores = &vkSignalSemaphore_;
-
-              return;
-          }
-
-          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
-              throw std::runtime_error("not implemented yet");
-          }
-
-          throw std::runtime_error("empty render target");
-      },
-      renderTarget_);
-
-    return renderQueueSubmitInfo_;
 }
 }

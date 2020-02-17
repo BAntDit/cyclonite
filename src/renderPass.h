@@ -55,6 +55,7 @@ public:
                     VkFramebuffer framebuffer,
                     std::array<uint32_t, 4>&& viewport,
                     VkSemaphore frameBufferAvailableSemaphore,
+                    VkSemaphore passFinishedSemaphore,
                     FrameCommands& frameUpdate);
 
         [[nodiscard]] auto transferQueueSubmitInfo() const -> std::unique_ptr<VkSubmitInfo> const&
@@ -66,6 +67,8 @@ public:
 
         [[nodiscard]] auto fence() const -> VkFence { return static_cast<VkFence>(fence_); }
 
+        [[nodiscard]] auto semaphore() const -> VkSemaphore { return static_cast<VkSemaphore>(passFinishedSemaphore_); }
+
     private:
         void _clearTransientTransfer();
 
@@ -73,6 +76,8 @@ public:
         uint64_t version_;
 
         vulkan::Handle<VkFence> fence_;
+        vulkan::Handle<VkSemaphore> passFinishedSemaphore_;
+        VkSemaphore vkSignalSemaphore_;
 
         size_t drawCommandsTransferCommandsIndex_;
         std::unique_ptr<graphics_queue_commands_t> graphicsCommands_;
@@ -143,11 +148,9 @@ public:
 
     auto operator=(RenderPass &&) -> RenderPass& = default;
 
-    auto renderQueueSubmitInfo() -> VkSubmitInfo const&;
+    auto begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkFence, VkSemaphore>;
 
-    auto begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkFence>;
-
-    void end(vulkan::Device const& device);
+    void end(vulkan::Device const& device, VkSemaphore passFinishedSemaphore);
 
     // TODO:: update(scene, dt)
 
@@ -165,12 +168,7 @@ private:
 private:
     vulkan::Handle<VkRenderPass> vkRenderPass_;
     std::variant<std::monostate, SurfaceRenderTarget, FrameBufferRenderTarget> renderTarget_;
-    std::vector<vulkan::Handle<VkSemaphore>> passFinishedSemaphores_;
     std::vector<VkFence> renderTargetFences_;
-    VkPipelineStageFlags waitStage_;
-    VkSemaphore vkWaitSemaphore_;
-    VkSemaphore vkSignalSemaphore_;
-    VkSubmitInfo renderQueueSubmitInfo_;
 
     // tmp...
     // TODO:: combine them together into vulkan::Pipeline type
@@ -194,12 +192,7 @@ RenderPass::RenderPass(vulkan::Device& device,
                        std::array<VkClearColorValue, sizeof...(ColorOutputs)> const& clearColorValues)
   : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{}
-  , passFinishedSemaphores_{}
   , renderTargetFences_{}
-  , waitStage_{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
-  , vkWaitSemaphore_{ VK_NULL_HANDLE }
-  , vkSignalSemaphore_{ VK_NULL_HANDLE }
-  , renderQueueSubmitInfo_{}
   , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
   , commandBufferSet_{}
@@ -285,12 +278,7 @@ RenderPass::RenderPass(vulkan::Device& device,
                        VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags)
   : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{}
-  , passFinishedSemaphores_{}
   , renderTargetFences_{}
-  , waitStage_{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
-  , vkWaitSemaphore_{ VK_NULL_HANDLE }
-  , vkSignalSemaphore_{ VK_NULL_HANDLE }
-  , renderQueueSubmitInfo_{}
   , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
   , commandBufferSet_{}

@@ -12,7 +12,7 @@ VulkanRenderer::VulkanRenderer(cyclonite::vulkan::Device& device)
 
 void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
 {
-    auto&& [frame, fence] = renderPass.begin(*device_);
+    auto&& [frame, fence, semaphore] = renderPass.begin(*device_);
 
     if (frame.transferQueueSubmitInfo()) { // TODO:: should make transfer from another thread, m'kay
         if (auto result =
@@ -27,7 +27,7 @@ void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
         _handleSubmitError(result);
     }
 
-    renderPass.end(*device_);
+    renderPass.end(*device_, semaphore);
 }
 
 void _handleSubmitError(VkResult result)
@@ -44,7 +44,7 @@ void _handleSubmitError(VkResult result)
         throw std::runtime_error("can not submit command buffers, device lost");
     }
 
-    // shouldn't have come here (the case out of spec)
+    // shouldn't have come here (a case out of the spec)
     assert(false);
 }
 }

@@ -47,6 +47,8 @@ public:
 
     [[nodiscard]] auto commandBufferCount() const -> size_t override { return commandBuffers_.size(); }
 
+    [[nodiscard]] auto pCommandBuffers() const -> VkCommandBuffer const* override { return commandBuffers_.data(); }
+
 private:
     std::weak_ptr<CommandPool> commandPoolPtr_;
     std::thread::id threadId_;
