@@ -56,6 +56,7 @@ public:
                     std::array<uint32_t, 4>&& viewport,
                     VkSemaphore frameBufferAvailableSemaphore,
                     VkSemaphore passFinishedSemaphore,
+                    std::pair<size_t, VkClearValue const*>&& clearValues,
                     FrameCommands& frameUpdate);
 
         [[nodiscard]] auto transferQueueSubmitInfo() const -> std::unique_ptr<VkSubmitInfo> const&

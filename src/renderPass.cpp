@@ -66,6 +66,7 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
                            std::array<uint32_t, 4>{ 0, 0, rt.width(), rt.height() },
                            bufferAvailableSemaphore,
                            passFinishedSemaphore,
+                           rt.getClearValues(),
                            frameUpdate_);
 
               return std::forward_as_tuple(frame, frameFence, passFinishedSemaphore);

@@ -85,6 +85,7 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
                                        std::array<uint32_t, 4>&& viewport,
                                        VkSemaphore frameBufferAvailableSemaphore,
                                        VkSemaphore passFinishedSemaphore,
+                                       std::pair<size_t, VkClearValue const*>&& clearValues,
                                        FrameCommands& frameUpdate)
 {
     auto version = frameUpdate.version();
@@ -159,6 +160,7 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
           [=](auto&& graphicsCommands) -> void {
               auto [commandBuffer] = graphicsCommands;
               auto [x, y, width, height] = viewport;
+              auto [clearValueCount, pClearValues] = clearValues;
 
               VkCommandBufferBeginInfo commandBufferBeginInfo = {};
               commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -175,7 +177,8 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
               renderPassBeginInfo.renderArea.offset.y = y;
               renderPassBeginInfo.renderArea.extent.width = width;
               renderPassBeginInfo.renderArea.extent.height = height;
-              // TODO:: clear values
+              renderPassBeginInfo.clearValueCount = clearValueCount;
+              renderPassBeginInfo.pClearValues = pClearValues;
 
               vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
