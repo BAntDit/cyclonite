@@ -71,6 +71,8 @@ public:
         [[nodiscard]] auto semaphore() const -> VkSemaphore { return static_cast<VkSemaphore>(passFinishedSemaphore_); }
 
     private:
+        void _updatePipeline(vulkan::Device& device, std::array<uint32_t, 4> const& viewport);
+
         void _clearTransientTransfer();
 
     private:
@@ -90,6 +92,11 @@ public:
         std::vector<std::unique_ptr<vulkan::BaseCommandBufferSet>> transientCommandBuffers_;
         std::vector<vulkan::Handle<VkSemaphore>> transientSemaphores_;
         std::vector<VkPipelineStageFlags> transientDstWaitFlags_;
+
+        // dummy
+        vulkan::Handle<VkPipelineLayout> pipelineLayout_;
+        vulkan::Handle<VkPipeline> pipeline_;
+        //
 
         std::unique_ptr<VkSubmitInfo> transferQueueSubmitInfo_;
 
@@ -158,7 +165,7 @@ public:
 private:
     void _createRenderPass(vulkan::Device const& device, VkRenderPassCreateInfo const& renderPassCreateInfo);
 
-    void _createDummyPipeline(vulkan::Device const& device,
+    void _updateDummyPipeline(vulkan::Device const& device,
                               uint32_t renderTargetWidth,
                               uint32_t renderTargetHeight,
                               bool hasDepthStencil,
@@ -171,6 +178,7 @@ private:
 
     // tmp...
     // TODO:: combine them together into vulkan::Pipeline type
+    uint64_t pipelineVersion_;
     vulkan::Handle<VkPipelineLayout> vkDummyPipelineLayout_;
     vulkan::Handle<VkPipeline> vkDummyPipeline_;
 
@@ -192,6 +200,7 @@ RenderPass::RenderPass(vulkan::Device& device,
   : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{}
   , renderTargetFences_{}
+  , pipelineVersion_{ 0 }
   , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
   , commandBufferSet_{}
@@ -280,6 +289,7 @@ RenderPass::RenderPass(vulkan::Device& device,
   : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{}
   , renderTargetFences_{}
+  , pipelineVersion_{ 0 }
   , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
   , commandBufferSet_{}
@@ -363,7 +373,7 @@ RenderPass::RenderPass(vulkan::Device& device,
     colorBlendState.blendConstants[2] = 0.0f;
     colorBlendState.blendConstants[3] = 0.0f;
 
-    _createDummyPipeline(
+    _updateDummyPipeline(
       device, renderTarget.width(), renderTarget.height(), has_depth_stencil_attachment_v, colorBlendState);
 
     auto clearValues = renderTargetBuilder.getClearValues();

@@ -3,6 +3,15 @@
 //
 
 #include "renderPass.h"
+#include "vulkan/shaderModule.h"
+
+std::vector<uint32_t> const defaultVertexShaderCode = {
+#include "shaders/default.vert.spv.cpp.txt"
+};
+
+std::vector<uint32_t> const defaultFragmentShaderCode = {
+#include "shaders/default.frag.spv.cpp.txt"
+};
 
 namespace cyclonite {
 RenderPass::FrameCommands::FrameCommands() noexcept
@@ -19,6 +28,8 @@ RenderPass::FrameCommands::FrameCommands() noexcept
   , transientCommandBuffers_{}
   , transientSemaphores_{}
   , transientDstWaitFlags_{}
+  , pipelineLayout_{}
+  , pipeline_{}
   , transferQueueSubmitInfo_{ nullptr }
   , graphicsQueueSubmitInfo_{}
 {}
@@ -37,6 +48,8 @@ RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   , transientCommandBuffers_{}
   , transientSemaphores_{}
   , transientDstWaitFlags_{}
+  , pipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
+  , pipeline_{ device.handle(), vkDestroyPipeline }
   , transferQueueSubmitInfo_{ nullptr }
   , graphicsQueueSubmitInfo_{}
 {
@@ -77,6 +90,80 @@ void RenderPass::FrameCommands::_clearTransientTransfer()
     transientCommandBuffers_.clear();
     transientSemaphores_.clear();
     transientDstWaitFlags_.clear();
+}
+
+void RenderPass::FrameCommands::_updatePipeline(vulkan::Device& device, std::array<uint32_t, 4> const& viewport) {
+    vulkan::ShaderModule vertexShaderModule{ device, defaultVertexShaderCode, VK_SHADER_STAGE_VERTEX_BIT };
+    vulkan::ShaderModule fragmentShaderModule{ device, defaultFragmentShaderCode, VK_SHADER_STAGE_FRAGMENT_BIT };
+
+    VkPipelineShaderStageCreateInfo vertexShaderStageInfo = {};
+    vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vertexShaderStageInfo.module = vertexShaderModule.handle();
+    vertexShaderStageInfo.pName = u8"main";
+
+    VkPipelineShaderStageCreateInfo fragmentShaderStageInfo = {};
+    fragmentShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    fragmentShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    fragmentShaderStageInfo.module = fragmentShaderModule.handle();
+    fragmentShaderStageInfo.pName = u8"main";
+
+    std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = { vertexShaderStageInfo, fragmentShaderStageInfo };
+
+    VkPipelineVertexInputStateCreateInfo vertexInput = {};
+    vertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertexInput.vertexBindingDescriptionCount = 0;
+    vertexInput.vertexAttributeDescriptionCount = 0;
+
+    VkPipelineInputAssemblyStateCreateInfo assemblyState = {};
+    assemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    assemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    assemblyState.primitiveRestartEnable = VK_FALSE;
+
+    auto&& [x, y, width, height] = viewport;
+
+    VkViewport vkViewport = {};
+    vkViewport.x = x;
+    vkViewport.y = y;
+    vkViewport.width = width;
+    vkViewport.height = height;
+    vkViewport.minDepth = 0.0;
+    vkViewport.maxDepth = 1.0;
+
+    VkRect2D vkScissor = {};
+    vkScissor.offset.x = x;
+    vkScissor.offset.y = y;
+    vkScissor.extent.width = width;
+    vkScissor.extent.height = height;
+
+    VkPipelineViewportStateCreateInfo viewportState = {};
+    viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewportState.viewportCount = 1;
+    viewportState.pViewports = &vkViewport;
+    viewportState.scissorCount = 1;
+    viewportState.pScissors = &vkScissor;
+
+    VkPipelineRasterizationStateCreateInfo rasterizationState = {};
+    rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizationState.depthClampEnable = VK_FALSE;
+    rasterizationState.rasterizerDiscardEnable = VK_FALSE; // just for now
+    rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizationState.lineWidth = 1.0f;
+    rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizationState.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizationState.depthBiasEnable = VK_FALSE;
+
+    VkPipelineMultisampleStateCreateInfo multisampleState = {};
+    multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisampleState.sampleShadingEnable = VK_FALSE;
+    multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;  // TODO:: must come from render target
+
+    VkPipelineColorBlendStateCreateInfo colorBlendState = {};       // TODO:: must come from render target
+    colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colorBlendState.logicOpEnable = VK_FALSE;
+    colorBlendState.logicOp = VK_LOGIC_OP_COPY;
+
+    // TODO::
 }
 
 void RenderPass::FrameCommands::update(vulkan::Device& device,
@@ -152,6 +239,8 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
     }
 
     if (graphicsSubmitVersion() != frameUpdate.graphicsSubmitVersion()) {
+        _updatePipeline(device, viewport);
+
         graphicsCommands_ = std::make_unique<graphics_queue_commands_t>(device.commandPool().allocCommandBuffers(
           vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>{
             device.graphicsQueueFamilyIndex(),

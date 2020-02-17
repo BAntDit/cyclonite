@@ -97,7 +97,7 @@ void RenderPass::end(vulkan::Device const& device, VkSemaphore passFinishedSemap
       renderTarget_);
 }
 
-void RenderPass::_createDummyPipeline(vulkan::Device const& device,
+void RenderPass::_updateDummyPipeline(vulkan::Device const& device,
                                       uint32_t renderTargetWidth,
                                       uint32_t renderTargetHeight,
                                       bool hasDepthStencil,
@@ -202,6 +202,7 @@ void RenderPass::_createDummyPipeline(vulkan::Device const& device,
         depthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
         depthStencilStateCreateInfo.front = {};
         depthStencilStateCreateInfo.back = {};
+
         graphicsPipelineCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
     }
 
