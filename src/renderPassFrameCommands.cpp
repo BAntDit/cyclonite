@@ -252,12 +252,6 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
 
     vkSignalSemaphore_ = passFinishedSemaphore;
 
-    if (indicesBuffer_ != frameUpdate.indicesBuffer_) {
-        indicesBuffer_ = frameUpdate.indicesBuffer_;
-    }
-
-    assert(indicesBuffer_);
-
     if (transferSubmitVersion() != frameUpdate.transferSubmitVersion()) {
         _clearTransientTransfer();
 
@@ -319,6 +313,12 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
 
     if (graphicsSubmitVersion() != frameUpdate.graphicsSubmitVersion()) {
         _updatePipeline(device, renderPass, viewport, depthStencilRequired);
+
+        if (indicesBuffer_ != frameUpdate.indicesBuffer_) {
+            indicesBuffer_ = frameUpdate.indicesBuffer_;
+        }
+
+        assert(indicesBuffer_);
 
         graphicsCommands_ = std::make_unique<graphics_queue_commands_t>(device.commandPool().allocCommandBuffers(
           vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>{
