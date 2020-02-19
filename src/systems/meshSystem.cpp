@@ -25,7 +25,7 @@ void MeshSystem::init(vulkan::Device& device)
       sizeof(VkDrawIndexedIndirectCommand),
       std::array{ device.hostTransferQueueFamilyIndex(), device.graphicsQueueFamilyIndex() });
 
-    gpuIndicesBuffer_ = std::make_unique<vulkan::Buffer>(
+    gpuIndicesBuffer_ = std::make_shared<vulkan::Buffer>(
       device,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
       VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,

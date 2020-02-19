@@ -9,6 +9,7 @@
 #include "renderTargetBuilder.h"
 #include "surface.h"
 #include "vulkan/baseCommandBufferSet.h"
+#include "vulkan/buffer.h"
 #include <optional>
 
 namespace cyclonite {
@@ -96,6 +97,8 @@ public:
         std::vector<std::unique_ptr<vulkan::BaseCommandBufferSet>> transientCommandBuffers_;
         std::vector<vulkan::Handle<VkSemaphore>> transientSemaphores_;
         std::vector<VkPipelineStageFlags> transientDstWaitFlags_;
+
+        std::shared_ptr<vulkan::Buffer> indicesBuffer_;
 
         // dummy
         vulkan::Handle<VkDescriptorSetLayout> descriptorSetLayout_;

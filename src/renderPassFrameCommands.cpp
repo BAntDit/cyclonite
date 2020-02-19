@@ -28,6 +28,7 @@ RenderPass::FrameCommands::FrameCommands() noexcept
   , transientCommandBuffers_{}
   , transientSemaphores_{}
   , transientDstWaitFlags_{}
+  , indicesBuffer_{ nullptr }
   , descriptorSetLayout_{}
   , pipelineLayout_{}
   , pipeline_{}
@@ -49,6 +50,7 @@ RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   , transientCommandBuffers_{}
   , transientSemaphores_{}
   , transientDstWaitFlags_{}
+  , indicesBuffer_{ nullptr }
   , descriptorSetLayout_{ device.handle(), vkDestroyDescriptorSetLayout }
   , pipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , pipeline_{ device.handle(), vkDestroyPipeline }
@@ -250,6 +252,12 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
 
     vkSignalSemaphore_ = passFinishedSemaphore;
 
+    if (indicesBuffer_ != frameUpdate.indicesBuffer_) {
+        indicesBuffer_ = frameUpdate.indicesBuffer_;
+    }
+
+    assert(indicesBuffer_);
+
     if (transferSubmitVersion() != frameUpdate.transferSubmitVersion()) {
         _clearTransientTransfer();
 
@@ -341,6 +349,10 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
               renderPassBeginInfo.pClearValues = pClearValues;
 
               vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+              vkCmdBindIndexBuffer(commandBuffer, indicesBuffer_->handle(), 0, VK_INDEX_TYPE_UINT32);
+
+              vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, static_cast<VkPipeline>(pipeline_));
 
               // TODO:: THE MAIN TODO for the next time!!!
 
