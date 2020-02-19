@@ -67,6 +67,7 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
                            bufferAvailableSemaphore,
                            passFinishedSemaphore,
                            rt.getClearValues(),
+                           rt.hasDepthStencil(),
                            frameUpdate_);
 
               return std::forward_as_tuple(frame, frameFence, passFinishedSemaphore);
@@ -95,121 +96,5 @@ void RenderPass::end(vulkan::Device const& device, VkSemaphore passFinishedSemap
           throw std::runtime_error("empty render target");
       },
       renderTarget_);
-}
-
-void RenderPass::_updateDummyPipeline(vulkan::Device const& device,
-                                      uint32_t renderTargetWidth,
-                                      uint32_t renderTargetHeight,
-                                      bool hasDepthStencil,
-                                      VkPipelineColorBlendStateCreateInfo const& colorBlendState)
-{
-    vulkan::ShaderModule vertexShaderModule{ device, defaultVertexShaderCode, VK_SHADER_STAGE_VERTEX_BIT };
-    vulkan::ShaderModule fragmentShaderModule{ device, defaultFragmentShaderCode, VK_SHADER_STAGE_FRAGMENT_BIT };
-
-    VkPipelineShaderStageCreateInfo vertexShaderStageInfo = {};
-    vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    vertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    vertexShaderStageInfo.module = vertexShaderModule.handle();
-    vertexShaderStageInfo.pName = u8"main";
-
-    VkPipelineShaderStageCreateInfo fragmentShaderStageInfo = {};
-    fragmentShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    fragmentShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    fragmentShaderStageInfo.module = fragmentShaderModule.handle();
-    fragmentShaderStageInfo.pName = u8"main";
-
-    std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = { vertexShaderStageInfo, fragmentShaderStageInfo };
-
-    VkPipelineVertexInputStateCreateInfo vertexInput = {};
-    vertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    vertexInput.vertexBindingDescriptionCount = 0;
-    vertexInput.vertexAttributeDescriptionCount = 0;
-
-    VkPipelineInputAssemblyStateCreateInfo assemblyState = {};
-    assemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    assemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    assemblyState.primitiveRestartEnable = VK_FALSE;
-
-    VkViewport viewport = {};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = renderTargetWidth;
-    viewport.height = renderTargetHeight;
-    viewport.minDepth = 0.0;
-    viewport.maxDepth = 1.0;
-
-    VkRect2D scissor = {};
-    scissor.offset = { 0, 0 };
-    scissor.extent = { renderTargetWidth, renderTargetHeight };
-
-    VkPipelineViewportStateCreateInfo viewportState = {};
-    viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewportState.viewportCount = 1;
-    viewportState.pViewports = &viewport;
-    viewportState.scissorCount = 1;
-    viewportState.pScissors = &scissor;
-
-    VkPipelineRasterizationStateCreateInfo rasterizationState = {};
-    rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterizationState.depthClampEnable = VK_FALSE;
-    rasterizationState.rasterizerDiscardEnable = VK_FALSE;
-    rasterizationState.rasterizerDiscardEnable = VK_FALSE; // just for now
-    rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterizationState.lineWidth = 1.0f;
-    rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizationState.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    rasterizationState.depthBiasEnable = VK_FALSE;
-
-    VkPipelineMultisampleStateCreateInfo multisampleState = {};
-    multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampleState.sampleShadingEnable = VK_FALSE;
-    multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // TODO:: must come from render target
-
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
-
-    if (auto result = vkCreatePipelineLayout(device.handle(), &pipelineLayoutInfo, nullptr, &vkDummyPipelineLayout_);
-        result != VK_SUCCESS) {
-        throw std::runtime_error("could not create graphics pipeline layout");
-    }
-
-    VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
-    graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    graphicsPipelineCreateInfo.stageCount = shaderStages.size();
-    graphicsPipelineCreateInfo.pStages = shaderStages.data();
-    graphicsPipelineCreateInfo.pVertexInputState = &vertexInput;
-    graphicsPipelineCreateInfo.pInputAssemblyState = &assemblyState;
-    graphicsPipelineCreateInfo.pViewportState = &viewportState;
-    graphicsPipelineCreateInfo.pRasterizationState = &rasterizationState;
-    graphicsPipelineCreateInfo.pMultisampleState = &multisampleState;
-    graphicsPipelineCreateInfo.pColorBlendState = &colorBlendState;
-    graphicsPipelineCreateInfo.layout = static_cast<VkPipelineLayout>(vkDummyPipelineLayout_);
-    graphicsPipelineCreateInfo.renderPass = static_cast<VkRenderPass>(vkRenderPass_);
-    graphicsPipelineCreateInfo.subpass = 0;
-    graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
-
-    if (hasDepthStencil) {
-        VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {};
-        depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencilStateCreateInfo.depthTestEnable = VK_FALSE;
-        depthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
-        depthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
-        depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
-        depthStencilStateCreateInfo.minDepthBounds = 0.0f;
-        depthStencilStateCreateInfo.maxDepthBounds = 1.0f;
-        depthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
-        depthStencilStateCreateInfo.front = {};
-        depthStencilStateCreateInfo.back = {};
-
-        graphicsPipelineCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
-    }
-
-    if (auto result = vkCreateGraphicsPipelines(
-          device.handle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &vkDummyPipeline_);
-        result != VK_SUCCESS) {
-        throw std::runtime_error("could not create graphics pipeline");
-    }
 }
 }

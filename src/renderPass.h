@@ -57,6 +57,7 @@ public:
                     VkSemaphore frameBufferAvailableSemaphore,
                     VkSemaphore passFinishedSemaphore,
                     std::pair<size_t, VkClearValue const*>&& clearValues,
+                    bool depthStencilRequired,
                     FrameCommands& frameUpdate);
 
         [[nodiscard]] auto transferQueueSubmitInfo() const -> std::unique_ptr<VkSubmitInfo> const&
@@ -71,7 +72,10 @@ public:
         [[nodiscard]] auto semaphore() const -> VkSemaphore { return static_cast<VkSemaphore>(passFinishedSemaphore_); }
 
     private:
-        void _updatePipeline(vulkan::Device& device, std::array<uint32_t, 4> const& viewport);
+        void _updatePipeline(vulkan::Device& device,
+                             VkRenderPass renderPass,
+                             std::array<uint32_t, 4> const& viewport,
+                             bool depthStencilRequired);
 
         void _clearTransientTransfer();
 
@@ -94,6 +98,7 @@ public:
         std::vector<VkPipelineStageFlags> transientDstWaitFlags_;
 
         // dummy
+        vulkan::Handle<VkDescriptorSetLayout> descriptorSetLayout_;
         vulkan::Handle<VkPipelineLayout> pipelineLayout_;
         vulkan::Handle<VkPipeline> pipeline_;
         //

@@ -28,6 +28,7 @@ RenderPass::FrameCommands::FrameCommands() noexcept
   , transientCommandBuffers_{}
   , transientSemaphores_{}
   , transientDstWaitFlags_{}
+  , descriptorSetLayout_{}
   , pipelineLayout_{}
   , pipeline_{}
   , transferQueueSubmitInfo_{ nullptr }
@@ -48,6 +49,7 @@ RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   , transientCommandBuffers_{}
   , transientSemaphores_{}
   , transientDstWaitFlags_{}
+  , descriptorSetLayout_{ device.handle(), vkDestroyDescriptorSetLayout }
   , pipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , pipeline_{ device.handle(), vkDestroyPipeline }
   , transferQueueSubmitInfo_{ nullptr }
@@ -92,7 +94,12 @@ void RenderPass::FrameCommands::_clearTransientTransfer()
     transientDstWaitFlags_.clear();
 }
 
-void RenderPass::FrameCommands::_updatePipeline(vulkan::Device& device, std::array<uint32_t, 4> const& viewport) {
+void RenderPass::FrameCommands::_updatePipeline(vulkan::Device& device,
+                                                VkRenderPass renderPass,
+                                                std::array<uint32_t, 4> const& viewport,
+                                                bool depthStencilRequired)
+{
+    // DUMMY PIPELINE, just for now
     vulkan::ShaderModule vertexShaderModule{ device, defaultVertexShaderCode, VK_SHADER_STAGE_VERTEX_BIT };
     vulkan::ShaderModule fragmentShaderModule{ device, defaultFragmentShaderCode, VK_SHADER_STAGE_FRAGMENT_BIT };
 
@@ -156,14 +163,77 @@ void RenderPass::FrameCommands::_updatePipeline(vulkan::Device& device, std::arr
     VkPipelineMultisampleStateCreateInfo multisampleState = {};
     multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampleState.sampleShadingEnable = VK_FALSE;
-    multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;  // TODO:: must come from render target
+    multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // TODO:: must come from render target
 
-    VkPipelineColorBlendStateCreateInfo colorBlendState = {};       // TODO:: must come from render target
+    VkPipelineColorBlendStateCreateInfo colorBlendState = {}; // TODO:: must come from render target
     colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     colorBlendState.logicOpEnable = VK_FALSE;
     colorBlendState.logicOp = VK_LOGIC_OP_COPY;
 
-    // TODO::
+    std::array<VkDescriptorSetLayoutBinding, 1> bindings = { VkDescriptorSetLayoutBinding{} };
+    bindings[0].binding = 0;
+    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    bindings[0].descriptorCount = 0;
+    bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayout = {};
+    descriptorSetLayout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descriptorSetLayout.bindingCount = static_cast<uint32_t>(bindings.size());
+    descriptorSetLayout.pBindings = bindings.data();
+
+    if (auto result =
+          vkCreateDescriptorSetLayout(device.handle(), &descriptorSetLayout, nullptr, &descriptorSetLayout_);
+        result != VK_SUCCESS) {
+        throw std::runtime_error("could not create descriptor set layout");
+    }
+
+    VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
+    pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutCreateInfo.setLayoutCount = 1;
+    pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout_;
+
+    if (auto result = vkCreatePipelineLayout(device.handle(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout_);
+        result != VK_SUCCESS) {
+        throw std::runtime_error("could not create graphics pipeline layout");
+    }
+
+    VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
+    graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    graphicsPipelineCreateInfo.stageCount = shaderStages.size();
+    graphicsPipelineCreateInfo.pStages = shaderStages.data();
+    graphicsPipelineCreateInfo.pVertexInputState = &vertexInput;
+    graphicsPipelineCreateInfo.pInputAssemblyState = &assemblyState;
+    graphicsPipelineCreateInfo.pViewportState = &viewportState;
+    graphicsPipelineCreateInfo.pRasterizationState = &rasterizationState;
+    graphicsPipelineCreateInfo.pMultisampleState = &multisampleState;
+    graphicsPipelineCreateInfo.pColorBlendState = &colorBlendState;
+    graphicsPipelineCreateInfo.layout = static_cast<VkPipelineLayout>(pipelineLayout_);
+    graphicsPipelineCreateInfo.renderPass = renderPass;
+    graphicsPipelineCreateInfo.subpass = 0;
+    graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+    if (depthStencilRequired) {
+        VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {};
+
+        depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencilStateCreateInfo.depthTestEnable = VK_FALSE;
+        depthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
+        depthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+        depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+        depthStencilStateCreateInfo.minDepthBounds = 0.0f;
+        depthStencilStateCreateInfo.maxDepthBounds = 1.0f;
+        depthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
+        depthStencilStateCreateInfo.front = {};
+        depthStencilStateCreateInfo.back = {};
+
+        graphicsPipelineCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
+    }
+
+    if (auto result = vkCreateGraphicsPipelines(
+          device.handle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &pipeline_);
+        result != VK_SUCCESS) {
+        throw std::runtime_error("could not create graphics pipeline");
+    }
 }
 
 void RenderPass::FrameCommands::update(vulkan::Device& device,
@@ -173,6 +243,7 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
                                        VkSemaphore frameBufferAvailableSemaphore,
                                        VkSemaphore passFinishedSemaphore,
                                        std::pair<size_t, VkClearValue const*>&& clearValues,
+                                       bool depthStencilRequired,
                                        FrameCommands& frameUpdate)
 {
     auto version = frameUpdate.version();
@@ -239,7 +310,7 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
     }
 
     if (graphicsSubmitVersion() != frameUpdate.graphicsSubmitVersion()) {
-        _updatePipeline(device, viewport);
+        _updatePipeline(device, renderPass, viewport, depthStencilRequired);
 
         graphicsCommands_ = std::make_unique<graphics_queue_commands_t>(device.commandPool().allocCommandBuffers(
           vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>{
