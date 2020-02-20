@@ -31,6 +31,31 @@ void RenderPass::_createRenderPass(vulkan::Device const& device, VkRenderPassCre
     }
 }
 
+void RenderPass::_createDummyDescriptorPool(vulkan::Device const& device, size_t maxSets)
+{
+    std::array<VkDescriptorPoolSize, 1> poolSizes = { VkDescriptorPoolSize{} };
+    poolSizes[0].descriptorCount = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    poolSizes[0].descriptorCount = 1;
+
+    VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
+    descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    descriptorPoolCreateInfo.maxSets = static_cast<uint32_t>(maxSets);
+    descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+    descriptorPoolCreateInfo.pPoolSizes = poolSizes.data();
+
+    if (auto result = vkCreateDescriptorPool(device.handle(), &descriptorPoolCreateInfo, nullptr, &descriptorPool_);
+        result != VK_SUCCESS) {
+        if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
+            throw std::runtime_error("not enough memory on host to create descriptors pool");
+        }
+
+        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+            throw std::runtime_error("not enough memory on device to create descriptors pool");
+        }
+        assert(false);
+    }
+}
+
 auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkFence, VkSemaphore>
 {
     return std::visit(

@@ -173,22 +173,15 @@ public:
 private:
     void _createRenderPass(vulkan::Device const& device, VkRenderPassCreateInfo const& renderPassCreateInfo);
 
-    void _updateDummyPipeline(vulkan::Device const& device,
-                              uint32_t renderTargetWidth,
-                              uint32_t renderTargetHeight,
-                              bool hasDepthStencil,
-                              VkPipelineColorBlendStateCreateInfo const& colorBlendState);
+    void _createDummyDescriptorPool(vulkan::Device const& device, size_t maxSets);
 
 private:
     vulkan::Handle<VkRenderPass> vkRenderPass_;
     std::variant<std::monostate, SurfaceRenderTarget, FrameBufferRenderTarget> renderTarget_;
     std::vector<VkFence> renderTargetFences_;
 
-    // tmp...
-    // TODO:: combine them together into vulkan::Pipeline type
-    uint64_t pipelineVersion_;
-    vulkan::Handle<VkPipelineLayout> vkDummyPipelineLayout_;
-    vulkan::Handle<VkPipeline> vkDummyPipeline_;
+    // tmp:: create descriptor set pool here // dummy // for dummy pipeline // just for now
+    vulkan::Handle<VkDescriptorPool> descriptorPool_;
 
     vulkan::CommandBufferSet<vulkan::CommandPool, std::vector<VkCommandBuffer>> commandBufferSet_;
 
@@ -208,9 +201,7 @@ RenderPass::RenderPass(vulkan::Device& device,
   : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{}
   , renderTargetFences_{}
-  , pipelineVersion_{ 0 }
-  , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
-  , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
+  , descriptorPool_{ device.handle(), vkDestroyDescriptorPool }
   , commandBufferSet_{}
   , frameUpdate_{}
   , frameCommands_{}
@@ -297,9 +288,7 @@ RenderPass::RenderPass(vulkan::Device& device,
   : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{}
   , renderTargetFences_{}
-  , pipelineVersion_{ 0 }
-  , vkDummyPipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
-  , vkDummyPipeline_{ device.handle(), vkDestroyPipeline }
+  , descriptorPool_{ device.handle(), vkDestroyDescriptorPool }
   , commandBufferSet_{}
   , frameUpdate_{}
   , frameCommands_{}
@@ -351,40 +340,9 @@ RenderPass::RenderPass(vulkan::Device& device,
 
     auto&& renderTarget = renderTargetBuilder.buildRenderPassTarget(static_cast<VkRenderPass>(vkRenderPass_));
 
-    renderTargetFences_.resize(renderTarget.swapChainLength(), VK_NULL_HANDLE);
+    const auto frameCount = renderTarget.swapChainLength();
 
-    // tmp for dummy pipeline
-    VkPipelineColorBlendStateCreateInfo colorBlendState = {};
-
-    std::array<VkPipelineColorBlendAttachmentState, color_attachment_count_v> colorBlendAttachmentStates = {};
-
-    for (size_t i = 0; i < color_attachment_count_v; i++) {
-        colorBlendAttachmentStates[i] =
-          VkPipelineColorBlendAttachmentState{ VK_FALSE,
-                                               VK_BLEND_FACTOR_ONE,
-                                               VK_BLEND_FACTOR_ZERO,
-                                               VK_BLEND_OP_ADD,
-                                               VK_BLEND_FACTOR_ONE,
-                                               VK_BLEND_FACTOR_ZERO,
-                                               VK_BLEND_OP_ADD,
-                                               VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-                                                 VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT };
-    }
-
-    colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    colorBlendState.logicOpEnable = VK_FALSE;
-    colorBlendState.logicOp = VK_LOGIC_OP_COPY;
-    colorBlendState.attachmentCount = colorBlendAttachmentStates.size();
-    colorBlendState.pAttachments = colorBlendAttachmentStates.data();
-    colorBlendState.blendConstants[0] = 0.0f;
-    colorBlendState.blendConstants[1] = 0.0f;
-    colorBlendState.blendConstants[2] = 0.0f;
-    colorBlendState.blendConstants[3] = 0.0f;
-
-    _updateDummyPipeline(
-      device, renderTarget.width(), renderTarget.height(), has_depth_stencil_attachment_v, colorBlendState);
-
-    auto clearValues = renderTargetBuilder.getClearValues();
+    renderTargetFences_.resize(frameCount, VK_NULL_HANDLE);
 
     auto&& frameBuffers = renderTarget.frameBuffers();
 
@@ -430,9 +388,11 @@ RenderPass::RenderPass(vulkan::Device& device,
           }
       });
 
-    frameCommands_.reserve(renderTarget.swapChainLength());
+    _createDummyDescriptorPool(device, frameCount);
 
-    for (size_t i = 0, frameCount = renderTarget.swapChainLength(); i < frameCount; i++) {
+    frameCommands_.reserve(frameCount);
+
+    for (size_t i = 0; i < frameCount; i++) {
         frameCommands_.emplace_back(device);
     }
 
