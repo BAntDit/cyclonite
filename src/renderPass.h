@@ -103,6 +103,9 @@ public:
 
         std::shared_ptr<vulkan::Buffer> indicesBuffer_;
         std::shared_ptr<vulkan::Buffer> transformBuffer_;
+        std::shared_ptr<vulkan::Buffer> commandBuffer_;
+
+        uint32_t drawCommandCount_;
 
         // dummy
         vulkan::Handle<VkDescriptorSetLayout> descriptorSetLayout_;
@@ -208,7 +211,6 @@ RenderPass::RenderPass(vulkan::Device& device,
   , renderTarget_{}
   , renderTargetFences_{}
   , vkDescriptorPool_{ device.handle(), vkDestroyDescriptorPool }
-  , commandBufferSet_{}
   , frameUpdate_{}
   , frameCommands_{}
 {
@@ -295,7 +297,6 @@ RenderPass::RenderPass(vulkan::Device& device,
   , renderTarget_{}
   , renderTargetFences_{}
   , vkDescriptorPool_{ device.handle(), vkDestroyDescriptorPool }
-  , commandBufferSet_{}
   , frameUpdate_{}
   , frameCommands_{}
 {
@@ -349,50 +350,6 @@ RenderPass::RenderPass(vulkan::Device& device,
     const auto frameCount = renderTarget.swapChainLength();
 
     renderTargetFences_.resize(frameCount, VK_NULL_HANDLE);
-
-    auto&& frameBuffers = renderTarget.frameBuffers();
-
-    commandBufferSet_ = device.commandPool().allocCommandBuffers(
-      vulkan::CommandBufferSet<vulkan::CommandPool, std::vector<VkCommandBuffer>>{
-        device.graphicsQueueFamilyIndex(),
-        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-        std::vector<VkCommandBuffer>(renderTarget.swapChainLength(), VK_NULL_HANDLE) },
-      [&, this](std::vector<VkCommandBuffer>& vkCommandBuffers) -> void {
-          for (size_t i = 0, count = vkCommandBuffers.size(); i < count; i++) {
-              auto commandBuffer = vkCommandBuffers[i];
-
-              VkCommandBufferBeginInfo commandBufferBeginInfo = {};
-              commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-              if (vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo) != VK_SUCCESS) {
-                  throw std::runtime_error("could not begin recording command buffer!");
-              }
-
-              VkRenderPassBeginInfo renderPassBeginInfo = {};
-              renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-              renderPassBeginInfo.renderPass = static_cast<VkRenderPass>(vkRenderPass_);
-              renderPassBeginInfo.framebuffer = frameBuffers[i].handle();
-              renderPassBeginInfo.renderArea.offset.x = 0;
-              renderPassBeginInfo.renderArea.offset.y = 0;
-              renderPassBeginInfo.renderArea.extent.width = renderTarget.width();
-              renderPassBeginInfo.renderArea.extent.height = renderTarget.height();
-              renderPassBeginInfo.clearValueCount = clearValues.size();
-              renderPassBeginInfo.pClearValues = clearValues.data();
-
-              vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-              vkCmdBindPipeline(
-                commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, static_cast<VkPipeline>(vkDummyPipeline_));
-
-              vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-
-              vkCmdEndRenderPass(commandBuffer);
-
-              if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS) {
-                  throw std::runtime_error("could not record command buffer!");
-              }
-          }
-      });
 
     _createDummyDescriptorPool(device, frameCount);
 

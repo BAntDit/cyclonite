@@ -30,6 +30,8 @@ RenderPass::FrameCommands::FrameCommands() noexcept
   , transientDstWaitFlags_{}
   , indicesBuffer_{ nullptr }
   , transformBuffer_{ nullptr }
+  , commandBuffer_{ nullptr }
+  , drawCommandCount_{ 0 }
   , descriptorSetLayout_{}
   , pipelineLayout_{}
   , pipeline_{}
@@ -54,6 +56,8 @@ RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   , transientDstWaitFlags_{}
   , indicesBuffer_{ nullptr }
   , transformBuffer_{ nullptr }
+  , commandBuffer_{ nullptr }
+  , drawCommandCount_{ 0 }
   , descriptorSetLayout_{ device.handle(), vkDestroyDescriptorSetLayout }
   , pipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , pipeline_{ device.handle(), vkDestroyPipeline }
@@ -345,8 +349,13 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
     if (graphicsSubmitVersion() != frameUpdate.graphicsSubmitVersion()) {
         _updatePipeline(device, renderPass, viewport, depthStencilRequired);
 
+        if (commandBuffer_ != frameUpdate.commandBuffer_) {
+            commandBuffer_ = frameUpdate.commandBuffer_;
+        }
+
         if (indicesBuffer_ != frameUpdate.indicesBuffer_) {
             indicesBuffer_ = frameUpdate.indicesBuffer_;
+            drawCommandCount_ = frameUpdate.drawCommandCount_;
         }
 
         if (transformBuffer_ != frameUpdate.transformBuffer_) {
@@ -375,6 +384,7 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
 
         assert(indicesBuffer_);
         assert(transformBuffer_);
+        assert(commandBuffer_);
 
         graphicsCommands_ = std::make_unique<graphics_queue_commands_t>(device.commandPool().allocCommandBuffers(
           vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>{
@@ -419,8 +429,8 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
                                       0,
                                       nullptr);
 
-              // TODO:: THE MAIN TODO for the next time!!!
-              // vkCmdDrawIndexedIndirect
+              vkCmdDrawIndexedIndirect(
+                commandBuffer, commandBuffer_->handle(), 0, drawCommandCount_, sizeof(VkDrawIndexedIndirectCommand));
 
               vkCmdEndRenderPass(commandBuffer);
 
