@@ -29,9 +29,11 @@ RenderPass::FrameCommands::FrameCommands() noexcept
   , transientSemaphores_{}
   , transientDstWaitFlags_{}
   , indicesBuffer_{ nullptr }
+  , transformBuffer_{ nullptr }
   , descriptorSetLayout_{}
   , pipelineLayout_{}
   , pipeline_{}
+  , vkTransformBufferDescriptor_{ VK_NULL_HANDLE }
   , transferQueueSubmitInfo_{ nullptr }
   , graphicsQueueSubmitInfo_{}
 {}
@@ -51,9 +53,11 @@ RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   , transientSemaphores_{}
   , transientDstWaitFlags_{}
   , indicesBuffer_{ nullptr }
+  , transformBuffer_{ nullptr }
   , descriptorSetLayout_{ device.handle(), vkDestroyDescriptorSetLayout }
   , pipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , pipeline_{ device.handle(), vkDestroyPipeline }
+  , vkTransformBufferDescriptor_{ VK_NULL_HANDLE }
   , transferQueueSubmitInfo_{ nullptr }
   , graphicsQueueSubmitInfo_{}
 {
@@ -238,8 +242,35 @@ void RenderPass::FrameCommands::_updatePipeline(vulkan::Device& device,
     }
 }
 
+void RenderPass::FrameCommands::_createDescriptorSets(VkDevice vkDevice, VkDescriptorPool vkDescriptorPool)
+{
+    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
+    descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descriptorSetAllocateInfo.descriptorPool = vkDescriptorPool;
+    descriptorSetAllocateInfo.descriptorSetCount = 1;
+    descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayout_;
+
+    if (auto result = vkAllocateDescriptorSets(vkDevice, &descriptorSetAllocateInfo, &vkTransformBufferDescriptor_);
+        result != VK_SUCCESS) {
+        if (result == VK_ERROR_OUT_OF_HOST_MEMORY)
+            throw std::runtime_error("can not allocate descriptor set, out of host memory");
+
+        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY)
+            throw std::runtime_error("can not allocate descriptor set , out of device memory");
+
+        if (result == VK_ERROR_FRAGMENTED_POOL)
+            throw std::runtime_error("can not allocate descriptor set, fragment pool");
+
+        if (result == VK_ERROR_OUT_OF_POOL_MEMORY)
+            throw std::runtime_error("can not allocate descriptor set, out of pool memory");
+
+        assert(false);
+    }
+}
+
 void RenderPass::FrameCommands::update(vulkan::Device& device,
                                        VkRenderPass renderPass,
+                                       VkDescriptorPool descriptorPool,
                                        VkFramebuffer framebuffer,
                                        std::array<uint32_t, 4>&& viewport,
                                        VkSemaphore frameBufferAvailableSemaphore,
@@ -318,7 +349,32 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
             indicesBuffer_ = frameUpdate.indicesBuffer_;
         }
 
+        if (transformBuffer_ != frameUpdate.transformBuffer_) {
+            transformBuffer_ = frameUpdate.transformBuffer_;
+
+            if (vkTransformBufferDescriptor_ == VK_NULL_HANDLE) {
+                _createDescriptorSets(device.handle(), descriptorPool);
+            }
+
+            VkDescriptorBufferInfo transformsBufferInfo = {};
+
+            transformsBufferInfo.buffer = transformBuffer_->handle();
+            transformsBufferInfo.offset = 0;
+            transformsBufferInfo.range = VK_WHOLE_SIZE;
+
+            VkWriteDescriptorSet writeDescriptorSet = {};
+            writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptorSet.dstSet = vkTransformBufferDescriptor_;
+            writeDescriptorSet.dstBinding = 0;
+            writeDescriptorSet.descriptorCount = 1;
+            writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            writeDescriptorSet.pBufferInfo = &transformsBufferInfo;
+
+            vkUpdateDescriptorSets(device.handle(), 1, &writeDescriptorSet, 0, nullptr);
+        }
+
         assert(indicesBuffer_);
+        assert(transformBuffer_);
 
         graphicsCommands_ = std::make_unique<graphics_queue_commands_t>(device.commandPool().allocCommandBuffers(
           vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>{
@@ -354,7 +410,17 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
 
               vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, static_cast<VkPipeline>(pipeline_));
 
+              vkCmdBindDescriptorSets(commandBuffer,
+                                      VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                      static_cast<VkPipelineLayout>(pipelineLayout_),
+                                      0,
+                                      1,
+                                      &vkTransformBufferDescriptor_,
+                                      0,
+                                      nullptr);
+
               // TODO:: THE MAIN TODO for the next time!!!
+              // vkCmdDrawIndexedIndirect
 
               vkCmdEndRenderPass(commandBuffer);
 

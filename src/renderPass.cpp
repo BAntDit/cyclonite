@@ -43,7 +43,7 @@ void RenderPass::_createDummyDescriptorPool(vulkan::Device const& device, size_t
     descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     descriptorPoolCreateInfo.pPoolSizes = poolSizes.data();
 
-    if (auto result = vkCreateDescriptorPool(device.handle(), &descriptorPoolCreateInfo, nullptr, &descriptorPool_);
+    if (auto result = vkCreateDescriptorPool(device.handle(), &descriptorPoolCreateInfo, nullptr, &vkDescriptorPool_);
         result != VK_SUCCESS) {
         if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
             throw std::runtime_error("not enough memory on host to create descriptors pool");
@@ -87,6 +87,7 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
 
               frame.update(device,
                            static_cast<VkRenderPass>(vkRenderPass_),
+                           static_cast<VkDescriptorPool>(vkDescriptorPool_),
                            framebuffer,
                            std::array<uint32_t, 4>{ 0, 0, rt.width(), rt.height() },
                            bufferAvailableSemaphore,

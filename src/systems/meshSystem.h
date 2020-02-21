@@ -36,7 +36,7 @@ private:
     std::unique_ptr<vulkan::Staging> commandBuffer_;
     std::unique_ptr<vulkan::Staging> indicesBuffer_;
     std::unique_ptr<vulkan::Staging> transformBuffer_;
-    std::unique_ptr<vulkan::Buffer> gpuTransformBuffer_;
+    std::shared_ptr<vulkan::Buffer> gpuTransformBuffer_;
     std::unique_ptr<vulkan::Buffer> gpuCommandBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuIndicesBuffer_;
     std::unique_ptr<vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>> vertexInputTransfer_;

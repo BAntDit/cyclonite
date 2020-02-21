@@ -53,6 +53,7 @@ public:
 
         void update(vulkan::Device& device,
                     VkRenderPass renderPass,
+                    VkDescriptorPool descriptorPool,
                     VkFramebuffer framebuffer,
                     std::array<uint32_t, 4>&& viewport,
                     VkSemaphore frameBufferAvailableSemaphore,
@@ -78,6 +79,8 @@ public:
                              std::array<uint32_t, 4> const& viewport,
                              bool depthStencilRequired);
 
+        void _createDescriptorSets(VkDevice vkDevice, VkDescriptorPool vkDescriptorPool);
+
         void _clearTransientTransfer();
 
     private:
@@ -99,12 +102,15 @@ public:
         std::vector<VkPipelineStageFlags> transientDstWaitFlags_;
 
         std::shared_ptr<vulkan::Buffer> indicesBuffer_;
+        std::shared_ptr<vulkan::Buffer> transformBuffer_;
 
         // dummy
         vulkan::Handle<VkDescriptorSetLayout> descriptorSetLayout_;
         vulkan::Handle<VkPipelineLayout> pipelineLayout_;
         vulkan::Handle<VkPipeline> pipeline_;
         //
+
+        VkDescriptorSet vkTransformBufferDescriptor_;
 
         std::unique_ptr<VkSubmitInfo> transferQueueSubmitInfo_;
 
@@ -181,7 +187,7 @@ private:
     std::vector<VkFence> renderTargetFences_;
 
     // tmp:: create descriptor set pool here // dummy // for dummy pipeline // just for now
-    vulkan::Handle<VkDescriptorPool> descriptorPool_;
+    vulkan::Handle<VkDescriptorPool> vkDescriptorPool_;
 
     vulkan::CommandBufferSet<vulkan::CommandPool, std::vector<VkCommandBuffer>> commandBufferSet_;
 
@@ -201,7 +207,7 @@ RenderPass::RenderPass(vulkan::Device& device,
   : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{}
   , renderTargetFences_{}
-  , descriptorPool_{ device.handle(), vkDestroyDescriptorPool }
+  , vkDescriptorPool_{ device.handle(), vkDestroyDescriptorPool }
   , commandBufferSet_{}
   , frameUpdate_{}
   , frameCommands_{}
@@ -288,7 +294,7 @@ RenderPass::RenderPass(vulkan::Device& device,
   : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{}
   , renderTargetFences_{}
-  , descriptorPool_{ device.handle(), vkDestroyDescriptorPool }
+  , vkDescriptorPool_{ device.handle(), vkDestroyDescriptorPool }
   , commandBufferSet_{}
   , frameUpdate_{}
   , frameCommands_{}
