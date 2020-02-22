@@ -81,6 +81,31 @@ public:
 
         [[nodiscard]] auto semaphore() const -> VkSemaphore { return static_cast<VkSemaphore>(passFinishedSemaphore_); }
 
+        [[nodiscard]] auto indicesBuffer() const -> std::shared_ptr<vulkan::Buffer> const& { return indicesBuffer_; }
+
+        [[nodiscard]] auto transferBuffer() const -> std::shared_ptr<vulkan::Buffer> const& { return transformBuffer_; }
+
+        [[nodiscard]] auto commandBuffer() const -> std::shared_ptr<vulkan::Buffer> const& { return commandBuffer_; }
+
+        void setIndicesBuffer(std::shared_ptr<vulkan::Buffer> const& buffer)
+        {
+            indicesBuffer_ = buffer;
+            version_ = static_cast<uint64_t>(transferVersion()) | static_cast<uint64_t>(graphicsVersion() + 1) << 32UL;
+        }
+
+        void setTransferBuffer(std::shared_ptr<vulkan::Buffer> const& buffer)
+        {
+            transformBuffer_ = buffer;
+            version_ = static_cast<uint64_t>(transferVersion()) | static_cast<uint64_t>(graphicsVersion() + 1) << 32UL;
+        }
+
+        void setCommandBuffer(std::shared_ptr<vulkan::Buffer> const& buffer, uint32_t commandCount)
+        {
+            drawCommandCount_ = commandCount;
+            commandBuffer_ = buffer;
+            version_ = static_cast<uint64_t>(transferVersion()) | static_cast<uint64_t>(graphicsVersion() + 1) << 32UL;
+        }
+
     private:
         void _updatePipeline(vulkan::Device& device,
                              VkRenderPass renderPass,

@@ -35,6 +35,7 @@ private:
     VkDevice vkDevice_;
 
     uint32_t transferVersion_;
+    uint32_t graphicsVersion_;
 
     std::unique_ptr<vulkan::Staging> commandBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuCommandBuffer_;
@@ -86,6 +87,9 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
     }
 
     if constexpr (STAGE == easy_mp::value_cast(UpdateStage::LATE_UPDATE)) {
+        auto&& [frameCommands, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
+        (void)dt;
+
         auto* transforms3x4 = reinterpret_cast<real*>(transformBuffer_->ptr());
         auto& commands = *reinterpret_cast<VkDrawIndexedIndirectCommand*>(commandBuffer_->ptr());
         auto const& transformSystem = std::as_const(systemManager).template get<TransformSystem>();
@@ -112,10 +116,12 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
             std::copy_n(glm::value_ptr(glm::transpose(transforms[srcIndex])), 12, transforms3x4 + 12 * dstIndex++);
         }
 
-        auto&& [submitInfo, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
-        (void)dt;
+        if (graphicsVersion_ != frameCommands.graphicsVersion()) {
+            frameCommands.setIndicesBuffer(gpuIndicesBuffer_);
+            frameCommands.setTransferBuffer(gpuTransformBuffer_);
+            frameCommands.setCommandBuffer(gpuCommandBuffer_, 1);
 
-        if (!submitInfo.hasDrawCommandsTransferCommands()) {
+            graphicsVersion_ = frameCommands.graphicsVersion();
         }
     }
 }

@@ -342,11 +342,11 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
 
         if (commandBuffer_ != frameUpdate.commandBuffer_) {
             commandBuffer_ = frameUpdate.commandBuffer_;
+            drawCommandCount_ = frameUpdate.drawCommandCount_;
         }
 
         if (indicesBuffer_ != frameUpdate.indicesBuffer_) {
             indicesBuffer_ = frameUpdate.indicesBuffer_;
-            drawCommandCount_ = frameUpdate.drawCommandCount_;
         }
 
         if (transformBuffer_ != frameUpdate.transformBuffer_) {

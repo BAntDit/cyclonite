@@ -11,6 +11,7 @@ void MeshSystem::init(vulkan::Device& device)
     vkDevice_ = device.handle();
 
     transferVersion_ = std::numeric_limits<uint32_t>::max();
+    graphicsVersion_ = std::numeric_limits<uint32_t>::max();
 
     // commands:
     // one command just for now
