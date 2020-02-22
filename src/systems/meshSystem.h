@@ -33,38 +33,55 @@ public:
 
 private:
     VkDevice vkDevice_;
+
+    uint32_t transferVersion_;
+
     std::unique_ptr<vulkan::Staging> commandBuffer_;
-    std::unique_ptr<vulkan::Staging> indicesBuffer_;
+    std::shared_ptr<vulkan::Buffer> gpuCommandBuffer_;
     std::unique_ptr<vulkan::Staging> transformBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuTransformBuffer_;
-    std::shared_ptr<vulkan::Buffer> gpuCommandBuffer_;
+    std::shared_ptr<vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>> persistentTransfer_;
+    vulkan::Handle<VkSemaphore> transferSemaphore_;
+    std::unique_ptr<vulkan::Staging> indicesBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuIndicesBuffer_;
-    std::unique_ptr<vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>> vertexInputTransfer_;
-    std::unique_ptr<vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>>
-      renderCommandsTransfer_;
+    std::unique_ptr<vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>> transientTransfer_;
 };
 
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
 void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
     if constexpr (STAGE == easy_mp::value_cast(UpdateStage::EARLY_UPDATE)) {
-        auto&& [submitInfo, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
+        auto&& [frameCommands, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
 
         (void)dt;
 
-        if (vertexInputTransfer_) {
-            vulkan::Handle<VkSemaphore> semaphore{ vkDevice_, vkDestroySemaphore };
+        if (transferVersion_ != frameCommands.transferVersion()) {
+            frameCommands.updatePersistentTransfer([&](auto&& transfer, auto&& semaphores, auto&& flags) -> void {
+                transfer.push_back(persistentTransfer_);
+                semaphores.push_back(static_cast<VkSemaphore>(transferSemaphore_));
+                flags.push_pack(VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT);
+            });
 
-            VkSemaphoreCreateInfo semaphoreCreateInfo = {};
-            semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+            if (transientTransfer_) {
+                frameCommands.updateTransientTransfer([&](auto&& transfer, auto&& semaphores, auto&& flags) -> void {
+                    transfer.push_back(std::move(transientTransfer_));
 
-            if (auto result = vkCreateSemaphore(vkDevice_, &semaphoreCreateInfo, nullptr, &semaphore);
-                result != VK_SUCCESS) {
-                throw std::runtime_error("could not create vertices transfer semaphore.");
+                    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+                    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+                    if (auto result = vkCreateSemaphore(vkDevice_,
+                                                        &semaphoreCreateInfo,
+                                                        nullptr,
+                                                        &semaphores.emplace_back(vkDevice_, vkDestroySemaphore));
+                        result != VK_SUCCESS) {
+                        throw std::runtime_error("could not create vertices transfer semaphore.");
+                    }
+
+                    flags.push_back(VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
+                });
             }
 
-            submitInfo.addTransientTransfer(
-              std::move(vertexInputTransfer_), std::move(semaphore), VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
+            transferVersion_ = frameCommands.transferVersion();
         }
     }
 

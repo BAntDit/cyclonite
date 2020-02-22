@@ -36,20 +36,28 @@ public:
 
         auto operator=(FrameCommands &&) -> FrameCommands& = default;
 
-        [[nodiscard]] auto hasDrawCommandsTransferCommands() const -> bool;
-
         [[nodiscard]] auto version() const -> uint64_t { return version_; }
 
-        [[nodiscard]] auto transferSubmitVersion() const -> uint32_t
+        [[nodiscard]] auto transferVersion() const -> uint32_t
         {
             return static_cast<uint32_t>(version_ & 0xffffffffUL);
         }
 
-        [[nodiscard]] auto graphicsSubmitVersion() const -> uint32_t { return static_cast<uint32_t>(version_ >> 32UL); }
+        [[nodiscard]] auto graphicsVersion() const -> uint32_t { return static_cast<uint32_t>(version_ >> 32UL); }
 
-        void addTransientTransferCommands(std::unique_ptr<vulkan::BaseCommandBufferSet>&& bufferSet,
-                                          vulkan::Handle<VkSemaphore>&& semaphore,
-                                          VkPipelineStageFlags dstWaitFlag);
+        template<typename UpdateCallback>
+        auto updatePersistentTransfer(UpdateCallback&& callback)
+          -> std::enable_if_t<std::is_invocable_v<UpdateCallback,
+                                                  std::vector<std::shared_ptr<vulkan::BaseCommandBufferSet>>&,
+                                                  std::vector<VkSemaphore>&,
+                                                  std::vector<VkPipelineStageFlags>&>>;
+
+        template<typename UpdateCallback>
+        auto updateTransientTransfer(UpdateCallback&& callback)
+          -> std::enable_if_t<std::is_invocable_v<UpdateCallback,
+                                                  std::vector<std::unique_ptr<vulkan::BaseCommandBufferSet>>&,
+                                                  std::vector<VkSemaphore>&,
+                                                  std::vector<VkPipelineStageFlags>&>>;
 
         void update(vulkan::Device& device,
                     VkRenderPass renderPass,
@@ -86,20 +94,21 @@ public:
     private:
         uint64_t version_;
 
+        std::vector<std::shared_ptr<vulkan::BaseCommandBufferSet>> persistentTransfer_;
+        std::vector<VkCommandBuffer> transferCommands_;
+        std::vector<VkSemaphore> transferSemaphores_;
+
+        std::vector<std::unique_ptr<vulkan::BaseCommandBufferSet>> transientTransfer_;
+        std::vector<vulkan::Handle<VkSemaphore>> transientSemaphores_;
+        std::vector<VkPipelineStageFlags> transientDstWaitFlags_;
+
         vulkan::Handle<VkFence> fence_;
         vulkan::Handle<VkSemaphore> passFinishedSemaphore_;
         VkSemaphore vkSignalSemaphore_;
 
-        size_t drawCommandsTransferCommandsIndex_;
         std::unique_ptr<graphics_queue_commands_t> graphicsCommands_;
         std::vector<VkSemaphore> waitSemaphores_;
         std::vector<VkPipelineStageFlags> dstWaitFlags_;
-
-        std::vector<VkCommandBuffer> transferCommands_;
-        std::vector<VkSemaphore> transferSemaphores_;
-        std::vector<std::unique_ptr<vulkan::BaseCommandBufferSet>> transientCommandBuffers_;
-        std::vector<vulkan::Handle<VkSemaphore>> transientSemaphores_;
-        std::vector<VkPipelineStageFlags> transientDstWaitFlags_;
 
         std::shared_ptr<vulkan::Buffer> indicesBuffer_;
         std::shared_ptr<vulkan::Buffer> transformBuffer_;
@@ -360,6 +369,50 @@ RenderPass::RenderPass(vulkan::Device& device,
     }
 
     renderTarget_ = std::move(renderTarget);
+}
+
+template<typename UpdateCallback>
+auto RenderPass::FrameCommands::updatePersistentTransfer(UpdateCallback&& callback)
+  -> std::enable_if_t<std::is_invocable_v<UpdateCallback,
+                                          std::vector<std::shared_ptr<vulkan::BaseCommandBufferSet>>&,
+                                          std::vector<VkSemaphore>&,
+                                          std::vector<VkPipelineStageFlags>&>>
+{
+    persistentTransfer_.clear();
+    transientSemaphores_.clear();
+    waitSemaphores_.clear();
+    dstWaitFlags_.clear();
+
+    callback(persistentTransfer_, transferSemaphores_, dstWaitFlags_);
+
+    transferCommands_.clear();
+
+    for (auto&& pt : persistentTransfer_) {
+        auto count = pt->commandBufferCount();
+
+        transferCommands_.reserve(transferCommands_.size() + count);
+
+        for (size_t i = 0; i < count; i++)
+            transferCommands_.push_back(pt->getCommandBuffer(i));
+    }
+
+    version_ = static_cast<uint64_t>(transferVersion() + 1) | static_cast<uint64_t>(graphicsVersion()) << 32UL;
+}
+
+template<typename UpdateCallback>
+auto RenderPass::FrameCommands::updateTransientTransfer(UpdateCallback&& callback)
+  -> std::enable_if_t<std::is_invocable_v<UpdateCallback,
+                                          std::vector<std::unique_ptr<vulkan::BaseCommandBufferSet>>&,
+                                          std::vector<VkSemaphore>&,
+                                          std::vector<VkPipelineStageFlags>&>>
+{
+    transientTransfer_.clear();
+    transientSemaphores_.clear();
+    transientDstWaitFlags_.clear();
+
+    callback(transientTransfer_, transientSemaphores_, transientDstWaitFlags_);
+
+    version_ = static_cast<uint64_t>(transferVersion() + 1) | static_cast<uint64_t>(graphicsVersion()) << 32UL;
 }
 }
 

@@ -16,18 +16,18 @@ std::vector<uint32_t> const defaultFragmentShaderCode = {
 namespace cyclonite {
 RenderPass::FrameCommands::FrameCommands() noexcept
   : version_{ 0 }
+  , persistentTransfer_{}
+  , transferCommands_{}
+  , transferSemaphores_{}
+  , transientTransfer_{}
+  , transientSemaphores_{}
+  , transientDstWaitFlags_{}
   , fence_{}
   , passFinishedSemaphore_{}
   , vkSignalSemaphore_{ VK_NULL_HANDLE }
-  , drawCommandsTransferCommandsIndex_{ std::numeric_limits<size_t>::max() }
   , graphicsCommands_{ nullptr }
   , waitSemaphores_{}
   , dstWaitFlags_{}
-  , transferCommands_{}
-  , transferSemaphores_{}
-  , transientCommandBuffers_{}
-  , transientSemaphores_{}
-  , transientDstWaitFlags_{}
   , indicesBuffer_{ nullptr }
   , transformBuffer_{ nullptr }
   , commandBuffer_{ nullptr }
@@ -42,18 +42,18 @@ RenderPass::FrameCommands::FrameCommands() noexcept
 
 RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   : version_{ 0 }
+  , persistentTransfer_{}
+  , transferCommands_{}
+  , transferSemaphores_{}
+  , transientTransfer_{}
+  , transientSemaphores_{}
+  , transientDstWaitFlags_{}
   , fence_{ device.handle(), vkDestroyFence }
   , passFinishedSemaphore_{ device.handle(), vkDestroySemaphore }
   , vkSignalSemaphore_{ VK_NULL_HANDLE }
-  , drawCommandsTransferCommandsIndex_{ std::numeric_limits<size_t>::max() }
   , graphicsCommands_{ nullptr }
   , waitSemaphores_{}
   , dstWaitFlags_{}
-  , transferCommands_{}
-  , transferSemaphores_{}
-  , transientCommandBuffers_{}
-  , transientSemaphores_{}
-  , transientDstWaitFlags_{}
   , indicesBuffer_{ nullptr }
   , transformBuffer_{ nullptr }
   , commandBuffer_{ nullptr }
@@ -82,24 +82,10 @@ RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
     }
 }
 
-auto RenderPass::FrameCommands::hasDrawCommandsTransferCommands() const -> bool
-{
-    return drawCommandsTransferCommandsIndex_ != std::numeric_limits<size_t>::max();
-}
-
-void RenderPass::FrameCommands::addTransientTransferCommands(std::unique_ptr<vulkan::BaseCommandBufferSet>&& bufferSet,
-                                                             vulkan::Handle<VkSemaphore>&& semaphore,
-                                                             VkPipelineStageFlags dstWaitFlag)
-{
-    transientCommandBuffers_.emplace_back(std::move(bufferSet));
-    transientSemaphores_.emplace_back(std::move(semaphore));
-    transientDstWaitFlags_.emplace_back(dstWaitFlag);
-}
-
 void RenderPass::FrameCommands::_clearTransientTransfer()
 {
     // clear out of date transient commands
-    transientCommandBuffers_.clear();
+    transientTransfer_.clear();
     transientSemaphores_.clear();
     transientDstWaitFlags_.clear();
 }
@@ -287,49 +273,52 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
 
     vkSignalSemaphore_ = passFinishedSemaphore;
 
-    if (transferSubmitVersion() != frameUpdate.transferSubmitVersion()) {
-        _clearTransientTransfer();
+    if (transferVersion() != frameUpdate.transferVersion()) {
+        _clearTransientTransfer(); // TODO:: move to the end of the frame
 
         transferQueueSubmitInfo_.reset();
 
+        // persistent
         transferCommands_ = frameUpdate.transferCommands_;
         transferSemaphores_ = frameUpdate.transferSemaphores_;
         waitSemaphores_ = frameUpdate.transferSemaphores_;
         dstWaitFlags_ = frameUpdate.dstWaitFlags_;
 
-        if (!frameUpdate.transientCommandBuffers_.empty()) {
+        // transient
+        if (!frameUpdate.transientTransfer_.empty()) {
             // transient commands stay actual one frame only
             // move transient commands ownership
-            transientCommandBuffers_ = std::move(frameUpdate.transientCommandBuffers_);
+            transientTransfer_ = std::move(frameUpdate.transientTransfer_);
             transientSemaphores_ = std::move(frameUpdate.transientSemaphores_);
             transientDstWaitFlags_ = std::move(frameUpdate.transientDstWaitFlags_);
 
             // just because vector has no standard-defined moved-from state
             // so, just in case:
-            frameUpdate.transientCommandBuffers_.clear();
+            frameUpdate.transientTransfer_.clear();
             frameUpdate.transientSemaphores_.clear();
             frameUpdate.transientDstWaitFlags_.clear();
             // ...
+
+            for (auto& tt : transientTransfer_) {
+                for (size_t i = 0, count = tt->commandBufferCount(); i < count; i++) {
+                    transferCommands_.push_back(tt->getCommandBuffer(i));
+                }
+            }
 
             transferSemaphores_.reserve(transferSemaphores_.size() + transientSemaphores_.size());
             waitSemaphores_.reserve(waitSemaphores_.size() + transientSemaphores_.size() + 1);
             dstWaitFlags_.reserve(dstWaitFlags_.size() + transientDstWaitFlags_.size() + 1);
 
-            for (size_t i = 0, count = transientCommandBuffers_.size(); i < count; i++) {
+            for (size_t i = 0, count = transferSemaphores_.size(); i < count; i++) {
                 transferSemaphores_.push_back(static_cast<VkSemaphore>(transientSemaphores_[i]));
                 waitSemaphores_.push_back(static_cast<VkSemaphore>(transientSemaphores_[i]));
                 dstWaitFlags_.push_back(transientDstWaitFlags_[i]);
-
-                for (size_t k = 0, bufferCount = transientCommandBuffers_[i]->commandBufferCount(); k < bufferCount;
-                     k++) {
-                    transferCommands_.push_back(transientCommandBuffers_[i]->getCommandBuffer(k));
-                }
             }
 
             // up version in advance
             // to reassembly transfer submit with no current frame transient commands next frame
-            frameUpdate.version_ = uint64_t{ static_cast<uint64_t>(frameUpdate.transferSubmitVersion() + 1) |
-                                             static_cast<uint64_t>(frameUpdate.graphicsSubmitVersion()) << 32UL };
+            frameUpdate.version_ = uint64_t{ static_cast<uint64_t>(frameUpdate.transferVersion() + 1) |
+                                             static_cast<uint64_t>(frameUpdate.graphicsVersion()) << 32UL };
         }
 
         if (!transferCommands_.empty()) {
@@ -346,7 +335,9 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
         waitSemaphores_.push_back(VK_NULL_HANDLE);
     }
 
-    if (graphicsSubmitVersion() != frameUpdate.graphicsSubmitVersion()) {
+    // ...
+
+    if (graphicsVersion() != frameUpdate.graphicsVersion()) {
         _updatePipeline(device, renderPass, viewport, depthStencilRequired);
 
         if (commandBuffer_ != frameUpdate.commandBuffer_) {
