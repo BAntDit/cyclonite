@@ -156,4 +156,14 @@ void MeshSystem::init(vulkan::Device& device)
               vkCmdCopyBuffer(transferCommandBuffer, indicesBuffer_->handle(), gpuIndicesBuffer_->handle(), 1, &region);
           }));
 }
+
+auto MeshSystem::persistentTransferCommands() const -> std::shared_ptr<transfer_commands_t> const&
+{
+    return persistentTransfer_;
+}
+
+auto MeshSystem::transientTransferCommands() const -> std::unique_ptr<transfer_commands_t> const&
+{
+    return transientTransfer_;
+}
 }

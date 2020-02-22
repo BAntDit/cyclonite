@@ -36,6 +36,8 @@ public:
     template<typename EntityManager>
     void destroy(EntityManager& entityManager, enttx::Entity const& entity);
 
+    // TODO:: get children
+
     [[nodiscard]] auto worldMatrices() const -> std::vector<mat4> const& { return worldMatrices_; }
 
 private:
