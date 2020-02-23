@@ -1,12 +1,45 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+struct Transform
+{
+    vec4 xAxisTx;
+    vec4 yAxisTy;
+    vec4 zAxisTz;
+};
+
+layout(std430, set = 0, binding = 0) readonly buffer xfrms
+{
+    Transform transforms[];
+};
+
 layout(location = 0) out vec3 fragColor;
 
-vec2 positions[3] = vec2[](
-    vec2(0.0, -0.5),
-    vec2(0.5, 0.5),
-    vec2(-0.5, 0.5)
+vec3 positions[24] = vec3[](
+    vec3(-1.0, -1.0, 1.0),
+    vec3(1.0, -1.0, 1.0),
+    vec3(1.0, 1.0, 1.0),
+    vec3(-1.0, 1.0, 1.0),
+    vec3(1.0, 1.0, 1.0),
+    vec3(1.0, 1.0, -1.0),
+    vec3(1.0, -1.0, -1.0),
+    vec3(1.0, -1.0, 1.0),
+    vec3(-1.0, -1.0, -1.0),
+    vec3(1.0, -1.0, -1.0),
+    vec3(1.0, 1.0, -1.0),
+    vec3(-1.0, 1.0, -1.0),
+    vec3(-1.0, -1.0, -1.0),
+    vec3(-1.0, -1.0, 1.0),
+    vec3(-1.0, 1.0, 1.0),
+    vec3(-1.0, 1.0, -1.0),
+    vec3(1.0, 1.0, 1.0),
+    vec3(-1.0, 1.0, 1.0),
+    vec3(-1.0, 1.0, -1.0),
+    vec3(1.0, 1.0, -1.0),
+    vec3(-1.0, -1.0, -1.0),
+    vec3(1.0, -1.0, -1.0),
+    vec3(1.0, -1.0, 1.0),
+    vec3(-1.0, -1.0, 1.0)
 );
 
 vec3 colors[3] = vec3[](
@@ -16,6 +49,14 @@ vec3 colors[3] = vec3[](
 );
 
 void main() {
-    gl_Position = vec4(positions[gl_VertexIndex], 0., 1.);
+    mat4 worldMatrix = mat4(
+        transforms[gl_InstanceIndex].xAxisTx,
+        transforms[gl_InstanceIndex].yAxisTy,
+        transforms[gl_InstanceIndex].zAxisTz,
+        vec4(0.0, 0.0, 0.0, 1.0));
+
+    vec3 position = positions[gl_VertexIndex];
+
+    gl_Position = vec4(position, 1.0);
     fragColor = colors[gl_VertexIndex];
 }
