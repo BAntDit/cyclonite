@@ -22,6 +22,7 @@ set(PUBLIC_HEADERS
     src/components/transform.h
     src/components/transformStorage.h
     src/components/mesh.h
+    src/components/camera.h
     src/systems/updateStages.h
     src/systems/transformSystem.h
     src/systems/meshSystem.h
@@ -89,6 +90,7 @@ set(SOURCES
     src/renderPass.cpp
     src/renderPassFrameCommands.cpp
     src/components/transform.cpp
+    src/components/camera.cpp
     src/systems/transformSystem.cpp
     src/systems/transferSystem.cpp
     src/vulkanRenderer.cpp
