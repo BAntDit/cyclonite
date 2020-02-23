@@ -10,6 +10,7 @@
 #include "surface.h"
 #include "vulkan/baseCommandBufferSet.h"
 #include "vulkan/buffer.h"
+#include "typedefs.h"
 #include <optional>
 
 namespace cyclonite {
@@ -211,7 +212,7 @@ public:
 
     void end(vulkan::Device const& device, VkSemaphore passFinishedSemaphore);
 
-    // TODO:: update(scene, dt)
+    auto frame() -> RenderPass::FrameCommands& { return frameUpdate_; }
 
 private:
     void _createRenderPass(vulkan::Device const& device, VkRenderPassCreateInfo const& renderPassCreateInfo);
