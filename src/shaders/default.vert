@@ -13,7 +13,7 @@ layout(std430, set = 0, binding = 0) readonly buffer xfrms
     Transform transforms[];
 };
 
-layout(set = 0, binding = 1) uniform camera {
+layout(std140, set = 0, binding = 1) uniform camera {
     mat4 viewMatrix;
     mat4 projectionMatrix;
     mat4 viewProjMatrix;
