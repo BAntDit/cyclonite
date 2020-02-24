@@ -13,6 +13,12 @@ layout(std430, set = 0, binding = 0) readonly buffer xfrms
     Transform transforms[];
 };
 
+layout(set = 0, binding = 1) uniform camera {
+    mat4 viewMatrix;
+    mat4 projectionMatrix;
+    mat4 viewProjMatrix;
+};
+
 layout(location = 0) out vec3 vNormal;
 
 vec3 positions[24] = vec3[](
@@ -88,7 +94,9 @@ void main() {
 
     vec3 position = positions[gl_VertexIndex];
 
-    gl_Position = vec4(position, 1.0);
+    vec4 worldPosition = vec4(position, 1.0) * worldMatrix;
+
+    gl_Position = viewProjMatrix * worldPosition;
 
     vNormal = normals[gl_VertexIndex];
 }
