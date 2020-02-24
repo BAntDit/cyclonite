@@ -3,15 +3,6 @@
 //
 
 #include "renderPass.h"
-#include "vulkan/shaderModule.h"
-
-std::vector<uint32_t> const defaultVertexShaderCode = {
-#include "shaders/default.vert.spv.cpp.txt"
-};
-
-std::vector<uint32_t> const defaultFragmentShaderCode = {
-#include "shaders/default.frag.spv.cpp.txt"
-};
 
 namespace cyclonite {
 void RenderPass::_createRenderPass(vulkan::Device const& device, VkRenderPassCreateInfo const& renderPassCreateInfo)
