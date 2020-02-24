@@ -75,7 +75,7 @@ void MeshSystem::init(vulkan::Device& device)
 
     if (auto result = vkCreateSemaphore(device.handle(), &semaphoreCreateInfo, nullptr, &transferSemaphore_);
         result != VK_SUCCESS) {
-        throw std::runtime_error("could not create pass end synchronization semaphore");
+        throw std::runtime_error("could not create transfer synchronization semaphore");
     }
     //
 

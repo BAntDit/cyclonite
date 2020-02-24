@@ -24,7 +24,7 @@ void CameraSystem::init(vulkan::Device& device)
 
     if (auto result = vkCreateSemaphore(device.handle(), &semaphoreCreateInfo, nullptr, &transferSemaphore_);
         result != VK_SUCCESS) {
-        throw std::runtime_error("could not create pass end synchronization semaphore");
+        throw std::runtime_error("could not create uniforms transfer synchronization semaphore");
     }
 
     persistentTransfer_ =
@@ -46,5 +46,10 @@ void CameraSystem::init(vulkan::Device& device)
                   vkCmdCopyBuffer(transferCommandBuffer, uniforms_->handle(), gpuUniforms_->handle(), 1, &region);
               }
           }));
+}
+
+auto CameraSystem::persistentTransferCommands() const -> std::shared_ptr<transfer_commands_t> const&
+{
+    return persistentTransfer_;
 }
 }

@@ -33,6 +33,10 @@ public:
     template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
     void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
 
+    [[nodiscard]] auto persistentTransferCommands() const -> std::shared_ptr<transfer_commands_t> const&;
+
+    [[nodiscard]] auto transferSemaphore() const -> VkSemaphore { return static_cast<VkSemaphore>(transferSemaphore_); }
+
 private:
     std::unique_ptr<vulkan::Staging> uniforms_;
     std::unique_ptr<vulkan::Buffer> gpuUniforms_;

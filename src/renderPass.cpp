@@ -33,9 +33,11 @@ void RenderPass::_createRenderPass(vulkan::Device const& device, VkRenderPassCre
 
 void RenderPass::_createDummyDescriptorPool(vulkan::Device const& device, size_t maxSets)
 {
-    std::array<VkDescriptorPoolSize, 1> poolSizes = { VkDescriptorPoolSize{} };
-    poolSizes[0].descriptorCount = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    std::array<VkDescriptorPoolSize, 2> poolSizes = { VkDescriptorPoolSize{}, VkDescriptorPoolSize{} };
+    poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     poolSizes[0].descriptorCount = 1;
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSizes[1].descriptorCount = 1;
 
     VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
     descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

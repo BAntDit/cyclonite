@@ -7,6 +7,7 @@
 
 #include "../vulkan/device.h"
 #include "meshSystem.h"
+#include "cameraSystem.h"
 #include "updateStages.h"
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
@@ -38,12 +39,17 @@ void TransferSystem::update(SystemManager& systemManager, EntityManager& entityM
         (void)dt;
 
         if (transferVersion_ != frameCommands.transferVersion()) {
+            auto const& cameraSystem = std::as_const(systemManager).template get<CameraSystem>();
             auto& meshSystem = systemManager.template get<MeshSystem>();
 
             frameCommands.updatePersistentTransfer([&](auto&& transfer, auto&& semaphores, auto&& flags) -> void {
                 transfer.push_back(meshSystem.persistentTransferCommands());
                 semaphores.push_back(meshSystem.transferSemaphore());
                 flags.push_pack(VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT);
+
+                transfer.push_back(cameraSystem.persistentTransferCommands());
+                semaphores.push_back(cameraSystem.transferSemaphore());
+                flags.push_back(VK_PIPELINE_STAGE_VERTEX_SHADER_BIT);
             });
 
             if (meshSystem.transientTransferCommands()) {
