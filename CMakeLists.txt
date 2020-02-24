@@ -27,6 +27,7 @@ set(PUBLIC_HEADERS
     src/systems/transformSystem.h
     src/systems/meshSystem.h
     src/systems/transferSystem.h
+    src/systems/cameraSystem.h
     src/core/bufferView.h
     src/core/transform.h
     src/core/camera.h
@@ -93,6 +94,8 @@ set(SOURCES
     src/components/camera.cpp
     src/systems/transformSystem.cpp
     src/systems/transferSystem.cpp
+    src/systems/cameraSystem.cpp
+    src/systems/meshSystem.cpp
     src/vulkanRenderer.cpp
     src/sdl/sdlSupport.cpp
     src/sdl/sdlWindow.cpp
@@ -113,7 +116,6 @@ set(SOURCES
     src/multithreading/taskManager.cpp
     src/loaders/glTF/loader.cpp
     src/loaders/glTF/internal/base64Decode.cpp
-    src/systems/meshSystem.cpp
 )
 
 set(SHADER_SOURCES

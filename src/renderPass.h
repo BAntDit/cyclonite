@@ -8,9 +8,9 @@
 #include "options.h"
 #include "renderTargetBuilder.h"
 #include "surface.h"
+#include "typedefs.h"
 #include "vulkan/baseCommandBufferSet.h"
 #include "vulkan/buffer.h"
-#include "typedefs.h"
 #include <optional>
 
 namespace cyclonite {
