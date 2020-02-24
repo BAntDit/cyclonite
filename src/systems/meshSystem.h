@@ -71,7 +71,8 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
     }
 
     if constexpr (STAGE == easy_mp::value_cast(UpdateStage::LATE_UPDATE)) {
-        auto&& [frameCommands, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
+        auto&& [frameCommands, camera, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
+        (void)camera;
         (void)dt;
 
         auto* transforms3x4 = reinterpret_cast<real*>(transformBuffer_->ptr());

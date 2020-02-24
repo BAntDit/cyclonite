@@ -33,7 +33,9 @@ template<typename SystemManager, typename EntityManager, size_t STAGE, typename.
 void TransferSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
     if constexpr (STAGE == easy_mp::value_cast(UpdateStage::TRANSFER_STAGE)) {
-        auto&& [frameCommands, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
+        auto&& [frameCommands, camera, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
+        (void)camera;
+        (void)dt;
 
         if (transferVersion_ != frameCommands.transferVersion()) {
             auto& meshSystem = systemManager.template get<MeshSystem>();
