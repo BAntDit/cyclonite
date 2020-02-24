@@ -88,24 +88,15 @@ public:
 
         [[nodiscard]] auto commandBuffer() const -> std::shared_ptr<vulkan::Buffer> const& { return commandBuffer_; }
 
-        void setIndicesBuffer(std::shared_ptr<vulkan::Buffer> const& buffer)
-        {
-            indicesBuffer_ = buffer;
-            version_ = static_cast<uint64_t>(transferVersion()) | static_cast<uint64_t>(graphicsVersion() + 1) << 32UL;
-        }
+        [[nodiscard]] auto uniformBuffer() const -> VkBuffer { return vkUniformsBuffer_; }
 
-        void setTransferBuffer(std::shared_ptr<vulkan::Buffer> const& buffer)
-        {
-            transformBuffer_ = buffer;
-            version_ = static_cast<uint64_t>(transferVersion()) | static_cast<uint64_t>(graphicsVersion() + 1) << 32UL;
-        }
+        void setIndicesBuffer(std::shared_ptr<vulkan::Buffer> const& buffer);
 
-        void setCommandBuffer(std::shared_ptr<vulkan::Buffer> const& buffer, uint32_t commandCount)
-        {
-            drawCommandCount_ = commandCount;
-            commandBuffer_ = buffer;
-            version_ = static_cast<uint64_t>(transferVersion()) | static_cast<uint64_t>(graphicsVersion() + 1) << 32UL;
-        }
+        void setTransferBuffer(std::shared_ptr<vulkan::Buffer> const& buffer);
+
+        void setCommandBuffer(std::shared_ptr<vulkan::Buffer> const& buffer, uint32_t commandCount);
+
+        void setUniformBuffer(VkBuffer uniforms);
 
     private:
         void _updatePipeline(vulkan::Device& device,
@@ -139,6 +130,7 @@ public:
         std::shared_ptr<vulkan::Buffer> indicesBuffer_;
         std::shared_ptr<vulkan::Buffer> transformBuffer_;
         std::shared_ptr<vulkan::Buffer> commandBuffer_;
+        VkBuffer vkUniformsBuffer_;
 
         uint32_t drawCommandCount_;
 
@@ -148,7 +140,7 @@ public:
         vulkan::Handle<VkPipeline> pipeline_;
         //
 
-        VkDescriptorSet vkTransformBufferDescriptor_;
+        VkDescriptorSet vkBufferDescriptorSet_;
 
         std::unique_ptr<VkSubmitInfo> transferQueueSubmitInfo_;
 

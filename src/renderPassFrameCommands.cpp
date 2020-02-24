@@ -31,11 +31,12 @@ RenderPass::FrameCommands::FrameCommands() noexcept
   , indicesBuffer_{ nullptr }
   , transformBuffer_{ nullptr }
   , commandBuffer_{ nullptr }
+  , vkUniformsBuffer_{ VK_NULL_HANDLE }
   , drawCommandCount_{ 0 }
   , descriptorSetLayout_{}
   , pipelineLayout_{}
   , pipeline_{}
-  , vkTransformBufferDescriptor_{ VK_NULL_HANDLE }
+  , vkBufferDescriptorSet_{ VK_NULL_HANDLE }
   , transferQueueSubmitInfo_{ nullptr }
   , graphicsQueueSubmitInfo_{}
 {}
@@ -57,11 +58,12 @@ RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   , indicesBuffer_{ nullptr }
   , transformBuffer_{ nullptr }
   , commandBuffer_{ nullptr }
+  , vkUniformsBuffer_{ VK_NULL_HANDLE }
   , drawCommandCount_{ 0 }
   , descriptorSetLayout_{ device.handle(), vkDestroyDescriptorSetLayout }
   , pipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
   , pipeline_{ device.handle(), vkDestroyPipeline }
-  , vkTransformBufferDescriptor_{ VK_NULL_HANDLE }
+  , vkBufferDescriptorSet_{ VK_NULL_HANDLE }
   , transferQueueSubmitInfo_{ nullptr }
   , graphicsQueueSubmitInfo_{}
 {
@@ -166,11 +168,16 @@ void RenderPass::FrameCommands::_updatePipeline(vulkan::Device& device,
     colorBlendState.logicOpEnable = VK_FALSE;
     colorBlendState.logicOp = VK_LOGIC_OP_COPY;
 
-    std::array<VkDescriptorSetLayoutBinding, 1> bindings = { VkDescriptorSetLayoutBinding{} };
+    std::array<VkDescriptorSetLayoutBinding, 2> bindings = { VkDescriptorSetLayoutBinding{},
+                                                             VkDescriptorSetLayoutBinding{} };
     bindings[0].binding = 0;
     bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    bindings[0].descriptorCount = 0;
+    bindings[0].descriptorCount = 1;
     bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    bindings[1].binding = 1;
+    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    bindings[1].descriptorCount = 1;
+    bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
     VkDescriptorSetLayoutCreateInfo descriptorSetLayout = {};
     descriptorSetLayout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -240,7 +247,7 @@ void RenderPass::FrameCommands::_createDescriptorSets(VkDevice vkDevice, VkDescr
     descriptorSetAllocateInfo.descriptorSetCount = 1;
     descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayout_;
 
-    if (auto result = vkAllocateDescriptorSets(vkDevice, &descriptorSetAllocateInfo, &vkTransformBufferDescriptor_);
+    if (auto result = vkAllocateDescriptorSets(vkDevice, &descriptorSetAllocateInfo, &vkBufferDescriptorSet_);
         result != VK_SUCCESS) {
         if (result == VK_ERROR_OUT_OF_HOST_MEMORY)
             throw std::runtime_error("can not allocate descriptor set, out of host memory");
@@ -349,10 +356,12 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
             indicesBuffer_ = frameUpdate.indicesBuffer_;
         }
 
+        vkUniformsBuffer_ = frameUpdate.vkUniformsBuffer_;
+
         if (transformBuffer_ != frameUpdate.transformBuffer_) {
             transformBuffer_ = frameUpdate.transformBuffer_;
 
-            if (vkTransformBufferDescriptor_ == VK_NULL_HANDLE) {
+            if (vkBufferDescriptorSet_ == VK_NULL_HANDLE) {
                 _createDescriptorSets(device.handle(), descriptorPool);
             }
 
@@ -362,20 +371,34 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
             transformsBufferInfo.offset = 0;
             transformsBufferInfo.range = VK_WHOLE_SIZE;
 
-            VkWriteDescriptorSet writeDescriptorSet = {};
-            writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptorSet.dstSet = vkTransformBufferDescriptor_;
-            writeDescriptorSet.dstBinding = 0;
-            writeDescriptorSet.descriptorCount = 1;
-            writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            writeDescriptorSet.pBufferInfo = &transformsBufferInfo;
+            VkDescriptorBufferInfo uniformBufferInfo = {};
+            uniformBufferInfo.buffer = vkUniformsBuffer_;
+            uniformBufferInfo.offset = 0;
+            uniformBufferInfo.range = VK_WHOLE_SIZE;
 
-            vkUpdateDescriptorSets(device.handle(), 1, &writeDescriptorSet, 0, nullptr);
+            std::array<VkWriteDescriptorSet, 2> writeDescriptorSets = { VkWriteDescriptorSet{},
+                                                                        VkWriteDescriptorSet{} };
+            writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptorSets[0].dstSet = vkBufferDescriptorSet_;
+            writeDescriptorSets[0].dstBinding = 0;
+            writeDescriptorSets[0].descriptorCount = 1;
+            writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            writeDescriptorSets[0].pBufferInfo = &transformsBufferInfo;
+
+            writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptorSets[1].dstSet = vkBufferDescriptorSet_;
+            writeDescriptorSets[1].dstBinding = 1;
+            writeDescriptorSets[1].descriptorCount = 1;
+            writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            writeDescriptorSets[1].pBufferInfo = &uniformBufferInfo;
+
+            vkUpdateDescriptorSets(device.handle(), writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
         }
 
         assert(indicesBuffer_);
         assert(transformBuffer_);
         assert(commandBuffer_);
+        assert(vkUniformsBuffer_ != VK_NULL_HANDLE);
 
         graphicsCommands_ = std::make_unique<graphics_queue_commands_t>(device.commandPool().allocCommandBuffers(
           vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>{
@@ -416,7 +439,7 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
                                       static_cast<VkPipelineLayout>(pipelineLayout_),
                                       0,
                                       1,
-                                      &vkTransformBufferDescriptor_,
+                                      &vkBufferDescriptorSet_,
                                       0,
                                       nullptr);
 
@@ -447,5 +470,30 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
     graphicsQueueSubmitInfo_.pSignalSemaphores = &vkSignalSemaphore_;
 
     version_ = version;
+}
+
+void RenderPass::FrameCommands::setIndicesBuffer(std::shared_ptr<vulkan::Buffer> const& buffer)
+{
+    indicesBuffer_ = buffer;
+    version_ = static_cast<uint64_t>(transferVersion()) | static_cast<uint64_t>(graphicsVersion() + 1) << 32UL;
+}
+
+void RenderPass::FrameCommands::setTransferBuffer(std::shared_ptr<vulkan::Buffer> const& buffer)
+{
+    transformBuffer_ = buffer;
+    version_ = static_cast<uint64_t>(transferVersion()) | static_cast<uint64_t>(graphicsVersion() + 1) << 32UL;
+}
+
+void RenderPass::FrameCommands::setCommandBuffer(std::shared_ptr<vulkan::Buffer> const& buffer, uint32_t commandCount)
+{
+    drawCommandCount_ = commandCount;
+    commandBuffer_ = buffer;
+    version_ = static_cast<uint64_t>(transferVersion()) | static_cast<uint64_t>(graphicsVersion() + 1) << 32UL;
+}
+
+void RenderPass::FrameCommands::setUniformBuffer(VkBuffer uniforms)
+{
+    vkUniformsBuffer_ = uniforms;
+    version_ = static_cast<uint64_t>(transferVersion()) | static_cast<uint64_t>(graphicsVersion() + 1) << 32UL;
 }
 }

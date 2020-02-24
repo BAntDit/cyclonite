@@ -83,6 +83,15 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
         std::copy_n(glm::value_ptr(projectionMatrix), 16, uniforms + 16);
         std::copy_n(glm::value_ptr(viewProjectionMatrix), 16, uniforms + 32);
     }
+
+    if constexpr (STAGE == easy_mp::value_cast(UpdateStage::LATE_UPDATE)) {
+        auto&& [frame, cameraEntity, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
+        (void)cameraEntity;
+        (void)dt;
+
+        if (frame.uniformBuffer() != gpuUniforms_->handle())
+            frame.setUniformBuffer(gpuUniforms_->handle());
+    }
 }
 }
 

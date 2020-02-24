@@ -6,8 +6,8 @@
 #define CYCLONITE_TRANSFERSYSTEM_H
 
 #include "../vulkan/device.h"
-#include "meshSystem.h"
 #include "cameraSystem.h"
+#include "meshSystem.h"
 #include "updateStages.h"
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
