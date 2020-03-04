@@ -42,6 +42,8 @@ struct Camera
         real zFar;
     };
 
+    Camera() noexcept;
+
     explicit Camera(PerspectiveProjection const& perspective) noexcept;
 
     explicit Camera(OrthographicProjection const& orthographic) noexcept;

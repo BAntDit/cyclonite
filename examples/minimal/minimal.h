@@ -25,6 +25,8 @@ public:
 private:
     bool shutdown_;
     std::unique_ptr<cyclonite::Root> root_;
+    ecs_config_t::entity_manager_t entities_;
+    ecs_config_t::system_manager_t systems_;
 };
 }
 
