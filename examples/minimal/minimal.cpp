@@ -9,12 +9,19 @@ namespace examples
 Minimal::Minimal()
   : shutdown_{ false }
   , root_{ std::make_unique<cyclonite::Root>() }
+  , entities_{}
+  , systems_{}
 {}
 
 auto Minimal::init(cyclonite::Options const& options) -> Minimal& {
     root_->init(options);
 
     root_->input().keyDown += cyclonite::Event<SDL_KeyboardEvent>::EventHandler(this, &Minimal::onKeyDown);
+
+
+    auto entities = entities_.createMany(std::array<enttx::Entity, 32>{}, 32); // TODO:: rewrites create many
+
+    auto& transformSystem = systems_.get<cyclonite::systems::TransformSystem>();
 
     return *this;
 }

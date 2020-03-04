@@ -28,10 +28,8 @@ public:
     void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
 
     template<typename EntityManager, typename... Args>
-    auto create(EntityManager& entityManager,
-                enttx::Entity const& parentEntity,
-                enttx::Entity const& entity,
-                Args&&... args) -> components::Transform&;
+    auto create(EntityManager& entityManager, enttx::Entity parentEntity, enttx::Entity entity, Args&&... args)
+      -> components::Transform&;
 
     template<typename EntityManager>
     void destroy(EntityManager& entityManager, enttx::Entity const& entity);
@@ -101,17 +99,19 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
 
 template<typename EntityManager, typename... Args>
 auto TransformSystem::create(EntityManager& entityManager,
-                             enttx::Entity const& parentEntity,
-                             enttx::Entity const& entity,
+                             enttx::Entity parentEntity,
+                             enttx::Entity entity,
                              Args&&... args) -> components::Transform&
 {
     auto& transforms = entityManager.template getStorage<components::Transform>();
 
     auto const* parentTransform =
-      std::as_const(entityManager).template getComponent<components::Transform>(parentEntity);
+      static_cast<uint64_t>(parentEntity) == std::numeric_limits<uint64_t>::max()
+        ? nullptr
+        : std::as_const(entityManager).template getComponent<components::Transform>(parentEntity);
 
-    auto depth = parentTransform->depth + 1;
-    auto parentIndex = parentTransform->globalIndex;
+    auto depth = parentTransform == nullptr ? 0 : parentTransform->depth + 1;
+    auto parentIndex = parentTransform == nullptr ? std::numeric_limits<size_t>::max() : parentTransform->globalIndex;
 
     auto it = std::upper_bound(transforms.begin(),
                                transforms.end(),
@@ -128,7 +128,8 @@ auto TransformSystem::create(EntityManager& entityManager,
 
     transform.depth = depth;
     transform.gloabIndex = globalIndex;
-    transform.parentIndex = parentTransform->globalIndex;
+    transform.parentIndex =
+      parentTransform == nullptr ? std::numeric_limits<size_t>::max() : parentTransform->globalIndex;
 
     for (auto cit = std::next(transforms.begin(), globalIndex + 1); cit != transforms.end(); cit++) {
         (*cit).globalIndex++;
