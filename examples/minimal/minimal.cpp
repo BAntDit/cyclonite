@@ -10,7 +10,8 @@ Minimal::Minimal()
   : shutdown_{ false }
   , root_{ std::make_unique<cyclonite::Root>() }
   , entities_{}
-  , systems_{}
+  , systems_{ &entities_ }
+  , cameraEntity_{}
 {}
 
 auto Minimal::init(cyclonite::Options const& options) -> Minimal& {
@@ -18,10 +19,59 @@ auto Minimal::init(cyclonite::Options const& options) -> Minimal& {
 
     root_->input().keyDown += cyclonite::Event<SDL_KeyboardEvent>::EventHandler(this, &Minimal::onKeyDown);
 
-
-    auto entities = entities_.createMany(std::array<enttx::Entity, 32>{}, 32); // TODO:: rewrites create many
+    auto rootEntity = entities_.create();
+    auto entities = entities_.create(std::array<enttx::Entity, 32>{});
 
     auto& transformSystem = systems_.get<cyclonite::systems::TransformSystem>();
+    transformSystem.init(entities.size() + 1);
+
+    auto& meshSystem = systems_.get<cyclonite::systems::MeshSystem>();
+    meshSystem.init(root_->device());
+
+    auto& cameraSystem = systems_.get<cyclonite::systems::CameraSystem>();
+    cameraSystem.init(root_->device());
+
+    auto& transferSystem = systems_.get<cyclonite::systems::TransferSystem>();
+    transferSystem.init(root_->device());
+
+    transformSystem.create(entities_, enttx::Entity{}, rootEntity, cyclonite::mat4{1.f});
+
+    boost::float32_t xShift = 0.25f;
+    boost::float32_t yShift = 0.25f;
+    boost::float32_t zShift = 0.25f;
+
+    cyclonite::vec3 pos = cyclonite::vec3{-1.f, 0.f, 0.f};
+
+    uint8_t i = 0;
+
+    for (auto&& entity : entities) {
+        transformSystem.create(
+          entities_, rootEntity, entity, pos, cyclonite::vec3{1.f}, cyclonite::quat{1.f, 0.f, 0.f, 0.f});
+
+        if (i % 2 == 0)
+            entities_.assign<cyclonite::components::Mesh>(entity);
+
+        pos.x += xShift;
+        pos.y += static_cast<boost::float32_t>(i++ / 4) * yShift;
+        pos.z -= static_cast<boost::float32_t>(i++ / 4) * zShift;
+    }
+
+    auto cameraEntity = entities_.create();
+
+    transformSystem.create(
+      entities_,
+      rootEntity,
+      cameraEntity,
+      cyclonite::vec3{0.0f, 0.0f, 2.f},
+      cyclonite::vec3{1.f},
+      cyclonite::quat{1.f, 0.f, 0.f, 0.f});
+
+    entities_.assign<cyclonite::components::Camera>(
+      cameraEntity,
+      cyclonite::components::Camera::PerspectiveProjection{
+          1.f, glm::pi<boost::float32_t>() / 2.f, 0.1f, 100.f });
+
+    cameraEntity_ = cameraEntity;
 
     return *this;
 }
@@ -53,6 +103,8 @@ auto Minimal::run() -> Minimal& {
 
     while(!shutdown_) {
         root_->input().pollEvent();
+
+        systems_.update(renderPass.frame(), cameraEntity_, 0.f);
 
         vulkanRenderer.renderOneFrame(renderPass);
     }
