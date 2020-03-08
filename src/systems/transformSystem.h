@@ -128,8 +128,7 @@ auto TransformSystem::create(EntityManager& entityManager,
 
     transform.depth = depth;
     transform.globalIndex = globalIndex;
-    transform.parentIndex =
-      parentTransform == nullptr ? std::numeric_limits<size_t>::max() : parentTransform->globalIndex;
+    transform.parentIndex = parentIndex;
 
     for (auto cit = std::next(transforms.begin(), globalIndex + 1); cit != transforms.end(); cit++) {
         (*cit).globalIndex++;
