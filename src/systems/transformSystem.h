@@ -44,9 +44,9 @@ private:
     void _decompose(mat4& mat, vec3& position, vec3& scale, quat& orientation);
 
 private:
-    static const size_t needsUpdateTransformComponentsBit = 1;
-    static const size_t needsUpdateLocalMatrixBit = 2;
-    static const size_t needsUpdateWorldMatrixBit = 3;
+    static const size_t needsUpdateTransformComponentsBit = 0;
+    static const size_t needsUpdateLocalMatrixBit = 1;
+    static const size_t needsUpdateWorldMatrixBit = 2;
 
     std::vector<mat4> worldMatrices_;
     std::vector<uint8_t> updateStatus_;
@@ -82,7 +82,7 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
                 _decompose(matrix, position, scale, orientation);
             }
 
-            assert(worldMatrices_.size() < globalIndex);
+            assert(worldMatrices_.size() > globalIndex);
 
             if (flags.test(needsUpdateWorldMatrixBit) || updateStatus_[parentIndex] == 1) {
                 worldMatrices_[globalIndex] = parentMatrix * matrix;

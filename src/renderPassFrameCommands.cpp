@@ -193,7 +193,7 @@ void RenderPass::FrameCommands::_updatePipeline(vulkan::Device& device,
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
     pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutCreateInfo.setLayoutCount = 1;
-    pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout_;
+    pipelineLayoutCreateInfo.pSetLayouts = &std::as_const(descriptorSetLayout_);
 
     if (auto result = vkCreatePipelineLayout(device.handle(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout_);
         result != VK_SUCCESS) {
@@ -245,7 +245,7 @@ void RenderPass::FrameCommands::_createDescriptorSets(VkDevice vkDevice, VkDescr
     descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     descriptorSetAllocateInfo.descriptorPool = vkDescriptorPool;
     descriptorSetAllocateInfo.descriptorSetCount = 1;
-    descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayout_;
+    descriptorSetAllocateInfo.pSetLayouts = &std::as_const(descriptorSetLayout_);
 
     if (auto result = vkAllocateDescriptorSets(vkDevice, &descriptorSetAllocateInfo, &vkBufferDescriptorSet_);
         result != VK_SUCCESS) {
