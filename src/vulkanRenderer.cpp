@@ -30,7 +30,7 @@ void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
     renderPass.end(*device_, semaphore);
 }
 
-void _handleSubmitError(VkResult result)
+void VulkanRenderer::_handleSubmitError(VkResult result)
 {
     if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
         throw std::runtime_error("can not submit command buffers, out of host memory");
