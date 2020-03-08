@@ -116,7 +116,7 @@ void RenderPass::FrameCommands::_updatePipeline(vulkan::Device& device,
     std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = { vertexShaderStageInfo, fragmentShaderStageInfo };
 
     VkPipelineVertexInputStateCreateInfo vertexInput = {};
-    vertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInput.vertexBindingDescriptionCount = 0;
     vertexInput.vertexAttributeDescriptionCount = 0;
 
