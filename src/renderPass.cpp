@@ -107,7 +107,7 @@ void RenderPass::end(vulkan::Device const& device, VkSemaphore passFinishedSemap
       [&](auto&& rt) -> void {
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
                         std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
-              rt.swapBuffers(device, static_cast<VkSemaphore>(passFinishedSemaphore));
+              rt.swapBuffers(device, passFinishedSemaphore);
 
               return;
           }

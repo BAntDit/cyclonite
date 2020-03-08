@@ -335,7 +335,9 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
             waitSemaphores_.reserve(waitSemaphores_.size() + transientSemaphores_.size() + 1);
             dstWaitFlags_.reserve(dstWaitFlags_.size() + transientDstWaitFlags_.size() + 1);
 
-            for (size_t i = 0, count = transferSemaphores_.size(); i < count; i++) {
+            assert(transientSemaphores_.size() == transientDstWaitFlags_.size());
+
+            for (size_t i = 0, count = transientSemaphores_.size(); i < count; i++) {
                 transferSemaphores_.push_back(static_cast<VkSemaphore>(transientSemaphores_[i]));
                 waitSemaphores_.push_back(static_cast<VkSemaphore>(transientSemaphores_[i]));
                 dstWaitFlags_.push_back(transientDstWaitFlags_[i]);
