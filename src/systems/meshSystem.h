@@ -26,7 +26,15 @@ public:
 
     MeshSystem() = default;
 
+    MeshSystem(MeshSystem const&) = delete;
+
+    MeshSystem(MeshSystem&&) = default;
+
     ~MeshSystem() = default;
+
+    auto operator=(MeshSystem const&) -> MeshSystem& = delete;
+
+    auto operator=(MeshSystem&&) -> MeshSystem& = default;
 
     void init(vulkan::Device& device);
 
@@ -84,7 +92,7 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
 
         size_t dstIndex = 0;
 
-        for (auto& [entity, transform, mesh] : view) {
+        for (auto&& [entity, transform, mesh] : view) {
             (void)entity;
             (void)mesh;
 

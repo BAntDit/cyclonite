@@ -57,10 +57,12 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
 {
     ((void)args, ...);
 
+    (void)systemManager;
+
     if constexpr (STAGE == easy_mp::value_cast(UpdateStage::EARLY_UPDATE)) {
         auto view = entityManager.template getView<components::Transform>();
 
-        for (auto& [entity, transform] : view) {
+        for (auto&& [entity, transform] : view) {
             (void)entity;
 
             auto& [position, scale, orientation, matrix, flags, depth, globalIndex, parentIndex] = transform;
@@ -119,13 +121,13 @@ auto TransformSystem::create(EntityManager& entityManager,
                                    return (depth < rhs.depth) || (depth == rhs.depth && parentIndex < rhs.parentIndex);
                                });
 
-    auto globalIndex = std::distance(transforms.begin(), it);
+    auto globalIndex = static_cast<size_t>(std::distance(transforms.begin(), it));
 
     auto& transform =
       entityManager.template assign<components::Transform>(entity, globalIndex, std::forward<Args>(args)...);
 
     transform.depth = depth;
-    transform.gloabIndex = globalIndex;
+    transform.globalIndex = globalIndex;
     transform.parentIndex =
       parentTransform == nullptr ? std::numeric_limits<size_t>::max() : parentTransform->globalIndex;
 

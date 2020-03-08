@@ -33,6 +33,8 @@ private:
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
 void TransferSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
+    (void)entityManager;
+
     if constexpr (STAGE == easy_mp::value_cast(UpdateStage::TRANSFER_STAGE)) {
         auto&& [frameCommands, camera, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
         (void)camera;
@@ -45,7 +47,7 @@ void TransferSystem::update(SystemManager& systemManager, EntityManager& entityM
             frameCommands.updatePersistentTransfer([&](auto&& transfer, auto&& semaphores, auto&& flags) -> void {
                 transfer.push_back(meshSystem.persistentTransferCommands());
                 semaphores.push_back(meshSystem.transferSemaphore());
-                flags.push_pack(VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT);
+                flags.push_back(VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT);
 
                 transfer.push_back(cameraSystem.persistentTransferCommands());
                 semaphores.push_back(cameraSystem.transferSemaphore());
@@ -54,7 +56,7 @@ void TransferSystem::update(SystemManager& systemManager, EntityManager& entityM
 
             if (meshSystem.transientTransferCommands()) {
                 frameCommands.updateTransientTransfer([&](auto&& transfer, auto&& semaphores, auto&& flags) -> void {
-                    transfer.push_back(meshSystem.transientTransferCommands());
+                    transfer.push_back(std::move(meshSystem.transientTransferCommands()));
 
                     VkSemaphoreCreateInfo semaphoreCreateInfo = {};
                     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;

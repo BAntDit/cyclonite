@@ -26,7 +26,15 @@ public:
 
     CameraSystem() = default;
 
+    CameraSystem(CameraSystem const&) = delete;
+
+    CameraSystem(CameraSystem&&) = default;
+
     ~CameraSystem() = default;
+
+    auto operator=(CameraSystem const&) -> CameraSystem& = delete;
+
+    auto operator=(CameraSystem&&) -> CameraSystem& = default;
 
     void init(vulkan::Device& device);
 
@@ -59,7 +67,7 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
         auto [transform, camera] =
           std::as_const(entityManager).template getComponents<components::Transform, components::Camera>(cameraEntity);
 
-        auto viewMatrix = glm::inverse(transforms[transform.globalIndex]);
+        auto viewMatrix = glm::inverse(transforms[transform->globalIndex]);
 
         auto projectionMatrix = std::visit(
           [](auto&& projection) -> mat4 {
@@ -72,10 +80,10 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
               if constexpr (std::is_same_v<std::decay_t<decltype(projection)>,
                                            components::Camera::OrthographicProjection>) {
                   auto& [xMag, yMag, zNear, zFar] = projection;
-                  return glm::ortho(0.0, xMag, 0.0, yMag, zNear, zFar);
+                  return glm::ortho(0.0f, xMag, 0.0f, yMag, zNear, zFar);
               }
           },
-          camera.projection);
+          camera->projection);
 
         auto viewProjectionMatrix = projectionMatrix * viewMatrix;
 
