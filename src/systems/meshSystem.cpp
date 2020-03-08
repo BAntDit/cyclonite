@@ -47,6 +47,13 @@ void MeshSystem::init(vulkan::Device& device)
           [&, this](std::array<VkCommandBuffer, 1>& transferCommandBuffers) -> void {
               auto& transferCommandBuffer = transferCommandBuffers[0];
 
+              VkCommandBufferBeginInfo beginInfo = {};
+              beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+              if (auto result = vkBeginCommandBuffer(transferCommandBuffer, &beginInfo); result != VK_SUCCESS) {
+                  throw std::runtime_error("could not begin to write uniforms transfer commands");
+              }
+
               {
                   VkBufferCopy region = {};
                   region.srcOffset = 0;
@@ -65,6 +72,10 @@ void MeshSystem::init(vulkan::Device& device)
 
                   vkCmdCopyBuffer(
                     transferCommandBuffer, commandBuffer_->handle(), gpuCommandBuffer_->handle(), 1, &region);
+              }
+
+              if (auto result = vkEndCommandBuffer(transferCommandBuffer); result != VK_SUCCESS) {
+                  throw std::runtime_error("could not write uniforms transfer commands");
               }
           }));
 
@@ -106,12 +117,24 @@ void MeshSystem::init(vulkan::Device& device)
           [&, this](std::array<VkCommandBuffer, 1>& transferCommandBuffers) -> void {
               auto& transferCommandBuffer = transferCommandBuffers[0];
 
+              VkCommandBufferBeginInfo beginInfo = {};
+              beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+              beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+              if (auto result = vkBeginCommandBuffer(transferCommandBuffer, &beginInfo); result != VK_SUCCESS) {
+                  throw std::runtime_error("could not begin to write uniforms transfer commands");
+              }
+
               VkBufferCopy region = {};
               region.srcOffset = 0;
               region.dstOffset = 0;
               region.size = indicesBuffer_->size();
 
               vkCmdCopyBuffer(transferCommandBuffer, indicesBuffer_->handle(), gpuIndicesBuffer_->handle(), 1, &region);
+
+              if (auto result = vkEndCommandBuffer(transferCommandBuffer); result != VK_SUCCESS) {
+                  throw std::runtime_error("could not write uniforms transfer commands");
+              }
           }));
 }
 

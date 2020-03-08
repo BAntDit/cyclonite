@@ -37,6 +37,13 @@ void CameraSystem::init(vulkan::Device& device)
           [&, this](std::array<VkCommandBuffer, 1>& transferCommandBuffers) -> void {
               auto& transferCommandBuffer = transferCommandBuffers[0];
 
+              VkCommandBufferBeginInfo beginInfo = {};
+              beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+              if (auto result = vkBeginCommandBuffer(transferCommandBuffer, &beginInfo); result != VK_SUCCESS) {
+                  throw std::runtime_error("could not begin to write uniforms transfer commands");
+              }
+
               {
                   VkBufferCopy region = {};
                   region.srcOffset = 0;
@@ -44,6 +51,10 @@ void CameraSystem::init(vulkan::Device& device)
                   region.size = uniforms_->size();
 
                   vkCmdCopyBuffer(transferCommandBuffer, uniforms_->handle(), gpuUniforms_->handle(), 1, &region);
+              }
+
+              if (auto result = vkEndCommandBuffer(transferCommandBuffer); result != VK_SUCCESS) {
+                  throw std::runtime_error("could not write uniforms transfer commands");
               }
           }));
 }

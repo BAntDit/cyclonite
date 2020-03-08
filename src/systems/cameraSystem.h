@@ -34,7 +34,7 @@ public:
 
     auto operator=(CameraSystem const&) -> CameraSystem& = delete;
 
-    auto operator=(CameraSystem&&) -> CameraSystem& = default;
+    auto operator=(CameraSystem &&) -> CameraSystem& = default;
 
     void init(vulkan::Device& device);
 

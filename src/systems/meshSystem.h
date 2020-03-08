@@ -34,7 +34,7 @@ public:
 
     auto operator=(MeshSystem const&) -> MeshSystem& = delete;
 
-    auto operator=(MeshSystem&&) -> MeshSystem& = default;
+    auto operator=(MeshSystem &&) -> MeshSystem& = default;
 
     void init(vulkan::Device& device);
 
