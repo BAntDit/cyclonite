@@ -21,8 +21,7 @@ public:
 
     ~TransformSystem() = default;
 
-    template<typename... Args>
-    void init(Args&&... args);
+    void init(size_t initialTransformCount);
 
     template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
     void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
@@ -51,7 +50,6 @@ private:
 
     std::vector<mat4> worldMatrices_;
     std::vector<uint8_t> updateStatus_;
-    std::vector<enttx::Entity> entities_;
 };
 
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
@@ -179,14 +177,13 @@ void TransformSystem::_reserveVectorsIfNecessary(EntityManager& entityManager, s
 
     constexpr size_t chunkSize = EntityManager::template component_storage_t<components::Transform>::chunkSize;
 
-    auto capacity = globalIndex + 1;
-
     if (worldMatrices_.capacity() <= globalIndex) {
+        auto capacity = globalIndex + 1;
+
         capacity = capacity + chunkSize - capacity % chunkSize;
 
         worldMatrices_.reserve(capacity);
         updateStatus_.reserve(capacity);
-        entities_.reserve(capacity);
     }
 }
 }
