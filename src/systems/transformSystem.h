@@ -84,7 +84,8 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
 
             assert(worldMatrices_.size() > globalIndex);
 
-            if (flags.test(needsUpdateWorldMatrixBit) || updateStatus_[parentIndex] == 1) {
+            if (flags.test(needsUpdateWorldMatrixBit) ||
+                (parentIndex != std::numeric_limits<size_t>::max() && updateStatus_[parentIndex] == 1)) {
                 worldMatrices_[globalIndex] = parentMatrix * matrix;
 
                 updateStatus_[globalIndex] = 1;
