@@ -3,6 +3,7 @@
 //
 
 #include "surfaceRenderTarget.h"
+#include <iostream>
 
 namespace cyclonite {
 SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
@@ -128,6 +129,8 @@ auto SurfaceRenderTarget::acquireBackBufferIndex(vulkan::Device const& device) -
                           static_cast<VkSemaphore>(imageAvailableSemaphores_[frontBufferIndex_]),
                           VK_NULL_HANDLE,
                           &imageIndex);
+
+    std::cout << "next image: " << imageIndex << std::endl;
 
     return backBufferIndex_ = imageIndex;
 }

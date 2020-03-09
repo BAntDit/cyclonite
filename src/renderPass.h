@@ -37,14 +37,9 @@ public:
 
         auto operator=(FrameCommands &&) -> FrameCommands& = default;
 
-        [[nodiscard]] auto version() const -> uint64_t { return version_; }
+        [[nodiscard]] auto transferVersion() const -> uint64_t { return transferVersion_; }
 
-        [[nodiscard]] auto transferVersion() const -> uint32_t
-        {
-            return static_cast<uint32_t>(version_ & 0xffffffffUL);
-        }
-
-        [[nodiscard]] auto graphicsVersion() const -> uint32_t { return static_cast<uint32_t>(version_ >> 32UL); }
+        [[nodiscard]] auto graphicsVersion() const -> uint64_t { return graphicsVersion_; }
 
         template<typename UpdateCallback>
         auto updatePersistentTransfer(UpdateCallback&& callback)
@@ -111,7 +106,8 @@ public:
         void _clearTransientTransfer();
 
     private:
-        uint64_t version_;
+        uint64_t transferVersion_;
+        uint64_t graphicsVersion_;
 
         std::vector<std::shared_ptr<vulkan::BaseCommandBufferSet>> persistentTransfer_;
         std::vector<VkCommandBuffer> transferCommands_;
@@ -399,7 +395,7 @@ auto RenderPass::FrameCommands::updatePersistentTransfer(UpdateCallback&& callba
                                           std::vector<VkPipelineStageFlags>&>>
 {
     persistentTransfer_.clear();
-    transientSemaphores_.clear();
+    transferSemaphores_.clear();
     waitSemaphores_.clear();
     dstWaitFlags_.clear();
 
@@ -416,7 +412,7 @@ auto RenderPass::FrameCommands::updatePersistentTransfer(UpdateCallback&& callba
             transferCommands_.push_back(pt->getCommandBuffer(i));
     }
 
-    version_ = static_cast<uint64_t>(transferVersion() + 1) | static_cast<uint64_t>(graphicsVersion()) << 32UL;
+    transferVersion_++;
 }
 
 template<typename UpdateCallback>
@@ -432,7 +428,7 @@ auto RenderPass::FrameCommands::updateTransientTransfer(UpdateCallback&& callbac
 
     callback(transientTransfer_, transientSemaphores_, transientDstWaitFlags_);
 
-    version_ = static_cast<uint64_t>(transferVersion() + 1) | static_cast<uint64_t>(graphicsVersion()) << 32UL;
+    transferVersion_++;
 }
 }
 

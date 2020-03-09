@@ -4,6 +4,7 @@
 
 #include "vulkanRenderer.h"
 #include "renderPass.h"
+#include <iostream>
 
 namespace cyclonite {
 VulkanRenderer::VulkanRenderer(cyclonite::vulkan::Device& device)
@@ -12,6 +13,9 @@ VulkanRenderer::VulkanRenderer(cyclonite::vulkan::Device& device)
 
 void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
 {
+    std::cout << "frame start" << std::endl;
+    std::cout << std::endl;
+
     auto&& [frame, fence] = renderPass.begin(*device_);
 
     if (frame.transferQueueSubmitInfo()) { // TODO:: should make transfer from another thread, m'kay
@@ -28,6 +32,9 @@ void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
     }
 
     renderPass.end(*device_);
+
+    std::cout << "=========== frame end ============" << std::endl;
+    std::cout << std::endl;
 }
 
 void VulkanRenderer::_handleSubmitError(VkResult result)

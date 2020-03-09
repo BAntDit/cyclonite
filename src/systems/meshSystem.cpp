@@ -49,6 +49,7 @@ void MeshSystem::init(vulkan::Device& device)
 
               VkCommandBufferBeginInfo beginInfo = {};
               beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+              beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
               if (auto result = vkBeginCommandBuffer(transferCommandBuffer, &beginInfo); result != VK_SUCCESS) {
                   throw std::runtime_error("could not begin to write uniforms transfer commands");

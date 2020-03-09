@@ -4,6 +4,7 @@
 
 #include "renderPass.h"
 #include "vulkan/shaderModule.h"
+#include <iostream>
 
 std::vector<uint32_t> const defaultVertexShaderCode = {
 #include "shaders/default.vert.spv.cpp.txt"
@@ -15,7 +16,8 @@ std::vector<uint32_t> const defaultFragmentShaderCode = {
 
 namespace cyclonite {
 RenderPass::FrameCommands::FrameCommands() noexcept
-  : version_{ 0 }
+  : transferVersion_{ 0 }
+  , graphicsVersion_{ 0 }
   , persistentTransfer_{}
   , transferCommands_{}
   , transferSemaphores_{}
@@ -42,7 +44,8 @@ RenderPass::FrameCommands::FrameCommands() noexcept
 {}
 
 RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
-  : version_{ 0 }
+  : transferVersion_{ 0 }
+  , graphicsVersion_{ 0 }
   , persistentTransfer_{}
   , transferCommands_{}
   , transferSemaphores_{}
@@ -295,11 +298,17 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
                                        bool depthStencilRequired,
                                        FrameCommands& frameUpdate)
 {
-    auto version = frameUpdate.version();
+    std::cout << "start commands update" << std::endl;
+
+    auto transferVersion = frameUpdate.transferVersion();
+    auto graphicsVersion = frameUpdate.graphicsVersion();
 
     vkSignalSemaphore_ = passFinishedSemaphore;
 
-    if (transferVersion() != frameUpdate.transferVersion()) {
+    std::cout << "frame transfer version: " << transferVersion_ << std::endl;
+    std::cout << "update transfer version: " << frameUpdate.transferVersion() << std::endl;
+
+    if (transferVersion_ != frameUpdate.transferVersion()) {
         _clearTransientTransfer(); // TODO:: move to the end of the frame
 
         transferQueueSubmitInfo_.reset();
@@ -345,8 +354,7 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
 
             // up version in advance
             // to reassembly transfer submit with no current frame transient commands next frame
-            frameUpdate.version_ = uint64_t{ static_cast<uint64_t>(frameUpdate.transferVersion() + 1) |
-                                             static_cast<uint64_t>(frameUpdate.graphicsVersion()) << 32UL };
+            frameUpdate.transferVersion_++;
         }
 
         if (!transferCommands_.empty()) {
@@ -361,11 +369,20 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
 
         dstWaitFlags_.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
         waitSemaphores_.push_back(VK_NULL_HANDLE);
+
+        for (auto&& s : transferSemaphores_) {
+            std::cout << "transfer signals: " << s << std::endl;
+        }
+
+        std::cout << "---------" << std::endl;
     }
 
     // ...
 
-    if (graphicsVersion() != frameUpdate.graphicsVersion()) {
+    std::cout << "frame graphics version: " << graphicsVersion_ << std::endl;
+    std::cout << "update graphics version: " << frameUpdate.graphicsVersion() << std::endl;
+
+    if (graphicsVersion_ != frameUpdate.graphicsVersion()) {
         _updatePipeline(device, renderPass, viewport, depthStencilRequired);
 
         if (commandBuffer_ != frameUpdate.commandBuffer_) {
@@ -473,7 +490,7 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
                   throw std::runtime_error("could not record command buffer!");
               }
           }));
-    }
+    } // graphics update end
 
     assert(!waitSemaphores_.empty());
 
@@ -490,31 +507,37 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
     graphicsQueueSubmitInfo_.signalSemaphoreCount = 1;
     graphicsQueueSubmitInfo_.pSignalSemaphores = &vkSignalSemaphore_;
 
-    version_ = version;
+    for (auto&& s : waitSemaphores_) {
+        std::cout << "graphics wait " << s << std::endl;
+    }
+
+    std::cout << "-------" << std::endl;
+
+    transferVersion_ = transferVersion;
+    graphicsVersion_ = graphicsVersion;
 }
 
 void RenderPass::FrameCommands::setIndicesBuffer(std::shared_ptr<vulkan::Buffer> const& buffer)
 {
     indicesBuffer_ = buffer;
-    version_ = static_cast<uint64_t>(transferVersion()) | static_cast<uint64_t>(graphicsVersion() + 1) << 32UL;
+    graphicsVersion_++;
 }
 
 void RenderPass::FrameCommands::setTransferBuffer(std::shared_ptr<vulkan::Buffer> const& buffer)
 {
     transformBuffer_ = buffer;
-    version_ = static_cast<uint64_t>(transferVersion()) | static_cast<uint64_t>(graphicsVersion() + 1) << 32UL;
+    graphicsVersion_++;
 }
 
 void RenderPass::FrameCommands::setCommandBuffer(std::shared_ptr<vulkan::Buffer> const& buffer, uint32_t commandCount)
 {
     drawCommandCount_ = commandCount;
     commandBuffer_ = buffer;
-    version_ = static_cast<uint64_t>(transferVersion()) | static_cast<uint64_t>(graphicsVersion() + 1) << 32UL;
+    graphicsVersion_++;
 }
 
 void RenderPass::FrameCommands::setUniformBuffer(VkBuffer uniforms)
 {
     vkUniformsBuffer_ = uniforms;
-    version_ = static_cast<uint64_t>(transferVersion()) | static_cast<uint64_t>(graphicsVersion() + 1) << 32UL;
 }
 }

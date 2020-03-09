@@ -3,6 +3,7 @@
 //
 
 #include "renderPass.h"
+#include <iostream>
 
 namespace cyclonite {
 void RenderPass::_createRenderPass(vulkan::Device const& device, VkRenderPassCreateInfo const& renderPassCreateInfo)
@@ -26,9 +27,9 @@ void RenderPass::_createDummyDescriptorPool(vulkan::Device const& device, size_t
 {
     std::array<VkDescriptorPoolSize, 2> poolSizes = { VkDescriptorPoolSize{}, VkDescriptorPoolSize{} };
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    poolSizes[0].descriptorCount = 1;
+    poolSizes[0].descriptorCount = maxSets;
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[1].descriptorCount = 1;
+    poolSizes[1].descriptorCount = maxSets;
 
     VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
     descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -58,11 +59,20 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
               auto frameFence = frameCommands_[frontBufferIndex].fence();
               auto passFinishedSemaphore = std::as_const(frameCommands_[frontBufferIndex]).semaphore();
 
+              std::cout << "fame index: " << frontBufferIndex << std::endl;
+              std::cout << "wait fence: " << frameFence << std::endl;
+
               vkWaitForFences(device.handle(), 1, &frameFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+
+              std::cout << "fence signaled" << std::endl;
 
               auto backBufferIndex = rt.acquireBackBufferIndex(device);
 
+              std::cout << "frame to prepare: " << backBufferIndex << std::endl;
+
               if (renderTargetFences_[backBufferIndex] != VK_NULL_HANDLE) {
+                  std::cout << "wait for back buffer fence: " << renderTargetFences_[backBufferIndex] << std::endl;
+
                   vkWaitForFences(device.handle(),
                                   1,
                                   &renderTargetFences_[backBufferIndex],
