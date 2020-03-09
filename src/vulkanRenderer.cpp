@@ -12,7 +12,7 @@ VulkanRenderer::VulkanRenderer(cyclonite::vulkan::Device& device)
 
 void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
 {
-    auto&& [frame, fence, semaphore] = renderPass.begin(*device_);
+    auto&& [frame, fence] = renderPass.begin(*device_);
 
     if (frame.transferQueueSubmitInfo()) { // TODO:: should make transfer from another thread, m'kay
         if (auto result =
@@ -27,7 +27,7 @@ void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
         _handleSubmitError(result);
     }
 
-    renderPass.end(*device_, semaphore);
+    renderPass.end(*device_);
 }
 
 void VulkanRenderer::_handleSubmitError(VkResult result)

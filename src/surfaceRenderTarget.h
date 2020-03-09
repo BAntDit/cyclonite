@@ -47,7 +47,7 @@ public:
 
     auto acquireBackBufferIndex(vulkan::Device const& device) -> size_t;
 
-    void swapBuffers(vulkan::Device const& device, VkSemaphore passFinishedSemaphore);
+    void swapBuffers(vulkan::Device const& device, vulkan::Handle<VkSemaphore>& passFinishedSemaphore);
 
 private:
     std::optional<Surface> surface_;

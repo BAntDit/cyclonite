@@ -132,14 +132,14 @@ auto SurfaceRenderTarget::acquireBackBufferIndex(vulkan::Device const& device) -
     return backBufferIndex_ = imageIndex;
 }
 
-void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device, VkSemaphore passFinishedSemaphore)
+void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device, vulkan::Handle<VkSemaphore>& passFinishedSemaphore)
 {
     auto imageIndex = static_cast<uint32_t>(backBufferIndex_);
 
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = &passFinishedSemaphore;
+    presentInfo.pWaitSemaphores = &std::as_const(passFinishedSemaphore);
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &std::as_const(vkSwapChain_);
     presentInfo.pImageIndices = &imageIndex;

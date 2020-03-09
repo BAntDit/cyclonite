@@ -5,7 +5,8 @@
 #include "frameBufferRenderTarget.h"
 
 namespace cyclonite {
-void FrameBufferRenderTarget::swapBuffers(vulkan::Device const& device, VkSemaphore passFinishedSemaphore)
+void FrameBufferRenderTarget::swapBuffers(vulkan::Device const& device,
+                                          vulkan::Handle<VkSemaphore>& passFinishedSemaphore)
 {
     (void)device;
     (void)passFinishedSemaphore;

@@ -49,14 +49,14 @@ void RenderPass::_createDummyDescriptorPool(vulkan::Device const& device, size_t
     }
 }
 
-auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkFence, VkSemaphore>
+auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkFence>
 {
     return std::visit(
-      [&, this](auto&& rt) -> std::tuple<FrameCommands&, VkFence, VkSemaphore> {
+      [&, this](auto&& rt) -> std::tuple<FrameCommands&, VkFence> {
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget>) {
               auto frontBufferIndex = rt.frontBufferIndex();
               auto frameFence = frameCommands_[frontBufferIndex].fence();
-              auto passFinishedSemaphore = frameCommands_[frontBufferIndex].semaphore();
+              auto passFinishedSemaphore = std::as_const(frameCommands_[frontBufferIndex]).semaphore();
 
               vkWaitForFences(device.handle(), 1, &frameFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
 
@@ -89,7 +89,7 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
                            rt.hasDepthStencil(),
                            frameUpdate_);
 
-              return std::forward_as_tuple(frame, frameFence, passFinishedSemaphore);
+              return std::forward_as_tuple(frame, frameFence);
           }
 
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
@@ -101,12 +101,16 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
       renderTarget_);
 }
 
-void RenderPass::end(vulkan::Device const& device, VkSemaphore passFinishedSemaphore)
+void RenderPass::end(vulkan::Device const& device)
 {
     std::visit(
       [&](auto&& rt) -> void {
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
                         std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
+
+              auto frontBufferIndex = rt.frontBufferIndex();
+              auto& passFinishedSemaphore = frameCommands_[frontBufferIndex].semaphore();
+
               rt.swapBuffers(device, passFinishedSemaphore);
 
               return;

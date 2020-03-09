@@ -82,6 +82,8 @@ public:
 
         [[nodiscard]] auto semaphore() const -> VkSemaphore { return static_cast<VkSemaphore>(passFinishedSemaphore_); }
 
+        [[nodiscard]] auto semaphore() -> vulkan::Handle<VkSemaphore>& { return passFinishedSemaphore_; }
+
         [[nodiscard]] auto indicesBuffer() const -> std::shared_ptr<vulkan::Buffer> const& { return indicesBuffer_; }
 
         [[nodiscard]] auto transferBuffer() const -> std::shared_ptr<vulkan::Buffer> const& { return transformBuffer_; }
@@ -200,9 +202,9 @@ public:
 
     auto operator=(RenderPass &&) -> RenderPass& = default;
 
-    auto begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkFence, VkSemaphore>;
+    auto begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkFence>;
 
-    void end(vulkan::Device const& device, VkSemaphore passFinishedSemaphore);
+    void end(vulkan::Device const& device);
 
     auto frame() -> RenderPass::FrameCommands& { return frameUpdate_; }
 
