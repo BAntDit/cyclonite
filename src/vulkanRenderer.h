@@ -25,6 +25,7 @@ private:
 
 private:
     vulkan::Device* device_;
+    uint64_t frameCounter_;
 };
 }
 

@@ -9,6 +9,7 @@
 namespace cyclonite {
 VulkanRenderer::VulkanRenderer(cyclonite::vulkan::Device& device)
   : device_{ &device }
+  , frameCounter_{ 0 }
 {}
 
 void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
@@ -32,6 +33,10 @@ void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
     }
 
     renderPass.end(*device_);
+
+    if (frameCounter_++ > 500) {
+        std::terminate();
+    }
 
     std::cout << "=========== frame end ============" << std::endl;
     std::cout << std::endl;
