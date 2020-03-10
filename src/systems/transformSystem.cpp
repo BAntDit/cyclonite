@@ -19,6 +19,5 @@ void TransformSystem::_decompose(mat4& mat, vec3& position, vec3& scale, quat& o
 void TransformSystem::init(size_t initialTransformCount)
 {
     worldMatrices_.reserve(initialTransformCount);
-    updateStatus_.reserve(initialTransformCount);
 }
 }

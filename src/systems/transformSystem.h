@@ -44,12 +44,7 @@ private:
     void _decompose(mat4& mat, vec3& position, vec3& scale, quat& orientation);
 
 private:
-    static const size_t needsUpdateTransformComponentsBit = 0;
-    static const size_t needsUpdateLocalMatrixBit = 1;
-    static const size_t needsUpdateWorldMatrixBit = 2;
-
     std::vector<mat4> worldMatrices_;
-    std::vector<uint8_t> updateStatus_;
 };
 
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
@@ -65,35 +60,49 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
         for (auto&& [entity, transform] : view) {
             (void)entity;
 
-            auto& [position, scale, orientation, matrix, flags, depth, globalIndex, parentIndex] = transform;
+            auto& [position, scale, orientation, matrix, state, parent, depth, globalIndex] = transform;
+
+            auto* parentTransform = static_cast<uint64_t>(parent) != std::numeric_limits<uint64_t>::max()
+                                      ? entityManager.template getComponent<components::Transform>(parent)
+                                      : nullptr;
 
             (void)depth;
 
             auto const& parentMatrix =
-              parentIndex != std::numeric_limits<size_t>::max() ? worldMatrices_[parentIndex] : mat4{ 1.0f };
+              parentTransform != nullptr ? worldMatrices_[parentTransform->globalIndex] : mat4{ 1.0f };
 
-            assert(!(flags.test(needsUpdateTransformComponentsBit) && flags.test(needsUpdateLocalMatrixBit)));
-
-            if (flags.test(needsUpdateLocalMatrixBit)) {
+            if (state == components::Transform::State::NEEDS_UPDATE_LOCAL_MATRIX) {
                 matrix = glm::translate(position) * glm::mat4_cast(orientation) * glm::scale(scale);
+
+                state = components::Transform::State::NEEDS_UPDATE_WORLD_MATRIX;
             }
 
-            if (flags.test(needsUpdateTransformComponentsBit)) {
+            if (state == components::Transform::State::NEEDS_UPDATE_COMPONENTS) {
                 _decompose(matrix, position, scale, orientation);
+
+                state = components::Transform::State::NEEDS_UPDATE_WORLD_MATRIX;
             }
 
             assert(worldMatrices_.size() > globalIndex);
 
-            if (flags.test(needsUpdateWorldMatrixBit) ||
-                (parentIndex != std::numeric_limits<size_t>::max() && updateStatus_[parentIndex] == 1)) {
+            state = (parentTransform != nullptr &&
+                     parentTransform->state == components::Transform::State::NEEDS_UPDATE_WORLD_MATRIX)
+                      ? components::Transform::State::NEEDS_UPDATE_WORLD_MATRIX
+                      : state;
+
+            if (state == components::Transform::State::NEEDS_UPDATE_WORLD_MATRIX) {
                 worldMatrices_[globalIndex] = parentMatrix * matrix;
-
-                updateStatus_[globalIndex] = 1;
-            } else {
-                updateStatus_[globalIndex] = 0;
             }
+        }
+    }
 
-            flags.reset();
+    if constexpr (STAGE == easy_mp::value_cast(UpdateStage::LATE_UPDATE)) {
+        auto view = entityManager.template getView<components::Transform>();
+
+        for (auto&& [entity, transform] : view) {
+            (void)entity;
+
+            transform.state = components::Transform::State::UP_TO_DATE;
         }
     }
 }
@@ -112,14 +121,14 @@ auto TransformSystem::create(EntityManager& entityManager,
         : std::as_const(entityManager).template getComponent<components::Transform>(parentEntity);
 
     auto depth = parentTransform == nullptr ? 0 : parentTransform->depth + 1;
-    auto parentIndex = parentTransform == nullptr ? std::numeric_limits<size_t>::max() : parentTransform->globalIndex;
 
     auto it = std::upper_bound(transforms.begin(),
                                transforms.end(),
-                               std::make_pair(depth, parentIndex),
+                               std::make_pair(depth, static_cast<uint64_t>(parentEntity)),
                                [](auto&& lhs, auto const& rhs) -> bool {
-                                   auto&& [depth, parentIndex] = lhs;
-                                   return (depth < rhs.depth) || (depth == rhs.depth && parentIndex < rhs.parentIndex);
+                                   auto&& [depth, parent] = lhs;
+                                   return (depth < rhs.depth) ||
+                                          (depth == rhs.depth && parent < static_cast<uint64_t>(rhs.parent));
                                });
 
     auto globalIndex = static_cast<size_t>(std::distance(transforms.begin(), it));
@@ -127,22 +136,17 @@ auto TransformSystem::create(EntityManager& entityManager,
     auto& transform =
       entityManager.template assign<components::Transform>(entity, globalIndex, std::forward<Args>(args)...);
 
+    transform.parent = parentEntity;
     transform.depth = depth;
     transform.globalIndex = globalIndex;
-    transform.parentIndex = parentIndex;
 
     for (auto cit = std::next(transforms.begin(), globalIndex + 1); cit != transforms.end(); cit++) {
         (*cit).globalIndex++;
-
-        if ((*cit).parentIndex >= globalIndex) {
-            (*cit).parentIndex++;
-        }
     }
 
     _reserveVectorsIfNecessary(entityManager, globalIndex);
 
     worldMatrices_.insert(std::next(worldMatrices_.begin(), globalIndex), mat4{ 1.0 });
-    updateStatus_.insert(std::next(updateStatus_.begin(), globalIndex), 0);
 
     return transform;
 }
@@ -157,16 +161,9 @@ void TransformSystem::destroy(EntityManager& entityManager, enttx::Entity const&
     auto globalIndex = transform->globalIndex;
 
     worldMatrices_.erase(std::next(worldMatrices_.begin(), globalIndex));
-    updateStatus_.erase(std::next(updateStatus_.begin(), globalIndex));
 
     for (auto cit = std::next(transforms.begin(), globalIndex + 1); cit != transforms.end(); cit++) {
         (*cit).globalIndex--;
-
-        assert((*cit).parentIndex != globalIndex); // it has no children to this moment
-
-        if ((*cit).parentIndex > globalIndex) {
-            (*cit).parentIndex--;
-        }
     }
 
     entityManager.template destroy<components::Transform>(entity);
@@ -185,7 +182,6 @@ void TransformSystem::_reserveVectorsIfNecessary(EntityManager& entityManager, s
         capacity = capacity + chunkSize - capacity % chunkSize;
 
         worldMatrices_.reserve(capacity);
-        updateStatus_.reserve(capacity);
     }
 }
 }

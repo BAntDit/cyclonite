@@ -34,7 +34,7 @@ void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
 
     renderPass.end(*device_);
 
-    if (frameCounter_++ > 500) {
+    if (frameCounter_++ > 2) {
         std::terminate();
     }
 
