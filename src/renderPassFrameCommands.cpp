@@ -4,7 +4,6 @@
 
 #include "renderPass.h"
 #include "vulkan/shaderModule.h"
-#include <iostream>
 
 std::vector<uint32_t> const defaultVertexShaderCode = {
 #include "shaders/default.vert.spv.cpp.txt"
@@ -298,15 +297,10 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
                                        bool depthStencilRequired,
                                        FrameCommands& frameUpdate)
 {
-    std::cout << "start commands update" << std::endl;
-
     auto transferVersion = frameUpdate.transferVersion();
     auto graphicsVersion = frameUpdate.graphicsVersion();
 
     vkSignalSemaphore_ = passFinishedSemaphore;
-
-    std::cout << "frame transfer version: " << transferVersion_ << std::endl;
-    std::cout << "update transfer version: " << frameUpdate.transferVersion() << std::endl;
 
     if (transferVersion_ != frameUpdate.transferVersion()) {
         _clearTransientTransfer(); // TODO:: move to the end of the frame
@@ -369,18 +363,8 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
 
         dstWaitFlags_.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
         waitSemaphores_.push_back(VK_NULL_HANDLE);
-
-        for (auto&& s : transferSemaphores_) {
-            std::cout << "transfer signals: " << s << std::endl;
-        }
-
-        std::cout << "---------" << std::endl;
     }
-
     // ...
-
-    std::cout << "frame graphics version: " << graphicsVersion_ << std::endl;
-    std::cout << "update graphics version: " << frameUpdate.graphicsVersion() << std::endl;
 
     if (graphicsVersion_ != frameUpdate.graphicsVersion()) {
         _updatePipeline(device, renderPass, viewport, depthStencilRequired);
@@ -506,12 +490,6 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
     graphicsQueueSubmitInfo_.pCommandBuffers = graphicsCommands_->pCommandBuffers();
     graphicsQueueSubmitInfo_.signalSemaphoreCount = 1;
     graphicsQueueSubmitInfo_.pSignalSemaphores = &vkSignalSemaphore_;
-
-    for (auto&& s : waitSemaphores_) {
-        std::cout << "graphics wait " << s << std::endl;
-    }
-
-    std::cout << "-------" << std::endl;
 
     transferVersion_ = transferVersion;
     graphicsVersion_ = graphicsVersion;

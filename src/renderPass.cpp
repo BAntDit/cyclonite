@@ -3,7 +3,6 @@
 //
 
 #include "renderPass.h"
-#include <iostream>
 
 namespace cyclonite {
 void RenderPass::_createRenderPass(vulkan::Device const& device, VkRenderPassCreateInfo const& renderPassCreateInfo)
@@ -59,20 +58,11 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
               auto frameFence = frameCommands_[frontBufferIndex].fence();
               auto passFinishedSemaphore = std::as_const(frameCommands_[frontBufferIndex]).semaphore();
 
-              std::cout << "fame index: " << frontBufferIndex << std::endl;
-              std::cout << "wait fence: " << frameFence << std::endl;
-
               vkWaitForFences(device.handle(), 1, &frameFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
-
-              std::cout << "fence signaled" << std::endl;
 
               auto backBufferIndex = rt.acquireBackBufferIndex(device);
 
-              std::cout << "frame to prepare: " << backBufferIndex << std::endl;
-
               if (renderTargetFences_[backBufferIndex] != VK_NULL_HANDLE) {
-                  std::cout << "wait for back buffer fence: " << renderTargetFences_[backBufferIndex] << std::endl;
-
                   vkWaitForFences(device.handle(),
                                   1,
                                   &renderTargetFences_[backBufferIndex],
