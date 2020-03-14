@@ -92,20 +92,19 @@ void MeshSystem::init(vulkan::Device& device)
     //
 
     // transient transfer
-    indicesBuffer_ = std::make_unique<vulkan::Staging>(device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(uint32_t) * 36);
+    indicesBuffer_ = std::make_unique<vulkan::Staging>(device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(uint32_t) * 3);
 
     gpuIndicesBuffer_ = std::make_shared<vulkan::Buffer>(
       device,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
       VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-      sizeof(uint32_t) * 36,
+      sizeof(uint32_t) * 3,
       std::array{ device.hostTransferQueueFamilyIndex(), device.graphicsQueueFamilyIndex() });
 
     {
-        std::array<uint32_t, 36> indices = { 0,  1,  2,  0,  2,  3,  4,  5,  6,  4,  6,  7,  8,  9,  10, 8,  10, 11,
-                                             12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23 };
+        std::array<uint32_t, 3> indices = { 0,  1,  2 };
 
-        std::copy_n(indices.begin(), 36, reinterpret_cast<uint32_t*>(indicesBuffer_->ptr()));
+        std::copy_n(indices.begin(), 3, reinterpret_cast<uint32_t*>(indicesBuffer_->ptr()));
     }
 
     transientTransfer_ =
