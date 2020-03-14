@@ -14,7 +14,7 @@ VulkanRenderer::VulkanRenderer(cyclonite::vulkan::Device& device)
 
 void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
 {
-    std::cout << "frame start" << std::endl;
+    std::cout << "frame start: " << frameCounter_ << std::endl;
     std::cout << std::endl;
 
     auto&& [frame, fence] = renderPass.begin(*device_);
@@ -33,10 +33,6 @@ void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
     }
 
     renderPass.end(*device_);
-
-    if (frameCounter_++ > 2) {
-        std::terminate();
-    }
 
     std::cout << "=========== frame end ============" << std::endl;
     std::cout << std::endl;
