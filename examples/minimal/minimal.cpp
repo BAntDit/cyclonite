@@ -102,11 +102,19 @@ auto Minimal::run() -> Minimal& {
         std::array{ VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR } };
 
     while(!shutdown_) {
+        std::cout << "enter" << std::endl;
+
         root_->input().pollEvent();
+
+        std::cout << "poll event finished" << std::endl;
 
         systems_.update(renderPass.frame(), cameraEntity_, 0.f);
 
+        std::cout << "system update finished" << std::endl;
+
         vulkanRenderer.renderOneFrame(renderPass);
+
+        std::cout << "====" << std::endl;
     }
 
     return *this;

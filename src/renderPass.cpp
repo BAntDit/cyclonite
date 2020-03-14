@@ -3,6 +3,7 @@
 //
 
 #include "renderPass.h"
+#include <iostream>
 
 namespace cyclonite {
 void RenderPass::_createRenderPass(vulkan::Device const& device, VkRenderPassCreateInfo const& renderPassCreateInfo)
@@ -58,14 +59,18 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
 
               vkWaitForFences(device.handle(), 1, &frameFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
 
+              std::cout << "passed frame semaphore" << std::endl;
+
               auto [backBufferIndex, wait, signal] = rt.acquireBackBufferIndex(device, frameIndex_);
+
+              std::cout << "buffer acquired" << std::endl;
 
               if (rtFences_[backBufferIndex] != VK_NULL_HANDLE) {
                   vkWaitForFences(
                     device.handle(), 1, &rtFences_[backBufferIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
               }
 
-              rtFences_[backBufferIndex] = frameFence;
+              std::cout << "passed rt semaphore" << std::endl;
 
               auto& frame = frameCommands_[backBufferIndex];
               auto framebuffer = rt.frameBuffers()[backBufferIndex].handle();
@@ -82,6 +87,8 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
                            frameUpdate_);
 
               vkResetFences(device.handle(), 1, &frameFence);
+
+              rtFences_[backBufferIndex] = frameFence;
 
               return std::forward_as_tuple(frame, frameFence);
           }
@@ -102,6 +109,8 @@ void RenderPass::end(vulkan::Device const& device)
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
                         std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
               frameIndex_ = rt.swapBuffers(device, frameIndex_);
+
+              std::cout << "buffer swapped" << std::endl;
 
               return;
           }
