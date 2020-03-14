@@ -5,22 +5,23 @@
 #include "baseRenderTarget.h"
 
 namespace cyclonite {
-auto BaseRenderTarget::getColorAttachment(size_t attachmentIndex) const -> vulkan::ImageView const&
+auto BaseRenderTarget::getColorAttachment(size_t bufferIndex, size_t attachmentIndex) const -> vulkan::ImageView const&
 {
     assert(attachmentIndex < colorAttachmentCount_);
-    return frameBuffers_[frontBufferIndex_].getColorAttachment(attachmentIndex);
+    return frameBuffers_[bufferIndex].getColorAttachment(attachmentIndex);
 }
 
-auto BaseRenderTarget::getColorAttachment(RenderTargetOutputSemantic semantic) const -> vulkan::ImageView const&
+auto BaseRenderTarget::getColorAttachment(size_t bufferIndex, RenderTargetOutputSemantic semantic) const
+  -> vulkan::ImageView const&
 {
     assert(hasAttachment(semantic));
-    return frameBuffers_[frontBufferIndex_].getColorAttachment(outputSemantics_.find(semantic)->second);
+    return frameBuffers_[bufferIndex].getColorAttachment(outputSemantics_.find(semantic)->second);
 }
 
-auto BaseRenderTarget::getDepthStencilAttachment() const -> vulkan::ImageView const&
+auto BaseRenderTarget::getDepthStencilAttachment(size_t bufferIndex) const -> vulkan::ImageView const&
 {
     assert(hasDepthStencil_);
-    return frameBuffers_[frontBufferIndex_].getDepthStencilAttachment();
+    return frameBuffers_[bufferIndex].getDepthStencilAttachment();
 }
 
 auto BaseRenderTarget::hasAttachment(RenderTargetOutputSemantic semantic) const -> bool

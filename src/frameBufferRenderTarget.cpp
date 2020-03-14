@@ -5,11 +5,10 @@
 #include "frameBufferRenderTarget.h"
 
 namespace cyclonite {
-void FrameBufferRenderTarget::swapBuffers(vulkan::Device const& device,
-                                          vulkan::Handle<VkSemaphore>& passFinishedSemaphore)
+auto FrameBufferRenderTarget::swapBuffers(vulkan::Device const& device, uint32_t frameIndex) -> uint32_t
 {
     (void)device;
-    (void)passFinishedSemaphore;
+    (void)frameIndex;
 
     throw std::runtime_error("not implemented yet");
 }

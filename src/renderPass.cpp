@@ -54,40 +54,34 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
     return std::visit(
       [&, this](auto&& rt) -> std::tuple<FrameCommands&, VkFence> {
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget>) {
-              auto frontBufferIndex = rt.frontBufferIndex();
-              auto frameFence = frameCommands_[frontBufferIndex].fence();
-              auto passFinishedSemaphore = std::as_const(frameCommands_[frontBufferIndex]).semaphore();
+              auto frameFence = static_cast<VkFence>(frameFences_[frameIndex_]);
 
               vkWaitForFences(device.handle(), 1, &frameFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
 
-              auto backBufferIndex = rt.acquireBackBufferIndex(device);
+              auto [backBufferIndex, wait, signal] = rt.acquireBackBufferIndex(device, frameIndex_);
 
-              if (renderTargetFences_[backBufferIndex] != VK_NULL_HANDLE) {
-                  vkWaitForFences(device.handle(),
-                                  1,
-                                  &renderTargetFences_[backBufferIndex],
-                                  VK_TRUE,
-                                  std::numeric_limits<uint64_t>::max());
+              if (rtFences_[backBufferIndex] != VK_NULL_HANDLE) {
+                  vkWaitForFences(
+                    device.handle(), 1, &rtFences_[backBufferIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
               }
 
-              vkResetFences(device.handle(), 1, &frameFence);
+              rtFences_[backBufferIndex] = frameFence;
 
               auto& frame = frameCommands_[backBufferIndex];
               auto framebuffer = rt.frameBuffers()[backBufferIndex].handle();
-              auto bufferAvailableSemaphore = rt.frameBufferAvailableSemaphore();
-
-              renderTargetFences_[backBufferIndex] = frameFence;
 
               frame.update(device,
                            static_cast<VkRenderPass>(vkRenderPass_),
                            static_cast<VkDescriptorPool>(vkDescriptorPool_),
                            framebuffer,
                            std::array<uint32_t, 4>{ 0, 0, rt.width(), rt.height() },
-                           bufferAvailableSemaphore,
-                           passFinishedSemaphore,
+                           wait,
+                           signal,
                            rt.getClearValues(),
                            rt.hasDepthStencil(),
                            frameUpdate_);
+
+              vkResetFences(device.handle(), 1, &frameFence);
 
               return std::forward_as_tuple(frame, frameFence);
           }
@@ -104,16 +98,10 @@ auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkF
 void RenderPass::end(vulkan::Device const& device)
 {
     std::visit(
-      [&](auto&& rt) -> void {
+      [&, this](auto&& rt) -> void {
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
                         std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
-
-              auto frontBufferIndex = rt.frontBufferIndex();
-              auto& passFinishedSemaphore = frameCommands_[frontBufferIndex].semaphore();
-
-              rt.swapBuffers(device, passFinishedSemaphore);
-
-              return;
+              frameIndex_ = rt.swapBuffers(device, frameIndex_);
           }
 
           throw std::runtime_error("empty render target");

@@ -40,19 +40,17 @@ public:
 
     auto operator=(SurfaceRenderTarget &&) -> SurfaceRenderTarget& = default;
 
-    [[nodiscard]] auto frameBufferAvailableSemaphore() const -> VkSemaphore
-    {
-        return static_cast<VkSemaphore>(imageAvailableSemaphores_[frontBufferIndex_]);
-    }
+    auto acquireBackBufferIndex(vulkan::Device const& device, uint32_t frameIndex)
+      -> std::tuple<uint32_t, VkSemaphore, VkSemaphore>;
 
-    auto acquireBackBufferIndex(vulkan::Device const& device) -> size_t;
-
-    void swapBuffers(vulkan::Device const& device, vulkan::Handle<VkSemaphore>& passFinishedSemaphore);
+    auto swapBuffers(vulkan::Device const& device, uint32_t frameIndex) -> uint32_t;
 
 private:
     std::optional<Surface> surface_;
     vulkan::Handle<VkSwapchainKHR> vkSwapChain_;
     std::vector<vulkan::Handle<VkSemaphore>> imageAvailableSemaphores_;
+    std::vector<vulkan::Handle<VkSemaphore>> renderFinishedSemaphores_;
+    std::vector<uint32_t> imageIndices_;
 };
 }
 

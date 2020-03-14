@@ -64,17 +64,14 @@ public:
 
     [[nodiscard]] auto height() const -> uint32_t { return extent_.height; }
 
-    [[nodiscard]] auto frontBufferIndex() const -> size_t { return frontBufferIndex_; }
-
-    [[nodiscard]] auto backBufferIndex() const -> size_t { return backBufferIndex_; }
-
     [[nodiscard]] auto swapChainLength() const -> size_t { return swapChainLength_; }
 
-    [[nodiscard]] auto getColorAttachment(size_t attachmentIndex) const -> vulkan::ImageView const&;
+    [[nodiscard]] auto getColorAttachment(size_t bufferIndex, size_t attachmentIndex) const -> vulkan::ImageView const&;
 
-    [[nodiscard]] auto getColorAttachment(RenderTargetOutputSemantic semantic) const -> vulkan::ImageView const&;
+    [[nodiscard]] auto getColorAttachment(size_t bufferIndex, RenderTargetOutputSemantic semantic) const
+      -> vulkan::ImageView const&;
 
-    [[nodiscard]] auto getDepthStencilAttachment() const -> vulkan::ImageView const&;
+    [[nodiscard]] auto getDepthStencilAttachment(size_t bufferIndex) const -> vulkan::ImageView const&;
 
     [[nodiscard]] auto hasAttachment(RenderTargetOutputSemantic semantic) const -> bool;
 
@@ -104,8 +101,6 @@ private:
 protected:
     size_t colorAttachmentCount_;
     size_t swapChainLength_;
-    size_t frontBufferIndex_;
-    size_t backBufferIndex_;
     std::vector<vulkan::FrameBuffer> frameBuffers_;
     std::unordered_map<RenderTargetOutputSemantic, size_t> outputSemantics_;
 };
@@ -120,8 +115,6 @@ BaseRenderTarget::BaseRenderTarget(uint32_t width,
   , hasDepthStencil_{ true }
   , colorAttachmentCount_{ count }
   , swapChainLength_{ 0 }
-  , frontBufferIndex_{ 0 }
-  , backBufferIndex_{ 0 }
   , frameBuffers_{}
   , outputSemantics_{}
 {
@@ -146,8 +139,6 @@ BaseRenderTarget::BaseRenderTarget(uint32_t width,
   , hasDepthStencil_{ false }
   , colorAttachmentCount_{ count }
   , swapChainLength_{ 0 }
-  , frontBufferIndex_{ 0 }
-  , backBufferIndex_{ 0 }
   , frameBuffers_{}
   , outputSemantics_{}
 {

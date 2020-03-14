@@ -73,12 +73,6 @@ public:
 
         [[nodiscard]] auto graphicsQueueSubmitInfo() const -> VkSubmitInfo const& { return graphicsQueueSubmitInfo_; }
 
-        [[nodiscard]] auto fence() const -> VkFence { return static_cast<VkFence>(fence_); }
-
-        [[nodiscard]] auto semaphore() const -> VkSemaphore { return static_cast<VkSemaphore>(passFinishedSemaphore_); }
-
-        [[nodiscard]] auto semaphore() -> vulkan::Handle<VkSemaphore>& { return passFinishedSemaphore_; }
-
         [[nodiscard]] auto indicesBuffer() const -> std::shared_ptr<vulkan::Buffer> const& { return indicesBuffer_; }
 
         [[nodiscard]] auto transferBuffer() const -> std::shared_ptr<vulkan::Buffer> const& { return transformBuffer_; }
@@ -117,8 +111,6 @@ public:
         std::vector<vulkan::Handle<VkSemaphore>> transientSemaphores_;
         std::vector<VkPipelineStageFlags> transientDstWaitFlags_;
 
-        vulkan::Handle<VkFence> fence_;
-        vulkan::Handle<VkSemaphore> passFinishedSemaphore_;
         VkSemaphore vkSignalSemaphore_;
 
         std::unique_ptr<graphics_queue_commands_t> graphicsCommands_;
@@ -210,9 +202,12 @@ private:
     void _createDummyDescriptorPool(vulkan::Device const& device, size_t maxSets);
 
 private:
+    uint32_t frameIndex_;
+
     vulkan::Handle<VkRenderPass> vkRenderPass_;
     std::variant<std::monostate, SurfaceRenderTarget, FrameBufferRenderTarget> renderTarget_;
-    std::vector<VkFence> renderTargetFences_;
+    std::vector<vulkan::Handle<VkFence>> frameFences_;
+    std::vector<VkFence> rtFences_;
 
     // tmp:: create descriptor set pool here // dummy // for dummy pipeline // just for now
     vulkan::Handle<VkDescriptorPool> vkDescriptorPool_;
@@ -232,9 +227,11 @@ RenderPass::RenderPass(vulkan::Device& device,
                        std::tuple<ColorOutputs...>&&,
                        VkClearDepthStencilValue const& clearDepthStencilValue,
                        std::array<VkClearColorValue, sizeof...(ColorOutputs)> const& clearColorValues)
-  : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
+  : frameIndex_{ 0 }
+  , vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{}
-  , renderTargetFences_{}
+  , frameFences_{}
+  , rtFences_{}
   , vkDescriptorPool_{ device.handle(), vkDestroyDescriptorPool }
   , frameUpdate_{}
   , frameCommands_{}
@@ -318,9 +315,11 @@ RenderPass::RenderPass(vulkan::Device& device,
                        VkClearColorValue const& clearColorValue,
                        std::array<VkPresentModeKHR, presentModeCandidateCount> const& presentModeCandidates,
                        VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags)
-  : vkRenderPass_{ device.handle(), vkDestroyRenderPass }
+  : frameIndex_{ 0 }
+  , vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{}
-  , renderTargetFences_{}
+  , frameFences_{}
+  , rtFences_{}
   , vkDescriptorPool_{ device.handle(), vkDestroyDescriptorPool }
   , frameUpdate_{}
   , frameCommands_{}
@@ -374,7 +373,21 @@ RenderPass::RenderPass(vulkan::Device& device,
 
     const auto frameCount = renderTarget.swapChainLength();
 
-    renderTargetFences_.resize(frameCount, VK_NULL_HANDLE);
+    frameFences_.reserve(frameCount);
+
+    VkFenceCreateInfo fenceCreateInfo = {};
+    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+    for (size_t i = 0; i < frameCount; i++) {
+        if (auto result = vkCreateFence(
+              device.handle(), &fenceCreateInfo, nullptr, &frameFences_.emplace_back(device.handle(), vkDestroyFence));
+            result != VK_SUCCESS) {
+            throw std::runtime_error("could not create frame synchronization fence");
+        }
+    }
+
+    rtFences_.resize(frameCount, VK_NULL_HANDLE);
 
     _createDummyDescriptorPool(device, frameCount);
 

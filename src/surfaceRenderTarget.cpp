@@ -3,7 +3,6 @@
 //
 
 #include "surfaceRenderTarget.h"
-#include <iostream>
 
 namespace cyclonite {
 SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
@@ -19,6 +18,8 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
   , surface_{ std::move(surface) }
   , vkSwapChain_{ std::move(vkSwapChain) }
   , imageAvailableSemaphores_{}
+  , renderFinishedSemaphores_{}
+  , imageIndices_{}
 {
     outputSemantics_[outputSemantic] = 0;
 
@@ -66,7 +67,18 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
             result != VK_SUCCESS) {
             throw std::runtime_error("could not create image available semaphore.");
         }
+
+        if (auto result =
+              vkCreateSemaphore(device.handle(),
+                                &semaphoreCreateInfo,
+                                nullptr,
+                                &renderFinishedSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
+            result != VK_SUCCESS) {
+            throw std::runtime_error("could not create image available semaphore.");
+        }
     }
+
+    imageIndices_.resize(imageCount, 0);
 }
 
 SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
@@ -80,6 +92,8 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
   , surface_{ std::move(surface) }
   , vkSwapChain_{ std::move(vkSwapChain) }
   , imageAvailableSemaphores_{}
+  , renderFinishedSemaphores_{}
+  , imageIndices_{}
 {
     outputSemantics_[outputSemantic] = 0;
 
@@ -116,37 +130,49 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
             result != VK_SUCCESS) {
             throw std::runtime_error("could not create image available semaphore.");
         }
+
+        if (auto result =
+              vkCreateSemaphore(device.handle(),
+                                &semaphoreCreateInfo,
+                                nullptr,
+                                &renderFinishedSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
+            result != VK_SUCCESS) {
+            throw std::runtime_error("could not create image available semaphore.");
+        }
     }
+
+    imageIndices_.resize(imageCount, 0);
 }
 
-auto SurfaceRenderTarget::acquireBackBufferIndex(vulkan::Device const& device) -> size_t
+auto SurfaceRenderTarget::acquireBackBufferIndex(vulkan::Device const& device, uint32_t frameIndex)
+  -> std::tuple<uint32_t, VkSemaphore, VkSemaphore>
 {
-    uint32_t imageIndex = 0;
+    auto wait = static_cast<VkSemaphore>(imageAvailableSemaphores_[frameIndex]);
+    auto signal = static_cast<VkSemaphore>(renderFinishedSemaphores_[frameIndex]);
 
     vkAcquireNextImageKHR(device.handle(),
                           static_cast<VkSwapchainKHR>(vkSwapChain_),
                           std::numeric_limits<uint64_t>::max(),
-                          static_cast<VkSemaphore>(imageAvailableSemaphores_[frontBufferIndex_]),
+                          // wait for this semaphore before render into back buffer
+                          wait,
                           VK_NULL_HANDLE,
-                          &imageIndex);
+                          imageIndices_.data() + frameIndex);
 
-    std::cout << "next image: " << imageIndex << std::endl;
-
-    return backBufferIndex_ = imageIndex;
+    return std::make_tuple(imageIndices_[frameIndex], wait, signal);
 }
 
-void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device, vulkan::Handle<VkSemaphore>& passFinishedSemaphore)
+auto SurfaceRenderTarget::swapBuffers(vulkan::Device const& device, uint32_t frameIndex) -> uint32_t
 {
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = &std::as_const(passFinishedSemaphore);
+    presentInfo.pWaitSemaphores = &std::as_const(renderFinishedSemaphores_[frameIndex]);
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &std::as_const(vkSwapChain_);
-    presentInfo.pImageIndices = reinterpret_cast<uint32_t*>(&backBufferIndex_);
+    presentInfo.pImageIndices = imageIndices_.data() + frameIndex;
 
     vkQueuePresentKHR(device.graphicsQueue(), &presentInfo);
 
-    frontBufferIndex_ = (frontBufferIndex_ + 1) % swapChainLength_;
+    return (frameIndex + 1) % swapChainLength_;
 }
 }

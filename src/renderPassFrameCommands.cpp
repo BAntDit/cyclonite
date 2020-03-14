@@ -23,8 +23,6 @@ RenderPass::FrameCommands::FrameCommands() noexcept
   , transientTransfer_{}
   , transientSemaphores_{}
   , transientDstWaitFlags_{}
-  , fence_{}
-  , passFinishedSemaphore_{}
   , vkSignalSemaphore_{ VK_NULL_HANDLE }
   , graphicsCommands_{ nullptr }
   , waitSemaphores_{}
@@ -51,8 +49,6 @@ RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   , transientTransfer_{}
   , transientSemaphores_{}
   , transientDstWaitFlags_{}
-  , fence_{ device.handle(), vkDestroyFence }
-  , passFinishedSemaphore_{ device.handle(), vkDestroySemaphore }
   , vkSignalSemaphore_{ VK_NULL_HANDLE }
   , graphicsCommands_{ nullptr }
   , waitSemaphores_{}
@@ -68,23 +64,7 @@ RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   , vkBufferDescriptorSet_{ VK_NULL_HANDLE }
   , transferQueueSubmitInfo_{ nullptr }
   , graphicsQueueSubmitInfo_{}
-{
-    VkFenceCreateInfo fenceCreateInfo = {};
-    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-    if (auto result = vkCreateFence(device.handle(), &fenceCreateInfo, nullptr, &fence_); result != VK_SUCCESS) {
-        throw std::runtime_error("could not create frame synchronization fence");
-    }
-
-    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
-    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-    if (auto result = vkCreateSemaphore(device.handle(), &semaphoreCreateInfo, nullptr, &passFinishedSemaphore_);
-        result != VK_SUCCESS) {
-        throw std::runtime_error("could not create pass end synchronization semaphore");
-    }
-}
+{}
 
 void RenderPass::FrameCommands::_clearTransientTransfer()
 {
@@ -363,8 +343,7 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
 
         dstWaitFlags_.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
         waitSemaphores_.push_back(VK_NULL_HANDLE);
-    }
-    // ...
+    } // transfer update end
 
     if (graphicsVersion_ != frameUpdate.graphicsVersion()) {
         _updatePipeline(device, renderPass, viewport, depthStencilRequired);
