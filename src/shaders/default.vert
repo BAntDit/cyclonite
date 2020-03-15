@@ -21,13 +21,15 @@ layout(std140, set = 0, binding = 1) uniform camera {
 
 layout(location = 0) out vec3 vNormal;
 
-vec3 positions[3] = vec3[](
-    vec3(0.0, -0.5, 0.5),
+vec3 positions[4] = vec3[](
+    vec3(-0.5, -0.5, 0.5),
+    vec3(0.5, -0.5, 0.5),
     vec3(0.5, 0.5, 0.5),
     vec3(-0.5, 0.5, 0.5)
 );
 
-vec3 normals[3] = vec3[](
+vec3 normals[4] = vec3[](
+    vec3(0.0, 0.0, 1.0),
     vec3(0.0, 0.0, 1.0),
     vec3(0.0, 0.0, 1.0),
     vec3(0.0, 0.0, 1.0)

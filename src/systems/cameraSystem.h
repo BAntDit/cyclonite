@@ -74,7 +74,7 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
               if constexpr (std::is_same_v<std::decay_t<decltype(projection)>,
                                            components::Camera::PerspectiveProjection>) {
                   auto& [aspect, yFov, zNear, zFar] = projection;
-                  return glm::perspective(aspect, yFov, zNear, zFar);
+                  return glm::perspective(yFov, aspect, zNear, zFar);
               }
 
               if constexpr (std::is_same_v<std::decay_t<decltype(projection)>,

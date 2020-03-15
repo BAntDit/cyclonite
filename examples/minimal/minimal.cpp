@@ -20,10 +20,10 @@ auto Minimal::init(cyclonite::Options const& options) -> Minimal& {
     root_->input().keyDown += cyclonite::Event<SDL_KeyboardEvent>::EventHandler(this, &Minimal::onKeyDown);
 
     auto rootEntity = entities_.create();
-    auto entities = entities_.create(std::array<enttx::Entity, 32>{});
+    auto entities = entities_.create(std::array<enttx::Entity, 1>{});
 
     auto& transformSystem = systems_.get<cyclonite::systems::TransformSystem>();
-    transformSystem.init(entities.size() + 1);
+    transformSystem.init(128);
 
     auto& meshSystem = systems_.get<cyclonite::systems::MeshSystem>();
     meshSystem.init(root_->device());
@@ -36,25 +36,12 @@ auto Minimal::init(cyclonite::Options const& options) -> Minimal& {
 
     transformSystem.create(entities_, enttx::Entity{}, rootEntity, cyclonite::mat4{1.f});
 
-    boost::float32_t xShift = 0.25f;
-    boost::float32_t yShift = 0.25f;
-    boost::float32_t zShift = 0.25f;
+    cyclonite::vec3 pos = cyclonite::vec3{0.f, 0.f, -2.f};
 
-    cyclonite::vec3 pos = cyclonite::vec3{-1.f, 0.f, 0.f};
+    transformSystem.create(
+      entities_, rootEntity, entities[0], pos, cyclonite::vec3{1.f}, cyclonite::quat{1.f, 0.f, 0.f, 0.f});
 
-    uint8_t i = 0;
-
-    for (auto&& entity : entities) {
-        transformSystem.create(
-          entities_, rootEntity, entity, pos, cyclonite::vec3{1.f}, cyclonite::quat{1.f, 0.f, 0.f, 0.f});
-
-        if (i % 2 == 0)
-            entities_.assign<cyclonite::components::Mesh>(entity);
-
-        pos.x += xShift;
-        pos.y += static_cast<boost::float32_t>(i++ / 4) * yShift;
-        pos.z -= static_cast<boost::float32_t>(i++ / 4) * zShift;
-    }
+    entities_.assign<cyclonite::components::Mesh>(entities[0]);
 
     auto cameraEntity = entities_.create();
 
@@ -69,7 +56,7 @@ auto Minimal::init(cyclonite::Options const& options) -> Minimal& {
     entities_.assign<cyclonite::components::Camera>(
       cameraEntity,
       cyclonite::components::Camera::PerspectiveProjection{
-          1.f, glm::pi<boost::float32_t>() / 2.f, 0.1f, 100.f });
+          1.f, glm::pi<boost::float32_t>() / 4.f, 0.1f, 100.f });
 
     cameraEntity_ = cameraEntity;
 
@@ -102,19 +89,11 @@ auto Minimal::run() -> Minimal& {
         std::array{ VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR } };
 
     while(!shutdown_) {
-        std::cout << "enter" << std::endl;
-
         root_->input().pollEvent();
-
-        std::cout << "poll event finished" << std::endl;
 
         systems_.update(renderPass.frame(), cameraEntity_, 0.f);
 
-        std::cout << "system update finished" << std::endl;
-
         vulkanRenderer.renderOneFrame(renderPass);
-
-        std::cout << "====" << std::endl;
     }
 
     return *this;
