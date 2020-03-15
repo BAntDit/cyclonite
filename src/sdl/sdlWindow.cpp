@@ -7,10 +7,10 @@
 
 namespace cyclonite::sdl {
 SDLWindow::SDLWindow(const std::string& title,
-                     int x /* = SDL_WINDOWPOS_UNDEFINED*/,
-                     int y /* = SDL_WINDOWPOS_UNDEFINED*/,
-                     int w /* = 512*/,
-                     int h /*= 512*/,
+                     unsigned int x /* = SDL_WINDOWPOS_UNDEFINED*/,
+                     unsigned int y /* = SDL_WINDOWPOS_UNDEFINED*/,
+                     unsigned int w /* = 512*/,
+                     unsigned int h /*= 512*/,
                      uint32_t flags /* = SDL_WINDOW_SHOWN*/)
   : sysWMinfo_{}
   , sdlWindowPtr_(SDL_CreateWindow(title.c_str(), x, y, w, h, flags),

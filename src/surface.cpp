@@ -15,7 +15,7 @@ Surface::Surface(vulkan::Device const& device, Options::WindowProperties const& 
              windowProperties.height,
              static_cast<uint32_t>(windowProperties.fullscreen
                                      ? SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS
-                                     : SDL_WINDOW_SHOWN) }
+                                     : SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS) }
   , platformSurface_{
       _createSurface(device.vulkanInstance(), window_, vulkan::platform_surface_argument_type_list_t{})
   }

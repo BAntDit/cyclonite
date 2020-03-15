@@ -81,8 +81,8 @@ auto Minimal::run() -> Minimal& {
 
     windowProperties.title = "minimal.example";
     windowProperties.fullscreen = false;
-    windowProperties.left = 0x1FFF;
-    windowProperties.top = 0x1FFF;
+    windowProperties.left = SDL_WINDOWPOS_CENTERED;
+    windowProperties.top = SDL_WINDOWPOS_CENTERED;
     windowProperties.width = 512;
     windowProperties.height = 512;
 
