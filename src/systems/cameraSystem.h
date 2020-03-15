@@ -14,8 +14,8 @@
 #include <components/transform.h>
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
-#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace cyclonite::systems {
 class CameraSystem : public enttx::BaseSystem<CameraSystem>
@@ -78,12 +78,22 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
 
                   real f = 1.0f / tan(0.5f * yFov);
 
-                  return glm::transpose(mat4{
-                      f / aspect, 0.f, 0.f, 0.f,
-                      0.f, -f, 0.f, 0.f,
-                      0.f, 0.f, zFar / (zNear - zFar), -1.f,
-                      0.f, 0.f, (zNear * zFar) / (zNear - zFar), 0.f
-                  });
+                  return glm::transpose(mat4{ f / aspect,
+                                              0.f,
+                                              0.f,
+                                              0.f,
+                                              0.f,
+                                              -f,
+                                              0.f,
+                                              0.f,
+                                              0.f,
+                                              0.f,
+                                              zFar / (zNear - zFar),
+                                              -1.f,
+                                              0.f,
+                                              0.f,
+                                              (zNear * zFar) / (zNear - zFar),
+                                              0.f });
               }
 
               if constexpr (std::is_same_v<std::decay_t<decltype(projection)>,
