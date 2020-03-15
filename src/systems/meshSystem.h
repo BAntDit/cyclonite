@@ -71,7 +71,7 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
     if constexpr (STAGE == easy_mp::value_cast(UpdateStage::EARLY_UPDATE)) {
         auto& commands = *reinterpret_cast<VkDrawIndexedIndirectCommand*>(commandBuffer_->ptr());
 
-        commands.indexCount = 6;
+        commands.indexCount = 36;
         commands.instanceCount = 0;
         commands.firstIndex = 0;
         commands.vertexOffset = 0;

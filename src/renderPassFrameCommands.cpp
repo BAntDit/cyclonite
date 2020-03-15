@@ -220,7 +220,7 @@ void RenderPass::FrameCommands::_updatePipeline(vulkan::Device& device,
         VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {};
 
         depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencilStateCreateInfo.depthTestEnable = VK_FALSE;
+        depthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
         depthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
         depthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
         depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
