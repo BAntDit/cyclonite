@@ -97,6 +97,7 @@ void main() {
     vec4 worldPosition = vec4(position, 1.0) * worldMatrix;
 
     gl_Position = viewProjMatrix * worldPosition;
+    // gl_Position.y *= -1.;
 
     vNormal = normals[gl_VertexIndex];
 }

@@ -191,6 +191,7 @@ target_link_libraries(${PROJECT_NAME} Threads::Threads)
 find_package(glm REQUIRED)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_ENABLE_EXPERIMENTAL)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_FORCE_RADIANS)
+target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_FORCE_DEPTH_ZERO_TO_ONE)
 target_link_libraries(${PROJECT_NAME} glm)
 
 target_link_libraries(${PROJECT_NAME} SDL2)

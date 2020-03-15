@@ -15,6 +15,7 @@
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace cyclonite::systems {
 class CameraSystem : public enttx::BaseSystem<CameraSystem>
@@ -74,7 +75,15 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
               if constexpr (std::is_same_v<std::decay_t<decltype(projection)>,
                                            components::Camera::PerspectiveProjection>) {
                   auto& [aspect, yFov, zNear, zFar] = projection;
-                  return glm::perspective(yFov, aspect, zNear, zFar);
+
+                  real f = 1.0f / tan(0.5f * yFov);
+
+                  return glm::transpose(mat4{
+                      f / aspect, 0.f, 0.f, 0.f,
+                      0.f, -f, 0.f, 0.f,
+                      0.f, 0.f, zFar / (zNear - zFar), -1.f,
+                      0.f, 0.f, (zNear * zFar) / (zNear - zFar), 0.f
+                  });
               }
 
               if constexpr (std::is_same_v<std::decay_t<decltype(projection)>,
@@ -85,7 +94,7 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
           },
           camera->projection);
 
-        auto viewProjectionMatrix = projectionMatrix * viewMatrix;
+        auto viewProjectionMatrix = glm::transpose(projectionMatrix) * viewMatrix;
 
         std::copy_n(glm::value_ptr(viewMatrix), 16, uniforms);
         std::copy_n(glm::value_ptr(projectionMatrix), 16, uniforms + 16);
