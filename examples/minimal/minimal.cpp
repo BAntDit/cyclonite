@@ -36,7 +36,7 @@ auto Minimal::init(cyclonite::Options const& options) -> Minimal& {
 
     transformSystem.create(entities_, enttx::Entity{}, rootEntity, cyclonite::mat4{1.f});
 
-    cyclonite::vec3 pos = cyclonite::vec3{1.f, 1.f, -2.f};
+    cyclonite::vec3 pos = cyclonite::vec3{1.f, -1.f, -2.f};
 
     transformSystem.create(
       entities_,
