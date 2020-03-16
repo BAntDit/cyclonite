@@ -17,7 +17,7 @@ Minimal::Minimal()
 auto Minimal::init(cyclonite::Options const& options) -> Minimal& {
     root_->init(options);
 
-    root_->input().keyDown += cyclonite::Event<SDL_KeyboardEvent>::EventHandler(this, &Minimal::onKeyDown);
+    root_->input().keyDown += cyclonite::Event<SDL_Keycode, uint16_t>::EventHandler(this, &Minimal::onKeyDown);
 
     auto rootEntity = entities_.create();
     auto entities = entities_.create(std::array<enttx::Entity, 1>{});
@@ -107,8 +107,10 @@ auto Minimal::run() -> Minimal& {
 
 void Minimal::done() {}
 
-void Minimal::onKeyDown(SDL_KeyboardEvent event) {
-    if (event.keysym.sym == SDLK_ESCAPE)
+void Minimal::onKeyDown(SDL_Keycode keyCode, uint16_t mod) {
+    (void)mod;
+
+    if (keyCode == SDLK_ESCAPE)
         shutdown_ = true;
 }
 }

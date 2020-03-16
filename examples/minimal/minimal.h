@@ -20,7 +20,7 @@ public:
 
     void done();
 
-    void onKeyDown(SDL_KeyboardEvent event);
+    void onKeyDown(SDL_Keycode keyCode, uint16_t mod);
 
 private:
     bool shutdown_;

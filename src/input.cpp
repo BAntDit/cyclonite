@@ -6,8 +6,13 @@
 
 namespace cyclonite {
 Input::Input()
-  : keyDown{}
+  : quit{}
+  , keyDown{}
   , keyUp{}
+  , mouseButtonDown{}
+  , mouseButtonUp{}
+  , mouseMotion{}
+  , mouseWheel{}
 {}
 
 void Input::pollEvent()
@@ -16,11 +21,26 @@ void Input::pollEvent()
 
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
+            case SDL_QUIT:
+                quit();
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                mouseButtonDown(event.button.button, event.button.clicks, event.button.x, event.button.y);
+                break;
+            case SDL_MOUSEBUTTONUP:
+                mouseButtonUp(event.button.button, event.button.x, event.button.y);
+                break;
+            case SDL_MOUSEMOTION:
+                mouseMotion(event.motion.x, event.motion.y);
+                break;
+            case SDL_MOUSEWHEEL:
+                mouseWheel(event.wheel.y);
+                break;
             case SDL_KEYDOWN:
-                keyDown(event.key);
+                keyDown(event.key.keysym.sym, event.key.keysym.mod);
                 break;
             case SDL_KEYUP:
-                keyUp(event.key);
+                keyUp(event.key.keysym.sym, event.key.keysym.mod);
                 break;
             default:
                 continue;
