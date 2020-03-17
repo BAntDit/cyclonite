@@ -2,24 +2,52 @@
 // Created by bantdit on 12/31/19.
 //
 
-#include "minimal.h"
+#include "basic.h"
 
 namespace examples
 {
-Minimal::Minimal()
+Basic::Basic()
   : shutdown_{ false }
   , root_{ std::make_unique<cyclonite::Root>() }
+  , renderPass_{ nullptr }
+  , renderer_{ nullptr }
   , entities_{}
   , systems_{ &entities_ }
   , cameraEntity_{}
 {}
 
-auto Minimal::init(cyclonite::Options const& options) -> Minimal& {
+auto Basic::init(cyclonite::Options const& options) -> Basic& {
     root_->init(options);
+    root_->input().keyDown += cyclonite::Event<SDL_Keycode, uint16_t>::EventHandler(this, &Basic::onKeyDown);
 
-    root_->input().keyDown += cyclonite::Event<SDL_Keycode, uint16_t>::EventHandler(this, &Minimal::onKeyDown);
+    {
+        cyclonite::Options::WindowProperties windowProperties{};
+
+        windowProperties.title = "basic.example";
+        windowProperties.fullscreen = false;
+        windowProperties.left = SDL_WINDOWPOS_CENTERED;
+        windowProperties.top = SDL_WINDOWPOS_CENTERED;
+        windowProperties.width = 512;
+        windowProperties.height = 512;
+
+        renderPass_ = std::make_unique<RenderPass>(root_->device(),
+          windowProperties,
+          cyclonite::render_target_output<
+            easy_mp::type_list<cyclonite::render_target_output_candidate<VK_FORMAT_D32_SFLOAT>>>{},
+            cyclonite::render_target_output<
+              easy_mp::type_list<
+                cyclonite::render_target_output_candidate<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
+            cyclonite::RenderTargetOutputSemantic::DEFAULT>{},
+          VkClearDepthStencilValue{ 1.0f, 0 },
+          VkClearColorValue{ { 0.0f, 0.0f, 0.0f, 1.0f } },
+          std::array{ VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR }
+        );
+    }
+
+    renderer_ = std::make_unique<VulkanRenderer>(root_->device(), root_->taskManager());
 
     auto rootEntity = entities_.create();
+
     auto entities = entities_.create(std::array<enttx::Entity, 1>{});
 
     auto& transformSystem = systems_.get<cyclonite::systems::TransformSystem>();
@@ -36,7 +64,7 @@ auto Minimal::init(cyclonite::Options const& options) -> Minimal& {
 
     transformSystem.create(entities_, enttx::Entity{}, rootEntity, cyclonite::mat4{1.f});
 
-    cyclonite::vec3 pos = cyclonite::vec3{1.f, -1.f, -2.f};
+    cyclonite::vec3 pos = cyclonite::vec3{0.f, -1.f, -4.f};
 
     transformSystem.create(
       entities_,
@@ -69,45 +97,23 @@ auto Minimal::init(cyclonite::Options const& options) -> Minimal& {
     return *this;
 }
 
-auto Minimal::run() -> Minimal& {
-    cyclonite::Options::WindowProperties windowProperties{};
-
-    windowProperties.title = "basic.example";
-    windowProperties.fullscreen = false;
-    windowProperties.left = SDL_WINDOWPOS_CENTERED;
-    windowProperties.top = SDL_WINDOWPOS_CENTERED;
-    windowProperties.width = 512;
-    windowProperties.height = 512;
-
-    cyclonite::VulkanRenderer vulkanRenderer{ root_->device() };
-
-    cyclonite::RenderPass renderPass{
-        root_->device(),
-        windowProperties,
-        cyclonite::render_target_output<
-            easy_mp::type_list<cyclonite::render_target_output_candidate<VK_FORMAT_D32_SFLOAT>>>{},
-        cyclonite::render_target_output<
-            easy_mp::type_list<
-                cyclonite::render_target_output_candidate<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
-                cyclonite::RenderTargetOutputSemantic::DEFAULT>{},
-        VkClearDepthStencilValue{ 1.0f, 0 },
-        VkClearColorValue{ { 0.0f, 0.0f, 0.0f, 1.0f } },
-        std::array{ VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR } };
-
+auto Basic::run() -> Basic& {
     while(!shutdown_) {
         root_->input().pollEvent();
 
-        systems_.update(renderPass.frame(), cameraEntity_, 0.f);
+        systems_.update(renderPass_->frame(), cameraEntity_, 0.f);
 
-        vulkanRenderer.renderOneFrame(renderPass);
+        renderer_->renderOneFrame(*renderPass_);
     }
 
     return *this;
 }
 
-void Minimal::done() {}
+void Basic::done() {
+    renderer_->finish();
+}
 
-void Minimal::onKeyDown(SDL_Keycode keyCode, uint16_t mod) {
+void Basic::onKeyDown(SDL_Keycode keyCode, uint16_t mod) {
     (void)mod;
 
     if (keyCode == SDLK_ESCAPE)
@@ -115,5 +121,5 @@ void Minimal::onKeyDown(SDL_Keycode keyCode, uint16_t mod) {
 }
 }
 
-CYCLONITE_APP(examples::Minimal)
+CYCLONITE_APP(examples::Basic)
 

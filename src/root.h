@@ -52,6 +52,10 @@ public:
 
     [[nodiscard]] auto device() -> vulkan::Device& { return *vulkanDevice_; }
 
+    [[nodiscard]] auto taskManager() -> multithreading::TaskManager& { return taskManager_; }
+
+    [[nodiscard]] auto taskManager() const -> multithreading::TaskManager const& { return taskManager_; }
+
 private:
     Capabilities capabilities_;
     multithreading::TaskManager taskManager_;

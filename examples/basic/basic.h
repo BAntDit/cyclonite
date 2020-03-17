@@ -2,21 +2,23 @@
 // Created by bantdit on 12/28/19.
 //
 
-#ifndef CYCLONITE_MINIMAL_H
-#define CYCLONITE_MINIMAL_H
+#ifndef CYCLONITE_BASIC_H
+#define CYCLONITE_BASIC_H
 
 #include "cyclonite.h"
 
+using namespace cyclonite;
+
 namespace examples
 {
-class Minimal final: public cyclonite::BaseApp<Minimal>, public cyclonite::EventReceivable
+class Basic final: public BaseApp<Basic>, public EventReceivable
 {
 public:
-    Minimal();
+    Basic();
 
-    auto init(cyclonite::Options const& options) -> Minimal&;
+    auto init(Options const& options) -> Basic&;
 
-    auto run() -> Minimal&;
+    auto run() -> Basic&;
 
     void done();
 
@@ -24,11 +26,13 @@ public:
 
 private:
     bool shutdown_;
-    std::unique_ptr<cyclonite::Root> root_;
+    std::unique_ptr<Root> root_;
+    std::unique_ptr<RenderPass> renderPass_;
+    std::unique_ptr<VulkanRenderer> renderer_;
     ecs_config_t::entity_manager_t entities_;
     ecs_config_t::system_manager_t systems_;
     enttx::Entity cameraEntity_;
 };
 }
 
-#endif //CYCLONITE_MINIMAL_H
+#endif // CYCLONITE_BASIC_H
