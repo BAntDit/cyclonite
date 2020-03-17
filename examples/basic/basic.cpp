@@ -72,7 +72,7 @@ auto Minimal::init(cyclonite::Options const& options) -> Minimal& {
 auto Minimal::run() -> Minimal& {
     cyclonite::Options::WindowProperties windowProperties{};
 
-    windowProperties.title = "minimal.example";
+    windowProperties.title = "basic.example";
     windowProperties.fullscreen = false;
     windowProperties.left = SDL_WINDOWPOS_CENTERED;
     windowProperties.top = SDL_WINDOWPOS_CENTERED;
