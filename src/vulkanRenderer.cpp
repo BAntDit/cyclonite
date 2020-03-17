@@ -7,8 +7,9 @@
 #include <iostream>
 
 namespace cyclonite {
-VulkanRenderer::VulkanRenderer(cyclonite::vulkan::Device& device)
-  : device_{ &device }
+VulkanRenderer::VulkanRenderer(cyclonite::vulkan::Device& device, multithreading::TaskManager& taskManager)
+  : taskManager_{ &taskManager }
+  , device_{ &device }
   , frameCounter_{ 0 }
 {}
 
@@ -30,6 +31,19 @@ void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
     }
 
     renderPass.end(*device_);
+}
+
+void VulkanRenderer::finish() {
+    auto gfxStop = taskManager_->submit([&, this]() -> void {
+        vkQueueWaitIdle(device_->graphicsQueue());
+    });
+
+    auto transferStop = taskManager_->submit([&, this]() -> void {
+        vkQueueWaitIdle(device_->hostTransferQueue());
+    });
+
+    transferStop.get();
+    gfxStop.get();
 }
 
 void VulkanRenderer::_handleSubmitError(VkResult result)
