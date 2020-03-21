@@ -13,13 +13,13 @@ struct Transform
 {
     enum class State : uint8_t
     {
-        UP_TO_DATE = 0,
-        NEEDS_UPDATE_LOCAL_MATRIX = 1,
-        NEEDS_UPDATE_COMPONENTS = 2,
-        NEEDS_UPDATE_WORLD_MATRIX = 3,
-        MIN_VALUE = UP_TO_DATE,
-        MAX_VALUE = NEEDS_UPDATE_WORLD_MATRIX,
-        COUNT = MAX_VALUE + 1
+        UPDATE_NOTHING = 0,
+        UPDATE_LOCAL = 1,
+        UPDATE_COMPONENTS = 2,
+        UPDATE_WORLD = 4,
+        MIN_VALUE = UPDATE_NOTHING,
+        MAX_VALUE = UPDATE_WORLD,
+        COUNT = 4
     };
 
     Transform() noexcept;

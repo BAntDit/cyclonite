@@ -5,8 +5,8 @@
 #ifndef CYCLONITE_VULKANRENDERER_H
 #define CYCLONITE_VULKANRENDERER_H
 
-#include "vulkan/device.h"
 #include "multithreading/taskManager.h"
+#include "vulkan/device.h"
 #include <array>
 
 namespace cyclonite {

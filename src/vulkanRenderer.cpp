@@ -33,7 +33,8 @@ void VulkanRenderer::renderOneFrame(RenderPass& renderPass)
     renderPass.end(*device_);
 }
 
-void VulkanRenderer::finish() {
+void VulkanRenderer::finish()
+{
     auto gfxStop = taskManager_->submit([&, this]() -> void {
         if (auto result = vkQueueWaitIdle(device_->graphicsQueue()); result != VK_SUCCESS) {
             if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
@@ -51,19 +52,19 @@ void VulkanRenderer::finish() {
     });
 
     auto transferStop = taskManager_->submit([&, this]() -> void {
-      if (auto result = vkQueueWaitIdle(device_->hostTransferQueue()); result != VK_SUCCESS) {
-          if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
-              throw std::runtime_error("could not wait until transfer queue gets idle, out of host memory");
-          }
+        if (auto result = vkQueueWaitIdle(device_->hostTransferQueue()); result != VK_SUCCESS) {
+            if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
+                throw std::runtime_error("could not wait until transfer queue gets idle, out of host memory");
+            }
 
-          if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
-              throw std::runtime_error("could not wait until transfer queue gets idle, out of device memory");
-          }
+            if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+                throw std::runtime_error("could not wait until transfer queue gets idle, out of device memory");
+            }
 
-          if (result == VK_ERROR_DEVICE_LOST) {
-              throw std::runtime_error("could not wait until transfer queue gets idle, device lost");
-          }
-      }
+            if (result == VK_ERROR_DEVICE_LOST) {
+                throw std::runtime_error("could not wait until transfer queue gets idle, device lost");
+            }
+        }
     });
 
     transferStop.get();

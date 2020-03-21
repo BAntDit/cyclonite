@@ -50,17 +50,21 @@ private:
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
 void TransformSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
+    using namespace easy_mp;
+
     ((void)args, ...);
 
     (void)systemManager;
 
-    if constexpr (STAGE == easy_mp::value_cast(UpdateStage::EARLY_UPDATE)) {
+    if constexpr (STAGE == value_cast(UpdateStage::EARLY_UPDATE)) {
         auto view = entityManager.template getView<components::Transform>();
 
         for (auto&& [entity, transform] : view) {
             (void)entity;
 
             auto& [position, scale, orientation, matrix, state, parent, depth, globalIndex] = transform;
+
+            assert(worldMatrices_.size() > globalIndex);
 
             auto* parentTransform = static_cast<uint64_t>(parent) != std::numeric_limits<uint64_t>::max()
                                       ? entityManager.template getComponent<components::Transform>(parent)
@@ -71,26 +75,20 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
             auto const& parentMatrix =
               parentTransform != nullptr ? worldMatrices_[parentTransform->globalIndex] : mat4{ 1.0f };
 
-            if (state == components::Transform::State::NEEDS_UPDATE_LOCAL_MATRIX) {
+            if (state == components::Transform::State::UPDATE_LOCAL) {
                 matrix = glm::translate(position) * glm::mat4_cast(orientation) * glm::scale(scale);
-
-                state = components::Transform::State::NEEDS_UPDATE_WORLD_MATRIX;
-            }
-
-            if (state == components::Transform::State::NEEDS_UPDATE_COMPONENTS) {
+                state = components::Transform::State::UPDATE_WORLD;
+            } else if (state == components::Transform::State::UPDATE_COMPONENTS) {
                 _decompose(matrix, position, scale, orientation);
-
-                state = components::Transform::State::NEEDS_UPDATE_WORLD_MATRIX;
+                state = components::Transform::State::UPDATE_WORLD;
             }
-
-            assert(worldMatrices_.size() > globalIndex);
 
             state = (parentTransform != nullptr &&
-                     parentTransform->state == components::Transform::State::NEEDS_UPDATE_WORLD_MATRIX)
-                      ? components::Transform::State::NEEDS_UPDATE_WORLD_MATRIX
+                     parentTransform->state == components::Transform::State::UPDATE_WORLD)
+                      ? components::Transform::State::UPDATE_WORLD
                       : state;
 
-            if (state == components::Transform::State::NEEDS_UPDATE_WORLD_MATRIX) {
+            if (state == components::Transform::State::UPDATE_WORLD) {
                 worldMatrices_[globalIndex] = parentMatrix * matrix;
             }
         }
@@ -101,8 +99,7 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
 
         for (auto&& [entity, transform] : view) {
             (void)entity;
-
-            transform.state = components::Transform::State::UP_TO_DATE;
+            transform.state = components::Transform::State::UPDATE_NOTHING;
         }
     }
 }
