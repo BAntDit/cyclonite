@@ -92,7 +92,6 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
   , surface_{ std::move(surface) }
   , vkSwapChain_{ std::move(vkSwapChain) }
   , imageAvailableSemaphores_{}
-  , renderFinishedSemaphores_{}
   , imageIndices_{}
 {
     outputSemantics_[outputSemantic] = 0;
@@ -150,21 +149,20 @@ auto SurfaceRenderTarget::acquireBackBufferIndex(vulkan::Device const& device, u
     return std::make_pair(imageIndices_[frameIndex], wait);
 }
 
-auto SurfaceRenderTarget::swapBuffers(vulkan::Device const& device, uint32_t frameIndex) -> uint32_t
+void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device,
+                                      vulkan::Handle<VkSemaphore> const& signal,
+                                      uint32_t frameIndex)
 {
-    assert(frameIndex < renderFinishedSemaphores_.size());
     assert(frameIndex < imageIndices_.size());
 
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = &std::as_const(renderFinishedSemaphores_[frameIndex]);
+    presentInfo.pWaitSemaphores = &signal;
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &std::as_const(vkSwapChain_);
     presentInfo.pImageIndices = imageIndices_.data() + frameIndex;
 
     vkQueuePresentKHR(device.graphicsQueue(), &presentInfo);
-
-    return (frameIndex + 1) % swapChainLength_;
 }
 }

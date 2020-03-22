@@ -68,7 +68,7 @@ void UniformSystem::update(SystemManager& systemManager, EntityManager& entityMa
         auto& renderPass = renderSystem.renderPass();
         auto& frame = renderPass.frame();
 
-        auto [id, signal] = frame.getWaitSemaphore(transferSemaphoreId_);
+        auto [id, signal] = frame.getWaitSemaphore(transferSemaphoreId_, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
 
         transferSemaphoreId_ = id;
 

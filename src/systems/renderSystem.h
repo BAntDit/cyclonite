@@ -90,13 +90,22 @@ void RenderSystem::update(SystemManager& systemManager, EntityManager& entityMan
 
         auto const& frame = renderPass_->frame();
 
+        auto const& signal = renderPass_->passFinishedSemaphore();
+
         VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.waitSemaphoreCount = frame.waitSemaphores().size();
         submitInfo.pWaitSemaphores = frame.waitSemaphores().data();
         submitInfo.pWaitDstStageMask = frame.waitFlags().data();
+        submitInfo.commandBufferCount = frame.graphicsCommandCount();
+        submitInfo.pCommandBuffers = frame.graphicsCommands();
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = &signal;
 
-        // TODO:: ...
+        if (auto result = vkQueueSubmit(device_->graphicsQueue(), 1, &submitInfo, renderPass_->fence());
+            result != VK_SUCCESS) {
+            throw std::runtime_error("could not submit graphics commands");
+        }
 
         renderPass_->end(*device_);
     }

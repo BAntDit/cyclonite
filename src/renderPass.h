@@ -23,8 +23,6 @@ public:
     class FrameCommands
     {
     public:
-        FrameCommands() noexcept;
-
         explicit FrameCommands(vulkan::Device const& device);
 
         FrameCommands(FrameCommands const&) = delete;
@@ -37,24 +35,6 @@ public:
 
         auto operator=(FrameCommands &&) -> FrameCommands& = default;
 
-        [[nodiscard]] auto transferVersion() const -> uint64_t { return transferVersion_; }
-
-        [[nodiscard]] auto graphicsVersion() const -> uint64_t { return graphicsVersion_; }
-
-        template<typename UpdateCallback>
-        auto updatePersistentTransfer(UpdateCallback&& callback)
-          -> std::enable_if_t<std::is_invocable_v<UpdateCallback,
-                                                  std::vector<std::shared_ptr<vulkan::BaseCommandBufferSet>>&,
-                                                  std::vector<VkSemaphore>&,
-                                                  std::vector<VkPipelineStageFlags>&>>;
-
-        template<typename UpdateCallback>
-        auto updateTransientTransfer(UpdateCallback&& callback)
-          -> std::enable_if_t<std::is_invocable_v<UpdateCallback,
-                                                  std::vector<std::unique_ptr<vulkan::BaseCommandBufferSet>>&,
-                                                  std::vector<VkSemaphore>&,
-                                                  std::vector<VkPipelineStageFlags>&>>;
-
         void update(vulkan::Device& device,
                     VkRenderPass renderPass,
                     VkFramebuffer framebuffer,
@@ -63,27 +43,27 @@ public:
                     VkDescriptorPool descriptorPool,
                     VkDescriptorSetLayout descriptorSetLayout,
                     VkPipelineLayout pipelineLayout,
-                    VkPipeline pipeline,
-                    VkSemaphore frameBufferAvailableSemaphore,
-                    VkSemaphore passFinishedSemaphore,
-                    bool depthStencilRequired);
-
-        void setIndicesBuffer(std::shared_ptr<vulkan::Buffer> const& buffer);
-
-        void setTransferBuffer(std::shared_ptr<vulkan::Buffer> const& buffer);
-
-        void setCommandBuffer(std::shared_ptr<vulkan::Buffer> const& buffer, uint32_t commandCount);
+                    VkPipeline pipeline);
 
         void setUniformBuffer(std::shared_ptr<vulkan::Buffer> const& buffer);
+
+        [[nodiscard]] auto graphicsCommandCount() const -> size_t { return graphicsCommands_->commandBufferCount(); }
+
+        [[nodiscard]] auto graphicsCommands() const -> VkCommandBuffer const*
+        {
+            return graphicsCommands_->pCommandBuffers();
+        }
 
         [[nodiscard]] auto waitSemaphores() const -> std::vector<VkSemaphore> const& { return waitSemaphores_; }
 
         [[nodiscard]] auto waitFlags() const -> std::vector<VkPipelineStageFlags> const& { return waitFlags_; }
 
+        [[nodiscard]] auto frameSemaphore() const -> VkSemaphore const& { return waitSemaphores_[0]; }
+
+        [[nodiscard]] auto frameSemaphore() -> VkSemaphore& { return waitSemaphores_[0]; }
+
         auto getWaitSemaphore(size_t semaphoreId, VkPipelineStageFlags flags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM)
           -> std::pair<size_t, VkSemaphore const*>;
-
-        void setFrameSemaphore(VkSemaphore semaphore);
 
     private:
         void _reset();
@@ -172,6 +152,13 @@ public:
 
     auto frame() -> RenderPass::FrameCommands& { return frameCommands_[commandsIndex_]; }
 
+    [[nodiscard]] auto passFinishedSemaphore() const -> vulkan::Handle<VkSemaphore> const&
+    {
+        return signalSemaphores_[frameIndex_];
+    }
+
+    [[nodiscard]] auto fence() const -> VkFence { return static_cast<VkFence>(frameFences_[frameIndex_]); }
+
     [[nodiscard]] auto handle() const -> VkRenderPass { return static_cast<VkRenderPass>(vkRenderPass_); }
 
     [[nodiscard]] auto viewport() const -> std::array<uint32_t, 4>;
@@ -183,7 +170,7 @@ public:
 private:
     void _createRenderPass(vulkan::Device const& device, VkRenderPassCreateInfo const& renderPassCreateInfo);
 
-    void _createDummyDescriptorPool(vulkan::Device const& device, size_t maxSets);
+    void _createSemaphores(vulkan::Device const& device, size_t count);
 
 private:
     uint32_t frameIndex_;
@@ -193,9 +180,7 @@ private:
     std::variant<std::monostate, SurfaceRenderTarget, FrameBufferRenderTarget> renderTarget_;
     std::vector<vulkan::Handle<VkFence>> frameFences_;
     std::vector<VkFence> rtFences_;
-
-    // tmp:: create descriptor set pool here // dummy // for dummy pipeline // just for now
-    vulkan::CommandBufferSet<vulkan::CommandPool, std::vector<VkCommandBuffer>> commandBufferSet_;
+    std::vector<vulkan::Handle<VkSemaphore>> signalSemaphores_;
 
     std::vector<FrameCommands> frameCommands_;
 }; // RenderPass
@@ -210,10 +195,12 @@ RenderPass::RenderPass(vulkan::Device& device,
                        VkClearDepthStencilValue const& clearDepthStencilValue,
                        std::array<VkClearColorValue, sizeof...(ColorOutputs)> const& clearColorValues)
   : frameIndex_{ 0 }
+  , commandsIndex_{ 0 }
   , vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{}
   , frameFences_{}
   , rtFences_{}
+  , signalSemaphores_{}
   , frameCommands_{}
 {
     using render_target_builder_t = FrameBufferRenderTargetBuilder<DepthStencilOutput, ColorOutputs...>;
@@ -296,12 +283,12 @@ RenderPass::RenderPass(vulkan::Device& device,
                        std::array<VkPresentModeKHR, presentModeCandidateCount> const& presentModeCandidates,
                        VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags)
   : frameIndex_{ 0 }
+  , commandsIndex_{ 0 }
   , vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{}
   , frameFences_{}
   , rtFences_{}
-  , vkDescriptorPool_{ device.handle(), vkDestroyDescriptorPool }
-  , frameUpdate_{}
+  , signalSemaphores_{}
   , frameCommands_{}
 {
     using render_target_builder_t = SurfaceRenderTargetBuilder<DepthStencilOutput, ColorOutput>;
@@ -369,7 +356,7 @@ RenderPass::RenderPass(vulkan::Device& device,
 
     rtFences_.resize(frameCount, VK_NULL_HANDLE);
 
-    _createDummyDescriptorPool(device, frameCount);
+    _createSemaphores(device, frameCount);
 
     frameCommands_.reserve(frameCount);
 
@@ -378,50 +365,6 @@ RenderPass::RenderPass(vulkan::Device& device,
     }
 
     renderTarget_ = std::move(renderTarget);
-}
-
-template<typename UpdateCallback>
-auto RenderPass::FrameCommands::updatePersistentTransfer(UpdateCallback&& callback)
-  -> std::enable_if_t<std::is_invocable_v<UpdateCallback,
-                                          std::vector<std::shared_ptr<vulkan::BaseCommandBufferSet>>&,
-                                          std::vector<VkSemaphore>&,
-                                          std::vector<VkPipelineStageFlags>&>>
-{
-    persistentTransfer_.clear();
-    transferSemaphores_.clear();
-    waitSemaphores_.clear();
-    dstWaitFlags_.clear();
-
-    callback(persistentTransfer_, transferSemaphores_, dstWaitFlags_);
-
-    transferCommands_.clear();
-
-    for (auto&& pt : persistentTransfer_) {
-        auto count = pt->commandBufferCount();
-
-        transferCommands_.reserve(transferCommands_.size() + count);
-
-        for (size_t i = 0; i < count; i++)
-            transferCommands_.push_back(pt->getCommandBuffer(i));
-    }
-
-    transferVersion_++;
-}
-
-template<typename UpdateCallback>
-auto RenderPass::FrameCommands::updateTransientTransfer(UpdateCallback&& callback)
-  -> std::enable_if_t<std::is_invocable_v<UpdateCallback,
-                                          std::vector<std::unique_ptr<vulkan::BaseCommandBufferSet>>&,
-                                          std::vector<VkSemaphore>&,
-                                          std::vector<VkPipelineStageFlags>&>>
-{
-    transientTransfer_.clear();
-    transientSemaphores_.clear();
-    transientDstWaitFlags_.clear();
-
-    callback(transientTransfer_, transientSemaphores_, transientDstWaitFlags_);
-
-    transferVersion_++;
 }
 }
 

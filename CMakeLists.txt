@@ -26,7 +26,6 @@ set(PUBLIC_HEADERS
     src/systems/updateStages.h
     src/systems/transformSystem.h
     src/systems/meshSystem.h
-    src/systems/transferSystem.h
     src/systems/cameraSystem.h
     src/systems/uniformSystem.h
     src/systems/renderSystem.h
@@ -95,7 +94,6 @@ set(SOURCES
     src/components/transform.cpp
     src/components/camera.cpp
     src/systems/transformSystem.cpp
-    src/systems/transferSystem.cpp
     src/systems/cameraSystem.cpp
     src/systems/meshSystem.cpp
     src/systems/uniformSystem.cpp

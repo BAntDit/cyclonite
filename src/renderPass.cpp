@@ -23,30 +23,21 @@ void RenderPass::_createRenderPass(vulkan::Device const& device, VkRenderPassCre
     }
 }
 
-void RenderPass::_createDummyDescriptorPool(vulkan::Device const& device, size_t maxSets)
+void RenderPass::_createSemaphores(vulkan::Device const& device, size_t count)
 {
-    std::array<VkDescriptorPoolSize, 2> poolSizes = { VkDescriptorPoolSize{}, VkDescriptorPoolSize{} };
-    poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    poolSizes[0].descriptorCount = maxSets;
-    poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[1].descriptorCount = maxSets;
+    signalSemaphores_.reserve(count);
 
-    VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
-    descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    descriptorPoolCreateInfo.maxSets = static_cast<uint32_t>(maxSets);
-    descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-    descriptorPoolCreateInfo.pPoolSizes = poolSizes.data();
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    if (auto result = vkCreateDescriptorPool(device.handle(), &descriptorPoolCreateInfo, nullptr, &vkDescriptorPool_);
-        result != VK_SUCCESS) {
-        if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
-            throw std::runtime_error("not enough memory on host to create descriptors pool");
+    for (size_t i = 0; i < count; i++) {
+        if (auto result = vkCreateSemaphore(device.handle(),
+                                            &semaphoreCreateInfo,
+                                            nullptr,
+                                            &signalSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
+            result != VK_SUCCESS) {
+            throw std::runtime_error("could not create frame signal semaphore.");
         }
-
-        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
-            throw std::runtime_error("not enough memory on device to create descriptors pool");
-        }
-        assert(false);
     }
 }
 
@@ -114,7 +105,7 @@ void RenderPass::begin(vulkan::Device& device)
 
               commandsIndex_ = commandsIndex;
 
-              frameCommands_[frameIndex_].setFrameSemaphore(wait);
+              frameCommands_[frameIndex_].frameSemaphore() = wait;
           }
 
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
@@ -160,11 +151,16 @@ void RenderPass::end(vulkan::Device const& device)
 {
     std::visit(
       [&, this](auto&& rt) -> void {
-          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
-                        std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
-              frameIndex_ = rt.swapBuffers(device, frameIndex_);
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget>) {
+              rt.swapBuffers(device, passFinishedSemaphore(), frameIndex_);
+
+              frameIndex_ = (frameIndex_ + 1) % rt.swapChainLength();
 
               return;
+          }
+
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
+              throw std::runtime_error("not implemented yet");
           }
 
           throw std::runtime_error("empty render target");
