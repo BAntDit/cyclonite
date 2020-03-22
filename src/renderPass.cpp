@@ -50,45 +50,105 @@ void RenderPass::_createDummyDescriptorPool(vulkan::Device const& device, size_t
     }
 }
 
-auto RenderPass::begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkFence>
+auto RenderPass::viewport() const -> std::array<uint32_t, 4>
 {
     return std::visit(
-      [&, this](auto&& rt) -> std::tuple<FrameCommands&, VkFence> {
+      [](auto&& rt) -> std::array<uint32_t, 4> {
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
+                        std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
+              return std::array<uint32_t, 4>{ 0, 0, rt.width(), rt.height() };
+          }
+
+          std::terminate();
+      },
+      renderTarget_);
+}
+
+auto RenderPass::hasDepthStencil() const -> bool
+{
+    return std::visit(
+      [](auto&& rt) -> bool {
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
+                        std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
+              return rt.hasDepthStencil();
+          }
+
+          std::terminate();
+      },
+      renderTarget_);
+}
+
+auto RenderPass::getSwapChainLength() const -> size_t
+{
+    return std::visit(
+      [](auto&& rt) -> bool {
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
+                        std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
+              return rt.swapChainLength();
+          }
+
+          std::terminate();
+      },
+      renderTarget_);
+}
+
+void RenderPass::begin(vulkan::Device& device)
+{
+    std::visit(
+      [&, this](auto&& rt) -> void {
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget>) {
               auto frameFence = static_cast<VkFence>(frameFences_[frameIndex_]);
 
               vkWaitForFences(device.handle(), 1, &frameFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
 
-              auto [backBufferIndex, wait, signal] = rt.acquireBackBufferIndex(device, frameIndex_);
+              auto [commandsIndex, wait] = rt.acquireBackBufferIndex(device, frameIndex_);
 
-              if (rtFences_[backBufferIndex] != VK_NULL_HANDLE) {
+              if (rtFences_[commandsIndex] != VK_NULL_HANDLE) {
                   vkWaitForFences(
-                    device.handle(), 1, &rtFences_[backBufferIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
+                    device.handle(), 1, &rtFences_[commandsIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
               }
-
-              auto& frame = frameCommands_[backBufferIndex];
-              auto framebuffer = rt.frameBuffers()[backBufferIndex].handle();
-
-              frame.update(device,
-                           static_cast<VkRenderPass>(vkRenderPass_),
-                           static_cast<VkDescriptorPool>(vkDescriptorPool_),
-                           framebuffer,
-                           std::array<uint32_t, 4>{ 0, 0, rt.width(), rt.height() },
-                           wait,
-                           signal,
-                           rt.getClearValues(),
-                           rt.hasDepthStencil(),
-                           frameUpdate_);
 
               vkResetFences(device.handle(), 1, &frameFence);
 
-              rtFences_[backBufferIndex] = frameFence;
+              rtFences_[commandsIndex] = frameFence;
 
-              return std::forward_as_tuple(frame, frameFence);
+              commandsIndex_ = commandsIndex;
+
+              frameCommands_[frameIndex_].setFrameSemaphore(wait);
           }
 
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
               throw std::runtime_error("not implemented yet");
+          }
+
+          throw std::runtime_error("empty render target");
+      },
+      renderTarget_);
+}
+
+void RenderPass::update(vulkan::Device& device,
+                        VkDescriptorPool descriptorPool,
+                        VkDescriptorSetLayout descriptorSetLayout,
+                        VkPipelineLayout pipelineLayout,
+                        VkPipeline pipeline)
+{
+    std::visit(
+      [&, this](auto&& rt) -> void {
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
+                        std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
+              auto framebuffer = rt.frameBuffers()[commandsIndex_].handle();
+
+              frameCommands_[commandsIndex_].update(device,
+                                                    handle(),
+                                                    framebuffer,
+                                                    std::array<uint32_t, 4>{ 0, 0, rt.width(), rt.height() },
+                                                    rt.getClearValues(),
+                                                    descriptorPool,
+                                                    descriptorSetLayout,
+                                                    pipelineLayout,
+                                                    pipeline);
+
+              return;
           }
 
           throw std::runtime_error("empty render target");

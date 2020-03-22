@@ -7,6 +7,7 @@
 
 #include "../components/camera.h"
 #include "transformSystem.h"
+#include "uniformSystem.h"
 #include "updateStages.h"
 #include "vulkan/commandBufferSet.h"
 #include "vulkan/commandPool.h"
@@ -37,31 +38,22 @@ public:
 
     auto operator=(CameraSystem &&) -> CameraSystem& = default;
 
-    void init(vulkan::Device& device);
+    void init();
 
     template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
     void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
-
-    [[nodiscard]] auto persistentTransferCommands() const -> std::shared_ptr<transfer_commands_t> const&;
-
-    [[nodiscard]] auto transferSemaphore() const -> VkSemaphore { return static_cast<VkSemaphore>(transferSemaphore_); }
-
-private:
-    std::unique_ptr<vulkan::Staging> uniforms_;
-    std::unique_ptr<vulkan::Buffer> gpuUniforms_;
-    std::shared_ptr<transfer_commands_t> persistentTransfer_;
-    vulkan::Handle<VkSemaphore> transferSemaphore_;
 };
 
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
 void CameraSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
-    if constexpr (STAGE == easy_mp::value_cast(UpdateStage::EARLY_UPDATE)) {
-        auto&& [frame, cameraEntity, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
-        (void)frame;
+    using namespace easy_mp;
+
+    if constexpr (STAGE == value_cast(UpdateStage::LATE_UPDATE)) {
+        auto&& [cameraEntity, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
         (void)dt;
 
-        auto* uniforms = reinterpret_cast<real*>(uniforms_->ptr());
+        auto& uniformSystem = systemManager.template get<UniformSystem()>();
         auto const& transformSystem = std::as_const(systemManager).template get<TransformSystem>();
         auto const& transforms = transformSystem.worldMatrices();
 
@@ -106,18 +98,11 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
 
         auto viewProjectionMatrix = glm::transpose(projectionMatrix) * viewMatrix;
 
-        std::copy_n(glm::value_ptr(viewMatrix), 16, uniforms);
-        std::copy_n(glm::value_ptr(projectionMatrix), 16, uniforms + 16);
-        std::copy_n(glm::value_ptr(viewProjectionMatrix), 16, uniforms + 32);
-    }
+        uniformSystem.setViewMatrix(viewMatrix);
 
-    if constexpr (STAGE == easy_mp::value_cast(UpdateStage::LATE_UPDATE)) {
-        auto&& [frame, cameraEntity, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
-        (void)cameraEntity;
-        (void)dt;
+        uniformSystem.setProjectionMatrix(projectionMatrix);
 
-        if (frame.uniformBuffer() != gpuUniforms_->handle())
-            frame.setUniformBuffer(gpuUniforms_->handle());
+        uniformSystem.setViewProjectionMatrix(viewProjectionMatrix);
     }
 }
 }

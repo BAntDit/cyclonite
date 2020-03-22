@@ -5,14 +5,6 @@
 #include "renderPass.h"
 #include "vulkan/shaderModule.h"
 
-std::vector<uint32_t> const defaultVertexShaderCode = {
-#include "shaders/default.vert.spv.cpp.txt"
-};
-
-std::vector<uint32_t> const defaultFragmentShaderCode = {
-#include "shaders/default.frag.spv.cpp.txt"
-};
-
 namespace cyclonite {
 RenderPass::FrameCommands::FrameCommands() noexcept
   : transferVersion_{ 0 }
@@ -35,7 +27,7 @@ RenderPass::FrameCommands::FrameCommands() noexcept
   , descriptorSetLayout_{}
   , pipelineLayout_{}
   , pipeline_{}
-  , vkBufferDescriptorSet_{ VK_NULL_HANDLE }
+  , descriptorSet_{ VK_NULL_HANDLE }
   , transferQueueSubmitInfo_{ nullptr }
   , graphicsQueueSubmitInfo_{}
 {}
@@ -58,197 +50,78 @@ RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   , commandBuffer_{ nullptr }
   , vkUniformsBuffer_{ VK_NULL_HANDLE }
   , drawCommandCount_{ 0 }
-  , descriptorSetLayout_{ device.handle(), vkDestroyDescriptorSetLayout }
-  , pipelineLayout_{ device.handle(), vkDestroyPipelineLayout }
-  , pipeline_{ device.handle(), vkDestroyPipeline }
-  , vkBufferDescriptorSet_{ VK_NULL_HANDLE }
+  , descriptorSet_{ VK_NULL_HANDLE }
   , transferQueueSubmitInfo_{ nullptr }
   , graphicsQueueSubmitInfo_{}
 {}
 
-void RenderPass::FrameCommands::_clearTransientTransfer()
+void RenderPass::FrameCommands::setFrameSemaphore(VkSemaphore semaphore)
 {
-    // clear out of date transient commands
-    transientTransfer_.clear();
-    transientSemaphores_.clear();
-    transientDstWaitFlags_.clear();
+    assert(waitSemaphores_.size() > 0);
+    waitSemaphores_[0] = semaphore;
 }
 
-void RenderPass::FrameCommands::_updatePipeline(vulkan::Device& device,
-                                                VkRenderPass renderPass,
-                                                std::array<uint32_t, 4> const& viewport,
-                                                bool depthStencilRequired)
+auto RenderPass::FrameCommands::getWaitSemaphore(size_t semaphoreId, VkPipelineStageFlags flags)
+  -> std::pair<size_t, VkSemaphore const*>
 {
-    // DUMMY PIPELINE, just for now
-    vulkan::ShaderModule vertexShaderModule{ device, defaultVertexShaderCode, VK_SHADER_STAGE_VERTEX_BIT };
-    vulkan::ShaderModule fragmentShaderModule{ device, defaultFragmentShaderCode, VK_SHADER_STAGE_FRAGMENT_BIT };
-
-    VkPipelineShaderStageCreateInfo vertexShaderStageInfo = {};
-    vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    vertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    vertexShaderStageInfo.module = vertexShaderModule.handle();
-    vertexShaderStageInfo.pName = u8"main";
-
-    VkPipelineShaderStageCreateInfo fragmentShaderStageInfo = {};
-    fragmentShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    fragmentShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    fragmentShaderStageInfo.module = fragmentShaderModule.handle();
-    fragmentShaderStageInfo.pName = u8"main";
-
-    std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = { vertexShaderStageInfo, fragmentShaderStageInfo };
-
-    VkPipelineVertexInputStateCreateInfo vertexInput = {};
-    vertexInput.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInput.vertexBindingDescriptionCount = 0;
-    vertexInput.vertexAttributeDescriptionCount = 0;
-
-    VkPipelineInputAssemblyStateCreateInfo assemblyState = {};
-    assemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    assemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    assemblyState.primitiveRestartEnable = VK_FALSE;
-
-    auto&& [x, y, width, height] = viewport;
-
-    VkViewport vkViewport = {};
-    vkViewport.x = x;
-    vkViewport.y = y;
-    vkViewport.width = width;
-    vkViewport.height = height;
-    vkViewport.minDepth = 0.0;
-    vkViewport.maxDepth = 1.0;
-
-    VkRect2D vkScissor = {};
-    vkScissor.offset.x = x;
-    vkScissor.offset.y = y;
-    vkScissor.extent.width = width;
-    vkScissor.extent.height = height;
-
-    VkPipelineViewportStateCreateInfo viewportState = {};
-    viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewportState.viewportCount = 1;
-    viewportState.pViewports = &vkViewport;
-    viewportState.scissorCount = 1;
-    viewportState.pScissors = &vkScissor;
-
-    VkPipelineRasterizationStateCreateInfo rasterizationState = {};
-    rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterizationState.depthClampEnable = VK_FALSE;
-    rasterizationState.rasterizerDiscardEnable = VK_FALSE; // just for now
-    rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterizationState.lineWidth = 1.0f;
-    rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterizationState.depthBiasEnable = VK_FALSE;
-
-    VkPipelineMultisampleStateCreateInfo multisampleState = {};
-    multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampleState.sampleShadingEnable = VK_FALSE;
-    multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // TODO:: must come from render target
-
-    // TMP::
-    // TODO:: must come from RT
-    VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState = {};
-    pipelineColorBlendAttachmentState.blendEnable = VK_FALSE;
-    pipelineColorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    pipelineColorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-    pipelineColorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
-    pipelineColorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    pipelineColorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    pipelineColorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
-    pipelineColorBlendAttachmentState.colorWriteMask =
-      VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-
-    VkPipelineColorBlendStateCreateInfo colorBlendState = {}; // TODO:: must come from render target
-    colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    colorBlendState.logicOpEnable = VK_FALSE;
-    colorBlendState.logicOp = VK_LOGIC_OP_COPY;
-    colorBlendState.attachmentCount = 1;
-    colorBlendState.pAttachments = &pipelineColorBlendAttachmentState;
-    colorBlendState.blendConstants[0] = 0.0f;
-    colorBlendState.blendConstants[1] = 0.0f;
-    colorBlendState.blendConstants[2] = 0.0f;
-    colorBlendState.blendConstants[3] = 0.0f;
-
-    std::array<VkDescriptorSetLayoutBinding, 2> bindings = { VkDescriptorSetLayoutBinding{},
-                                                             VkDescriptorSetLayoutBinding{} };
-    bindings[0].binding = 0;
-    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    bindings[0].descriptorCount = 1;
-    bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    bindings[1].binding = 1;
-    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    bindings[1].descriptorCount = 1;
-    bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-    VkDescriptorSetLayoutCreateInfo descriptorSetLayout = {};
-    descriptorSetLayout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptorSetLayout.bindingCount = static_cast<uint32_t>(bindings.size());
-    descriptorSetLayout.pBindings = bindings.data();
-
-    if (auto result =
-          vkCreateDescriptorSetLayout(device.handle(), &descriptorSetLayout, nullptr, &descriptorSetLayout_);
-        result != VK_SUCCESS) {
-        throw std::runtime_error("could not create descriptor set layout");
+    if (semaphoreId == std::numeric_limits<size_t>::max()) {
+        semaphoreId = semaphores_.size();
     }
 
-    VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
-    pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutCreateInfo.setLayoutCount = 1;
-    pipelineLayoutCreateInfo.pSetLayouts = &std::as_const(descriptorSetLayout_);
+    if (semaphores_.count(semaphoreId) == 0) {
+        auto [it, _] = semaphores_.emplace(
+          semaphoreId, std::make_pair(waitSemaphores_.size(), vulkan::Handle{ vkDevice_, vkDestroySemaphore }));
 
-    if (auto result = vkCreatePipelineLayout(device.handle(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout_);
-        result != VK_SUCCESS) {
-        throw std::runtime_error("could not create graphics pipeline layout");
+        auto& [key, value] = *it;
+        auto& [idx, handle] = value;
+
+        VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+        semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+        if (auto result = vkCreateSemaphore(vkDevice_, &semaphoreCreateInfo, nullptr, &handle); result != VK_SUCCESS) {
+            throw std::runtime_error("could not create synchronization semaphore");
+        }
+
+        assert(flags != VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM);
+
+        waitSemaphores_.emplace_back(static_cast<VkSemaphore>(handle));
+        waitFlags_.emplace_back(flags);
+
+        (void)_;
+        (void)key;
+        (void)idx;
     }
 
-    VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
-    graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    graphicsPipelineCreateInfo.stageCount = shaderStages.size();
-    graphicsPipelineCreateInfo.pStages = shaderStages.data();
-    graphicsPipelineCreateInfo.pVertexInputState = &vertexInput;
-    graphicsPipelineCreateInfo.pInputAssemblyState = &assemblyState;
-    graphicsPipelineCreateInfo.pViewportState = &viewportState;
-    graphicsPipelineCreateInfo.pRasterizationState = &rasterizationState;
-    graphicsPipelineCreateInfo.pMultisampleState = &multisampleState;
-    graphicsPipelineCreateInfo.pColorBlendState = &colorBlendState;
-    graphicsPipelineCreateInfo.layout = static_cast<VkPipelineLayout>(pipelineLayout_);
-    graphicsPipelineCreateInfo.renderPass = renderPass;
-    graphicsPipelineCreateInfo.subpass = 0;
-    graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+    assert(semaphores_.count(semaphoreId) != 0 && waitSemaphores_.size() < semaphores_[semaphoreId].first);
 
-    if (depthStencilRequired) {
-        VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {};
+    return std::make_pair(semaphoreId, waitSemaphores_.data() + semaphores_[semaphoreId].first);
+}
 
-        depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
-        depthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
-        depthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
-        depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
-        depthStencilStateCreateInfo.minDepthBounds = 0.0f;
-        depthStencilStateCreateInfo.maxDepthBounds = 1.0f;
-        depthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
-        depthStencilStateCreateInfo.front = {};
-        depthStencilStateCreateInfo.back = {};
-
-        graphicsPipelineCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
-    }
-
-    if (auto result = vkCreateGraphicsPipelines(
-          device.handle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &pipeline_);
-        result != VK_SUCCESS) {
-        throw std::runtime_error("could not create graphics pipeline");
+void RenderPass::FrameCommands::setUniformBuffer(std::shared_ptr<vulkan::Buffer> const& buffer)
+{
+    if (uniforms_ != buffer) {
+        uniforms_ = buffer;
+        _reset();
     }
 }
 
-void RenderPass::FrameCommands::_createDescriptorSets(VkDevice vkDevice, VkDescriptorPool vkDescriptorPool)
+void RenderPass::FrameCommands::_reset()
+{
+    descriptorSetExpired_ = true;
+    graphicsCommands_.reset();
+}
+
+void RenderPass::FrameCommands::_createDescriptorSets(VkDevice vkDevice,
+                                                      VkDescriptorPool vkDescriptorPool,
+                                                      VkDescriptorSetLayout descriptorSetLayout)
 {
     VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
     descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     descriptorSetAllocateInfo.descriptorPool = vkDescriptorPool;
     descriptorSetAllocateInfo.descriptorSetCount = 1;
-    descriptorSetAllocateInfo.pSetLayouts = &std::as_const(descriptorSetLayout_);
+    descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayout; // it's ok, allocation goes in the local scope
 
-    if (auto result = vkAllocateDescriptorSets(vkDevice, &descriptorSetAllocateInfo, &vkBufferDescriptorSet_);
+    if (auto result = vkAllocateDescriptorSets(vkDevice, &descriptorSetAllocateInfo, &descriptorSet_);
         result != VK_SUCCESS) {
         if (result == VK_ERROR_OUT_OF_HOST_MEMORY)
             throw std::runtime_error("can not allocate descriptor set, out of host memory");
@@ -268,15 +141,76 @@ void RenderPass::FrameCommands::_createDescriptorSets(VkDevice vkDevice, VkDescr
 
 void RenderPass::FrameCommands::update(vulkan::Device& device,
                                        VkRenderPass renderPass,
-                                       VkDescriptorPool descriptorPool,
                                        VkFramebuffer framebuffer,
-                                       std::array<uint32_t, 4>&& viewport,
+                                       std::array<uint32_t, 4> const& viewport,
+                                       std::pair<size_t, VkClearValue const*> const& clearValues,
+                                       VkDescriptorPool descriptorPool,
+                                       VkDescriptorSetLayout descriptorSetLayout,
+                                       VkPipelineLayout pipelineLayout,
+                                       VkPipeline pipeline,
                                        VkSemaphore frameBufferAvailableSemaphore,
                                        VkSemaphore passFinishedSemaphore,
-                                       std::pair<size_t, VkClearValue const*>&& clearValues,
-                                       bool depthStencilRequired,
-                                       FrameCommands& frameUpdate)
+                                       bool depthStencilRequired)
 {
+    if (descriptorSetExpired_ && descriptorSet_ != VK_NULL_HANDLE) {
+        vkFreeDescriptorSets(device.handle(), descriptorPool, 1, &descriptorSet_);
+        descriptorSet_ = VK_NULL_HANDLE;
+    }
+
+    if (descriptorSet_ == VK_NULL_HANDLE) {
+        _createDescriptorSets(device.handle(), descriptorPool, descriptorSetLayout);
+
+        // TODO:: write descriptor set
+
+        descriptorSetExpired_ = false;
+    }
+
+    if (!graphicsCommands_) {
+        graphicsCommands_ = std::make_unique<graphics_queue_commands_t>(device.commandPool().allocCommandBuffers(
+          vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>{
+            device.graphicsQueueFamilyIndex(),
+            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+            std::array<VkCommandBuffer, 1>{} },
+          [=](auto&& graphicsCommands) -> void {
+              auto [commandBuffer] = graphicsCommands;
+              auto [x, y, width, height] = viewport;
+              auto [clearValueCount, pClearValues] = clearValues;
+
+              VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+              commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+              if (vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo) != VK_SUCCESS) {
+                  throw std::runtime_error("could not begin recording command buffer!");
+              }
+
+              VkRenderPassBeginInfo renderPassBeginInfo = {};
+              renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+              renderPassBeginInfo.renderPass = renderPass;
+              renderPassBeginInfo.framebuffer = framebuffer;
+              renderPassBeginInfo.renderArea.offset.x = x;
+              renderPassBeginInfo.renderArea.offset.y = y;
+              renderPassBeginInfo.renderArea.extent.width = width;
+              renderPassBeginInfo.renderArea.extent.height = height;
+              renderPassBeginInfo.clearValueCount = clearValueCount;
+              renderPassBeginInfo.pClearValues = pClearValues;
+
+              vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+              vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+              vkCmdBindDescriptorSets(
+                commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet_, 0, nullptr);
+
+              vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+              vkCmdEndRenderPass(commandBuffer);
+
+              if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS) {
+                  throw std::runtime_error("could not record command buffer!");
+              }
+          }));
+    } // graphics update end
+
     auto transferVersion = frameUpdate.transferVersion();
     auto graphicsVersion = frameUpdate.graphicsVersion();
 
@@ -362,7 +296,7 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
         if (transformBuffer_ != frameUpdate.transformBuffer_) {
             transformBuffer_ = frameUpdate.transformBuffer_;
 
-            if (vkBufferDescriptorSet_ == VK_NULL_HANDLE) {
+            if (descriptorSet_ == VK_NULL_HANDLE) {
                 _createDescriptorSets(device.handle(), descriptorPool);
             }
 
@@ -380,14 +314,14 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
             std::array<VkWriteDescriptorSet, 2> writeDescriptorSets = { VkWriteDescriptorSet{},
                                                                         VkWriteDescriptorSet{} };
             writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptorSets[0].dstSet = vkBufferDescriptorSet_;
+            writeDescriptorSets[0].dstSet = descriptorSet_;
             writeDescriptorSets[0].dstBinding = 0;
             writeDescriptorSets[0].descriptorCount = 1;
             writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             writeDescriptorSets[0].pBufferInfo = &transformsBufferInfo;
 
             writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptorSets[1].dstSet = vkBufferDescriptorSet_;
+            writeDescriptorSets[1].dstSet = descriptorSet_;
             writeDescriptorSets[1].dstBinding = 1;
             writeDescriptorSets[1].descriptorCount = 1;
             writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -440,7 +374,7 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
                                       static_cast<VkPipelineLayout>(pipelineLayout_),
                                       0,
                                       1,
-                                      &vkBufferDescriptorSet_,
+                                      &descriptorSet_,
                                       0,
                                       nullptr);
 

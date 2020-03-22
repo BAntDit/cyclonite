@@ -130,39 +130,31 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
             result != VK_SUCCESS) {
             throw std::runtime_error("could not create image available semaphore.");
         }
-
-        if (auto result =
-              vkCreateSemaphore(device.handle(),
-                                &semaphoreCreateInfo,
-                                nullptr,
-                                &renderFinishedSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
-            result != VK_SUCCESS) {
-            throw std::runtime_error("could not create image available semaphore.");
-        }
     }
 
     imageIndices_.resize(imageCount, 0);
 }
 
 auto SurfaceRenderTarget::acquireBackBufferIndex(vulkan::Device const& device, uint32_t frameIndex)
-  -> std::tuple<uint32_t, VkSemaphore, VkSemaphore>
+  -> std::pair<uint32_t, VkSemaphore>
 {
     auto wait = static_cast<VkSemaphore>(imageAvailableSemaphores_[frameIndex]);
-    auto signal = static_cast<VkSemaphore>(renderFinishedSemaphores_[frameIndex]);
 
     vkAcquireNextImageKHR(device.handle(),
                           static_cast<VkSwapchainKHR>(vkSwapChain_),
                           std::numeric_limits<uint64_t>::max(),
-                          // wait for this semaphore before render into back buffer
                           wait,
                           VK_NULL_HANDLE,
                           imageIndices_.data() + frameIndex);
 
-    return std::make_tuple(imageIndices_[frameIndex], wait, signal);
+    return std::make_pair(imageIndices_[frameIndex], wait);
 }
 
 auto SurfaceRenderTarget::swapBuffers(vulkan::Device const& device, uint32_t frameIndex) -> uint32_t
 {
+    assert(frameIndex < renderFinishedSemaphores_.size());
+    assert(frameIndex < imageIndices_.size());
+
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;

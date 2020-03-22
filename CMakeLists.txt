@@ -28,6 +28,8 @@ set(PUBLIC_HEADERS
     src/systems/meshSystem.h
     src/systems/transferSystem.h
     src/systems/cameraSystem.h
+    src/systems/uniformSystem.h
+    src/systems/renderSystem.h
     src/core/bufferView.h
     src/core/transform.h
     src/core/camera.h
@@ -96,6 +98,8 @@ set(SOURCES
     src/systems/transferSystem.cpp
     src/systems/cameraSystem.cpp
     src/systems/meshSystem.cpp
+    src/systems/uniformSystem.cpp
+    src/systems/renderSystem.cpp
     src/vulkanRenderer.cpp
     src/sdl/sdlSupport.cpp
     src/sdl/sdlWindow.cpp

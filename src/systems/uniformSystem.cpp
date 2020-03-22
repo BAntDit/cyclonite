@@ -1,34 +1,25 @@
 //
-// Created by bantdit on 2/24/20.
+// Created by bantdit on 3/21/20.
 //
 
-#include "cameraSystem.h"
-#include "vulkan/device.h"
+#include "uniformSystem.h"
+#include "../vulkan/device.h"
+#include <glm/gtc/type_ptr.hpp>
 
 namespace cyclonite::systems {
-void CameraSystem::init(vulkan::Device& device)
+void UniformSystem::init(vulkan::Device& device)
 {
     vkDevice_ = device.handle();
     vkTransferQueue_ = device.hostTransferQueue();
 
-    uniforms_ = std::make_unique<vulkan::Staging>(device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(mat4) * 3);
+    transferSemaphoreId_ = std::numeric_limits<size_t>::max();
 
-    gpuUniforms_ = std::make_unique<vulkan::Buffer>(
+    gpuUniforms_ = std::make_shared<vulkan::Buffer>(
       device,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
       VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
       sizeof(mat4) * 3,
       std::array{ device.hostTransferQueueFamilyIndex(), device.graphicsQueueFamilyIndex() });
-
-    transferSemaphore_ = vulkan::Handle<VkSemaphore>{ device.handle(), vkDestroySemaphore };
-
-    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
-    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-    if (auto result = vkCreateSemaphore(device.handle(), &semaphoreCreateInfo, nullptr, &transferSemaphore_);
-        result != VK_SUCCESS) {
-        throw std::runtime_error("could not create uniforms transfer synchronization semaphore");
-    }
 
     transferCommands_ = std::make_unique<vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>>(
       device.commandPool().allocCommandBuffers(
@@ -62,8 +53,21 @@ void CameraSystem::init(vulkan::Device& device)
         }));
 }
 
-auto CameraSystem::persistentTransferCommands() const -> std::shared_ptr<transfer_commands_t> const&
+void UniformSystem::setViewMatrix(mat4& viewMatrix)
 {
-    return persistentTransfer_;
+    auto* ptr = reinterpret_cast<real*>(uniforms_->ptr());
+    std::copy_n(glm::value_ptr(viewMatrix), 16, ptr);
+}
+
+void UniformSystem::setProjectionMatrix(mat4& projectionMatrix)
+{
+    auto* ptr = reinterpret_cast<real*>(uniforms_->ptr());
+    std::copy_n(glm::value_ptr(projectionMatrix), 16, ptr + 16);
+}
+
+void UniformSystem::setViewProjectionMatrix(mat4& viewProjMatrix)
+{
+    auto* ptr = reinterpret_cast<real*>(uniforms_->ptr());
+    std::copy_n(glm::value_ptr(viewProjMatrix), 16, ptr + 32);
 }
 }

@@ -83,8 +83,7 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
                 state = components::Transform::State::UPDATE_WORLD;
             }
 
-            state = (parentTransform != nullptr &&
-                     parentTransform->state == components::Transform::State::UPDATE_WORLD)
+            state = (parentTransform != nullptr && parentTransform->state == components::Transform::State::UPDATE_WORLD)
                       ? components::Transform::State::UPDATE_WORLD
                       : state;
 

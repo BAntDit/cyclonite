@@ -57,29 +57,16 @@ public:
 
         void update(vulkan::Device& device,
                     VkRenderPass renderPass,
-                    VkDescriptorPool descriptorPool,
                     VkFramebuffer framebuffer,
-                    std::array<uint32_t, 4>&& viewport,
+                    std::array<uint32_t, 4> const& viewport,
+                    std::pair<size_t, VkClearValue const*> const& clearValues,
+                    VkDescriptorPool descriptorPool,
+                    VkDescriptorSetLayout descriptorSetLayout,
+                    VkPipelineLayout pipelineLayout,
+                    VkPipeline pipeline,
                     VkSemaphore frameBufferAvailableSemaphore,
                     VkSemaphore passFinishedSemaphore,
-                    std::pair<size_t, VkClearValue const*>&& clearValues,
-                    bool depthStencilRequired,
-                    FrameCommands& frameUpdate);
-
-        [[nodiscard]] auto transferQueueSubmitInfo() const -> std::unique_ptr<VkSubmitInfo> const&
-        {
-            return transferQueueSubmitInfo_;
-        }
-
-        [[nodiscard]] auto graphicsQueueSubmitInfo() const -> VkSubmitInfo const& { return graphicsQueueSubmitInfo_; }
-
-        [[nodiscard]] auto indicesBuffer() const -> std::shared_ptr<vulkan::Buffer> const& { return indicesBuffer_; }
-
-        [[nodiscard]] auto transferBuffer() const -> std::shared_ptr<vulkan::Buffer> const& { return transformBuffer_; }
-
-        [[nodiscard]] auto commandBuffer() const -> std::shared_ptr<vulkan::Buffer> const& { return commandBuffer_; }
-
-        [[nodiscard]] auto uniformBuffer() const -> VkBuffer { return vkUniformsBuffer_; }
+                    bool depthStencilRequired);
 
         void setIndicesBuffer(std::shared_ptr<vulkan::Buffer> const& buffer);
 
@@ -87,54 +74,37 @@ public:
 
         void setCommandBuffer(std::shared_ptr<vulkan::Buffer> const& buffer, uint32_t commandCount);
 
-        void setUniformBuffer(VkBuffer uniforms);
+        void setUniformBuffer(std::shared_ptr<vulkan::Buffer> const& buffer);
+
+        [[nodiscard]] auto waitSemaphores() const -> std::vector<VkSemaphore> const& { return waitSemaphores_; }
+
+        [[nodiscard]] auto waitFlags() const -> std::vector<VkPipelineStageFlags> const& { return waitFlags_; }
+
+        auto getWaitSemaphore(size_t semaphoreId, VkPipelineStageFlags flags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM)
+          -> std::pair<size_t, VkSemaphore const*>;
+
+        void setFrameSemaphore(VkSemaphore semaphore);
 
     private:
-        void _updatePipeline(vulkan::Device& device,
-                             VkRenderPass renderPass,
-                             std::array<uint32_t, 4> const& viewport,
-                             bool depthStencilRequired);
+        void _reset();
 
-        void _createDescriptorSets(VkDevice vkDevice, VkDescriptorPool vkDescriptorPool);
-
-        void _clearTransientTransfer();
+        void _createDescriptorSets(VkDevice vkDevice,
+                                   VkDescriptorPool vkDescriptorPool,
+                                   VkDescriptorSetLayout descriptorSetLayout);
 
     private:
-        uint64_t transferVersion_;
-        uint64_t graphicsVersion_;
+        VkDevice vkDevice_;
 
-        std::vector<std::shared_ptr<vulkan::BaseCommandBufferSet>> persistentTransfer_;
-        std::vector<VkCommandBuffer> transferCommands_;
-        std::vector<VkSemaphore> transferSemaphores_;
+        std::shared_ptr<vulkan::Buffer> uniforms_;
 
-        std::vector<std::unique_ptr<vulkan::BaseCommandBufferSet>> transientTransfer_;
-        std::vector<vulkan::Handle<VkSemaphore>> transientSemaphores_;
-        std::vector<VkPipelineStageFlags> transientDstWaitFlags_;
-
-        VkSemaphore vkSignalSemaphore_;
+        std::unordered_map<size_t, std::pair<size_t, vulkan::Handle<VkSemaphore>>> semaphores_;
+        std::vector<VkSemaphore> waitSemaphores_;
+        std::vector<VkPipelineStageFlags> waitFlags_;
 
         std::unique_ptr<graphics_queue_commands_t> graphicsCommands_;
-        std::vector<VkSemaphore> waitSemaphores_;
-        std::vector<VkPipelineStageFlags> dstWaitFlags_;
 
-        std::shared_ptr<vulkan::Buffer> indicesBuffer_;
-        std::shared_ptr<vulkan::Buffer> transformBuffer_;
-        std::shared_ptr<vulkan::Buffer> commandBuffer_;
-        VkBuffer vkUniformsBuffer_;
-
-        uint32_t drawCommandCount_;
-
-        // dummy
-        vulkan::Handle<VkDescriptorSetLayout> descriptorSetLayout_;
-        vulkan::Handle<VkPipelineLayout> pipelineLayout_;
-        vulkan::Handle<VkPipeline> pipeline_;
-        //
-
-        VkDescriptorSet vkBufferDescriptorSet_;
-
-        std::unique_ptr<VkSubmitInfo> transferQueueSubmitInfo_;
-
-        VkSubmitInfo graphicsQueueSubmitInfo_;
+        bool descriptorSetExpired_;
+        VkDescriptorSet descriptorSet_;
     };
 
 public:
@@ -190,11 +160,25 @@ public:
 
     auto operator=(RenderPass &&) -> RenderPass& = default;
 
-    auto begin(vulkan::Device& device) -> std::tuple<FrameCommands&, VkFence>;
+    void begin(vulkan::Device& device);
+
+    void update(vulkan::Device& device,
+                VkDescriptorPool descriptorPool,
+                VkDescriptorSetLayout descriptorSetLayout,
+                VkPipelineLayout pipelineLayout,
+                VkPipeline pipeline);
 
     void end(vulkan::Device const& device);
 
-    auto frame() -> RenderPass::FrameCommands& { return frameUpdate_; }
+    auto frame() -> RenderPass::FrameCommands& { return frameCommands_[commandsIndex_]; }
+
+    [[nodiscard]] auto handle() const -> VkRenderPass { return static_cast<VkRenderPass>(vkRenderPass_); }
+
+    [[nodiscard]] auto viewport() const -> std::array<uint32_t, 4>;
+
+    [[nodiscard]] auto hasDepthStencil() const -> bool;
+
+    [[nodiscard]] auto getSwapChainLength() const -> size_t;
 
 private:
     void _createRenderPass(vulkan::Device const& device, VkRenderPassCreateInfo const& renderPassCreateInfo);
@@ -203,6 +187,7 @@ private:
 
 private:
     uint32_t frameIndex_;
+    uint32_t commandsIndex_;
 
     vulkan::Handle<VkRenderPass> vkRenderPass_;
     std::variant<std::monostate, SurfaceRenderTarget, FrameBufferRenderTarget> renderTarget_;
@@ -210,13 +195,10 @@ private:
     std::vector<VkFence> rtFences_;
 
     // tmp:: create descriptor set pool here // dummy // for dummy pipeline // just for now
-    vulkan::Handle<VkDescriptorPool> vkDescriptorPool_;
-
     vulkan::CommandBufferSet<vulkan::CommandPool, std::vector<VkCommandBuffer>> commandBufferSet_;
 
-    FrameCommands frameUpdate_;
     std::vector<FrameCommands> frameCommands_;
-};
+}; // RenderPass
 
 template<typename DepthStencilOutput, typename... ColorOutputs>
 RenderPass::RenderPass(vulkan::Device& device,
@@ -232,8 +214,6 @@ RenderPass::RenderPass(vulkan::Device& device,
   , renderTarget_{}
   , frameFences_{}
   , rtFences_{}
-  , vkDescriptorPool_{ device.handle(), vkDestroyDescriptorPool }
-  , frameUpdate_{}
   , frameCommands_{}
 {
     using render_target_builder_t = FrameBufferRenderTargetBuilder<DepthStencilOutput, ColorOutputs...>;
