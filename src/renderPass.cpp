@@ -72,7 +72,7 @@ auto RenderPass::hasDepthStencil() const -> bool
 auto RenderPass::getSwapChainLength() const -> size_t
 {
     return std::visit(
-      [](auto&& rt) -> bool {
+      [](auto&& rt) -> size_t {
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
                         std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
               return rt.swapChainLength();
@@ -106,6 +106,8 @@ void RenderPass::begin(vulkan::Device& device)
               commandsIndex_ = commandsIndex;
 
               frameCommands_[frameIndex_].frameSemaphore() = wait;
+
+              return;
           }
 
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {

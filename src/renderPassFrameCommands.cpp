@@ -3,6 +3,7 @@
 //
 
 #include "renderPass.h"
+#include <iostream>
 
 namespace cyclonite {
 RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
@@ -47,7 +48,7 @@ auto RenderPass::FrameCommands::getWaitSemaphore(size_t semaphoreId, VkPipelineS
         (void)idx;
     }
 
-    assert(semaphores_.count(semaphoreId) != 0 && waitSemaphores_.size() < semaphores_[semaphoreId].first);
+    assert(semaphores_.count(semaphoreId) != 0 && waitSemaphores_.size() > semaphores_[semaphoreId].first);
 
     return std::make_pair(semaphoreId, waitSemaphores_.data() + semaphores_[semaphoreId].first);
 }

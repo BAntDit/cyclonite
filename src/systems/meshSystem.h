@@ -55,41 +55,11 @@ private:
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
 void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
-    if constexpr (STAGE == easy_mp::value_cast(UpdateStage::EARLY_UPDATE)) {
-        auto& commands = *reinterpret_cast<VkDrawIndexedIndirectCommand*>(commandBuffer_->ptr());
+    (void)systemManager;
 
-        commands.indexCount = 36;
-        commands.instanceCount = 0;
-        commands.firstIndex = 0;
-        commands.vertexOffset = 0;
-        commands.firstInstance = 0;
-    }
+    (void)entityManager;
 
-    if constexpr (STAGE == easy_mp::value_cast(UpdateStage::LATE_UPDATE)) {
-        auto&& [camera, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
-        (void)camera;
-        (void)dt;
-
-        auto* transforms3x4 = reinterpret_cast<real*>(transformBuffer_->ptr());
-        auto& commands = *reinterpret_cast<VkDrawIndexedIndirectCommand*>(commandBuffer_->ptr());
-        auto const& transformSystem = std::as_const(systemManager).template get<TransformSystem>();
-        auto const& transforms = transformSystem.worldMatrices();
-
-        auto view = entityManager.template getView<components::Transform, components::Mesh>();
-
-        size_t dstIndex = 0;
-
-        for (auto&& [entity, transform, mesh] : view) {
-            (void)entity;
-            (void)mesh;
-
-            commands.instanceCount++;
-
-            auto srcIndex = transform.globalIndex;
-
-            std::copy_n(glm::value_ptr(glm::transpose(transforms[srcIndex])), 12, transforms3x4 + 12 * dstIndex++);
-        }
-    }
+    ((void)args, ...);
 }
 }
 

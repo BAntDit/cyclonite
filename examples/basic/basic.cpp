@@ -30,8 +30,8 @@ auto Basic::init(cyclonite::Options const& options) -> Basic& {
 
         windowProperties.title = "basic.example";
         windowProperties.fullscreen = false;
-        windowProperties.left = SDL_WINDOWPOS_CENTERED;
-        windowProperties.top = SDL_WINDOWPOS_CENTERED;
+        windowProperties.left = 0; // SDL_WINDOWPOS_UNDEFINED;
+        windowProperties.top = 0; // SDL_WINDOWPOS_UNDEFINED;
         windowProperties.width = 512;
         windowProperties.height = 512;
 
