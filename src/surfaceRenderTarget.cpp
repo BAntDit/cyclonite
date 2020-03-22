@@ -18,7 +18,6 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
   , surface_{ std::move(surface) }
   , vkSwapChain_{ std::move(vkSwapChain) }
   , imageAvailableSemaphores_{}
-  , renderFinishedSemaphores_{}
   , imageIndices_{}
 {
     outputSemantics_[outputSemantic] = 0;
@@ -64,15 +63,6 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
                                 &semaphoreCreateInfo,
                                 nullptr,
                                 &imageAvailableSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
-            result != VK_SUCCESS) {
-            throw std::runtime_error("could not create image available semaphore.");
-        }
-
-        if (auto result =
-              vkCreateSemaphore(device.handle(),
-                                &semaphoreCreateInfo,
-                                nullptr,
-                                &renderFinishedSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
             result != VK_SUCCESS) {
             throw std::runtime_error("could not create image available semaphore.");
         }

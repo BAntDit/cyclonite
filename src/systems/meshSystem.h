@@ -41,28 +41,15 @@ public:
     template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
     void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
 
-    [[nodiscard]] auto persistentTransferCommands() const -> std::shared_ptr<transfer_commands_t> const&;
-
-    [[nodiscard]] auto transientTransferCommands() const -> std::unique_ptr<transfer_commands_t> const&;
-
-    [[nodiscard]] auto transferSemaphore() const -> VkSemaphore { return static_cast<VkSemaphore>(transferSemaphore_); }
-
-    auto transientTransferCommands() -> std::unique_ptr<transfer_commands_t>& { return transientTransfer_; }
-
 private:
     VkDevice vkDevice_;
-
-    uint32_t graphicsVersion_;
 
     std::unique_ptr<vulkan::Staging> commandBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuCommandBuffer_;
     std::unique_ptr<vulkan::Staging> transformBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuTransformBuffer_;
-    std::shared_ptr<transfer_commands_t> persistentTransfer_;
-    vulkan::Handle<VkSemaphore> transferSemaphore_;
     std::unique_ptr<vulkan::Staging> indicesBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuIndicesBuffer_;
-    std::unique_ptr<transfer_commands_t> transientTransfer_;
 };
 
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
@@ -79,7 +66,7 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
     }
 
     if constexpr (STAGE == easy_mp::value_cast(UpdateStage::LATE_UPDATE)) {
-        auto&& [frameCommands, camera, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
+        auto&& [camera, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
         (void)camera;
         (void)dt;
 
@@ -101,14 +88,6 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
             auto srcIndex = transform.globalIndex;
 
             std::copy_n(glm::value_ptr(glm::transpose(transforms[srcIndex])), 12, transforms3x4 + 12 * dstIndex++);
-        }
-
-        if (graphicsVersion_ != frameCommands.graphicsVersion()) {
-            frameCommands.setIndicesBuffer(gpuIndicesBuffer_);
-            frameCommands.setTransferBuffer(gpuTransformBuffer_);
-            frameCommands.setCommandBuffer(gpuCommandBuffer_, 1);
-
-            graphicsVersion_ = frameCommands.graphicsVersion();
         }
     }
 }

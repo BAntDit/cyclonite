@@ -43,7 +43,6 @@ set(PUBLIC_HEADERS
     src/frameBufferRenderTarget.h
     src/renderTargetBuilder.h
     src/renderPass.h
-    src/vulkanRenderer.h
     src/sdl/sdlSupport.h
     src/sdl/sdlWindow.h
     src/vulkan/handle.h
@@ -98,7 +97,6 @@ set(SOURCES
     src/systems/meshSystem.cpp
     src/systems/uniformSystem.cpp
     src/systems/renderSystem.cpp
-    src/vulkanRenderer.cpp
     src/sdl/sdlSupport.cpp
     src/sdl/sdlWindow.cpp
     src/vulkan/instance.cpp

@@ -53,7 +53,7 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
         auto&& [cameraEntity, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
         (void)dt;
 
-        auto& uniformSystem = systemManager.template get<UniformSystem()>();
+        auto& uniformSystem = systemManager.template get<UniformSystem>();
         auto const& transformSystem = std::as_const(systemManager).template get<TransformSystem>();
         auto const& transforms = transformSystem.worldMatrices();
 

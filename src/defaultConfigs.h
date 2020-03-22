@@ -11,9 +11,11 @@
 #include "components/transformStorage.h"
 #include "config.h"
 #include "platform.h"
+#include "systems/cameraSystem.h"
 #include "systems/meshSystem.h"
-#include "systems/transferSystem.h"
+#include "systems/renderSystem.h"
 #include "systems/transformSystem.h"
+#include "systems/uniformSystem.h"
 #include "systems/updateStages.h"
 #include "vulkan/androidSurface.h"
 #include "vulkan/win32Surface.h"
@@ -25,13 +27,16 @@
 namespace cyclonite {
 struct DefaultConfigs
 {
-    using ecs_config_t = EcsConfig<
-      easy_mp::type_list<components::Transform, components::Mesh, components::Camera>,
-      easy_mp::type_list<components::TransformStorage<32, 1>,
-                         enttx::ComponentStorage<16, 1, components::Mesh>,
-                         enttx::ComponentStorage<1, 1, components::Camera>>,
-      easy_mp::type_list<systems::TransformSystem, systems::MeshSystem, systems::CameraSystem, systems::TransferSystem>,
-      easy_mp::value_cast(UpdateStage::COUNT)>;
+    using ecs_config_t = EcsConfig<easy_mp::type_list<components::Transform, components::Mesh, components::Camera>,
+                                   easy_mp::type_list<components::TransformStorage<32, 1>,
+                                                      enttx::ComponentStorage<16, 1, components::Mesh>,
+                                                      enttx::ComponentStorage<1, 1, components::Camera>>,
+                                   easy_mp::type_list<systems::TransformSystem,
+                                                      systems::CameraSystem,
+                                                      systems::RenderSystem,
+                                                      systems::MeshSystem,
+                                                      systems::UniformSystem>,
+                                   easy_mp::value_cast(UpdateStage::COUNT)>;
 };
 }
 

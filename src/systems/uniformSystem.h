@@ -61,10 +61,12 @@ void UniformSystem::update(SystemManager& systemManager, EntityManager& entityMa
 {
     using namespace easy_mp;
 
+    (void)entityManager;
+
     ((void)args, ...);
 
     if constexpr (STAGE == value_cast(UpdateStage::TRANSFER_STAGE)) {
-        auto& renderSystem = systemManager.template getSystem<RenderSystem>();
+        auto& renderSystem = systemManager.template get<RenderSystem>();
         auto& renderPass = renderSystem.renderPass();
         auto& frame = renderPass.frame();
 

@@ -27,10 +27,12 @@ public:
     auto operator=(RenderSystem &&) -> RenderSystem& = default;
 
     template<typename... RenderPassArgs>
-    void init(vulkan::Device& device, RenderPassArgs&&... renderPassArgs);
+    void init(multithreading::TaskManager& taskManager, vulkan::Device& device, RenderPassArgs&&... renderPassArgs);
 
     template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
     void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
+
+    void finish();
 
     [[nodiscard]] auto renderPass() const -> RenderPass const& { return *renderPass_; }
 
@@ -45,6 +47,7 @@ private:
     void _createDummyDescriptorPool(vulkan::Device& device, size_t maxSets);
 
 private:
+    multithreading::TaskManager* taskManager_;
     vulkan::Device* device_;
     std::unique_ptr<RenderPass> renderPass_;
 
@@ -56,11 +59,15 @@ private:
 };
 
 template<typename... RenderPassArgs>
-void RenderSystem::init(vulkan::Device& device, RenderPassArgs&&... renderPassArgs)
+void RenderSystem::init(multithreading::TaskManager& taskManager,
+                        vulkan::Device& device,
+                        RenderPassArgs&&... renderPassArgs)
 {
+    taskManager_ = &taskManager;
+
     device_ = &device;
 
-    renderPass_ = std::make_unique<RenderPass>(std::forward<RenderPassArgs>(renderPassArgs)...);
+    renderPass_ = std::make_unique<RenderPass>(device, std::forward<RenderPassArgs>(renderPassArgs)...);
 
     descriptorPool_ = vulkan::Handle<VkDescriptorPool>{ device.handle(), vkDestroyDescriptorPool };
     descriptorSetLayout_ = vulkan::Handle<VkDescriptorSetLayout>{ device.handle(), vkDestroyDescriptorSetLayout };
@@ -76,6 +83,12 @@ template<typename SystemManager, typename EntityManager, size_t STAGE, typename.
 void RenderSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
     using namespace easy_mp;
+
+    (void)systemManager;
+
+    (void)entityManager;
+
+    ((void)args, ...);
 
     if constexpr (STAGE == value_cast(UpdateStage::EARLY_UPDATE)) {
         renderPass_->begin(*device_);

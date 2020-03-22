@@ -3,7 +3,6 @@
 //
 
 #include "renderPass.h"
-#include "vulkan/shaderModule.h"
 
 namespace cyclonite {
 RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
