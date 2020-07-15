@@ -146,7 +146,7 @@ FrameBuffer::FrameBuffer(vulkan::Device const& device,
               array[i] = attachment_list_traits::get_attachment(colorAttachments_, i).handle();
           }
 
-          if constexpr (array.size() > colorAttachmentsCount) {
+          if (array.size() > colorAttachmentsCount) {
               array[colorAttachmentsCount] = depthStencilAttachments_->handle();
           }
 
