@@ -4,8 +4,7 @@
 
 #include "basic.h"
 
-namespace examples
-{
+namespace examples {
 Basic::Basic()
   : shutdown_{ false }
   , root_{ std::make_unique<cyclonite::Root>() }
@@ -14,7 +13,8 @@ Basic::Basic()
   , cameraEntity_{}
 {}
 
-auto Basic::init(cyclonite::Options const& options) -> Basic& {
+auto Basic::init(cyclonite::Options const& options) -> Basic&
+{
     using namespace cyclonite;
     using namespace easy_mp;
 
@@ -31,7 +31,7 @@ auto Basic::init(cyclonite::Options const& options) -> Basic& {
         windowProperties.title = "basic.example";
         windowProperties.fullscreen = false;
         windowProperties.left = 0; // SDL_WINDOWPOS_UNDEFINED;
-        windowProperties.top = 0; // SDL_WINDOWPOS_UNDEFINED;
+        windowProperties.top = 0;  // SDL_WINDOWPOS_UNDEFINED;
         windowProperties.width = 512;
         windowProperties.height = 512;
 
@@ -52,7 +52,7 @@ auto Basic::init(cyclonite::Options const& options) -> Basic& {
     transformSystem.init(128);
 
     auto& meshSystem = systems_.get<systems::MeshSystem>();
-    meshSystem.init(root_->device());
+    meshSystem.init(root_->device(), 1, 1, 1, 1);
 
     auto& cameraSystem = systems_.get<systems::CameraSystem>();
     cameraSystem.init();
@@ -63,7 +63,7 @@ auto Basic::init(cyclonite::Options const& options) -> Basic& {
 
     // root entity
     auto rootEntity = entities_.create();
-    transformSystem.create(entities_, enttx::Entity{}, rootEntity, cyclonite::mat4{1.f});
+    transformSystem.create(entities_, enttx::Entity{}, rootEntity, cyclonite::mat4{ 1.f });
 
     // child with mesh
     {
@@ -102,8 +102,9 @@ auto Basic::init(cyclonite::Options const& options) -> Basic& {
     return *this;
 }
 
-auto Basic::run() -> Basic& {
-    while(!shutdown_) {
+auto Basic::run() -> Basic&
+{
+    while (!shutdown_) {
         root_->input().pollEvent();
 
         systems_.update(cameraEntity_, 0.f);
@@ -112,11 +113,13 @@ auto Basic::run() -> Basic& {
     return *this;
 }
 
-void Basic::done() {
+void Basic::done()
+{
     systems_.get<systems::RenderSystem>().finish();
 }
 
-void Basic::onKeyDown(SDL_Keycode keyCode, uint16_t mod) {
+void Basic::onKeyDown(SDL_Keycode keyCode, uint16_t mod)
+{
     (void)mod;
 
     if (keyCode == SDLK_ESCAPE)
@@ -125,4 +128,3 @@ void Basic::onKeyDown(SDL_Keycode keyCode, uint16_t mod) {
 }
 
 CYCLONITE_APP(examples::Basic)
-

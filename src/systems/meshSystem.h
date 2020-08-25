@@ -36,7 +36,20 @@ public:
 
     auto operator=(MeshSystem &&) -> MeshSystem& = default;
 
-    void init(vulkan::Device& device);
+    template<typename EntityManager>
+    auto createMesh(EntityManager& entityManager, enttx::Entity entity) -> components::Mesh const&;
+
+    void markToDeleteMesh();
+
+    void addSubMesh();
+
+    void markToDeleteSubMesh();
+
+    void init(vulkan::Device& device,
+              size_t initialCommandCount,
+              size_t initialInstanceCount,
+              size_t initialIndexCount,
+              size_t initialVertexCount);
 
     template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
     void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
@@ -46,11 +59,24 @@ private:
 
     std::unique_ptr<vulkan::Staging> commandBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuCommandBuffer_;
-    std::unique_ptr<vulkan::Staging> transformBuffer_;
-    std::shared_ptr<vulkan::Buffer> gpuTransformBuffer_;
-    std::unique_ptr<vulkan::Staging> indicesBuffer_;
-    std::shared_ptr<vulkan::Buffer> gpuIndicesBuffer_;
+    std::unique_ptr<vulkan::Staging> instancedDataBuffer_;
+    std::shared_ptr<vulkan::Buffer> gpuInstancedDataBuffer_;
+    std::unique_ptr<vulkan::Staging> indexBuffer_;
+    std::shared_ptr<vulkan::Buffer> gpuIndexBuffer_;
+    std::unique_ptr<vulkan::Staging> vertexBuffer_;
+    std::shared_ptr<vulkan::Buffer> gpuVertexBuffer_;
+    std::vector<components::Mesh::SubMesh> subMeshes_;
 };
+
+template<typename EntityManager>
+auto MeshSystem::createMesh(EntityManager& entityManager, enttx::Entity entity) -> components::Mesh const& {
+    auto& mesh = entityManager.template assign<components::Mesh>();
+
+    mesh.firstSubMeshIndex = subMeshes_.size();
+    mesh.subMeshCount = 0;
+
+    return mesh;
+}
 
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
 void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)

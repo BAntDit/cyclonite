@@ -3,6 +3,7 @@
 //
 
 #include "xlibSurface.h"
+#include <stdexcept>
 
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
 

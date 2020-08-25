@@ -9,9 +9,10 @@
 
 using namespace cyclonite;
 
-namespace examples
-{
-class Basic final: public BaseApp<Basic>, public EventReceivable
+namespace examples {
+class Basic final
+  : public BaseApp<Basic>
+  , public EventReceivable
 {
 public:
     Basic();

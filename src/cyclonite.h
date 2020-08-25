@@ -5,6 +5,7 @@
 #ifndef CYCLONITE_CYCLONITE_H
 #define CYCLONITE_CYCLONITE_H
 
+#include "hash.h"
 #include "app.h"
 #include "root.h"
 #include "event.h"

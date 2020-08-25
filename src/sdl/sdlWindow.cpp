@@ -4,6 +4,7 @@
 
 #include "sdlWindow.h"
 #include <SDL2/SDL_syswm.h>
+#include <stdexcept>
 
 namespace cyclonite::sdl {
 SDLWindow::SDLWindow(const std::string& title,

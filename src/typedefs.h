@@ -36,6 +36,26 @@ using mat3x4 = glm::tmat3x4<boost::float32_t, glm::highp>; // 3x4 => C = 3, R = 
 using mat3 = glm::tmat3x3<boost::float32_t, glm::highp>; // 3x3
 
 using mat4 = glm::tmat4x4<boost::float32_t, glm::highp>; // 4x4
+
+// just for now - fixed vertex and instanced data layouts :(
+struct Vertex
+{
+    vec3 position;
+    vec3 normal;
+};
+
+struct InstancedData
+{
+    vec4 transform1;
+    vec4 transform2;
+    vec4 transform3;
+};
+
+using vertex_t = Vertex;
+
+using instanced_data_t = InstancedData;
+
+using index_type_t = uint32_t;
 }
 
 #endif // CYCLONITE_TYPEDEFS_H
