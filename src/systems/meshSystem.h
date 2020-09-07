@@ -17,6 +17,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 namespace cyclonite::systems {
+using namespace easy_mp;
+
 class MeshSystem : public enttx::BaseSystem<MeshSystem>
 {
 public:
@@ -36,46 +38,84 @@ public:
 
     auto operator=(MeshSystem &&) -> MeshSystem& = default;
 
-    template<typename EntityManager>
-    auto createMesh(EntityManager& entityManager, enttx::Entity entity) -> components::Mesh const&;
+    template<typename EntityManager, typename SubMeshData>
+    auto createMesh(EntityManager& entityManager, enttx::Entity entity, SubMeshData&& subMeshData)
+      -> std::enable_if_t<is_contiguous_v<SubMeshData>, components::Mesh&>;
+
+    template<typename SubMeshData>
+    auto addSubMeshes(components::Mesh& mesh, SubMeshData&& subMeshData)
+      -> std::enable_if_t<is_contiguous_v<SubMeshData>>;
+
+    // TODO:: update submesh vertices method
 
     void markToDeleteMesh();
-
-    void addSubMesh();
 
     void markToDeleteSubMesh();
 
     void init(vulkan::Device& device,
-              size_t initialCommandCount,
-              size_t initialInstanceCount,
-              size_t initialIndexCount,
-              size_t initialVertexCount);
+              size_t initialCommandCapacity,
+              size_t initialInstanceCapacity,
+              size_t initialIndexCapacity,
+              size_t initialVertexCapacity);
 
     template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
     void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
 
 private:
-    VkDevice vkDevice_;
+    void _addSubMesh(components::Mesh& mesh, uint32_t indexCount, uint32_t vertexCount);
+
+    void _reAllocCommandBuffer(size_t size);
+
+private:
+    vulkan::Device* devicePtr_;
 
     std::unique_ptr<vulkan::Staging> commandBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuCommandBuffer_;
+    std::vector<size_t> commandDump_;
+    size_t commandCount_ = 0;
+
     std::unique_ptr<vulkan::Staging> instancedDataBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuInstancedDataBuffer_;
+
     std::unique_ptr<vulkan::Staging> indexBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuIndexBuffer_;
+
     std::unique_ptr<vulkan::Staging> vertexBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuVertexBuffer_;
-    std::vector<components::Mesh::SubMesh> subMeshes_;
+
+    std::unordered_map<size_t, std::pair<vulkan::Staging::AllocatedMemory, vulkan::Staging::AllocatedMemory>> geometry_;
+
+    bool isVertexElementBuffersInActualState_;
 };
 
-template<typename EntityManager>
-auto MeshSystem::createMesh(EntityManager& entityManager, enttx::Entity entity) -> components::Mesh const& {
-    auto& mesh = entityManager.template assign<components::Mesh>();
+template<typename EntityManager, typename SubMeshData>
+auto MeshSystem::createMesh(EntityManager& entityManager, enttx::Entity entity, SubMeshData&& subMeshData)
+  -> std::enable_if_t<is_contiguous_v<SubMeshData>, components::Mesh&>
+{
+    auto& mesh = entityManager.template assign<components::Mesh>(entity);
 
-    mesh.firstSubMeshIndex = subMeshes_.size();
-    mesh.subMeshCount = 0;
+    addSubMeshes(mesh, std::forward<SubMeshData>(subMeshData));
 
     return mesh;
+}
+
+template<typename SubMeshData>
+auto MeshSystem::addSubMeshes(components::Mesh& mesh, SubMeshData&& subMeshData)
+  -> std::enable_if_t<is_contiguous_v<SubMeshData>>
+{
+    if (!subMeshData.empty()) {
+        if (commandCount_ * sizeof(VkDrawIndexedIndirectCommand) - commandBuffer_->size() <
+            subMeshData.size() * sizeof(VkDrawIndexedIndirectCommand)) {
+            _reAllocCommandBuffer((commandCount_ + subMeshData.size()) * sizeof(VkDrawIndexedIndirectCommand));
+        }
+    }
+
+    mesh.subMeshes.reserve(mesh.subMeshes.size() + subMeshData.size());
+
+    for (auto&& value : subMeshData) {
+        auto&& [ic, vc] = value;
+        _addSubMesh(mesh, ic, vc);
+    }
 }
 
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>

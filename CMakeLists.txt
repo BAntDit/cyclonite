@@ -17,6 +17,7 @@ set(PUBLIC_HEADERS
     src/arena.h
     src/error.h
     src/typedefs.h
+    src/geometry.h
     src/scene.h
     src/sceneNode.h
     src/components/transform.h
@@ -84,6 +85,7 @@ set(SOURCES
     src/eventReceivable.cpp
     src/input.cpp
     src/root.cpp
+    src/geometry.cpp
     src/surface.cpp
     src/baseRenderTarget.cpp
     src/frameBufferRenderTarget.cpp

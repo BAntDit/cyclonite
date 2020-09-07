@@ -9,6 +9,7 @@
 #include <cyclonite.h>
 #include <filesystem>
 #include <fstream>
+#include <glm/gtx/matrix_decompose.hpp>
 #include <istream>
 #include <nlohmann/json.hpp>
 #include <regex>
@@ -16,6 +17,8 @@
 
 // dummy gltf reader implementation
 namespace examples::gltf {
+using namespace cyclonite;
+
 namespace {
 auto _testVersion(nlohmann::json const& asset) -> bool
 {
@@ -129,6 +132,20 @@ auto _getJsonProperty(nlohmann::json const& json, std::string const& property) -
 
     return *it;
 }
+
+template<typename T, size_t Size>
+auto _readArray(nlohmann::json const& array) -> std::array<T, Size>
+{
+    std::array<T, Size> result{};
+
+    assert(array.is_array() && array.size() < Size);
+
+    for (size_t i = 0; i < Size; i++) {
+        result[i] = array.at(i).get<T>();
+    }
+
+    return result;
+}
 }
 
 class Reader
@@ -159,6 +176,19 @@ public:
         size_t idxIndex;
     };
 
+    struct Node
+    {
+        Node(vec3& p, vec3& s, quat& r)
+          : position{ p }
+          , scale{ s }
+          , rotation{ r }
+        {}
+
+        vec3 position;
+        vec3 scale;
+        quat rotation;
+    };
+
 public:
     Reader() = default;
 
@@ -171,9 +201,20 @@ public:
     template<typename F>
     void read(std::istream& stream, F&& f);
 
+    [[nodiscard]] auto accessors() const -> std::vector<Accessor> const& { return accessors_; }
+
 private:
+    using intance_key_t = std::tuple<size_t, size_t, size_t>;
+
     template<typename F>
-    void _readNode(nlohmann::json const& node, F&& f);
+    void _readNode(
+      nlohmann::json const& nodes,
+      nlohmann::json const& meshes,
+      nlohmann::json const& accessors,
+      std::unordered_map<intance_key_t, std::tuple<uint32_t, uint32_t, uint32_t>, cyclonite::hash>& instanceCommands,
+      size_t parentIdx,
+      size_t nodeIdx,
+      F&& f);
 
     std::filesystem::path basePath_;
     std::vector<std::vector<std::byte>> buffers_;
@@ -376,23 +417,112 @@ void Reader::read(std::istream& stream, F&& f)
 
     std::unordered_map<intance_key_t, std::tuple<uint32_t, uint32_t, uint32_t>, cyclonite::hash> instanceCommands = {};
 
+    auto const& scenes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"scenes"));
     auto const& nodes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"nodes"));
+    auto defaultSceneIdx = _getOptional(input, reinterpret_cast<char const*>(u8"scene"), static_cast<size_t>(0));
     auto const& meshes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"meshes"));
+    auto const& scene = scenes.at(defaultSceneIdx);
+    auto const& rootNodes = _getJsonProperty(scene, reinterpret_cast<char const*>(u8"nodes"));
 
-    for (size_t nodeIdx = 0, nodeCount = nodes.size(); nodeIdx < nodeCount; nodeIdx++) {
-        auto& node = nodes.at(nodeIdx);
+    f(static_cast<uint32_t>(nodes.size()));
 
-        auto idxMesh = _getOptional(node, reinterpret_cast<char const*>(u8"mesh"), std::numeric_limits<size_t>::max());
+    for (size_t i = 0, count = rootNodes.size(); i < count; i++) {
+        auto idx = rootNodes.at(i).get<size_t>();
 
-        if (idxMesh == std::numeric_limits<size_t>::max())
-            continue;
+        _readNode(
+          nodes, meshes, accessors, instanceCommands, std::numeric_limits<size_t>::max(), idx, std::forward<F>(f));
+    }
 
-        auto const& mesh = meshes.at(idxMesh);
+    f(std::make_tuple(vertexCount_, indexCount_, instanceCount_, static_cast<uint32_t>(instanceCommands.size())));
+
+    // meshes
+    for (size_t meshIdx = 0, meshCount = meshes.size(); meshIdx < meshCount; meshIdx++) {
+        auto const& mesh = meshes.at(meshIdx);
 
         auto const& primitives = _getJsonProperty(mesh, reinterpret_cast<char const*>(u8"primitives"));
 
+        std::vector<Primitive> meshPrimitives = {};
+
+        meshPrimitives.reserve(primitives.size());
+
         for (size_t j = 0, primitiveCount = primitives.size(); j < primitiveCount; j++) {
             auto primitive = primitives.at(j);
+
+            auto& meshPrimitive = meshPrimitives.emplace_back();
+
+            auto idxIndices =
+              _getOptional(primitive, reinterpret_cast<char const*>(u8"indices"), std::numeric_limits<size_t>::max());
+
+            if (idxIndices >= accessors.size()) // skip non-indexed geometry
+                continue;
+
+            auto attributes = _getJsonProperty(primitive, reinterpret_cast<char const*>(u8"attributes"));
+
+            auto idxPositions =
+              _getOptional(attributes, reinterpret_cast<char const*>(u8"POSITION"), std::numeric_limits<size_t>::max());
+            auto idxNormals =
+              _getOptional(attributes, reinterpret_cast<char const*>(u8"NORMAL"), std::numeric_limits<size_t>::max());
+
+            if (idxPositions >= accessors.size() || idxNormals >= accessors.size())
+                continue;
+
+            meshPrimitive.idxPosition = idxPositions;
+            meshPrimitive.idxNormal = idxNormals;
+            meshPrimitive.idxIndex = idxIndices;
+
+            f(meshPrimitive);
+        }
+
+        f(meshPrimitives);
+    }
+}
+
+template<typename F>
+void Reader::_readNode(
+  nlohmann::json const& nodes,
+  nlohmann::json const& meshes,
+  nlohmann::json const& accessors,
+  std::unordered_map<intance_key_t, std::tuple<uint32_t, uint32_t, uint32_t>, cyclonite::hash>& instanceCommands,
+  size_t parentIdx,
+  size_t nodeIdx,
+  F&& f)
+{
+    auto const& node = nodes.at(nodeIdx);
+
+    auto matrixIt = node.find(reinterpret_cast<char const*>(u8"matrix"));
+
+    auto position = vec3{ 0.f };
+    auto scale = vec3{ 1.f };
+    auto rotation = quat{ 1.f, vec3{ 0.f } };
+
+    if (matrixIt != node.end()) {
+        auto matrix = glm::make_mat4(_readArray<real, 16>(*matrixIt).data());
+        auto skew = vec3{};
+        auto perspective = vec4{};
+
+        glm::decompose(matrix, scale, rotation, position, skew, perspective);
+    } else {
+        if (auto it = node.find(reinterpret_cast<char const*>(u8"translation")); it != node.end()) {
+            position = glm::make_vec3(_readArray<real, 3>(*it).data());
+        }
+
+        if (auto it = node.find(reinterpret_cast<char const*>(u8"scale")); it != node.end()) {
+            scale = glm::make_vec3(_readArray<real, 3>(*it).data());
+        }
+
+        if (auto it = node.find(reinterpret_cast<char const*>(u8"rotation")); it != node.end()) {
+            rotation = glm::make_quat(_readArray<real, 4>(*it).data());
+        }
+    }
+
+    auto idxMesh = _getOptional(node, reinterpret_cast<char const*>(u8"mesh"), std::numeric_limits<size_t>::max());
+
+    if (idxMesh != std::numeric_limits<size_t>::max()) {
+        auto const& mesh = meshes.at(idxMesh);
+        auto const& primitives = _getJsonProperty(mesh, reinterpret_cast<char const*>(u8"primitives"));
+
+        for (size_t j = 0, primitiveCount = primitives.size(); j < primitiveCount; j++) {
+            auto& primitive = primitives.at(j);
 
             auto idxIndices =
               _getOptional(primitive, reinterpret_cast<char const*>(u8"indices"), std::numeric_limits<size_t>::max());
@@ -432,61 +562,16 @@ void Reader::read(std::istream& stream, F&& f)
         }
     }
 
-    f(std::make_tuple(vertexCount_, indexCount_, instanceCount_, static_cast<uint32_t>(instanceCommands.size())));
+    if (auto childrenIt = node.find(reinterpret_cast<char const*>(u8"children")); childrenIt != node.end()) {
+        auto const& children = *childrenIt;
 
-    // meshes
-    for (size_t meshIdx = 0, meshCount = meshes.size(); meshIdx < meshCount; meshIdx++) {
-        auto const& mesh = meshes.at(meshIdx);
-
-        auto const& primitives = _getJsonProperty(mesh, reinterpret_cast<char const*>(u8"primitives"));
-
-        std::vector<Primitive> meshPrimitives = {};
-
-        meshPrimitives.reserve(primitives.size());
-
-        for (size_t j = 0, primitiveCount = primitives.size(); j < primitiveCount; j++) {
-            auto primitive = primitives.at(j);
-
-            auto& meshPrimitive = meshPrimitives.emplace_back();
-
-            auto idxIndices =
-              _getOptional(primitive, reinterpret_cast<char const*>(u8"indices"), std::numeric_limits<size_t>::max());
-
-            if (idxIndices >= accessors.size()) // skip non-indexed geometry
-                continue;
-
-            auto attributes = _getJsonProperty(primitive, reinterpret_cast<char const*>(u8"attributes"));
-
-            auto idxPositions =
-              _getOptional(attributes, reinterpret_cast<char const*>(u8"POSITION"), std::numeric_limits<size_t>::max());
-            auto idxNormals =
-              _getOptional(attributes, reinterpret_cast<char const*>(u8"NORMAL"), std::numeric_limits<size_t>::max());
-
-            if (idxPositions >= accessors.size() || idxNormals >= accessors.size())
-                continue;
-
-            meshPrimitive.idxPosition = idxPositions;
-            meshPrimitive.idxNormal = idxNormals;
-            meshPrimitive.idxIndex = idxIndices;
+        for (size_t idx = 0, count = children.size(); idx < count; idx++) {
+            _readNode(nodes, meshes, accessors, instanceCommands, nodeIdx, idx, std::forward<F>(f));
         }
-
-        f(meshPrimitives);
     }
 
-    // nodes:
-    {
-        auto const& scenes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"scenes"));
-        auto const& nodes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"nodes"));
-        auto defaultSceneIdx = _getOptional(input, reinterpret_cast<char const*>(u8"scene"), static_cast<size_t>(0));
-
-        auto const& scene = scenes.at(defaultSceneIdx);
-        auto const& rootNodes = _getJsonProperty(scene, reinterpret_cast<char const*>(u8"nodes"));
-    }
+    f(Node{ position, scale, rotation }, parentIdx, nodeIdx);
 }
-
-template<typename F>
-void Reader::_readNode(nlohmann::json const& node, F&& f)
-{}
 }
 
 #endif // CYCLONITE_READER_H
