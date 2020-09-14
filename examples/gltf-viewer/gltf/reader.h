@@ -203,6 +203,10 @@ public:
 
     [[nodiscard]] auto accessors() const -> std::vector<Accessor> const& { return accessors_; }
 
+    [[nodiscard]] auto bufferViews() const -> std::vector<BufferView> const& { return bufferViews_; }
+
+    [[nodiscard]] auto buffers() const -> std::vector<std::vector<std::byte>> const& { return buffers_; }
+
 private:
     using intance_key_t = std::tuple<size_t, size_t, size_t>;
 
@@ -360,7 +364,7 @@ void Reader::read(std::istream& stream, F&& f)
             }
 
             bufferView.byteStride =
-              _getOptional(jsonBufferView, reinterpret_cast<char const*>(u8"byteStride"), size_t{ 4 });
+              _getOptional(jsonBufferView, reinterpret_cast<char const*>(u8"byteStride"), size_t{ 0 });
 
             if (bufferView.byteStride % 4 || bufferView.byteStride > 252) {
                 throw std::runtime_error("buffer view stride has wrong value");
@@ -469,8 +473,6 @@ void Reader::read(std::istream& stream, F&& f)
             meshPrimitive.idxPosition = idxPositions;
             meshPrimitive.idxNormal = idxNormals;
             meshPrimitive.idxIndex = idxIndices;
-
-            f(meshPrimitive);
         }
 
         f(meshPrimitives);
@@ -553,6 +555,14 @@ void Reader::_readNode(
 
                 instanceCommands.emplace(std::make_tuple(idxIndices, idxPositions, idxNormals),
                                          std::make_tuple(1, vc, ic));
+
+                Primitive meshPrimitive{};
+
+                meshPrimitive.idxPosition = idxPositions;
+                meshPrimitive.idxNormal = idxNormals;
+                meshPrimitive.idxIndex = idxIndices;
+
+                f(meshPrimitive);
             } else {
                 auto& [key, value] = (*it);
                 std::get<0>(value)++;

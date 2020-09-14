@@ -7,6 +7,7 @@
 
 #include "../components/mesh.h"
 #include "../components/transform.h"
+#include "../geometry.h"
 #include "transformSystem.h"
 #include "vulkan/buffer.h"
 #include "vulkan/commandBufferSet.h"
@@ -15,6 +16,7 @@
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <set>
 
 namespace cyclonite::systems {
 using namespace easy_mp;
@@ -37,6 +39,8 @@ public:
     auto operator=(MeshSystem const&) -> MeshSystem& = delete;
 
     auto operator=(MeshSystem &&) -> MeshSystem& = default;
+
+    auto createGeometry(uint32_t vertexCount, uint32_t indexCount) -> std::shared_ptr<Geometry>;
 
     template<typename EntityManager, typename SubMeshData>
     auto createMesh(EntityManager& entityManager, enttx::Entity entity, SubMeshData&& subMeshData)
@@ -83,7 +87,7 @@ private:
     std::unique_ptr<vulkan::Staging> vertexBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuVertexBuffer_;
 
-    std::unordered_map<size_t, std::pair<vulkan::Staging::AllocatedMemory, vulkan::Staging::AllocatedMemory>> geometry_;
+    std::set<std::shared_ptr<Geometry>> geometry_;
 
     bool isVertexElementBuffersInActualState_;
 };

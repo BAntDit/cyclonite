@@ -15,6 +15,7 @@ set(PUBLIC_HEADERS
     src/root.h
     src/surface.h
     src/arena.h
+    src/rawDataView.h
     src/error.h
     src/typedefs.h
     src/geometry.h

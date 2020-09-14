@@ -10,5 +10,6 @@
 #include "root.h"
 #include "event.h"
 #include "renderPass.h"
+#include "rawDataView.h"
 
 #endif //CYCLONITE_CYCLONITE_H

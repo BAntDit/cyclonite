@@ -57,6 +57,20 @@ void MeshSystem::init(vulkan::Device& device,
       std::array{ device.hostTransferQueueFamilyIndex(), device.graphicsQueueFamilyIndex() });
 }
 
+auto MeshSystem::createGeometry(uint32_t vertexCount, uint32_t indexCount) -> std::shared_ptr<Geometry>
+{
+    auto [it, success] =
+      geometry_.emplace(std::make_shared<Geometry>(vertexCount,
+                                                   indexCount,
+                                                   vertexBuffer_->alloc(vertexCount * sizeof(vertex_t)),
+                                                   indexBuffer_->alloc(indexCount * sizeof(index_type_t))));
+
+    assert(success);
+    (void)success;
+
+    return *it;
+}
+
 void MeshSystem::_addSubMesh(components::Mesh& mesh, uint32_t indexCount, uint32_t vertexCount)
 {
     auto indexMemory = indexBuffer_->alloc(indexCount * sizeof(index_type_t));
@@ -86,8 +100,6 @@ void MeshSystem::_addSubMesh(components::Mesh& mesh, uint32_t indexCount, uint32
     } else {
         command->instanceCount++;
     }
-
-    mesh.subMeshes.emplace_back(std::move(indexMemory), std::move(vertexMemory), idx);
 }
 
 void MeshSystem::_reAllocCommandBuffer(size_t size)

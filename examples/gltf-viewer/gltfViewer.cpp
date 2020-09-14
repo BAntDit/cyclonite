@@ -106,31 +106,122 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
                 transformSystem.create(entities_, parent, entity, translation, scale, orientation);
             }
 
-            // TODO:: read primitives before Meshes (make possible to store geometry before creating mesh components)
             if constexpr (std::is_same_v<std::decay_t<decltype(std::get<0>(t))>, gltf::Reader::Primitive>) {
                 auto&& [primitive] = t;
                 auto&& [pos, nor, ind] = primitive;
 
-                uint32_t vertexCount = 0;
-                uint32_t indexCount = 0;
+                auto const& posAccessor = reader.accessors()[pos];
+                auto&& [positionBufferViewIdx,
+                        positionOffset,
+                        positionComponentType,
+                        posNormalized,
+                        vertexCount,
+                        posType] = posAccessor;
 
-                {
-                    auto const& accessor = reader.accessors()[pos];
-                    auto&& [buffViewIdx, byteOffset, componentType, normalized, count, type] = accessor;
-                    vertexCount = count;
-                }
+                (void)positionComponentType;
+                (void)posNormalized;
 
-                {
-                    auto const& accessor = reader.accessors()[ind];
-                    auto&& [buffViewIdx, byteOffset, componentType, normalized, count, type] = accessor;
-                    indexCount = count;
-                }
+                auto const& norAccessor = reader.accessors()[nor];
+                auto&& [normalBufferViewIdx, normalOffset, normalComponentType, norNormalized, norCount, norType] =
+                  norAccessor;
 
-                // TODO:: ...
+                (void)normalComponentType;
+                (void)norNormalized;
+
+                auto const& idxAccessor = reader.accessors()[ind];
+                auto&& [indexBufferViewIdx, indexOffset, indexComponentType, indNormalized, indexCount, indType] =
+                  idxAccessor;
+
+                (void)indNormalized;
+                (void)indType;
+
+                auto& meshSystem = systems_.get<systems::MeshSystem>();
+
+                auto geometry = meshSystem.createGeometry(vertexCount, indexCount);
+
+                { // vertex reading
+                    auto const& posBufferView = reader.bufferViews()[positionBufferViewIdx];
+                    auto&& [posBufferIdx, posByteOffset, posByteLength, posByteStride] = posBufferView;
+                    auto const& posBuffer = reader.buffers()[posBufferIdx];
+
+                    (void)posByteLength;
+
+                    auto const& norBufferView = reader.bufferViews()[normalBufferViewIdx];
+                    auto&& [norBufferIdx, norByteOffset, norByteLength, norByteStride] = norBufferView;
+                    auto const& norBuffer = reader.buffers()[norBufferIdx];
+
+                    (void)norByteLength;
+
+                    auto posStride =
+                      posByteStride == 0
+                        ? posType == reinterpret_cast<char const*>(u8"vec4") ? sizeof(vec4) : sizeof(vec3)
+                        : posByteStride;
+
+                    auto norStride =
+                      norByteStride == 0
+                        ? norType == posType == reinterpret_cast<char const*>(u8"vec4") ? sizeof(vec4) : sizeof(vec3)
+                        : norByteStride;
+
+                    auto vertexIdx = size_t{ 0 };
+
+                    for (auto& vertex : geometry.vertices()) {
+                        auto pos = glm::make_vec3(reinterpret_cast<real const*>(
+                          posBuffer.data() + posByteOffset + positionOffset + posStride * vertexIdx));
+
+                        auto nor = glm::make_vec3(reinterpret_cast<real const*>(norBuffer.data() + norByteOffset +
+                                                                                normalOffset + norStride * vertexIdx));
+
+                        vertex.position = pos;
+                        vertex.normal = nor;
+
+                        vertexIdx++;
+                    }
+                } // end vertex reading
+
+                { // index reading
+                    auto const& idxBufferView = reader.bufferViews()[indexBufferViewIdx];
+                    auto&& [idxBufferIdx, idxByteOffset, idxByteLength, idxByteStride] = idxBufferView;
+                    auto const& idxBuffer = reader.buffers()[idxBufferIdx];
+
+                    switch (indexComponentType) {
+                        case 5121: { // unsigned byte
+                            auto stride = idxByteStride == 0 ? sizeof(uint8_t) : idxByteStride;
+                            auto src =
+                              RawDataView<uint8_t>{ idxBuffer.data(), idxByteOffset + indexOffset, indexCount, stride };
+                            auto indexIdx = size_t{ 0 };
+                            for (auto& index : geometry.indices()) {
+                                index = static_cast<index_type_t>(*std::next(src.begin(), indexIdx++));
+                            }
+                        } break;
+                        case 5123: { // unsigned short
+                            auto stride = idxByteStride == 0 ? sizeof(uint16_t) : idxByteStride;
+                            auto src = RawDataView<uint16_t>{
+                                idxBuffer.data(), idxByteOffset + indexOffset, indexCount, stride
+                            };
+                            auto indexIdx = size_t{ 0 };
+                            for (auto& index : geometry.indices()) {
+                                index = static_cast<index_type_t>(*std::next(src.begin(), indexIdx++));
+                            }
+                        } break;
+                        case 5125: { // unsigned int
+                            auto stride = idxByteStride == 0 ? sizeof(uint32_t) : idxByteStride;
+                            auto src = RawDataView<uint32_t>{
+                                idxBuffer.data(), idxByteOffset + indexOffset, indexCount, stride
+                            };
+                            auto indexIdx = size_t{ 0 };
+                            for (auto& index : geometry.indices()) {
+                                index = static_cast<index_type_t>(*std::next(src.begin(), indexIdx++));
+                            }
+                        } break;
+                    }
+                } // end index rendering
+
+                geometryIdentifiers_.emplace(std::make_tuple(pos, nor, ind), geometry.id());
             }
 
             if constexpr (std::is_same_v<std::decay_t<decltype(std::get<0>(t))>,
                                          std::vector<gltf::Reader::Primitive>>) {
+                // TODO:: refactor ...
                 auto&& [primitives] = t;
 
                 std::vector<std::pair<uint32_t, uint32_t>> subMeshData = {};
