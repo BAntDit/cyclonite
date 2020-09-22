@@ -27,4 +27,18 @@ auto Geometry::indices() const -> RawDataView<index_type_t>
 {
     return RawDataView<index_type_t>{ indices_.ptr(), 0, indexCount_ };
 }
+
+auto Geometry::firstIndex() const -> uint32_t
+{
+    assert(indices_.offset() % sizeof(index_type_t) == 0);
+
+    return static_cast<uint32_t>(indices_.offset() / sizeof(index_type_t));
+}
+
+auto Geometry::baseVertex() const -> uint32_t
+{
+    assert(vertices_.offset() % sizeof(vertex_t) == 0);
+
+    return static_cast<uint32_t>(vertices_.offset() % sizeof(vertex_t));
+}
 }

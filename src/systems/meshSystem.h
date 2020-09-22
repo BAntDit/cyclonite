@@ -42,16 +42,18 @@ public:
 
     auto createGeometry(uint32_t vertexCount, uint32_t indexCount) -> std::shared_ptr<Geometry>;
 
-    template<typename EntityManager, typename SubMeshData>
-    auto createMesh(EntityManager& entityManager, enttx::Entity entity, SubMeshData&& subMeshData)
-      -> std::enable_if_t<is_contiguous_v<SubMeshData>, components::Mesh&>;
+    template<typename EntityManager, typename Geometries>
+    auto createMesh(EntityManager& entityManager, enttx::Entity entity, Geometries&& geometries)
+      -> std::enable_if_t<is_contiguous_v<Geometries> ||
+                            std::is_same_v<std::shared_ptr<Geometry>, std::decay_t<Geometries>>,
+                          components::Mesh&>;
 
-    template<typename SubMeshData>
-    auto addSubMeshes(components::Mesh& mesh, SubMeshData&& subMeshData)
-      -> std::enable_if_t<is_contiguous_v<SubMeshData>>;
+    template<typename Geometries>
+    auto addSubMeshes(components::Mesh& mesh, Geometries&& geometries)
+      -> std::enable_if_t<is_contiguous_v<Geometries> ||
+                          std::is_same_v<std::shared_ptr<Geometry>, std::decay_t<Geometries>>>;
 
     // TODO:: update submesh vertices method
-
     void markToDeleteMesh();
 
     void markToDeleteSubMesh();
@@ -66,7 +68,7 @@ public:
     void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
 
 private:
-    void _addSubMesh(components::Mesh& mesh, uint32_t indexCount, uint32_t vertexCount);
+    void _addSubMesh(components::Mesh& mesh, std::shared_ptr<Geometry> const& geometry);
 
     void _reAllocCommandBuffer(size_t size);
 
@@ -87,38 +89,35 @@ private:
     std::unique_ptr<vulkan::Staging> vertexBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuVertexBuffer_;
 
-    std::set<std::shared_ptr<Geometry>> geometry_;
+    std::set<std::shared_ptr<Geometry>> geometries_;
 
     bool isVertexElementBuffersInActualState_;
 };
 
-template<typename EntityManager, typename SubMeshData>
-auto MeshSystem::createMesh(EntityManager& entityManager, enttx::Entity entity, SubMeshData&& subMeshData)
-  -> std::enable_if_t<is_contiguous_v<SubMeshData>, components::Mesh&>
+template<typename EntityManager, typename Geometries>
+auto MeshSystem::createMesh(EntityManager& entityManager, enttx::Entity entity, Geometries&& geometries)
+  -> std::enable_if_t<is_contiguous_v<Geometries> ||
+                        std::is_same_v<std::shared_ptr<Geometry>, std::decay_t<Geometries>>,
+                      components::Mesh&>
 {
     auto& mesh = entityManager.template assign<components::Mesh>(entity);
 
-    addSubMeshes(mesh, std::forward<SubMeshData>(subMeshData));
+    addSubMeshes(mesh, std::forward<Geometries>(geometries));
 
     return mesh;
 }
 
-template<typename SubMeshData>
-auto MeshSystem::addSubMeshes(components::Mesh& mesh, SubMeshData&& subMeshData)
-  -> std::enable_if_t<is_contiguous_v<SubMeshData>>
+template<typename Geometries>
+auto MeshSystem::addSubMeshes(components::Mesh& mesh, Geometries&& geometries)
+  -> std::enable_if_t<is_contiguous_v<Geometries> ||
+                      std::is_same_v<std::shared_ptr<Geometry>, std::decay_t<Geometries>>>
 {
-    if (!subMeshData.empty()) {
-        if (commandCount_ * sizeof(VkDrawIndexedIndirectCommand) - commandBuffer_->size() <
-            subMeshData.size() * sizeof(VkDrawIndexedIndirectCommand)) {
-            _reAllocCommandBuffer((commandCount_ + subMeshData.size()) * sizeof(VkDrawIndexedIndirectCommand));
-        }
+    if constexpr (is_contiguous_v<Geometries>) {
+        mesh.subMeshes.reserve(geometries.size());
     }
 
-    mesh.subMeshes.reserve(mesh.subMeshes.size() + subMeshData.size());
-
-    for (auto&& value : subMeshData) {
-        auto&& [ic, vc] = value;
-        _addSubMesh(mesh, ic, vc);
+    for (auto&& geometry : geometries) {
+        _addSubMesh(mesh, std::forward<decltype(geometry)>(geometry));
     }
 }
 

@@ -57,7 +57,7 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
     {
         gltf::Reader reader{};
         std::vector<enttx::Entity> entities{};
-        std::unordered_map<size_t, enttx::Entity> parents{};
+        std::unordered_map<size_t, enttx::Entity> nodeIdxToEntity{};
         std::unordered_map<std::tuple<size_t, size_t, size_t>, uint64_t, hash> geometryIdentifiers_{};
 
         reader.read("./assets/models/model.gltf", [&](auto&&... args) -> void {
@@ -95,11 +95,11 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
 
                 entities.pop_back();
 
-                parents.insert(nodeIdx, entity);
+                nodeIdxToEntity.insert(nodeIdx, entity);
 
                 auto parent = static_cast<enttx::Entity>(std::numeric_limits<uint64_t>::max());
 
-                if (auto it = parents.find(parentIdx); it != parents.end()) {
+                if (auto it = nodeIdxToEntity.find(parentIdx); it != nodeIdxToEntity.end()) {
                     parent = (*it).second;
                 }
 
@@ -221,36 +221,32 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
 
             if constexpr (std::is_same_v<std::decay_t<decltype(std::get<0>(t))>,
                                          std::vector<gltf::Reader::Primitive>>) {
-                // TODO:: refactor ...
-                auto&& [primitives] = t;
-
-                std::vector<std::pair<uint32_t, uint32_t>> subMeshData = {};
-
-                subMeshData.reserve(primitives.size());
-
-                for (auto&& [pos, nor, ind] : primitives) {
-                    uint32_t vertexCount = 0;
-                    uint32_t indexCount = 0;
-
-                    {
-                        auto const& accessor = reader.accessors()[pos];
-                        auto&& [buffViewIdx, byteOffset, componentType, normalized, count, type] = accessor;
-
-                        vertexCount = count;
-                    }
-
-                    {
-                        auto const& accessor = reader.accessors()[ind];
-                        auto&& [buffViewIdx, byteOffset, componentType, normalized, count, type] = accessor;
-
-                        indexCount = count;
-                    }
-
-                    subMeshData.emplace_back(std::make_pair(indexCount, vertexCount));
-                }
-
+                auto&& [primitives, nodeIdx] = t;
                 auto& meshSystem = systems_.get<systems::MeshSystem>();
-                // auto& mesh = meshSystem.createMesh();
+
+                assert(nodeIdxToEntity.count(nodeIdx) != 0);
+                auto entity = nodeIdxToEntity[nodeIdx];
+
+                if (primitives.size() == 1) {
+                    auto const& key = primitives[0];
+
+                    assert(geometryIdentifiers_.count(key) != 0);
+                    auto const& geometry = geometryIdentifiers_[key];
+
+                    meshSystem.createMesh(entities_, entity, geometry);
+                } else {
+                    std::vector<std::shared_ptr<Geometry>> geometries{};
+
+                    geometries.reserve(primitives.size());
+
+                    for (auto&& key : primitives) {
+                        assert(geometryIdentifiers_.count(key) != 0);
+
+                        geometries.push_back(geometryIdentifiers_[key]);
+
+                        meshSystem.createMesh(entities_, entity, geometries);
+                    }
+                }
             }
         });
     }

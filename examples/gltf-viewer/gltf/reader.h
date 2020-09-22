@@ -519,9 +519,13 @@ void Reader::_readNode(
 
     auto idxMesh = _getOptional(node, reinterpret_cast<char const*>(u8"mesh"), std::numeric_limits<size_t>::max());
 
+    std::vector<Primitive> meshPrimitives = {};
+
     if (idxMesh != std::numeric_limits<size_t>::max()) {
         auto const& mesh = meshes.at(idxMesh);
         auto const& primitives = _getJsonProperty(mesh, reinterpret_cast<char const*>(u8"primitives"));
+
+        meshPrimitives.reserve(primitives.size());
 
         for (size_t j = 0, primitiveCount = primitives.size(); j < primitiveCount; j++) {
             auto& primitive = primitives.at(j);
@@ -542,6 +546,12 @@ void Reader::_readNode(
             if (idxPositions >= accessors.size() || idxNormals >= accessors.size())
                 continue;
 
+            auto& meshPrimitive = meshPrimitives.emplace_back();
+
+            meshPrimitive.idxPosition = idxPositions;
+            meshPrimitive.idxNormal = idxNormals;
+            meshPrimitive.idxIndex = idxIndices;
+
             auto it = instanceCommands.find(std::make_tuple(idxIndices, idxPositions, idxNormals));
 
             if (it == instanceCommands.end()) {
@@ -556,12 +566,6 @@ void Reader::_readNode(
                 instanceCommands.emplace(std::make_tuple(idxIndices, idxPositions, idxNormals),
                                          std::make_tuple(1, vc, ic));
 
-                Primitive meshPrimitive{};
-
-                meshPrimitive.idxPosition = idxPositions;
-                meshPrimitive.idxNormal = idxNormals;
-                meshPrimitive.idxIndex = idxIndices;
-
                 f(meshPrimitive);
             } else {
                 auto& [key, value] = (*it);
@@ -569,8 +573,8 @@ void Reader::_readNode(
             }
 
             instanceCount_++;
-        }
-    }
+        } // primitives cycle end
+    } // mesh parse end
 
     if (auto childrenIt = node.find(reinterpret_cast<char const*>(u8"children")); childrenIt != node.end()) {
         auto const& children = *childrenIt;
@@ -581,6 +585,9 @@ void Reader::_readNode(
     }
 
     f(Node{ position, scale, rotation }, parentIdx, nodeIdx);
+
+    if (!meshPrimitives.empty())
+        f(meshPrimitives, nodeIdx);
 }
 }
 

@@ -6,6 +6,7 @@
 #define CYCLONITE_MESH_H
 
 #include "../vulkan/staging.h"
+#include "geometry.h"
 
 namespace cyclonite::systems {
 class MeshSystem;
@@ -19,10 +20,12 @@ public:
 
     struct SubMesh
     {
-        SubMesh(size_t commandIdx)
-          : commandIndex{ commandIdx }
+        SubMesh(size_t commandIdx, std::shared_ptr<Geometry> const& geometry)
+          : geometry{ geometry }
+          , commandIndex{ commandIdx }
         {}
 
+        std::shared_ptr<Geometry> geometry;
         size_t commandIndex;
     };
 

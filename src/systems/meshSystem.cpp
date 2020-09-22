@@ -60,10 +60,10 @@ void MeshSystem::init(vulkan::Device& device,
 auto MeshSystem::createGeometry(uint32_t vertexCount, uint32_t indexCount) -> std::shared_ptr<Geometry>
 {
     auto [it, success] =
-      geometry_.emplace(std::make_shared<Geometry>(vertexCount,
-                                                   indexCount,
-                                                   vertexBuffer_->alloc(vertexCount * sizeof(vertex_t)),
-                                                   indexBuffer_->alloc(indexCount * sizeof(index_type_t))));
+      geometries_.emplace(std::make_shared<Geometry>(vertexCount,
+                                                     indexCount,
+                                                     vertexBuffer_->alloc(vertexCount * sizeof(vertex_t)),
+                                                     indexBuffer_->alloc(indexCount * sizeof(index_type_t))));
 
     assert(success);
     (void)success;
@@ -71,35 +71,46 @@ auto MeshSystem::createGeometry(uint32_t vertexCount, uint32_t indexCount) -> st
     return *it;
 }
 
-void MeshSystem::_addSubMesh(components::Mesh& mesh, uint32_t indexCount, uint32_t vertexCount)
+void MeshSystem::_addSubMesh(components::Mesh& mesh, std::shared_ptr<Geometry> const& geometry)
 {
-    auto indexMemory = indexBuffer_->alloc(indexCount * sizeof(index_type_t));
-    auto vertexMemory = vertexBuffer_->alloc(vertexCount * sizeof(vertex_t));
-
-    uint32_t firstIndex = indexMemory.offset() / sizeof(index_type_t);
-    uint32_t vertexOffset = vertexMemory.offset() / sizeof(vertex_t);
-
     auto* commands = reinterpret_cast<VkDrawIndexedIndirectCommand*>(commandBuffer_->ptr());
 
-    auto lastCommand = commands + commandCount_ + 1;
+    auto firstIndex = geometry->firstIndex();
+    auto baseVertex = geometry->baseVertex();
 
-    auto* command = std::find_if(commands, lastCommand, [&](auto&& cmd) -> bool {
-        return cmd.firstIndex == firstIndex && cmd.vertexOffset == vertexOffset;
-    });
+    auto idx = std::numeric_limits<size_t>::max();
 
-    auto idx = command - commands;
+    for (size_t i = 0; i < commandCount_; i++) {
+        auto const& command = *(commands + i);
 
-    if (command == lastCommand) {
-        lastCommand->indexCount = indexCount;
-        lastCommand->instanceCount = 1;
-        lastCommand->firstIndex = firstIndex;
-        lastCommand->vertexOffset = vertexOffset;
-        lastCommand->firstInstance = 0;
-
-        commandCount_++;
-    } else {
-        command->instanceCount++;
+        if (command.firstIndex == firstIndex && command.vertexOffset == static_cast<int32_t>(baseVertex)) {
+            idx = i;
+            break;
+        }
     }
+
+    if (idx == std::numeric_limits<size_t>::max()) {
+        if (commandDump_.empty()) {
+            if (commandBuffer_->size() <= (commandCount_ + 1) * sizeof(VkDrawIndexedIndirectCommand)) {
+                _reAllocCommandBuffer(std::max(size_t{ 1 }, commandCount_ * 2));
+            }
+
+            idx = commandCount_++;
+        } else {
+            idx = commandDump_.back();
+            commandDump_.pop_back();
+        }
+
+        auto& command = *(commands + idx);
+
+        command.indexCount = geometry->indexCount();
+        command.instanceCount = 0;
+        command.firstIndex = firstIndex;
+        command.firstInstance = 0;
+        command.vertexOffset = baseVertex;
+    }
+
+    mesh.subMeshes.emplace_back(idx, geometry);
 }
 
 void MeshSystem::_reAllocCommandBuffer(size_t size)

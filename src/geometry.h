@@ -39,6 +39,10 @@ public:
 
     [[nodiscard]] auto indices() const -> RawDataView<index_type_t>;
 
+    [[nodiscard]] auto firstIndex() const -> uint32_t;
+
+    [[nodiscard]] auto baseVertex() const -> uint32_t;
+
 private:
     static std::atomic_uint64_t _lastGeometryId;
 
