@@ -90,11 +90,17 @@ void RenderPass::begin(vulkan::Device& device)
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget>) {
               auto frameFence = static_cast<VkFence>(frameFences_[frameIndex_]);
 
+              // wait until frame over before render this frame
               vkWaitForFences(device.handle(), 1, &frameFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
 
+              // it acquires image index for the frame
+              // image index matches with commands for this image
+              // (so, fame image index == commands index we going to render)
+              // returns: commands index (image index), semaphore to be sure image is available
               auto [commandsIndex, wait] = rt.acquireBackBufferIndex(device, frameIndex_);
 
               if (rtFences_[commandsIndex] != VK_NULL_HANDLE) {
+                  // wait until command buffer for acquired image get free
                   vkWaitForFences(
                     device.handle(), 1, &rtFences_[commandsIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
               }
@@ -105,7 +111,10 @@ void RenderPass::begin(vulkan::Device& device)
 
               commandsIndex_ = commandsIndex;
 
-              frameCommands_[frameIndex_].frameSemaphore() = wait;
+              // frameCommands_[frameIndex_].frameSemaphore() = wait; // ??? - is it right??? check frames sync
+              // this frame renderer submits frameCommands[commands index] this frame
+              // so, exactly frameCommands[commands index] must wait for semaphore to be sure frame image available
+              frameCommands_[commandsIndex_].frameSemaphore() = wait;
 
               return;
           }
@@ -125,6 +134,7 @@ void RenderPass::update(vulkan::Device& device,
                         VkPipelineLayout pipelineLayout,
                         VkPipeline pipeline)
 {
+    // TODO:: review please
     std::visit(
       [&, this](auto&& rt) -> void {
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
@@ -154,7 +164,7 @@ void RenderPass::end(vulkan::Device const& device)
     std::visit(
       [&, this](auto&& rt) -> void {
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget>) {
-              rt.swapBuffers(device, passFinishedSemaphore(), frameIndex_);
+              rt.swapBuffers(device, passFinishedSemaphore(), commandsIndex_);
 
               frameIndex_ = (frameIndex_ + 1) % rt.swapChainLength();
 

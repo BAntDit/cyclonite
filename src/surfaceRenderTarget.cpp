@@ -141,9 +141,9 @@ auto SurfaceRenderTarget::acquireBackBufferIndex(vulkan::Device const& device, u
 
 void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device,
                                       vulkan::Handle<VkSemaphore> const& signal,
-                                      uint32_t frameIndex)
+                                      uint32_t currentFrameImageIndex)
 {
-    assert(frameIndex < imageIndices_.size());
+    assert(currentFrameImageIndex < imageIndices_.size());
 
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -151,7 +151,9 @@ void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device,
     presentInfo.pWaitSemaphores = &signal;
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &std::as_const(vkSwapChain_);
-    presentInfo.pImageIndices = imageIndices_.data() + frameIndex;
+
+    // image at index currentFrameImageIndex gets available after signal
+    presentInfo.pImageIndices = imageIndices_.data() + currentFrameImageIndex;
 
     vkQueuePresentKHR(device.graphicsQueue(), &presentInfo);
 }

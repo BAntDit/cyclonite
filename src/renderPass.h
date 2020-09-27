@@ -154,7 +154,7 @@ public:
 
     [[nodiscard]] auto passFinishedSemaphore() const -> vulkan::Handle<VkSemaphore> const&
     {
-        return signalSemaphores_[frameIndex_];
+        return signalSemaphores_[commandsIndex_];
     }
 
     [[nodiscard]] auto fence() const -> VkFence { return static_cast<VkFence>(frameFences_[frameIndex_]); }

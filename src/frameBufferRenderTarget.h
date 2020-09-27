@@ -41,7 +41,7 @@ public:
 
     auto operator=(FrameBufferRenderTarget &&) -> FrameBufferRenderTarget& = default;
 
-    auto swapBuffers(vulkan::Device const& device, uint32_t frameIndex) -> uint32_t;
+    auto swapBuffers(vulkan::Device const& device, uint32_t currentFrameImageIndex) -> uint32_t;
 };
 
 template<size_t count>

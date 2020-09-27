@@ -42,7 +42,9 @@ public:
 
     auto acquireBackBufferIndex(vulkan::Device const& device, uint32_t frameIndex) -> std::pair<uint32_t, VkSemaphore>;
 
-    void swapBuffers(vulkan::Device const& device, vulkan::Handle<VkSemaphore> const& signal, uint32_t frameIndex);
+    void swapBuffers(vulkan::Device const& device,
+                     vulkan::Handle<VkSemaphore> const& signal,
+                     uint32_t currentFrameImageIndex);
 
 private:
     std::optional<Surface> surface_;
