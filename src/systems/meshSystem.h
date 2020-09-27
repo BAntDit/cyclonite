@@ -8,6 +8,7 @@
 #include "../components/mesh.h"
 #include "../components/transform.h"
 #include "../geometry.h"
+#include "renderSystem.h"
 #include "transformSystem.h"
 #include "vulkan/buffer.h"
 #include "vulkan/commandBufferSet.h"
@@ -24,7 +25,7 @@ using namespace easy_mp;
 class MeshSystem : public enttx::BaseSystem<MeshSystem>
 {
 public:
-    using transfer_commands_t = vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>;
+    using transfer_commands_t = vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 3>>;
 
     using tag_t = easy_mp::type_list<components::Mesh>;
 
@@ -59,6 +60,7 @@ public:
     void markToDeleteSubMesh();
 
     void init(vulkan::Device& device,
+              size_t swapChainLength,
               size_t initialCommandCapacity,
               size_t initialInstanceCapacity,
               size_t initialIndexCapacity,
@@ -67,6 +69,8 @@ public:
     template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
     void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
 
+    void requestVertexDeviceBufferUpdate();
+
 private:
     void _addSubMesh(components::Mesh& mesh, std::shared_ptr<Geometry> const& geometry);
 
@@ -74,6 +78,7 @@ private:
 
 private:
     vulkan::Device* devicePtr_;
+    VkQueue vkTransferQueue_;
 
     std::unique_ptr<vulkan::Staging> commandBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuCommandBuffer_;
@@ -89,9 +94,11 @@ private:
     std::unique_ptr<vulkan::Staging> vertexBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuVertexBuffer_;
 
-    std::set<std::shared_ptr<Geometry>> geometries_;
+    std::vector<vulkan::Handle<VkSemaphore>> transferSemaphores_;
+    std::unique_ptr<transfer_commands_t> transferCommands_;
+    bool verticesUpdateRequired_;
 
-    bool isVertexElementBuffersInActualState_;
+    std::set<std::shared_ptr<Geometry>> geometries_;
 };
 
 template<typename EntityManager, typename Geometries>
@@ -124,6 +131,30 @@ auto MeshSystem::addSubMeshes(components::Mesh& mesh, Geometries&& geometries)
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
 void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
+    if constexpr (STAGE == value_cast(UpdateStage::TRANSFER_STAGE)) {
+        auto& renderSystem = systemManager.template get<RenderSystem>();
+        auto& renderPass = renderSystem.renderPass();
+        auto& frame = renderPass.frame();
+        auto idx = renderPass.commandsIndex();
+        auto const* signal = &std::as_const(transferSemaphores_[idx]);
+        auto commandBufferCount = verticesUpdateRequired_ ? uint32_t{3} : uint32_t{2};
+
+        frame.addWaitSemaphore(*signal, VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT);
+
+        VkSubmitInfo submitInfo = {};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = commandBufferCount;
+        submitInfo.pCommandBuffers = transferCommands_->pCommandBuffers();
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores = signal;
+
+        if (auto result = vkQueueSubmit(vkTransferQueue_, 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS) {
+            throw std::runtime_error("mesh system data could not be transferred");
+        }
+
+        // set instance, commands, and vertices buffer
+    }
+
     (void)systemManager;
 
     (void)entityManager;

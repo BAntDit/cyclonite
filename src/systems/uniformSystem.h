@@ -31,7 +31,7 @@ public:
 
     auto operator=(UniformSystem &&) -> UniformSystem& = default;
 
-    void init(vulkan::Device& device);
+    void init(vulkan::Device& device, size_t swapChainLength);
 
     [[nodiscard]] auto uniforms() const -> vulkan::Staging const& { return *uniforms_; }
 
@@ -50,9 +50,9 @@ public:
 private:
     VkDevice vkDevice_;
     VkQueue vkTransferQueue_;
-    size_t transferSemaphoreId_;
     std::unique_ptr<vulkan::Staging> uniforms_;
     std::shared_ptr<vulkan::Buffer> gpuUniforms_;
+    std::vector<vulkan::Handle<VkSemaphore>> transferSemaphores_;
     std::unique_ptr<transfer_commands_t> transferCommands_;
 };
 
@@ -69,10 +69,10 @@ void UniformSystem::update(SystemManager& systemManager, EntityManager& entityMa
         auto& renderSystem = systemManager.template get<RenderSystem>();
         auto& renderPass = renderSystem.renderPass();
         auto& frame = renderPass.frame();
+        auto idx = renderPass.commandsIndex();
+        auto const* signal = &std::as_const(transferSemaphores_[idx]);
 
-        auto [id, signal] = frame.getWaitSemaphore(transferSemaphoreId_, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
-
-        transferSemaphoreId_ = id;
+        frame.addWaitSemaphore(*signal, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
 
         VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

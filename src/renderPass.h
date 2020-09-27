@@ -62,8 +62,12 @@ public:
 
         [[nodiscard]] auto frameSemaphore() -> VkSemaphore& { return waitSemaphores_[0]; }
 
-        auto getWaitSemaphore(size_t semaphoreId, VkPipelineStageFlags flags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM)
-          -> std::pair<size_t, VkSemaphore const*>;
+        [[nodiscard]] auto waitSemaphoreCount() const -> size_t { return waitSemaphoreCount_; }
+
+        void resetWaitSemaphores();
+
+        void addWaitSemaphore(VkSemaphore waitSemaphore,
+                              VkPipelineStageFlags flags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM);
 
     private:
         void _reset();
@@ -77,9 +81,9 @@ public:
 
         std::shared_ptr<vulkan::Buffer> uniforms_;
 
-        std::unordered_map<size_t, std::pair<size_t, vulkan::Handle<VkSemaphore>>> semaphores_;
         std::vector<VkSemaphore> waitSemaphores_;
         std::vector<VkPipelineStageFlags> waitFlags_;
+        size_t waitSemaphoreCount_;
 
         std::unique_ptr<graphics_queue_commands_t> graphicsCommands_;
 
@@ -156,6 +160,8 @@ public:
     {
         return signalSemaphores_[commandsIndex_];
     }
+
+    [[nodiscard]] auto commandsIndex() const -> size_t { return commandsIndex_; }
 
     [[nodiscard]] auto fence() const -> VkFence { return static_cast<VkFence>(frameFences_[frameIndex_]); }
 

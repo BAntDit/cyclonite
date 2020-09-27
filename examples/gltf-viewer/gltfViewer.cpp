@@ -50,8 +50,10 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
     }
 
     {
+        auto& renderSystem = systems_.get<systems::RenderSystem>();
         auto& uniformSystem = systems_.get<systems::UniformSystem>();
-        uniformSystem.init(root_->device());
+
+        uniformSystem.init(root_->device(), renderSystem.renderPass().getSwapChainLength());
     }
 
     {
@@ -79,8 +81,13 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
                 auto&& [initials] = t;
                 auto [vertexCount, indexCount, instanceCount, commandCount] = initials;
 
+                auto& renderSystem = systems_.get<systems::RenderSystem>();
                 auto& meshSystem = systems_.get<systems::MeshSystem>();
-                meshSystem.init(root_->device(), commandCount, instanceCount, indexCount, vertexCount);
+
+                auto const& renderPass = renderSystem.renderPass();
+                auto swapChainLength = renderPass.getSwapChainLength();
+
+                meshSystem.init(root_->device(), swapChainLength, commandCount, instanceCount, indexCount, vertexCount);
             }
 
             if constexpr (std::is_same_v<std::decay_t<decltype(std::get<0>(t))>, gltf::Reader::Node>) {
@@ -217,6 +224,8 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
                 } // end index rendering
 
                 geometryIdentifiers_.emplace(std::make_tuple(pos, nor, ind), geometry.id());
+
+                meshSystem.requestVertexDeviceBufferUpdate();
             }
 
             if constexpr (std::is_same_v<std::decay_t<decltype(std::get<0>(t))>,

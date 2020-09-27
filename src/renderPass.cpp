@@ -111,6 +111,8 @@ void RenderPass::begin(vulkan::Device& device)
 
               commandsIndex_ = commandsIndex;
 
+              frameCommands_[commandsIndex_].resetWaitSemaphores();
+
               // frameCommands_[frameIndex_].frameSemaphore() = wait; // ??? - is it right??? check frames sync
               // this frame renderer submits frameCommands[commands index] this frame
               // so, exactly frameCommands[commands index] must wait for semaphore to be sure frame image available

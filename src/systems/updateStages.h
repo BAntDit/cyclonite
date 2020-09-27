@@ -10,12 +10,14 @@
 namespace cyclonite {
 enum class UpdateStage : size_t
 {
-    EARLY_UPDATE = 0,
-    LATE_UPDATE = 1,
-    TRANSFER_STAGE = 2,
-    RENDERING = 3,
-    MIN_VALUE = EARLY_UPDATE,
-    MAX_VALUE = RENDERING,
+    FRAME_START = 0,
+    EARLY_UPDATE = 1,
+    LATE_UPDATE = 2,
+    TRANSFER_STAGE = 3,
+    RENDERING = 4,
+    FRAME_END = 5,
+    MIN_VALUE = FRAME_START,
+    MAX_VALUE = FRAME_END,
     COUNT = MAX_VALUE + 1
 };
 }

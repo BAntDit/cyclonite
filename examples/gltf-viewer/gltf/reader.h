@@ -574,7 +574,7 @@ void Reader::_readNode(
 
             instanceCount_++;
         } // primitives cycle end
-    } // mesh parse end
+    }     // mesh parse end
 
     if (auto childrenIt = node.find(reinterpret_cast<char const*>(u8"children")); childrenIt != node.end()) {
         auto const& children = *childrenIt;

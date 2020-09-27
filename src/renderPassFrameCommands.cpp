@@ -9,48 +9,31 @@ namespace cyclonite {
 RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   : vkDevice_{ device.handle() }
   , uniforms_{ nullptr }
-  , semaphores_{}
   , waitSemaphores_(1, VK_NULL_HANDLE)
   , waitFlags_(1, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+  , waitSemaphoreCount_{ 1 }
   , graphicsCommands_{ nullptr }
   , descriptorSetExpired_{ false }
   , descriptorSet_{ VK_NULL_HANDLE }
 {}
 
-auto RenderPass::FrameCommands::getWaitSemaphore(size_t semaphoreId, VkPipelineStageFlags flags)
-  -> std::pair<size_t, VkSemaphore const*>
+void RenderPass::FrameCommands::resetWaitSemaphores()
 {
-    if (semaphoreId == std::numeric_limits<size_t>::max()) {
-        semaphoreId = semaphores_.size();
+    waitSemaphoreCount_ = 1;
+}
+
+void RenderPass::FrameCommands::addWaitSemaphore(VkSemaphore waitSemaphore,
+                                                 VkPipelineStageFlags flags /* = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM*/)
+{
+    auto idx = waitSemaphoreCount_++;
+
+    if (waitSemaphores_.size() < waitSemaphoreCount_) {
+        waitSemaphores_.resize(waitSemaphoreCount_, VK_NULL_HANDLE);
+        waitFlags_.resize(waitSemaphoreCount_, VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM);
     }
 
-    if (semaphores_.count(semaphoreId) == 0) {
-        auto [it, _] = semaphores_.emplace(
-          semaphoreId, std::make_pair(waitSemaphores_.size(), vulkan::Handle{ vkDevice_, vkDestroySemaphore }));
-
-        auto& [key, value] = *it;
-        auto& [idx, handle] = value;
-
-        VkSemaphoreCreateInfo semaphoreCreateInfo = {};
-        semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        if (auto result = vkCreateSemaphore(vkDevice_, &semaphoreCreateInfo, nullptr, &handle); result != VK_SUCCESS) {
-            throw std::runtime_error("could not create synchronization semaphore");
-        }
-
-        assert(flags != VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM);
-
-        waitSemaphores_.emplace_back(static_cast<VkSemaphore>(handle));
-        waitFlags_.emplace_back(flags);
-
-        (void)_;
-        (void)key;
-        (void)idx;
-    }
-
-    assert(semaphores_.count(semaphoreId) != 0 && waitSemaphores_.size() > semaphores_[semaphoreId].first);
-
-    return std::make_pair(semaphoreId, waitSemaphores_.data() + semaphores_[semaphoreId].first);
+    waitSemaphores_[idx] = waitSemaphore;
+    waitFlags_[idx] = flags;
 }
 
 void RenderPass::FrameCommands::setUniformBuffer(std::shared_ptr<vulkan::Buffer> const& buffer)

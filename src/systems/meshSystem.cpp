@@ -7,12 +7,15 @@
 
 namespace cyclonite::systems {
 void MeshSystem::init(vulkan::Device& device,
+                      size_t swapChainLength,
                       size_t initialCommandCapacity,
                       size_t initialInstanceCapacity,
                       size_t initialIndexCapacity,
                       size_t initialVertexCapacity)
 {
     devicePtr_ = &device;
+
+    vkTransferQueue_ = device.hostTransferQueue();
 
     commandBuffer_ = std::make_unique<vulkan::Staging>(
       device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(VkDrawIndexedIndirectCommand) * initialCommandCapacity);
@@ -55,6 +58,116 @@ void MeshSystem::init(vulkan::Device& device,
       VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
       sizeof(vertex_t) * initialVertexCapacity,
       std::array{ device.hostTransferQueueFamilyIndex(), device.graphicsQueueFamilyIndex() });
+
+    transferSemaphores_.reserve(swapChainLength);
+
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    for (size_t i = 0; i < swapChainLength; i++) {
+        if (auto result = vkCreateSemaphore(device.handle(),
+                                            &semaphoreCreateInfo,
+                                            nullptr,
+                                            &transferSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
+            result != VK_SUCCESS) {
+            throw std::runtime_error("could not create transfer synchronization semaphore");
+        }
+    }
+
+    transferCommands_ = std::make_unique<vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 3>>>(
+      device.commandPool().allocCommandBuffers(
+        vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 3>>{
+          device.hostTransferQueueFamilyIndex(),
+          VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+          std::array<VkCommandBuffer, 3>{} },
+        [&, this](auto& transferCommandBuffers) -> void {
+            VkCommandBufferBeginInfo beginInfo = {};
+            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+            { // instances
+                auto& transferCommands = transferCommandBuffers[0];
+
+                if (auto result = vkBeginCommandBuffer(transferCommands, &beginInfo); result != VK_SUCCESS) {
+                    throw std::runtime_error("could not begin to write uniforms transfer commands");
+                }
+
+                {
+                    VkBufferCopy region = {};
+                    region.srcOffset = 0;
+                    region.dstOffset = 0;
+                    region.size = instancedDataBuffer_->size();
+
+                    vkCmdCopyBuffer(
+                      transferCommands, instancedDataBuffer_->handle(), gpuInstancedDataBuffer_->handle(), 1, &region);
+                }
+
+                if (auto result = vkEndCommandBuffer(transferCommands); result != VK_SUCCESS) {
+                    throw std::runtime_error("could not write uniforms transfer commands");
+                }
+            }
+
+          { // commands
+              auto& transferCommands = transferCommandBuffers[1];
+
+              if (auto result = vkBeginCommandBuffer(transferCommands, &beginInfo); result != VK_SUCCESS) {
+                  throw std::runtime_error("could not begin to write uniforms transfer commands");
+              }
+
+              {
+                  VkBufferCopy region = {};
+                  region.srcOffset = 0;
+                  region.dstOffset = 0;
+                  region.size = commandBuffer_->size();
+
+                  vkCmdCopyBuffer(
+                    transferCommands, commandBuffer_->handle(), gpuCommandBuffer_->handle(), 1, &region);
+              }
+
+              if (auto result = vkEndCommandBuffer(transferCommands); result != VK_SUCCESS) {
+                  throw std::runtime_error("could not write uniforms transfer commands");
+              }
+          }
+
+          { // vertices
+              auto& transferCommands = transferCommandBuffers[2];
+
+              if (auto result = vkBeginCommandBuffer(transferCommands, &beginInfo); result != VK_SUCCESS) {
+                  throw std::runtime_error("could not begin to write uniforms transfer commands");
+              }
+
+              {
+                  VkBufferCopy region = {};
+                  region.srcOffset = 0;
+                  region.dstOffset = 0;
+                  region.size = vertexBuffer_->size();
+
+                  vkCmdCopyBuffer(
+                    transferCommands, vertexBuffer_->handle(), gpuVertexBuffer_->handle(), 1, &region);
+              }
+
+              {
+                  VkBufferCopy region = {};
+                  region.srcOffset = 0;
+                  region.dstOffset = 0;
+                  region.size = indexBuffer_->size();
+
+                  vkCmdCopyBuffer(
+                    transferCommands, indexBuffer_->handle(), gpuIndexBuffer_->handle(), 1, &region);
+              }
+
+              if (auto result = vkEndCommandBuffer(transferCommands); result != VK_SUCCESS) {
+                  throw std::runtime_error("could not write uniforms transfer commands");
+              }
+          }
+        }));
+
+    verticesUpdateRequired_ = false;
+}
+
+void MeshSystem::requestVertexDeviceBufferUpdate()
+{
+    verticesUpdateRequired_ = true;
 }
 
 auto MeshSystem::createGeometry(uint32_t vertexCount, uint32_t indexCount) -> std::shared_ptr<Geometry>

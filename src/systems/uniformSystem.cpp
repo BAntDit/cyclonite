@@ -7,12 +7,10 @@
 #include <glm/gtc/type_ptr.hpp>
 
 namespace cyclonite::systems {
-void UniformSystem::init(vulkan::Device& device)
+void UniformSystem::init(vulkan::Device& device, size_t swapChainLength)
 {
     vkDevice_ = device.handle();
     vkTransferQueue_ = device.hostTransferQueue();
-
-    transferSemaphoreId_ = std::numeric_limits<size_t>::max();
 
     uniforms_ = std::make_unique<vulkan::Staging>(device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(mat4) * 3);
 
@@ -22,6 +20,21 @@ void UniformSystem::init(vulkan::Device& device)
       VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
       sizeof(mat4) * 3,
       std::array{ device.hostTransferQueueFamilyIndex(), device.graphicsQueueFamilyIndex() });
+
+    transferSemaphores_.reserve(swapChainLength);
+
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    for (size_t i = 0; i < swapChainLength; i++) {
+        if (auto result = vkCreateSemaphore(device.handle(),
+                                            &semaphoreCreateInfo,
+                                            nullptr,
+                                            &transferSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
+            result != VK_SUCCESS) {
+            throw std::runtime_error("could not create transfer synchronization semaphore");
+        }
+    }
 
     transferCommands_ = std::make_unique<vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>>(
       device.commandPool().allocCommandBuffers(
