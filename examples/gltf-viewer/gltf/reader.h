@@ -192,20 +192,20 @@ public:
 public:
     Reader() = default;
 
-    template<typename F>
-    void read(std::filesystem::path const& path, F&& f);
-
-    template<typename F>
-    void read(std::pair<void const*, size_t> buffer, F&& f);
-
-    template<typename F>
-    void read(std::istream& stream, F&& f);
-
     [[nodiscard]] auto accessors() const -> std::vector<Accessor> const& { return accessors_; }
 
     [[nodiscard]] auto bufferViews() const -> std::vector<BufferView> const& { return bufferViews_; }
 
     [[nodiscard]] auto buffers() const -> std::vector<std::vector<std::byte>> const& { return buffers_; }
+
+    template<typename F>
+    void read(std::pair<void const*, size_t> buffer, F&& f);
+
+    template<typename F>
+    void read(std::filesystem::path const& path, F&& f);
+
+    template<typename F>
+    void read(std::istream& stream, F&& f);
 
 private:
     using intance_key_t = std::tuple<size_t, size_t, size_t>;

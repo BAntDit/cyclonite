@@ -137,7 +137,7 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
         auto& frame = renderPass.frame();
         auto idx = renderPass.commandsIndex();
         auto const* signal = &std::as_const(transferSemaphores_[idx]);
-        auto commandBufferCount = verticesUpdateRequired_ ? uint32_t{3} : uint32_t{2};
+        auto commandBufferCount = verticesUpdateRequired_ ? uint32_t{ 3 } : uint32_t{ 2 };
 
         frame.addWaitSemaphore(*signal, VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT);
 
@@ -152,6 +152,9 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
             throw std::runtime_error("mesh system data could not be transferred");
         }
 
+        frame.setIndexBuffer(gpuIndexBuffer_);
+        frame.setVertexBuffer(gpuVertexBuffer_);
+        frame.setInstanceBuffer(gpuInstancedDataBuffer_);
         // set instance, commands, and vertices buffer
     }
 

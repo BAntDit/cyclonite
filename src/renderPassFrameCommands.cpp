@@ -8,6 +8,9 @@
 namespace cyclonite {
 RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   : vkDevice_{ device.handle() }
+  , indices_{ nullptr }
+  , vertices_{ nullptr }
+  , instances_{ nullptr }
   , uniforms_{ nullptr }
   , waitSemaphores_(1, VK_NULL_HANDLE)
   , waitFlags_(1, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
@@ -40,14 +43,35 @@ void RenderPass::FrameCommands::setUniformBuffer(std::shared_ptr<vulkan::Buffer>
 {
     if (uniforms_ != buffer) {
         uniforms_ = buffer;
-        _reset();
+        descriptorSetExpired_ = true;
+        graphicsCommands_.reset();
     }
 }
 
-void RenderPass::FrameCommands::_reset()
+void RenderPass::FrameCommands::setIndexBuffer(std::shared_ptr<vulkan::Buffer> const& buffer)
 {
-    descriptorSetExpired_ = true;
-    graphicsCommands_.reset();
+    if (indices_ != buffer) {
+        indices_ = buffer;
+        graphicsCommands_.reset();
+    }
+}
+
+void RenderPass::FrameCommands::setVertexBuffer(std::shared_ptr<vulkan::Buffer> const& buffer)
+{
+    if (vertices_ != buffer) {
+        vertices_ = buffer;
+        descriptorSetExpired_ = true;
+        graphicsCommands_.reset();
+    }
+}
+
+void RenderPass::FrameCommands::setInstanceBuffer(std::shared_ptr<vulkan::Buffer> const& buffer)
+{
+    if (instances_ != buffer) {
+        instances_ = buffer;
+        descriptorSetExpired_ = true;
+        graphicsCommands_.reset();
+    }
 }
 
 void RenderPass::FrameCommands::_createDescriptorSets(VkDevice vkDevice,
@@ -96,19 +120,43 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
     if (descriptorSet_ == VK_NULL_HANDLE) {
         _createDescriptorSets(device.handle(), descriptorPool, descriptorSetLayout);
 
+        VkDescriptorBufferInfo vertexBufferInfo = {};
+        vertexBufferInfo.buffer = vertices_->handle();
+        vertexBufferInfo.offset = 0;
+        vertexBufferInfo.range = VK_WHOLE_SIZE;
+
+        VkDescriptorBufferInfo instanceBufferInfo = {};
+        instanceBufferInfo.buffer = instances_->handle();
+        instanceBufferInfo.offset = 0;
+        instanceBufferInfo.range = VK_WHOLE_SIZE;
+
         VkDescriptorBufferInfo uniformBufferInfo = {};
         uniformBufferInfo.buffer = uniforms_->handle();
         uniformBufferInfo.offset = 0;
         uniformBufferInfo.range = VK_WHOLE_SIZE;
 
-        std::array<VkWriteDescriptorSet, 1> writeDescriptorSets = { VkWriteDescriptorSet{} };
+        std::array<VkWriteDescriptorSet, 3> writeDescriptorSets = { VkWriteDescriptorSet{},
+                                                                    VkWriteDescriptorSet{},
+                                                                    VkWriteDescriptorSet{} };
 
         writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         writeDescriptorSets[0].dstSet = descriptorSet_;
         writeDescriptorSets[0].dstBinding = 0;
         writeDescriptorSets[0].descriptorCount = 1;
-        writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        writeDescriptorSets[0].pBufferInfo = &uniformBufferInfo;
+        writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        writeDescriptorSets[0].pBufferInfo = &vertexBufferInfo;
+        writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writeDescriptorSets[1].dstSet = descriptorSet_;
+        writeDescriptorSets[1].dstBinding = 1;
+        writeDescriptorSets[1].descriptorCount = 1;
+        writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        writeDescriptorSets[1].pBufferInfo = &instanceBufferInfo;
+        writeDescriptorSets[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writeDescriptorSets[2].dstSet = descriptorSet_;
+        writeDescriptorSets[2].dstBinding = 2;
+        writeDescriptorSets[2].descriptorCount = 1;
+        writeDescriptorSets[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        writeDescriptorSets[2].pBufferInfo = &uniformBufferInfo;
 
         vkUpdateDescriptorSets(device.handle(), writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
 
@@ -145,6 +193,8 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
               renderPassBeginInfo.pClearValues = pClearValues;
 
               vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+              vkCmdBindIndexBuffer(commandBuffer, indices_->handle(), 0, VK_INDEX_TYPE_UINT32);
 
               vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 

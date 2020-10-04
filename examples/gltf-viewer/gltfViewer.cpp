@@ -10,9 +10,11 @@ using namespace easy_mp;
 
 namespace examples {
 GLTFViewer::GLTFViewer()
-  : root_{ std::make_unique<cyclonite::Root>() }
+  : shutdown_{ false }
+  , root_{ std::make_unique<cyclonite::Root>() }
   , entities_{}
   , systems_{ &entities_ }
+  , cameraEntity_{}
 {}
 
 auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
@@ -42,11 +44,6 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
           VkClearDepthStencilValue{ 1.0f, 0 },
           VkClearColorValue{ { 0.0f, 0.0f, 0.0f, 1.0f } },
           std::array{ VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR });
-    }
-
-    {
-        auto& cameraSystem = systems_.get<systems::CameraSystem>();
-        cameraSystem.init();
     }
 
     {
@@ -258,10 +255,37 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
                 }
             }
         });
+
+        {
+            auto& transformSystem = systems_.get<systems::TransformSystem>();
+            auto& cameraSystem = systems_.get<systems::CameraSystem>();
+
+            auto cameraEntity = entities_.create();
+
+            transformSystem.create(entities_,
+                                   enttx::Entity{ std::numeric_limits<uint64_t>::max() },
+                                   cameraEntity,
+                                   vec3{ 0.0f, 0.0f, 2.f },
+                                   vec3{ 1.f },
+                                   quat{ 1.f, 0.f, 0.f, 0.f });
+
+            cameraSystem.init();
+        }
     }
 
     return *this;
 }
+
+auto GLTFViewer::run() -> GLTFViewer&
+{
+    while (!shutdown_) {
+        root_->input().pollEvent();
+        systems_.update(0.f);
+    }
+
+    return *this;
+}
+
 }
 
 CYCLONITE_APP(examples::GLTFViewer)

@@ -107,59 +107,57 @@ void MeshSystem::init(vulkan::Device& device,
                 }
             }
 
-          { // commands
-              auto& transferCommands = transferCommandBuffers[1];
+            { // commands
+                auto& transferCommands = transferCommandBuffers[1];
 
-              if (auto result = vkBeginCommandBuffer(transferCommands, &beginInfo); result != VK_SUCCESS) {
-                  throw std::runtime_error("could not begin to write uniforms transfer commands");
-              }
+                if (auto result = vkBeginCommandBuffer(transferCommands, &beginInfo); result != VK_SUCCESS) {
+                    throw std::runtime_error("could not begin to write uniforms transfer commands");
+                }
 
-              {
-                  VkBufferCopy region = {};
-                  region.srcOffset = 0;
-                  region.dstOffset = 0;
-                  region.size = commandBuffer_->size();
+                {
+                    VkBufferCopy region = {};
+                    region.srcOffset = 0;
+                    region.dstOffset = 0;
+                    region.size = commandBuffer_->size();
 
-                  vkCmdCopyBuffer(
-                    transferCommands, commandBuffer_->handle(), gpuCommandBuffer_->handle(), 1, &region);
-              }
+                    vkCmdCopyBuffer(
+                      transferCommands, commandBuffer_->handle(), gpuCommandBuffer_->handle(), 1, &region);
+                }
 
-              if (auto result = vkEndCommandBuffer(transferCommands); result != VK_SUCCESS) {
-                  throw std::runtime_error("could not write uniforms transfer commands");
-              }
-          }
+                if (auto result = vkEndCommandBuffer(transferCommands); result != VK_SUCCESS) {
+                    throw std::runtime_error("could not write uniforms transfer commands");
+                }
+            }
 
-          { // vertices
-              auto& transferCommands = transferCommandBuffers[2];
+            { // vertices
+                auto& transferCommands = transferCommandBuffers[2];
 
-              if (auto result = vkBeginCommandBuffer(transferCommands, &beginInfo); result != VK_SUCCESS) {
-                  throw std::runtime_error("could not begin to write uniforms transfer commands");
-              }
+                if (auto result = vkBeginCommandBuffer(transferCommands, &beginInfo); result != VK_SUCCESS) {
+                    throw std::runtime_error("could not begin to write uniforms transfer commands");
+                }
 
-              {
-                  VkBufferCopy region = {};
-                  region.srcOffset = 0;
-                  region.dstOffset = 0;
-                  region.size = vertexBuffer_->size();
+                {
+                    VkBufferCopy region = {};
+                    region.srcOffset = 0;
+                    region.dstOffset = 0;
+                    region.size = vertexBuffer_->size();
 
-                  vkCmdCopyBuffer(
-                    transferCommands, vertexBuffer_->handle(), gpuVertexBuffer_->handle(), 1, &region);
-              }
+                    vkCmdCopyBuffer(transferCommands, vertexBuffer_->handle(), gpuVertexBuffer_->handle(), 1, &region);
+                }
 
-              {
-                  VkBufferCopy region = {};
-                  region.srcOffset = 0;
-                  region.dstOffset = 0;
-                  region.size = indexBuffer_->size();
+                {
+                    VkBufferCopy region = {};
+                    region.srcOffset = 0;
+                    region.dstOffset = 0;
+                    region.size = indexBuffer_->size();
 
-                  vkCmdCopyBuffer(
-                    transferCommands, indexBuffer_->handle(), gpuIndexBuffer_->handle(), 1, &region);
-              }
+                    vkCmdCopyBuffer(transferCommands, indexBuffer_->handle(), gpuIndexBuffer_->handle(), 1, &region);
+                }
 
-              if (auto result = vkEndCommandBuffer(transferCommands); result != VK_SUCCESS) {
-                  throw std::runtime_error("could not write uniforms transfer commands");
-              }
-          }
+                if (auto result = vkEndCommandBuffer(transferCommands); result != VK_SUCCESS) {
+                    throw std::runtime_error("could not write uniforms transfer commands");
+                }
+            }
         }));
 
     verticesUpdateRequired_ = false;

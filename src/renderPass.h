@@ -47,6 +47,12 @@ public:
 
         void setUniformBuffer(std::shared_ptr<vulkan::Buffer> const& buffer);
 
+        void setIndexBuffer(std::shared_ptr<vulkan::Buffer> const& buffer);
+
+        void setVertexBuffer(std::shared_ptr<vulkan::Buffer> const& buffer);
+
+        void setInstanceBuffer(std::shared_ptr<vulkan::Buffer> const& buffer);
+
         [[nodiscard]] auto graphicsCommandCount() const -> size_t { return graphicsCommands_->commandBufferCount(); }
 
         [[nodiscard]] auto graphicsCommands() const -> VkCommandBuffer const*
@@ -70,8 +76,6 @@ public:
                               VkPipelineStageFlags flags = VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM);
 
     private:
-        void _reset();
-
         void _createDescriptorSets(VkDevice vkDevice,
                                    VkDescriptorPool vkDescriptorPool,
                                    VkDescriptorSetLayout descriptorSetLayout);
@@ -79,6 +83,9 @@ public:
     private:
         VkDevice vkDevice_;
 
+        std::shared_ptr<vulkan::Buffer> indices_;
+        std::shared_ptr<vulkan::Buffer> vertices_;
+        std::shared_ptr<vulkan::Buffer> instances_;
         std::shared_ptr<vulkan::Buffer> uniforms_;
 
         std::vector<VkSemaphore> waitSemaphores_;

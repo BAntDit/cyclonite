@@ -109,12 +109,22 @@ void RenderSystem::_createDummyPipeline(vulkan::Device& device,
     colorBlendState.blendConstants[2] = 0.0f;
     colorBlendState.blendConstants[3] = 0.0f;
 
-    std::array<VkDescriptorSetLayoutBinding, 1> bindings = { VkDescriptorSetLayoutBinding{} };
+    std::array<VkDescriptorSetLayoutBinding, 3> bindings = { VkDescriptorSetLayoutBinding{},
+                                                             VkDescriptorSetLayoutBinding{},
+                                                             VkDescriptorSetLayoutBinding{} };
 
     bindings[0].binding = 0;
-    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     bindings[0].descriptorCount = 1;
     bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    bindings[1].binding = 1;
+    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    bindings[1].descriptorCount = 1;
+    bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    bindings[2].binding = 2;
+    bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    bindings[2].descriptorCount = 1;
+    bindings[2].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
     VkDescriptorSetLayoutCreateInfo descriptorSetLayout = {};
     descriptorSetLayout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -178,9 +188,16 @@ void RenderSystem::_createDummyPipeline(vulkan::Device& device,
 
 void RenderSystem::_createDummyDescriptorPool(vulkan::Device& device, size_t maxSets)
 {
-    std::array<VkDescriptorPoolSize, 1> poolSizes = { VkDescriptorPoolSize{} };
-    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    std::array<VkDescriptorPoolSize, 3> poolSizes = { VkDescriptorPoolSize{},
+                                                      VkDescriptorPoolSize{},
+                                                      VkDescriptorPoolSize{} };
+
+    poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     poolSizes[0].descriptorCount = maxSets;
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    poolSizes[1].descriptorCount = maxSets;
+    poolSizes[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSizes[2].descriptorCount = maxSets;
 
     VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
     descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
