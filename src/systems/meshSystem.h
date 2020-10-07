@@ -76,14 +76,17 @@ private:
 
     void _reAllocCommandBuffer(size_t size);
 
+    auto _getDumpCommandIndex() -> size_t;
+
 private:
     vulkan::Device* devicePtr_;
     VkQueue vkTransferQueue_;
 
+    std::vector<VkDrawIndexedIndirectCommand> commands_;
     std::unique_ptr<vulkan::Staging> commandBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuCommandBuffer_;
     std::vector<size_t> commandDump_;
-    size_t commandCount_ = 0;
+    uint32_t commandCount_;
 
     std::unique_ptr<vulkan::Staging> instancedDataBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuInstancedDataBuffer_;
@@ -131,6 +134,80 @@ auto MeshSystem::addSubMeshes(components::Mesh& mesh, Geometries&& geometries)
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
 void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
+    if constexpr (STAGE == value_cast(UpdateStage::EARLY_UPDATE)) {
+        {
+            auto view = entityManager.template getView<components::Mesh>();
+
+            for (auto&& [entity, mesh] : view) {
+                auto&& [subMeshes] = mesh;
+
+                for (auto& subMesh : subMeshes) {
+                    commands_[subMeshes.commandIndex].instanceCount++;
+                }
+            }
+        }
+
+        {
+            auto* commands = reinterpret_cast<VkDrawIndexedIndirectCommand*>(commandBuffer_->ptr());
+
+            auto commandCount = size_t{ 0 };
+
+            for (auto i = size_t{ 0 }, count = commands_.size(); i < count; i++) {
+                if (commands_[i].instanceCount > 0) {
+                    auto firstInstance = commandCount > 0 ? (*(commands + (commandCount - 1))).firstInstance +
+                                                              (*(commands + (commandCount - 1))).instanceCount
+                                                          : uint32_t{ 0 };
+                    auto&& command = *(commands + commandCount++);
+
+                    command.firstInstance = firstInstance;
+                    command.instanceCount = commands_[i].instanceCount;
+
+                    commands_[i].firstInstance = firstInstance;
+                    commands_[i].instanceCount = 0;
+                } else {
+                    commands_[i].firstInstance = std::numeric_limits<uint32_t>::max();
+                }
+            }
+
+            commandCount_ = commandCount;
+        }
+
+        {
+            auto* instanceData = reinterpret_cast<instanced_data_t*>(instancedDataBuffer_->ptr());
+
+            auto& transformSystem = systemManager.template get<TransformSystem>();
+            auto const& matrices = transformSystem.worldMatrices();
+
+            auto view = entityManager.template getView<components::Mesh, components::Transform>();
+
+            for (auto&& [entity, mesh, transform] : view) {
+                auto&& [subMeshes] = mesh;
+                auto&& matrix = matrices[transform.globalIndex];
+
+                for (auto& subMesh : subMeshes) {
+                    auto&& command = commands_[subMeshes.commandIndex];
+
+                    if (command.firstInstance == std::numeric_limits<uint32_t>::max())
+                        continue;
+
+                    auto&& instance = instanceData + command.firstInstance + command.instanceCount++;
+
+                    instance.transform1.x = matrix[0].x;
+                    instance.transform1.y = matrix[1].x;
+                    instance.transform1.z = matrix[2].x;
+
+                    instance.transform2.x = matrix[0].y;
+                    instance.transform2.y = matrix[1].y;
+                    instance.transform2.z = matrix[2].y;
+
+                    instance.transform3.x = matrix[0].z;
+                    instance.transform3.y = matrix[1].z;
+                    instance.transform3.z = matrix[2].z;
+                }
+            }
+        }
+    }
+
     if constexpr (STAGE == value_cast(UpdateStage::TRANSFER_STAGE)) {
         auto& renderSystem = systemManager.template get<RenderSystem>();
         auto& renderPass = renderSystem.renderPass();
@@ -155,7 +232,7 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
         frame.setIndexBuffer(gpuIndexBuffer_);
         frame.setVertexBuffer(gpuVertexBuffer_);
         frame.setInstanceBuffer(gpuInstancedDataBuffer_);
-        // set instance, commands, and vertices buffer
+        frame.setCommandBuffer(gpuCommandBuffer_, commandCount_);
     }
 
     (void)systemManager;

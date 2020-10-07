@@ -15,7 +15,11 @@ void MeshSystem::init(vulkan::Device& device,
 {
     devicePtr_ = &device;
 
+    commandCount_ = 0;
+
     vkTransferQueue_ = device.hostTransferQueue();
+
+    commands_.reserve(initialCommandCapacity);
 
     commandBuffer_ = std::make_unique<vulkan::Staging>(
       device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(VkDrawIndexedIndirectCommand) * initialCommandCapacity);
@@ -26,8 +30,6 @@ void MeshSystem::init(vulkan::Device& device,
       VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
       sizeof(VkDrawIndexedIndirectCommand) * initialCommandCapacity,
       std::array{ device.hostTransferQueueFamilyIndex(), device.graphicsQueueFamilyIndex() });
-
-    commandCount_ = 0;
 
     instancedDataBuffer_ = std::make_unique<vulkan::Staging>(
       device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(instanced_data_t) * initialInstanceCapacity);
@@ -184,35 +186,29 @@ auto MeshSystem::createGeometry(uint32_t vertexCount, uint32_t indexCount) -> st
 
 void MeshSystem::_addSubMesh(components::Mesh& mesh, std::shared_ptr<Geometry> const& geometry)
 {
-    auto* commands = reinterpret_cast<VkDrawIndexedIndirectCommand*>(commandBuffer_->ptr());
-
     auto firstIndex = geometry->firstIndex();
     auto baseVertex = geometry->baseVertex();
 
     auto idx = std::numeric_limits<size_t>::max();
 
-    for (size_t i = 0; i < commandCount_; i++) {
-        auto const& command = *(commands + i);
+    {
+        auto i =
+          std::distance(commands_.cbegin(), std::find_if(commands_.cbegin(), commands_.cend(), [=](auto&& cmd) -> bool {
+                            return cmd.firstIndex = firstIndex && cmd.vertexOffset == static_cast<int32_t>(baseVertex);
+                        }));
 
-        if (command.firstIndex == firstIndex && command.vertexOffset == static_cast<int32_t>(baseVertex)) {
-            idx = i;
-            break;
-        }
+        assert(i >= 0);
+
+        idx = i;
     }
 
-    if (idx == std::numeric_limits<size_t>::max()) {
-        if (commandDump_.empty()) {
-            if (commandBuffer_->size() <= (commandCount_ + 1) * sizeof(VkDrawIndexedIndirectCommand)) {
-                _reAllocCommandBuffer(std::max(size_t{ 1 }, commandCount_ * 2));
-            }
+    assert(idx <= commands_.size());
 
-            idx = commandCount_++;
-        } else {
-            idx = commandDump_.back();
-            commandDump_.pop_back();
-        }
+    if (idx == commands_.size()) {
+        idx =
+          commandDump_.empty() ? (commands_.emplace_back(VkDrawIndexedIndirectCommand{}), idx) : _getDumpCommandIndex();
 
-        auto& command = *(commands + idx);
+        auto&& command = commands_[idx];
 
         command.indexCount = geometry->indexCount();
         command.instanceCount = 0;
@@ -221,17 +217,21 @@ void MeshSystem::_addSubMesh(components::Mesh& mesh, std::shared_ptr<Geometry> c
         command.vertexOffset = baseVertex;
     }
 
+    // TODO:: realloc buffers and transfer commands if commands_ size > commandBuffer_->size()
+
     mesh.subMeshes.emplace_back(idx, geometry);
+}
+
+auto MeshSystem::_getDumpCommandIndex() -> size_t
+{
+    auto idx = commandDump_.back();
+    commandDump_.pop_back();
+    return idx;
 }
 
 void MeshSystem::_reAllocCommandBuffer(size_t size)
 {
-    auto commandBuffer = std::make_unique<vulkan::Staging>(*devicePtr_, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, size);
-
-    std::copy_n(reinterpret_cast<VkDrawIndexedIndirectCommand*>(commandBuffer_->ptr()),
-                commandCount_,
-                reinterpret_cast<VkDrawIndexedIndirectCommand*>(commandBuffer->ptr()));
-
-    commandBuffer_ = std::move(commandBuffer);
+    (void)size;
+    throw std::runtime_error("not implemented yet");
 }
 }

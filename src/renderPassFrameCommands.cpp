@@ -11,7 +11,9 @@ RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   , indices_{ nullptr }
   , vertices_{ nullptr }
   , instances_{ nullptr }
+  , commands_{ nullptr }
   , uniforms_{ nullptr }
+  , commandCount_{ 0 }
   , waitSemaphores_(1, VK_NULL_HANDLE)
   , waitFlags_(1, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
   , waitSemaphoreCount_{ 1 }
@@ -70,6 +72,25 @@ void RenderPass::FrameCommands::setInstanceBuffer(std::shared_ptr<vulkan::Buffer
     if (instances_ != buffer) {
         instances_ = buffer;
         descriptorSetExpired_ = true;
+        graphicsCommands_.reset();
+    }
+}
+
+void RenderPass::FrameCommands::setCommandBuffer(std::shared_ptr<vulkan::Buffer> const& buffer, uint32_t commandCount)
+{
+    bool resetCommands = false;
+
+    if (commands_ != buffer) {
+        commands_ = buffer;
+        resetCommands = true;
+    }
+
+    if (commandCount_ != commandCount) {
+        commandCount_ = commandCount;
+        resetCommands = true;
+    }
+
+    if (resetCommands) {
         graphicsCommands_.reset();
     }
 }
@@ -201,7 +222,8 @@ void RenderPass::FrameCommands::update(vulkan::Device& device,
               vkCmdBindDescriptorSets(
                 commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet_, 0, nullptr);
 
-              vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+              vkCmdDrawIndexedIndirect(
+                commandBuffer, commands_->handle(), 0, commandCount_, sizeof(VkDrawIndexedIndirectCommand));
 
               vkCmdEndRenderPass(commandBuffer);
 

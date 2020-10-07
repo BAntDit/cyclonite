@@ -53,6 +53,8 @@ public:
 
         void setInstanceBuffer(std::shared_ptr<vulkan::Buffer> const& buffer);
 
+        void setCommandBuffer(std::shared_ptr<vulkan::Buffer> const& buffer, uint32_t commandCount);
+
         [[nodiscard]] auto graphicsCommandCount() const -> size_t { return graphicsCommands_->commandBufferCount(); }
 
         [[nodiscard]] auto graphicsCommands() const -> VkCommandBuffer const*
@@ -86,7 +88,10 @@ public:
         std::shared_ptr<vulkan::Buffer> indices_;
         std::shared_ptr<vulkan::Buffer> vertices_;
         std::shared_ptr<vulkan::Buffer> instances_;
+        std::shared_ptr<vulkan::Buffer> commands_;
         std::shared_ptr<vulkan::Buffer> uniforms_;
+
+        uint32_t commandCount_;
 
         std::vector<VkSemaphore> waitSemaphores_;
         std::vector<VkPipelineStageFlags> waitFlags_;

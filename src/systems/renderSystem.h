@@ -105,6 +105,8 @@ void RenderSystem::update(SystemManager& systemManager, EntityManager& entityMan
 
         auto const& signal = renderPass_->passFinishedSemaphore();
 
+        // TODO:: test wait semaphores
+
         VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.waitSemaphoreCount = frame.waitSemaphores().size();
