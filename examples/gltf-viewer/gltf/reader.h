@@ -198,6 +198,8 @@ public:
 
     [[nodiscard]] auto buffers() const -> std::vector<std::vector<std::byte>> const& { return buffers_; }
 
+    [[nodiscard]] auto buffers() -> std::vector<std::vector<std::byte>>& { return buffers_; }
+
     template<typename F>
     void read(std::pair<void const*, size_t> buffer, F&& f);
 
@@ -209,6 +211,13 @@ public:
 
 private:
     using intance_key_t = std::tuple<size_t, size_t, size_t>;
+
+    void _countNode(
+      nlohmann::json const& nodes,
+      nlohmann::json const& meshes,
+      nlohmann::json const& accessors,
+      std::unordered_map<intance_key_t, std::tuple<uint32_t, uint32_t, uint32_t>, cyclonite::hash>& instanceCommands,
+      size_t nodeIdx);
 
     template<typename F>
     void _readNode(
@@ -432,50 +441,16 @@ void Reader::read(std::istream& stream, F&& f)
 
     for (size_t i = 0, count = rootNodes.size(); i < count; i++) {
         auto idx = rootNodes.at(i).get<size_t>();
-
-        _readNode(
-          nodes, meshes, accessors, instanceCommands, std::numeric_limits<size_t>::max(), idx, std::forward<F>(f));
+        _countNode(nodes, meshes, accessors, instanceCommands, idx);
     }
 
     f(std::make_tuple(vertexCount_, indexCount_, instanceCount_, static_cast<uint32_t>(instanceCommands.size())));
 
-    // meshes
-    for (size_t meshIdx = 0, meshCount = meshes.size(); meshIdx < meshCount; meshIdx++) {
-        auto const& mesh = meshes.at(meshIdx);
+    for (size_t i = 0, count = rootNodes.size(); i < count; i++) {
+        auto idx = rootNodes.at(i).get<size_t>();
 
-        auto const& primitives = _getJsonProperty(mesh, reinterpret_cast<char const*>(u8"primitives"));
-
-        std::vector<Primitive> meshPrimitives = {};
-
-        meshPrimitives.reserve(primitives.size());
-
-        for (size_t j = 0, primitiveCount = primitives.size(); j < primitiveCount; j++) {
-            auto primitive = primitives.at(j);
-
-            auto& meshPrimitive = meshPrimitives.emplace_back();
-
-            auto idxIndices =
-              _getOptional(primitive, reinterpret_cast<char const*>(u8"indices"), std::numeric_limits<size_t>::max());
-
-            if (idxIndices >= accessors.size()) // skip non-indexed geometry
-                continue;
-
-            auto attributes = _getJsonProperty(primitive, reinterpret_cast<char const*>(u8"attributes"));
-
-            auto idxPositions =
-              _getOptional(attributes, reinterpret_cast<char const*>(u8"POSITION"), std::numeric_limits<size_t>::max());
-            auto idxNormals =
-              _getOptional(attributes, reinterpret_cast<char const*>(u8"NORMAL"), std::numeric_limits<size_t>::max());
-
-            if (idxPositions >= accessors.size() || idxNormals >= accessors.size())
-                continue;
-
-            meshPrimitive.idxPosition = idxPositions;
-            meshPrimitive.idxNormal = idxNormals;
-            meshPrimitive.idxIndex = idxIndices;
-        }
-
-        f(meshPrimitives);
+        _readNode(
+          nodes, meshes, accessors, instanceCommands, std::numeric_limits<size_t>::max(), idx, std::forward<F>(f));
     }
 }
 
@@ -554,25 +529,13 @@ void Reader::_readNode(
 
             auto it = instanceCommands.find(std::make_tuple(idxIndices, idxPositions, idxNormals));
 
-            if (it == instanceCommands.end()) {
-                auto vc = _getOptional(
-                  accessors.at(idxPositions), reinterpret_cast<char const*>(u8"count"), static_cast<uint32_t>(0));
-                auto ic = _getOptional(
-                  accessors.at(idxIndices), reinterpret_cast<char const*>(u8"count"), static_cast<uint32_t>(0));
+            assert(it != instanceCommands.end());
 
-                vertexCount_ += vc;
-                indexCount_ += ic;
+            auto& [key, value] = (*it);
 
-                instanceCommands.emplace(std::make_tuple(idxIndices, idxPositions, idxNormals),
-                                         std::make_tuple(1, vc, ic));
-
+            if (std::get<0>(value)++ == 0) {
                 f(meshPrimitive);
-            } else {
-                auto& [key, value] = (*it);
-                std::get<0>(value)++;
             }
-
-            instanceCount_++;
         } // primitives cycle end
     }     // mesh parse end
 

@@ -8,7 +8,7 @@ namespace cyclonite {
 auto FrameBufferRenderTarget::swapBuffers(vulkan::Device const& device, uint32_t currentFrameImageIndex) -> uint32_t
 {
     (void)device;
-    (void)frameIndex;
+    (void)currentFrameImageIndex;
 
     throw std::runtime_error("not implemented yet");
 }

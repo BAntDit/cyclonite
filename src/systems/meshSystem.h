@@ -17,7 +17,7 @@
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
 #include <glm/gtc/type_ptr.hpp>
-#include <set>
+#include <unordered_map>
 
 namespace cyclonite::systems {
 using namespace easy_mp;
@@ -45,14 +45,12 @@ public:
 
     template<typename EntityManager, typename Geometries>
     auto createMesh(EntityManager& entityManager, enttx::Entity entity, Geometries&& geometries)
-      -> std::enable_if_t<is_contiguous_v<Geometries> ||
-                            std::is_same_v<std::shared_ptr<Geometry>, std::decay_t<Geometries>>,
+      -> std::enable_if_t<is_contiguous_v<Geometries> || std::is_same_v<uint64_t, std::decay_t<Geometries>>,
                           components::Mesh&>;
 
     template<typename Geometries>
     auto addSubMeshes(components::Mesh& mesh, Geometries&& geometries)
-      -> std::enable_if_t<is_contiguous_v<Geometries> ||
-                          std::is_same_v<std::shared_ptr<Geometry>, std::decay_t<Geometries>>>;
+      -> std::enable_if_t<is_contiguous_v<Geometries> || std::is_same_v<uint64_t, std::decay_t<Geometries>>>;
 
     // TODO:: update submesh vertices method
     void markToDeleteMesh();
@@ -101,13 +99,12 @@ private:
     std::unique_ptr<transfer_commands_t> transferCommands_;
     bool verticesUpdateRequired_;
 
-    std::set<std::shared_ptr<Geometry>> geometries_;
+    std::unordered_map<uint64_t, std::shared_ptr<Geometry>> geometries_;
 };
 
 template<typename EntityManager, typename Geometries>
 auto MeshSystem::createMesh(EntityManager& entityManager, enttx::Entity entity, Geometries&& geometries)
-  -> std::enable_if_t<is_contiguous_v<Geometries> ||
-                        std::is_same_v<std::shared_ptr<Geometry>, std::decay_t<Geometries>>,
+  -> std::enable_if_t<is_contiguous_v<Geometries> || std::is_same_v<uint64_t, std::decay_t<Geometries>>,
                       components::Mesh&>
 {
     auto& mesh = entityManager.template assign<components::Mesh>(entity);
@@ -119,15 +116,18 @@ auto MeshSystem::createMesh(EntityManager& entityManager, enttx::Entity entity, 
 
 template<typename Geometries>
 auto MeshSystem::addSubMeshes(components::Mesh& mesh, Geometries&& geometries)
-  -> std::enable_if_t<is_contiguous_v<Geometries> ||
-                      std::is_same_v<std::shared_ptr<Geometry>, std::decay_t<Geometries>>>
+  -> std::enable_if_t<is_contiguous_v<Geometries> || std::is_same_v<uint64_t, std::decay_t<Geometries>>>
 {
     if constexpr (is_contiguous_v<Geometries>) {
         mesh.subMeshes.reserve(geometries.size());
-    }
 
-    for (auto&& geometry : geometries) {
-        _addSubMesh(mesh, std::forward<decltype(geometry)>(geometry));
+        for (auto geometryId : geometries) {
+            assert(geometries_.count(geometryId) != 0);
+            _addSubMesh(mesh, geometries_[geometryId]);
+        }
+    } else {
+        assert(geometries_.count(geometries) != 0);
+        _addSubMesh(mesh, geometries_[geometries]);
     }
 }
 
@@ -142,7 +142,7 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
                 auto&& [subMeshes] = mesh;
 
                 for (auto& subMesh : subMeshes) {
-                    commands_[subMeshes.commandIndex].instanceCount++;
+                    commands_[subMesh.commandIndex].instanceCount++;
                 }
             }
         }
@@ -178,31 +178,31 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
             auto& transformSystem = systemManager.template get<TransformSystem>();
             auto const& matrices = transformSystem.worldMatrices();
 
-            auto view = entityManager.template getView<components::Mesh, components::Transform>();
+            auto view = entityManager.template getView<components::Transform, components::Mesh>();
 
-            for (auto&& [entity, mesh, transform] : view) {
+            for (auto&& [entity, transform, mesh] : view) {
                 auto&& [subMeshes] = mesh;
                 auto&& matrix = matrices[transform.globalIndex];
 
                 for (auto& subMesh : subMeshes) {
-                    auto&& command = commands_[subMeshes.commandIndex];
+                    auto&& command = commands_[subMesh.commandIndex];
 
                     if (command.firstInstance == std::numeric_limits<uint32_t>::max())
                         continue;
 
-                    auto&& instance = instanceData + command.firstInstance + command.instanceCount++;
+                    auto instance = instanceData + command.firstInstance + command.instanceCount++;
 
-                    instance.transform1.x = matrix[0].x;
-                    instance.transform1.y = matrix[1].x;
-                    instance.transform1.z = matrix[2].x;
+                    instance->transform1.x = matrix[0].x;
+                    instance->transform1.y = matrix[1].x;
+                    instance->transform1.z = matrix[2].x;
 
-                    instance.transform2.x = matrix[0].y;
-                    instance.transform2.y = matrix[1].y;
-                    instance.transform2.z = matrix[2].y;
+                    instance->transform2.x = matrix[0].y;
+                    instance->transform2.y = matrix[1].y;
+                    instance->transform2.z = matrix[2].y;
 
-                    instance.transform3.x = matrix[0].z;
-                    instance.transform3.y = matrix[1].z;
-                    instance.transform3.z = matrix[2].z;
+                    instance->transform3.x = matrix[0].z;
+                    instance->transform3.y = matrix[1].z;
+                    instance->transform3.z = matrix[2].z;
                 }
             }
         }

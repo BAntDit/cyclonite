@@ -65,9 +65,9 @@ public:
 
     RawDataView(void* dataPtr, size_t offset, size_t count, size_t stride = sizeof(DataType));
 
-    auto begin() const -> Iterator { return Iterator{ *this, 0 }; }
+    auto begin() const -> Iterator { return Iterator{ *this, 0l }; }
 
-    auto end() const -> Iterator { return Iterator{ *this, count_ }; }
+    auto end() const -> Iterator { return Iterator{ *this, static_cast<typename Iterator::difference_type>(count_) }; }
 
     [[nodiscard]] auto count() const -> size_t { return count_; }
 
@@ -91,14 +91,14 @@ RawDataView<DataType>::Iterator::Iterator(RawDataView<DataType> const& view, dif
   : index_{ index }
   , view_{ view }
 {
-    assert(index_ < view_.count_);
+    assert(index_ < static_cast<difference_type>(view_.count_));
 }
 
 template<typename DataType>
 auto RawDataView<DataType>::Iterator::operator+=(difference_type diff) -> Iterator&
 {
     index_ += diff;
-    assert(index_ <= view_.count_);
+    assert(index_ <= static_cast<difference_type>(view_.count_));
     return *this;
 }
 
@@ -113,7 +113,7 @@ auto RawDataView<DataType>::Iterator::operator-=(difference_type diff) -> Iterat
 template<typename DataType>
 auto RawDataView<DataType>::Iterator::operator++() -> Iterator&
 {
-    assert(index_ < view_.count_);
+    assert(index_ < static_cast<difference_type>(view_.count_));
     index_++;
     return *this;
 }
@@ -121,7 +121,7 @@ auto RawDataView<DataType>::Iterator::operator++() -> Iterator&
 template<typename DataType>
 auto RawDataView<DataType>::Iterator::operator--() -> Iterator&
 {
-    assert(index_ > 0);
+    assert(index_ > 0l);
     index_--;
     return *this;
 }
@@ -129,7 +129,7 @@ auto RawDataView<DataType>::Iterator::operator--() -> Iterator&
 template<typename DataType>
 auto RawDataView<DataType>::Iterator::operator++(int) -> Iterator
 {
-    assert(index_ < view_.count_);
+    assert(index_ < static_cast<difference_type>(view_.count_));
     auto prev = Iterator{ *this, index_ };
     index_++;
     return prev;
@@ -138,7 +138,7 @@ auto RawDataView<DataType>::Iterator::operator++(int) -> Iterator
 template<typename DataType>
 auto RawDataView<DataType>::Iterator::operator--(int) -> Iterator
 {
-    assert(index_ > 0);
+    assert(index_ > 0l);
     auto prev = Iterator{ *this, index_ };
     index_--;
     return prev;

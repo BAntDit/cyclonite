@@ -172,16 +172,17 @@ void MeshSystem::requestVertexDeviceBufferUpdate()
 
 auto MeshSystem::createGeometry(uint32_t vertexCount, uint32_t indexCount) -> std::shared_ptr<Geometry>
 {
-    auto [it, success] =
-      geometries_.emplace(std::make_shared<Geometry>(vertexCount,
-                                                     indexCount,
-                                                     vertexBuffer_->alloc(vertexCount * sizeof(vertex_t)),
-                                                     indexBuffer_->alloc(indexCount * sizeof(index_type_t))));
+    auto geometry = std::make_shared<Geometry>(vertexCount,
+                                               indexCount,
+                                               vertexBuffer_->alloc(vertexCount * sizeof(vertex_t)),
+                                               indexBuffer_->alloc(indexCount * sizeof(index_type_t)));
+
+    auto [it, success] = geometries_.emplace(geometry->id(), geometry);
 
     assert(success);
     (void)success;
 
-    return *it;
+    return geometry;
 }
 
 void MeshSystem::_addSubMesh(components::Mesh& mesh, std::shared_ptr<Geometry> const& geometry)
@@ -194,7 +195,7 @@ void MeshSystem::_addSubMesh(components::Mesh& mesh, std::shared_ptr<Geometry> c
     {
         auto i =
           std::distance(commands_.cbegin(), std::find_if(commands_.cbegin(), commands_.cend(), [=](auto&& cmd) -> bool {
-                            return cmd.firstIndex = firstIndex && cmd.vertexOffset == static_cast<int32_t>(baseVertex);
+                            return cmd.firstIndex == firstIndex && cmd.vertexOffset == static_cast<int32_t>(baseVertex);
                         }));
 
         assert(i >= 0);

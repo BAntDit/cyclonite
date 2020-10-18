@@ -8,6 +8,7 @@ set(HEADER_FILES
 )
 
 set(SOURCE_FILES
+    gltf/reader.cpp
     gltfViewer.cpp
 )
 

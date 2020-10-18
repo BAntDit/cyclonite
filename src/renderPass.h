@@ -70,7 +70,7 @@ public:
 
         [[nodiscard]] auto frameSemaphore() -> VkSemaphore& { return waitSemaphores_[0]; }
 
-        [[nodiscard]] auto waitSemaphoreCount() const -> size_t { return waitSemaphoreCount_; }
+        [[nodiscard]] auto waitSemaphoreCount() const -> uint32_t { return static_cast<uint32_t>(waitSemaphoreCount_); }
 
         void resetWaitSemaphores();
 

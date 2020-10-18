@@ -59,7 +59,7 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
         std::unordered_map<size_t, enttx::Entity> nodeIdxToEntity{};
         std::unordered_map<std::tuple<size_t, size_t, size_t>, uint64_t, hash> geometryIdentifiers_{};
 
-        reader.read("./assets/models/model.gltf", [&](auto&&... args) -> void {
+        reader.read("./scene.gltf", [&](auto&&... args) -> void {
             auto&& t = std::forward_as_tuple(args...);
 
             if constexpr (std::is_same_v<std::decay_t<decltype(std::get<0>(t))>, uint32_t>) {
@@ -99,7 +99,7 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
 
                 entities.pop_back();
 
-                nodeIdxToEntity.insert(nodeIdx, entity);
+                nodeIdxToEntity.emplace(nodeIdx, entity);
 
                 auto parent = static_cast<enttx::Entity>(std::numeric_limits<uint64_t>::max());
 
@@ -163,12 +163,12 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
 
                     auto norStride =
                       norByteStride == 0
-                        ? norType == posType == reinterpret_cast<char const*>(u8"vec4") ? sizeof(vec4) : sizeof(vec3)
+                        ? norType == reinterpret_cast<char const*>(u8"vec4") ? sizeof(vec4) : sizeof(vec3)
                         : norByteStride;
 
                     auto vertexIdx = size_t{ 0 };
 
-                    for (auto& vertex : geometry.vertices()) {
+                    for (auto& vertex : geometry->vertices()) {
                         auto pos = glm::make_vec3(reinterpret_cast<real const*>(
                           posBuffer.data() + posByteOffset + positionOffset + posStride * vertexIdx));
 
@@ -185,7 +185,7 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
                 { // index reading
                     auto const& idxBufferView = reader.bufferViews()[indexBufferViewIdx];
                     auto&& [idxBufferIdx, idxByteOffset, idxByteLength, idxByteStride] = idxBufferView;
-                    auto const& idxBuffer = reader.buffers()[idxBufferIdx];
+                    auto& idxBuffer = reader.buffers()[idxBufferIdx];
 
                     switch (indexComponentType) {
                         case 5121: { // unsigned byte
@@ -193,7 +193,7 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
                             auto src =
                               RawDataView<uint8_t>{ idxBuffer.data(), idxByteOffset + indexOffset, indexCount, stride };
                             auto indexIdx = size_t{ 0 };
-                            for (auto& index : geometry.indices()) {
+                            for (auto& index : geometry->indices()) {
                                 index = static_cast<index_type_t>(*std::next(src.begin(), indexIdx++));
                             }
                         } break;
@@ -203,7 +203,7 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
                                 idxBuffer.data(), idxByteOffset + indexOffset, indexCount, stride
                             };
                             auto indexIdx = size_t{ 0 };
-                            for (auto& index : geometry.indices()) {
+                            for (auto& index : geometry->indices()) {
                                 index = static_cast<index_type_t>(*std::next(src.begin(), indexIdx++));
                             }
                         } break;
@@ -213,20 +213,25 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
                                 idxBuffer.data(), idxByteOffset + indexOffset, indexCount, stride
                             };
                             auto indexIdx = size_t{ 0 };
-                            for (auto& index : geometry.indices()) {
+                            for (auto& index : geometry->indices()) {
                                 index = static_cast<index_type_t>(*std::next(src.begin(), indexIdx++));
                             }
                         } break;
                     }
                 } // end index rendering
 
-                geometryIdentifiers_.emplace(std::make_tuple(pos, nor, ind), geometry.id());
+                geometryIdentifiers_.emplace(std::make_tuple(pos, nor, ind), geometry->id());
 
                 meshSystem.requestVertexDeviceBufferUpdate();
             }
 
             if constexpr (std::is_same_v<std::decay_t<decltype(std::get<0>(t))>,
                                          std::vector<gltf::Reader::Primitive>>) {
+                auto primitiveToKey = [](gltf::Reader::Primitive const& p) -> std::tuple<size_t, size_t, size_t> {
+                    auto [pos, nor, idx] = p;
+                    return std::make_tuple(pos, nor, idx);
+                };
+
                 auto&& [primitives, nodeIdx] = t;
                 auto& meshSystem = systems_.get<systems::MeshSystem>();
 
@@ -234,18 +239,19 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
                 auto entity = nodeIdxToEntity[nodeIdx];
 
                 if (primitives.size() == 1) {
-                    auto const& key = primitives[0];
+                    auto key = primitiveToKey(primitives[0]);
 
                     assert(geometryIdentifiers_.count(key) != 0);
                     auto const& geometry = geometryIdentifiers_[key];
 
                     meshSystem.createMesh(entities_, entity, geometry);
                 } else {
-                    std::vector<std::shared_ptr<Geometry>> geometries{};
+                    std::vector<uint64_t> geometries{};
 
                     geometries.reserve(primitives.size());
 
-                    for (auto&& key : primitives) {
+                    for (auto&& p : primitives) {
+                        auto key = primitiveToKey(p);
                         assert(geometryIdentifiers_.count(key) != 0);
 
                         geometries.push_back(geometryIdentifiers_[key]);
@@ -280,12 +286,16 @@ auto GLTFViewer::run() -> GLTFViewer&
 {
     while (!shutdown_) {
         root_->input().pollEvent();
-        systems_.update(0.f);
+        systems_.update(cameraEntity_, 0.f);
     }
 
     return *this;
 }
 
+void GLTFViewer::done()
+{
+    systems_.get<systems::RenderSystem>().finish();
+}
 }
 
 CYCLONITE_APP(examples::GLTFViewer)
