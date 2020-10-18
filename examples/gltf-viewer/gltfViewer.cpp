@@ -71,6 +71,8 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
                 entities.resize(nodeCount);
 
                 entities_.create(entities);
+
+                std::cout << "transform system initialized with: " << nodeCount << " nodes" << std::endl;
             }
 
             if constexpr (std::is_same_v<std::decay_t<decltype(std::get<0>(t))>,
@@ -85,6 +87,14 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
                 auto swapChainLength = renderPass.getSwapChainLength();
 
                 meshSystem.init(root_->device(), swapChainLength, commandCount, instanceCount, indexCount, vertexCount);
+
+                std::cout << "mesh system initialized: "
+                    << ", swap chain length: " << std::to_string(swapChainLength)
+                    << ", command count: " << std::to_string(commandCount)
+                    << ", instance count: " << std::to_string(instanceCount)
+                    << ", index count: " << std::to_string(indexCount)
+                    << ", vertex count: " << std::to_string(vertexCount)
+                    << std::endl;
             }
 
             if constexpr (std::is_same_v<std::decay_t<decltype(std::get<0>(t))>, gltf::Reader::Node>) {

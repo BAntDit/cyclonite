@@ -294,7 +294,7 @@ void Reader::read(std::istream& stream, F&& f)
         throw std::runtime_error("glTF json must contain asset object");
     }
 
-    if (_testVersion(asset)) {
+    if (!_testVersion(asset)) {
         throw std::runtime_error("asset has unsupported glTF version");
     }
 
@@ -340,6 +340,8 @@ void Reader::read(std::istream& stream, F&& f)
             }
 
             f(buffers_[i], i);
+
+            std::cout << "loaded buffer: " << std::to_string(i) << std::endl;
         }
     }
 
@@ -380,11 +382,13 @@ void Reader::read(std::istream& stream, F&& f)
             }
 
             f(bufferViews_[i], i);
+
+            std::cout << "loaded buffer view: " << std::to_string(i) << std::endl;
         }
     }
 
     // accessors:
-    auto const& accessors = _getJsonProperty(input, reinterpret_cast<char const*>(u8"accessor"));
+    auto const& accessors = _getJsonProperty(input, reinterpret_cast<char const*>(u8"accessors"));
 
     {
         auto accessorCount = accessors.size();
@@ -402,7 +406,7 @@ void Reader::read(std::istream& stream, F&& f)
               _getOptional(jsonAccessor, reinterpret_cast<char const*>(u8"byteOffset"), size_t{ 0 });
 
             accessor.componentType = _getOptional(
-              jsonAccessor, reinterpret_cast<char const*>(u8"byteOffset"), std::numeric_limits<uint32_t>::max());
+              jsonAccessor, reinterpret_cast<char const*>(u8"componentType"), std::numeric_limits<uint32_t>::max());
 
             if (accessor.componentType == std::numeric_limits<uint32_t>::max()) {
                 throw std::runtime_error("accessor must contain componentType");
@@ -423,6 +427,8 @@ void Reader::read(std::istream& stream, F&& f)
             }
 
             f(accessors_[i], i);
+
+            std::cout << "loaded accessor: " << std::to_string(i) << std::endl;
         }
     }
 
@@ -464,6 +470,8 @@ void Reader::_readNode(
   size_t nodeIdx,
   F&& f)
 {
+    std::cout << "start read node: " << std::to_string(nodeIdx) << std::endl;
+
     auto const& node = nodes.at(nodeIdx);
 
     auto matrixIt = node.find(reinterpret_cast<char const*>(u8"matrix"));
@@ -542,7 +550,8 @@ void Reader::_readNode(
     if (auto childrenIt = node.find(reinterpret_cast<char const*>(u8"children")); childrenIt != node.end()) {
         auto const& children = *childrenIt;
 
-        for (size_t idx = 0, count = children.size(); idx < count; idx++) {
+        for (size_t i = 0, count = children.size(); i < count; i++) {
+            auto idx = children.at(i).get<size_t>();
             _readNode(nodes, meshes, accessors, instanceCommands, nodeIdx, idx, std::forward<F>(f));
         }
     }

@@ -61,7 +61,8 @@ void Reader::_countNode(
     if (auto childrenIt = node.find(reinterpret_cast<char const*>(u8"children")); childrenIt != node.end()) {
         auto const& children = *childrenIt;
 
-        for (size_t idx = 0, count = children.size(); idx < count; idx++) {
+        for (size_t i = 0, count = children.size(); i < count; i++) {
+            auto idx = children.at(i).get<size_t>();
             _countNode(nodes, meshes, accessors, instanceCommands, idx);
         }
     }
