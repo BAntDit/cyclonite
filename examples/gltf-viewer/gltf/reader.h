@@ -138,7 +138,7 @@ auto _readArray(nlohmann::json const& array) -> std::array<T, Size>
 {
     std::array<T, Size> result{};
 
-    assert(array.is_array() && array.size() < Size);
+    assert(array.is_array() && array.size() >= Size);
 
     for (size_t i = 0; i < Size; i++) {
         result[i] = array.at(i).get<T>();
@@ -340,8 +340,6 @@ void Reader::read(std::istream& stream, F&& f)
             }
 
             f(buffers_[i], i);
-
-            std::cout << "loaded buffer: " << std::to_string(i) << std::endl;
         }
     }
 
@@ -382,8 +380,6 @@ void Reader::read(std::istream& stream, F&& f)
             }
 
             f(bufferViews_[i], i);
-
-            std::cout << "loaded buffer view: " << std::to_string(i) << std::endl;
         }
     }
 
@@ -427,8 +423,6 @@ void Reader::read(std::istream& stream, F&& f)
             }
 
             f(accessors_[i], i);
-
-            std::cout << "loaded accessor: " << std::to_string(i) << std::endl;
         }
     }
 
@@ -470,8 +464,6 @@ void Reader::_readNode(
   size_t nodeIdx,
   F&& f)
 {
-    std::cout << "start read node: " << std::to_string(nodeIdx) << std::endl;
-
     auto const& node = nodes.at(nodeIdx);
 
     auto matrixIt = node.find(reinterpret_cast<char const*>(u8"matrix"));

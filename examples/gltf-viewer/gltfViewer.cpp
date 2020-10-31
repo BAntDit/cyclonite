@@ -44,6 +44,8 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
           VkClearDepthStencilValue{ 1.0f, 0 },
           VkClearColorValue{ { 0.0f, 0.0f, 0.0f, 1.0f } },
           std::array{ VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR });
+
+        std::cout << "render system initialization success!" << std::endl;
     }
 
     {
@@ -51,6 +53,8 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
         auto& uniformSystem = systems_.get<systems::UniformSystem>();
 
         uniformSystem.init(root_->device(), renderSystem.renderPass().getSwapChainLength());
+
+        std::cout << "uniform system initialization success!" << std::endl;
     }
 
     {
@@ -89,12 +93,11 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
                 meshSystem.init(root_->device(), swapChainLength, commandCount, instanceCount, indexCount, vertexCount);
 
                 std::cout << "mesh system initialized: "
-                    << ", swap chain length: " << std::to_string(swapChainLength)
-                    << ", command count: " << std::to_string(commandCount)
-                    << ", instance count: " << std::to_string(instanceCount)
-                    << ", index count: " << std::to_string(indexCount)
-                    << ", vertex count: " << std::to_string(vertexCount)
-                    << std::endl;
+                          << "swap chain length: " << std::to_string(swapChainLength)
+                          << ", command count: " << std::to_string(commandCount)
+                          << ", instance count: " << std::to_string(instanceCount)
+                          << ", index count: " << std::to_string(indexCount)
+                          << ", vertex count: " << std::to_string(vertexCount) << std::endl;
             }
 
             if constexpr (std::is_same_v<std::decay_t<decltype(std::get<0>(t))>, gltf::Reader::Node>) {
@@ -265,9 +268,9 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
                         assert(geometryIdentifiers_.count(key) != 0);
 
                         geometries.push_back(geometryIdentifiers_[key]);
-
-                        meshSystem.createMesh(entities_, entity, geometries);
                     }
+
+                    meshSystem.createMesh(entities_, entity, geometries);
                 }
             }
         });
@@ -285,7 +288,14 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
                                    vec3{ 1.f },
                                    quat{ 1.f, 0.f, 0.f, 0.f });
 
+            cameraEntity_ = cameraEntity;
+
             cameraSystem.init();
+
+            cameraSystem.createCamera(
+              entities_, cameraEntity_, components::Camera::PerspectiveProjection{ 1.f, 45.f, .1f, 100.f });
+
+            std::cout << "camera system initialized" << std::endl;
         }
     }
 
@@ -294,7 +304,10 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
 
 auto GLTFViewer::run() -> GLTFViewer&
 {
+    static uint64_t frameCounter = 0;
+
     while (!shutdown_) {
+        std::cout << "frame #: " << ++frameCounter << std::endl;
         root_->input().pollEvent();
         systems_.update(cameraEntity_, 0.f);
     }

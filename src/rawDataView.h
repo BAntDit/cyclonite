@@ -91,7 +91,7 @@ RawDataView<DataType>::Iterator::Iterator(RawDataView<DataType> const& view, dif
   : index_{ index }
   , view_{ view }
 {
-    assert(index_ < static_cast<difference_type>(view_.count_));
+    assert(index_ <= static_cast<difference_type>(view_.count_));
 }
 
 template<typename DataType>
@@ -113,7 +113,7 @@ auto RawDataView<DataType>::Iterator::operator-=(difference_type diff) -> Iterat
 template<typename DataType>
 auto RawDataView<DataType>::Iterator::operator++() -> Iterator&
 {
-    assert(index_ < static_cast<difference_type>(view_.count_));
+    assert(index_ <= static_cast<difference_type>(view_.count_));
     index_++;
     return *this;
 }
@@ -129,7 +129,7 @@ auto RawDataView<DataType>::Iterator::operator--() -> Iterator&
 template<typename DataType>
 auto RawDataView<DataType>::Iterator::operator++(int) -> Iterator
 {
-    assert(index_ < static_cast<difference_type>(view_.count_));
+    assert(index_ <= static_cast<difference_type>(view_.count_));
     auto prev = Iterator{ *this, index_ };
     index_++;
     return prev;

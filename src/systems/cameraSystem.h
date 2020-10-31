@@ -42,6 +42,16 @@ public:
 
     template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
     void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
+
+    template<typename EntityManager>
+    auto createCamera(EntityManager& entityManager,
+                      enttx::Entity entity,
+                      components::Camera::PerspectiveProjection const& perspective) -> components::Camera&;
+
+    template<typename EntityManager>
+    auto createCamera(EntityManager& entityManager,
+                      enttx::Entity entity,
+                      components::Camera::OrthographicProjection const& orthographic) -> components::Camera&;
 };
 
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
@@ -50,6 +60,8 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
     using namespace easy_mp;
 
     if constexpr (STAGE == value_cast(UpdateStage::LATE_UPDATE)) {
+        std::cout << "camera system: late update: start" << std::endl;
+
         auto&& [cameraEntity, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
         (void)dt;
 
@@ -103,7 +115,25 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
         uniformSystem.setProjectionMatrix(projectionMatrix);
 
         uniformSystem.setViewProjectionMatrix(viewProjectionMatrix);
+
+        std::cout << "camera system: late update: end" << std::endl;
     }
+}
+
+template<typename EntityManager>
+auto CameraSystem::createCamera(EntityManager& entityManager,
+                                enttx::Entity entity,
+                                components::Camera::PerspectiveProjection const& perspective) -> components::Camera&
+{
+    return entityManager.template assign<components::Camera>(entity, perspective);
+}
+
+template<typename EntityManager>
+auto CameraSystem::createCamera(EntityManager& entityManager,
+                                enttx::Entity entity,
+                                components::Camera::OrthographicProjection const& orthographic) -> components::Camera&
+{
+    return entityManager.template assign<components::Camera>(entity, orthographic);
 }
 }
 
