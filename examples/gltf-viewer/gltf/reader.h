@@ -539,6 +539,8 @@ void Reader::_readNode(
         } // primitives cycle end
     }     // mesh parse end
 
+    f(Node{ position, scale, rotation }, parentIdx, nodeIdx);
+
     if (auto childrenIt = node.find(reinterpret_cast<char const*>(u8"children")); childrenIt != node.end()) {
         auto const& children = *childrenIt;
 
@@ -547,8 +549,6 @@ void Reader::_readNode(
             _readNode(nodes, meshes, accessors, instanceCommands, nodeIdx, idx, std::forward<F>(f));
         }
     }
-
-    f(Node{ position, scale, rotation }, parentIdx, nodeIdx);
 
     if (!meshPrimitives.empty())
         f(meshPrimitives, nodeIdx);

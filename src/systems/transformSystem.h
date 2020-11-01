@@ -58,18 +58,17 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
     (void)systemManager;
 
     if constexpr (STAGE == value_cast(UpdateStage::EARLY_UPDATE)) {
-        auto view = entityManager.template getView<components::Transform>();
+        auto& transforms = entityManager.template getStorage<components::Transform>();
 
-        for (auto&& [entity, transform] : view) {
-            (void)entity;
-
+        for (auto& transform : transforms)
+        {
             auto& [position, scale, orientation, matrix, state, parent, depth, globalIndex] = transform;
 
             assert(worldMatrices_.size() > globalIndex);
 
             auto* parentTransform = static_cast<uint64_t>(parent) != std::numeric_limits<uint64_t>::max()
-                                      ? entityManager.template getComponent<components::Transform>(parent)
-                                      : nullptr;
+                                    ? entityManager.template getComponent<components::Transform>(parent)
+                                    : nullptr;
 
             (void)depth;
 
@@ -84,10 +83,6 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
                 state = components::Transform::State::UPDATE_WORLD;
             }
 
-            state = (parentTransform != nullptr && parentTransform->state == components::Transform::State::UPDATE_WORLD)
-                      ? components::Transform::State::UPDATE_WORLD
-                      : state;
-
             if (state == components::Transform::State::UPDATE_WORLD) {
                 worldMatrices_[globalIndex] = parentMatrix * matrix;
             }
@@ -95,10 +90,9 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
     }
 
     if constexpr (STAGE == easy_mp::value_cast(UpdateStage::LATE_UPDATE)) {
-        auto view = entityManager.template getView<components::Transform>();
+        auto& transforms = entityManager.template getStorage<components::Transform>();
 
-        for (auto&& [entity, transform] : view) {
-            (void)entity;
+        for (auto&& transform : transforms) {
             transform.state = components::Transform::State::UPDATE_NOTHING;
         }
     }

@@ -22,7 +22,7 @@ Transform::Transform(vec3 localPosition, vec3 localScale, quat localOrientation)
   , scale{ localScale }
   , orientation{ localOrientation }
   , matrix{ glm::translate(localPosition) * glm::mat4_cast(localOrientation) * glm::scale(localScale) } // TRS
-  , state{ State::UPDATE_WORLD }
+  , state{ State::UPDATE_LOCAL }
   , parent{}
   , depth{ 0 }
   , globalIndex{ std::numeric_limits<size_t>::max() }
@@ -33,7 +33,7 @@ Transform::Transform(mat4 localMatrix)
   , scale{ 1.0f }
   , orientation{ glm::angleAxis(glm::radians(0.0f), vec3{ 0.0f, 1.0f, 1.0f }) }
   , matrix{ localMatrix }
-  , state{ State::UPDATE_WORLD }
+  , state{ State::UPDATE_COMPONENTS }
   , parent{}
   , depth{ 0 }
   , globalIndex{ std::numeric_limits<size_t>::max() }

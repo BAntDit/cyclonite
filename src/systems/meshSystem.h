@@ -195,14 +195,17 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
                     instance->transform1.x = matrix[0].x;
                     instance->transform1.y = matrix[1].x;
                     instance->transform1.z = matrix[2].x;
+                    instance->transform1.w = matrix[3].x;
 
                     instance->transform2.x = matrix[0].y;
                     instance->transform2.y = matrix[1].y;
                     instance->transform2.z = matrix[2].y;
+                    instance->transform2.w = matrix[3].y;
 
                     instance->transform3.x = matrix[0].z;
                     instance->transform3.y = matrix[1].z;
                     instance->transform3.z = matrix[2].z;
+                    instance->transform3.w = matrix[3].z;
                 }
             }
         }
