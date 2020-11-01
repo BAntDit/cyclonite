@@ -57,7 +57,7 @@ void MeshSystem::init(vulkan::Device& device,
     gpuVertexBuffer_ = std::make_unique<vulkan::Buffer>(
       device,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-      VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+      VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
       sizeof(vertex_t) * initialVertexCapacity,
       std::array{ device.hostTransferQueueFamilyIndex(), device.graphicsQueueFamilyIndex() });
 
