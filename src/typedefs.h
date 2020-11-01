@@ -40,9 +40,11 @@ using mat4 = glm::tmat4x4<boost::float32_t, glm::highp>; // 4x4
 // just for now - fixed vertex and instanced data layouts :(
 struct Vertex
 {
-    vec3 position;
-    vec3 normal;
+    alignas(sizeof(vec4)) vec3 position;
+    alignas(sizeof(vec4)) vec3 normal;
 };
+
+// static_assert(sizeof(Vertex) == sizeof(boost::float32_t) * 6);
 
 struct InstancedData
 {
