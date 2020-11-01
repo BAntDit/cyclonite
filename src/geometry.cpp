@@ -39,6 +39,6 @@ auto Geometry::baseVertex() const -> uint32_t
 {
     assert(vertices_.offset() % sizeof(vertex_t) == 0);
 
-    return static_cast<uint32_t>(vertices_.offset() % sizeof(vertex_t));
+    return static_cast<uint32_t>(vertices_.offset() / sizeof(vertex_t));
 }
 }
