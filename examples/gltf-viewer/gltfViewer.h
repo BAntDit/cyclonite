@@ -21,6 +21,8 @@ public:
 
     void done();
 
+    void onKeyDown(SDL_Keycode keyCode, uint16_t mod);
+
 private:
     bool shutdown_;
     std::unique_ptr<cyclonite::Root> root_;

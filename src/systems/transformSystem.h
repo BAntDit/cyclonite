@@ -58,8 +58,6 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
     (void)systemManager;
 
     if constexpr (STAGE == value_cast(UpdateStage::EARLY_UPDATE)) {
-        std::cout << "transform system: early update: start" << std::endl;
-
         auto view = entityManager.template getView<components::Transform>();
 
         for (auto&& [entity, transform] : view) {
@@ -94,21 +92,15 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
                 worldMatrices_[globalIndex] = parentMatrix * matrix;
             }
         }
-
-        std::cout << "transform system: early update: end" << std::endl;
     }
 
     if constexpr (STAGE == easy_mp::value_cast(UpdateStage::LATE_UPDATE)) {
-        std::cout << "transform system: late update: start" << std::endl;
-
         auto view = entityManager.template getView<components::Transform>();
 
         for (auto&& [entity, transform] : view) {
             (void)entity;
             transform.state = components::Transform::State::UPDATE_NOTHING;
         }
-
-        std::cout << "transform system: late update: end" << std::endl;
     }
 }
 

@@ -60,8 +60,6 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
     using namespace easy_mp;
 
     if constexpr (STAGE == value_cast(UpdateStage::LATE_UPDATE)) {
-        std::cout << "camera system: late update: start" << std::endl;
-
         auto&& [cameraEntity, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
         (void)dt;
 
@@ -115,8 +113,6 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
         uniformSystem.setProjectionMatrix(projectionMatrix);
 
         uniformSystem.setViewProjectionMatrix(viewProjectionMatrix);
-
-        std::cout << "camera system: late update: end" << std::endl;
     }
 }
 

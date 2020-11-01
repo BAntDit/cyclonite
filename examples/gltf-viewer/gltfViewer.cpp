@@ -20,6 +20,7 @@ GLTFViewer::GLTFViewer()
 auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
 {
     root_->init(options);
+    root_->input().keyDown += cyclonite::Event<SDL_Keycode, uint16_t>::EventHandler(this, &GLTFViewer::onKeyDown);
 
     {
         auto& renderSystem = systems_.get<systems::RenderSystem>();
@@ -42,10 +43,8 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
             type_list<render_target_output_candidate<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
             RenderTargetOutputSemantic::DEFAULT>{},
           VkClearDepthStencilValue{ 1.0f, 0 },
-          VkClearColorValue{ { 0.0f, 0.0f, 0.0f, 1.0f } },
+          VkClearColorValue{ { 0.188f, 0.835f, 0.784f } },
           std::array{ VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR });
-
-        std::cout << "render system initialization success!" << std::endl;
     }
 
     {
@@ -53,8 +52,6 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
         auto& uniformSystem = systems_.get<systems::UniformSystem>();
 
         uniformSystem.init(root_->device(), renderSystem.renderPass().getSwapChainLength());
-
-        std::cout << "uniform system initialization success!" << std::endl;
     }
 
     {
@@ -75,8 +72,6 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
                 entities.resize(nodeCount);
 
                 entities_.create(entities);
-
-                std::cout << "transform system initialized with: " << nodeCount << " nodes" << std::endl;
             }
 
             if constexpr (std::is_same_v<std::decay_t<decltype(std::get<0>(t))>,
@@ -294,8 +289,6 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
 
             cameraSystem.createCamera(
               entities_, cameraEntity_, components::Camera::PerspectiveProjection{ 1.f, 45.f, .1f, 100.f });
-
-            std::cout << "camera system initialized" << std::endl;
         }
     }
 
@@ -304,10 +297,7 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
 
 auto GLTFViewer::run() -> GLTFViewer&
 {
-    static uint64_t frameCounter = 0;
-
     while (!shutdown_) {
-        std::cout << "frame #: " << ++frameCounter << std::endl;
         root_->input().pollEvent();
         systems_.update(cameraEntity_, 0.f);
     }
@@ -318,6 +308,14 @@ auto GLTFViewer::run() -> GLTFViewer&
 void GLTFViewer::done()
 {
     systems_.get<systems::RenderSystem>().finish();
+}
+
+void GLTFViewer::onKeyDown(SDL_Keycode keyCode, uint16_t mod)
+{
+    (void)mod;
+
+    if (keyCode == SDLK_ESCAPE)
+        shutdown_ = true;
 }
 }
 
