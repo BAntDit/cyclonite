@@ -159,8 +159,11 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
                                                           : uint32_t{ 0 };
                     auto&& command = *(commands + commandCount++);
 
-                    command.firstInstance = firstInstance;
+                    command.indexCount = commands_[i].indexCount;
                     command.instanceCount = commands_[i].instanceCount;
+                    command.firstIndex = commands_[i].firstIndex;
+                    command.vertexOffset = commands_[i].vertexOffset;
+                    command.firstInstance = firstInstance;
 
                     commands_[i].firstInstance = firstInstance;
                     commands_[i].instanceCount = 0;

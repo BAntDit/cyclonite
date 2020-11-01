@@ -279,7 +279,7 @@ auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
             transformSystem.create(entities_,
                                    enttx::Entity{ std::numeric_limits<uint64_t>::max() },
                                    cameraEntity,
-                                   vec3{ 0.0f, 0.0f, -8.f },
+                                   vec3{ 0.0f, 0.0f, 8.f },
                                    vec3{ 1.f },
                                    quat{ 1.f, 0.f, 0.f, 0.f });
 
