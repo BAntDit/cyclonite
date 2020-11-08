@@ -2,7 +2,7 @@
 // Created by bantdit on 8/2/20.
 //
 
-#include "gltfViewer.h"
+#include "viewer.h"
 #include "gltf/reader.h"
 
 using namespace cyclonite;
@@ -17,15 +17,24 @@ GLTFViewer::GLTFViewer()
   , cameraEntity_{}
 {}
 
-auto GLTFViewer::init(cyclonite::Options const& options) -> GLTFViewer&
+auto GLTFViewer::init(cyclonite::Options options) -> GLTFViewer&
 {
-    root_->init(options);
+    options.parse([](auto&& layout) -> void {
+        layout("help, h",
+               "show help")("device-name", boost::program_options::value<std::string>(), "specifies device name");
+    });
+
+    auto deviceId =
+      options.has("device-name") ? root_->getDeviceId(options.get<std::string>("device-name")) : root_->getDeviceId();
+
+    root_->init(deviceId);
+
     root_->input().keyDown += cyclonite::Event<SDL_Keycode, uint16_t>::EventHandler(this, &GLTFViewer::onKeyDown);
 
     {
         auto& renderSystem = systems_.get<systems::RenderSystem>();
 
-        Options::WindowProperties windowProperties{};
+        WindowProperties windowProperties{};
 
         windowProperties.title = "gltf-viewer.example";
         windowProperties.fullscreen = false;

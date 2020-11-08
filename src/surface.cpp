@@ -5,7 +5,7 @@
 #include "surface.h"
 
 namespace cyclonite {
-Surface::Surface(vulkan::Device const& device, Options::WindowProperties const& windowProperties)
+Surface::Surface(vulkan::Device const& device, WindowProperties const& windowProperties)
   : capabilities_{}
   , extent_{}
   , window_{ windowProperties.title,

@@ -2,8 +2,8 @@
 // Created by bantdit on 8/2/20.
 //
 
-#ifndef CYCLONITE_GLTFVIEWER_H
-#define CYCLONITE_GLTFVIEWER_H
+#ifndef CYCLONITE_VIEWER_H
+#define CYCLONITE_VIEWER_H
 
 #include <cyclonite.h>
 
@@ -15,7 +15,7 @@ class GLTFViewer final
 public:
     GLTFViewer();
 
-    auto init(cyclonite::Options const& options) -> GLTFViewer&;
+    auto init(cyclonite::Options options) -> GLTFViewer&;
 
     auto run() -> GLTFViewer&;
 
@@ -32,4 +32,4 @@ private:
 };
 }
 
-#endif // CYCLONITE_GLTFVIEWER_H
+#endif // CYCLONITE_VIEWER_H

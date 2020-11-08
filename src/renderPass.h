@@ -5,12 +5,12 @@
 #ifndef CYCLONITE_RENDERPASS_H
 #define CYCLONITE_RENDERPASS_H
 
-#include "options.h"
 #include "renderTargetBuilder.h"
 #include "surface.h"
 #include "typedefs.h"
 #include "vulkan/baseCommandBufferSet.h"
 #include "vulkan/buffer.h"
+#include "windowProperties.h"
 #include <optional>
 
 namespace cyclonite {
@@ -107,7 +107,7 @@ public:
     template<typename DepthStencilOutput, typename ColorOutput, size_t presentModeCandidateCount>
     RenderPass(
       vulkan::Device& device,
-      Options::WindowProperties const& windowProperties,
+      WindowProperties const& windowProperties,
       DepthStencilOutput&& = render_target_output<type_list<render_target_output_candidate<VK_FORMAT_D32_SFLOAT>>>{},
       ColorOutput&& = render_target_output<
         type_list<render_target_output_candidate<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
@@ -120,7 +120,7 @@ public:
 
     template<typename ColorOutput, size_t presentModeCandidateCount>
     RenderPass(vulkan::Device& device,
-               Options::WindowProperties const& windowProperties,
+               WindowProperties const& windowProperties,
                ColorOutput&& colorOutput = render_target_output<
                  type_list<render_target_output_candidate<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
                  RenderTargetOutputSemantic::DEFAULT>{},
@@ -276,7 +276,7 @@ RenderPass::RenderPass(vulkan::Device& device,
 
 template<typename ColorOutput, size_t presentModeCandidateCount>
 RenderPass::RenderPass(vulkan::Device& device,
-                       Options::WindowProperties const& windowProperties,
+                       WindowProperties const& windowProperties,
                        ColorOutput&& colorOutput,
                        VkClearColorValue const& clearColorValue,
                        std::array<VkPresentModeKHR, presentModeCandidateCount> const& presentModeCandidates,
@@ -293,7 +293,7 @@ RenderPass::RenderPass(vulkan::Device& device,
 
 template<typename DepthStencilOutput, typename ColorOutput, size_t presentModeCandidateCount>
 RenderPass::RenderPass(vulkan::Device& device,
-                       Options::WindowProperties const& windowProperties,
+                       WindowProperties const& windowProperties,
                        DepthStencilOutput&&,
                        ColorOutput&&,
                        VkClearDepthStencilValue const& clearDepthStencilValue,

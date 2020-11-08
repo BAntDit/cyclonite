@@ -8,6 +8,7 @@
 #include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
 #include <cstdint>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -15,48 +16,50 @@ namespace cyclonite {
 class Options
 {
 public:
-    struct WindowProperties
-    {
-        std::string title;
-        uint32_t left;
-        uint32_t top;
-        uint32_t width;
-        uint32_t height;
-        bool fullscreen;
-    };
+    Options(int argc, const char* argv[]) noexcept;
 
-    explicit Options(int argc = 0, const char* argv[] = {});
+    template<typename OptionLayoutConfigurator>
+    void parse(OptionLayoutConfigurator&& optionLayoutConfigurator);
 
-    Options(Options const&) = default;
+    [[nodiscard]] auto has(std::string const& optionName) const -> bool;
 
-    Options(Options&&) = default;
-
-    ~Options() = default;
-
-    auto operator=(Options const&) -> Options& = default;
-
-    auto operator=(Options &&) -> Options& = default;
-
-    [[nodiscard]] auto deviceName() const -> std::string const& { return deviceName_; }
-
-    void deviceName(std::string const& name) { deviceName_ = name; }
-
-    [[nodiscard]] auto deviceId() const -> uint32_t { return deviceId_; }
-
-    void deviceId(uint32_t value) { deviceId_ = value; }
-
-    [[nodiscard]] auto windows() const -> std::vector<WindowProperties> const& { return windows_; }
-
-    auto windows() -> std::vector<WindowProperties>& { return windows_; }
-
-    void save();
+    template<typename T>
+    [[nodiscard]] auto get(std::string const& optionName) const -> T;
 
 private:
-    std::string config_;
-    std::string deviceName_;
-    uint32_t deviceId_;
-    std::vector<WindowProperties> windows_;
+    int argc_;
+    char const** argv_;
+    boost::program_options::variables_map variables_;
 };
+
+template<typename OptionLayoutConfigurator>
+void Options::parse(OptionLayoutConfigurator&& optionLayoutConfigurator)
+{
+    static_assert(std::is_invocable_v<optionLayoutConfigurator, boost::program_options::options_description_easy_init>);
+
+    boost::program_options::options_description commandLineOptions{ "commandLineOptions" };
+
+    optionLayoutConfigurator(commandLineOptions.add_options());
+
+    if (argc_ > 0) {
+        boost::program_options::store(boost::program_options::parse_command_line(argc_, argv_, commandLineOptions),
+                                      variables_);
+    }
+
+    boost::program_options::notify(variables_);
+
+    if (variables_.count("help") > 0)
+        std::cout << commandLineOptions << std::endl;
+}
+
+template<typename T>
+auto Options::get(std::string const& optionName) const -> T
+{
+    if (variables_.count(optionName) == 0)
+        throw std::runtime_error("option does not exist");
+
+    return variables_[optionName].as<T>();
+}
 }
 
 #endif // CYCLONITE_OPTIONS_H

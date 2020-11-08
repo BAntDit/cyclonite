@@ -20,7 +20,7 @@ public:
 
     using config_t = Config<ecs_config_t>;
 
-    auto init(Options const& options) -> Application&;
+    auto init(Options options) -> Application&;
 
     auto run() -> Application&;
 
@@ -28,7 +28,7 @@ public:
 };
 
 template<class Application>
-auto BaseApp<Application>::init(Options const& options) -> Application&
+auto BaseApp<Application>::init(Options options) -> Application&
 {
     return static_cast<Application*>(this)->init(options);
 }
@@ -49,11 +49,7 @@ template<class Application>
 int letsGo(int argc, const char* argv[])
 {
     try {
-        Options options(argc, argv);
-
-        Application app;
-
-        app.init(options).run().done();
+        Application{}.init(Options{ argc, argv }).run().done();
     } catch (std::exception const& e) {
         std::cout << "an exception has occurred: " << e.what() << std::endl;
 

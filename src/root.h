@@ -8,7 +8,6 @@
 #include "config.h"
 #include "input.h"
 #include "multithreading/taskManager.h"
-#include "options.h"
 #include "platform.h"
 #include "sdl/sdlSupport.h"
 #include "surface.h"
@@ -40,7 +39,15 @@ public:
 
     auto operator=(Root &&) -> Root& = delete;
 
-    void init(Options const& options);
+    void init();
+
+    void init(uint32_t deviceId);
+
+    [[nodiscard]] auto getDeviceCount() const -> size_t { return physicalDeviceList_.size(); }
+
+    [[nodiscard]] auto getDeviceId(size_t deviceIndex = 0) const -> uint32_t;
+
+    [[nodiscard]] auto getDeviceId(std::string const& deviceName) const -> uint32_t;
 
     [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
 
@@ -61,6 +68,8 @@ private:
     multithreading::TaskManager taskManager_;
     sdl::SDLSupport sdlSupport_;
     std::unique_ptr<vulkan::Instance> vulkanInstance_;
+    std::vector<VkPhysicalDevice> physicalDeviceList_;
+    std::unordered_map<std::string, VkPhysicalDeviceProperties> physicalDevicePropertiesMap_;
     std::unique_ptr<vulkan::Device> vulkanDevice_;
     Input input_;
 };
