@@ -4,7 +4,7 @@
 
 #include "reader.h"
 
-namespace examples::gltf {
+namespace examples::viewer::gltf {
 void Reader::_countNode(
   nlohmann::json const& nodes,
   nlohmann::json const& meshes,

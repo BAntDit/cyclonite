@@ -7,6 +7,7 @@ set(PUBLIC_HEADERS
     src/platform.h
     src/config.h
     src/defaultConfigs.h
+    src/windowProperties.h
     src/options.h
     src/event.h
     src/eventReceivable.h
@@ -82,6 +83,7 @@ set(PRIVATE_HEADERS
 )
 
 set(SOURCES
+    src/windowProperties.cpp
     src/options.cpp
     src/eventReceivable.cpp
     src/input.cpp

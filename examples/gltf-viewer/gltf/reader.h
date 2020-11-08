@@ -16,7 +16,7 @@
 #include <unordered_map>
 
 // dummy gltf reader implementation
-namespace examples::gltf {
+namespace examples::viewer::gltf {
 using namespace cyclonite;
 
 namespace {

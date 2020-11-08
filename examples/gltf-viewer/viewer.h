@@ -7,28 +7,29 @@
 
 #include <cyclonite.h>
 
-namespace examples {
-class GLTFViewer final
-  : public cyclonite::BaseApp<GLTFViewer>
-  , public cyclonite::EventReceivable
+namespace examples::viewer {
+class Model;
+class View;
+class Controller;
+
+class Viewer final : public cyclonite::BaseApp<Viewer>
 {
 public:
-    GLTFViewer();
+    Viewer();
 
-    auto init(cyclonite::Options options) -> GLTFViewer&;
+    auto init(cyclonite::Options options) -> Viewer&;
 
-    auto run() -> GLTFViewer&;
+    auto run() -> Viewer&;
 
     void done();
 
-    void onKeyDown(SDL_Keycode keyCode, uint16_t mod);
-
 private:
-    bool shutdown_;
     std::unique_ptr<cyclonite::Root> root_;
     ecs_config_t::entity_manager_t entities_;
     ecs_config_t::system_manager_t systems_;
-    enttx::Entity cameraEntity_;
+    std::unique_ptr<Model> model_;
+    std::unique_ptr<View> view_;
+    std::unique_ptr<Controller> controller_;
 };
 }
 

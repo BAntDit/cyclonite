@@ -3,13 +3,19 @@ cmake_minimum_required(VERSION 3.10)
 project(gltf-viewer.example VERSION 0.0.0.0)
 
 set(HEADER_FILES
+    model.h
+    view.h
+    controller.h
     gltf/reader.h
-    gltfViewer.h
+    viewer.h
 )
 
 set(SOURCE_FILES
     gltf/reader.cpp
-    gltfViewer.cpp
+    model.cpp
+    view.cpp
+    controller.cpp
+    viewer.cpp
 )
 
 add_executable(${PROJECT_NAME} ${HEADER_FILES} ${SOURCE_FILES})
