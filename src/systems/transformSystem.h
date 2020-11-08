@@ -60,15 +60,14 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
     if constexpr (STAGE == value_cast(UpdateStage::EARLY_UPDATE)) {
         auto& transforms = entityManager.template getStorage<components::Transform>();
 
-        for (auto& transform : transforms)
-        {
+        for (auto& transform : transforms) {
             auto& [position, scale, orientation, matrix, state, parent, depth, globalIndex] = transform;
 
             assert(worldMatrices_.size() > globalIndex);
 
             auto* parentTransform = static_cast<uint64_t>(parent) != std::numeric_limits<uint64_t>::max()
-                                    ? entityManager.template getComponent<components::Transform>(parent)
-                                    : nullptr;
+                                      ? entityManager.template getComponent<components::Transform>(parent)
+                                      : nullptr;
 
             (void)depth;
 
