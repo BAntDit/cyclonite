@@ -30,9 +30,9 @@ public:
     Event<> quit;
     Event<SDL_Keycode, uint16_t> keyDown;
     Event<SDL_Keycode, uint16_t> keyUp;
-    Event<uint8_t, uint8_t, uint32_t, uint32_t> mouseButtonDown;
-    Event<uint8_t, uint32_t, uint32_t> mouseButtonUp;
-    Event<uint32_t, uint32_t> mouseMotion;
+    Event<uint8_t, uint8_t, int32_t, int32_t> mouseButtonDown;
+    Event<uint8_t, int32_t, int32_t> mouseButtonUp;
+    Event<int32_t, int32_t> mouseMotion;
     Event<int32_t> mouseWheel;
 };
 }
