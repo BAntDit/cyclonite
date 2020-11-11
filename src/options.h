@@ -35,7 +35,8 @@ private:
 template<typename OptionLayoutConfigurator>
 void Options::parse(OptionLayoutConfigurator&& optionLayoutConfigurator)
 {
-    static_assert(std::is_invocable_v<optionLayoutConfigurator, boost::program_options::options_description_easy_init>);
+    static_assert(
+      std::is_invocable_v<decltype(optionLayoutConfigurator), boost::program_options::options_description_easy_init>);
 
     boost::program_options::options_description commandLineOptions{ "commandLineOptions" };
 

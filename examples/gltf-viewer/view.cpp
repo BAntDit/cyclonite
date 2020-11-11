@@ -3,7 +3,7 @@
 //
 
 #include "view.h"
-#include "viewer.h"
+#include "model.h"
 
 namespace examples::viewer {
 using namespace cyclonite;
@@ -14,7 +14,6 @@ View::View() noexcept
 
 void View::init(cyclonite::vulkan::Device& device,
                 cyclonite::multithreading::TaskManager& taskManager,
-                ecs_config_t::entity_manager_t& entities,
                 ecs_config_t::system_manager_t& systems)
 {
     systems_ = &systems;
@@ -46,6 +45,6 @@ void View::init(cyclonite::vulkan::Device& device,
 
 void View::draw(Model const& model)
 {
-    // TODO:: ...
+    systems_->update(model.camera(), model.timeSinceLastUpdate());
 }
 }

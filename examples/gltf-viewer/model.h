@@ -24,9 +24,14 @@ public:
 
     [[nodiscard]] auto camera() const -> enttx::Entity { return camera_; }
 
+    [[nodiscard]] auto timeSinceLastUpdate() const -> cyclonite::real { return timeSinceLastUpdate_; }
+
+    auto timeSinceLastUpdate() -> cyclonite::real& { return timeSinceLastUpdate_; }
+
     void setCameraTransform(cyclonite::mat4 const& matrix);
 
 private:
+    cyclonite::real timeSinceLastUpdate_;
     ecs_config_t::entity_manager_t* entities_;
     enttx::Entity camera_;
 };

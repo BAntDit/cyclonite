@@ -132,5 +132,7 @@ void Controller::update(Model& model, real dt)
                                    glm::vec4{ up.x, up.y, up.z, 0.0f },
                                    glm::vec4{ fw.x, fw.y, fw.z, 0.0f },
                                    glm::vec4{ target_.x - pos.x, target_.y - pos.y, target_.z - pos.z, 1.0f } });
+
+    model.timeSinceLastUpdate() = dt;
 }
 }

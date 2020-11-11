@@ -20,7 +20,6 @@ public:
 
     void init(cyclonite::vulkan::Device& device,
               cyclonite::multithreading::TaskManager& taskManager,
-              ecs_config_t::entity_manager_t& entities,
               ecs_config_t::system_manager_t& systems);
 
     void draw(Model const& model);

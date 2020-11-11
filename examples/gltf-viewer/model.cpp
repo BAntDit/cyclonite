@@ -9,7 +9,9 @@ namespace examples::viewer {
 using namespace cyclonite;
 
 Model::Model() noexcept
-  : camera_{ std::numeric_limits<uint64_t>::max() }
+  : timeSinceLastUpdate_{ .0f }
+  , entities_{ nullptr }
+  , camera_{ std::numeric_limits<uint64_t>::max() }
 {}
 
 void Model::init(cyclonite::vulkan::Device& device,

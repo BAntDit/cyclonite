@@ -6,6 +6,7 @@
 #include "controller.h"
 #include "model.h"
 #include "view.h"
+#include <chrono>
 
 using namespace cyclonite;
 using namespace easy_mp;
@@ -33,7 +34,7 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
     root_->init(deviceId);
 
     view_ = std::make_unique<View>();
-    view_->init(root_->device(), root_->taskManager(), entities_, systems_);
+    view_->init(root_->device(), root_->taskManager(),systems_);
 
     model_ = std::make_unique<Model>();
     model_->init(root_->device(), entities_, systems_, "./scene.gltf");
@@ -46,8 +47,16 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
 
 auto Viewer::run() -> Viewer&
 {
+    auto start = std::chrono::high_resolution_clock::now();
+
     while (controller_->alive()) {
-        controller_->update(*model_, 0.f);
+        auto end = std::chrono::high_resolution_clock::now();
+
+        auto dt = std::chrono::duration<real, std::ratio<1>>{ end - start }.count();
+
+        start = end;
+
+        controller_->update(*model_, dt);
         view_->draw(*model_);
     }
 
