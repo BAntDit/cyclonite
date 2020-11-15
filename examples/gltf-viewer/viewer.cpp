@@ -34,7 +34,7 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
     root_->init(deviceId);
 
     view_ = std::make_unique<View>();
-    view_->init(root_->device(), root_->taskManager(),systems_);
+    view_->init(root_->device(), root_->taskManager(), systems_);
 
     model_ = std::make_unique<Model>();
     model_->init(root_->device(), entities_, systems_, "./scene.gltf");

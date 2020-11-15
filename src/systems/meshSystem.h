@@ -214,6 +214,12 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
         }
     }
 
+    if constexpr (STAGE == value_cast(UpdateStage::LATE_UPDATE)) {
+        for (auto&& command : commands_) {
+            command.instanceCount = 0;
+        }
+    }
+
     if constexpr (STAGE == value_cast(UpdateStage::TRANSFER_STAGE)) {
         auto& renderSystem = systemManager.template get<RenderSystem>();
         auto& renderPass = renderSystem.renderPass();
