@@ -12,7 +12,7 @@ Root::Root()
   , vulkanInstance_
 {
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
-    std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_LUNARG_standard_validation" },
+    std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_KHRONOS_validation" },
                                        std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
                                                                    VK_KHR_SURFACE_EXTENSION_NAME,
                                                                    VK_KHR_XLIB_SURFACE_EXTENSION_NAME })
