@@ -22,6 +22,8 @@ set(PUBLIC_HEADERS
     src/geometry.h
     src/scene.h
     src/sceneNode.h
+    src/compositor/workspace.h
+    src/compositor/node.h
     src/components/transform.h
     src/components/transformStorage.h
     src/components/mesh.h
@@ -32,20 +34,11 @@ set(PUBLIC_HEADERS
     src/systems/cameraSystem.h
     src/systems/uniformSystem.h
     src/systems/renderSystem.h
-    src/core/bufferView.h
-    src/core/transform.h
-    src/core/camera.h
-    src/core/sceneManager.h
-    src/core/scene.h
-    src/core/attributeSemantic.h
-    src/core/primitiveType.h
-    src/core/vertexAttribute.h
-    src/core/geometry.h
     src/baseRenderTarget.h
-    src/surfaceRenderTarget.h
+        src/surfaceRenderTarget.h
     src/frameBufferRenderTarget.h
-    src/renderTargetBuilder.h
-    src/renderPass.h
+    src/render/renderTargetBuilder.h
+    src/render/renderPass.h
     src/sdl/sdlSupport.h
     src/sdl/sdlWindow.h
     src/vulkan/handle.h
@@ -69,7 +62,6 @@ set(PUBLIC_HEADERS
     src/vulkan/staging.h
     src/vulkan/shaderModule.h
     src/multithreading/taskManager.h
-    src/loaders/glTF/loader.h
 )
 
 set(PRIVATE_HEADERS
@@ -77,9 +69,6 @@ set(PRIVATE_HEADERS
     src/vulkan/internal/fillBufferCreationInfo.h
     src/vulkan/internal/fillImageCreationInfo.h
     src/vulkan/internal/imageHelpers.h
-    src/loaders/glTF/internal/testVersion.h
-    src/loaders/glTF/internal/getOptional.h
-    src/loaders/glTF/internal/base64Decode.h
 )
 
 set(SOURCES
@@ -92,9 +81,11 @@ set(SOURCES
     src/surface.cpp
     src/baseRenderTarget.cpp
     src/frameBufferRenderTarget.cpp
-    src/surfaceRenderTarget.cpp
-    src/renderPass.cpp
-    src/renderPassFrameCommands.cpp
+        src/surfaceRenderTarget.cpp
+    src/render/renderPass.cpp
+    src/render/renderPassFrameCommands.cpp
+    src/compositor/nodeBuilder.cpp
+    src/compositor/links.cpp
     src/components/transform.cpp
     src/components/camera.cpp
     src/systems/transformSystem.cpp
@@ -119,8 +110,6 @@ set(SOURCES
     src/vulkan/buffer.cpp
     src/vulkan/staging.cpp
     src/multithreading/taskManager.cpp
-    src/loaders/glTF/loader.cpp
-    src/loaders/glTF/internal/base64Decode.cpp
 )
 
 set(SHADER_SOURCES

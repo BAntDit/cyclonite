@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_RENDERPASS_H
 #define CYCLONITE_RENDERPASS_H
 
-#include "render/renderTargetBuilder.h"
+#include "renderTargetBuilder.h"
 #include "surface.h"
 #include "typedefs.h"
 #include "vulkan/baseCommandBufferSet.h"
@@ -13,13 +13,16 @@
 #include "windowProperties.h"
 #include <optional>
 
-namespace cyclonite {
+namespace cyclonite::render {
 class RenderPass
 {
 private:
     using graphics_queue_commands_t = vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>;
 
 public:
+    class Input
+    {};
+
     class FrameCommands
     {
     public:
@@ -356,7 +359,7 @@ RenderPass::RenderPass(vulkan::Device& device,
 
     auto&& renderTarget = renderTargetBuilder.buildRenderPassTarget(static_cast<VkRenderPass>(vkRenderPass_));
 
-    const auto frameCount = renderTarget.swapChainLength();
+    const auto frameCount = renderTarget.frameBufferCount();
 
     frameFences_.reserve(frameCount);
 

@@ -5,10 +5,10 @@
 #ifndef CYCLONITE_RENDERTARGETBUILDER_H
 #define CYCLONITE_RENDERTARGETBUILDER_H
 
-#include "render/frameBufferRenderTarget.h"
+#include "frameBufferRenderTarget.h"
 #include "surfaceRenderTarget.h"
 
-namespace cyclonite {
+namespace cyclonite::render {
 using namespace easy_mp;
 
 template<VkFormat vkFormat, VkColorSpaceKHR vkColorSpaceKHR = VK_COLOR_SPACE_MAX_ENUM_KHR>

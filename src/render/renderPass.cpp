@@ -75,7 +75,7 @@ auto RenderPass::getSwapChainLength() const -> size_t
       [](auto&& rt) -> size_t {
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget> ||
                         std::is_same_v<std::decay_t<decltype(rt)>, FrameBufferRenderTarget>) {
-              return rt.swapChainLength();
+              return rt.frameBufferCount();
           }
 
           std::terminate();
@@ -168,7 +168,7 @@ void RenderPass::end(vulkan::Device const& device)
           if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, SurfaceRenderTarget>) {
               rt.swapBuffers(device, passFinishedSemaphore(), commandsIndex_);
 
-              frameIndex_ = (frameIndex_ + 1) % rt.swapChainLength();
+              frameIndex_ = (frameIndex_ + 1) % rt.frameBufferCount();
 
               return;
           }

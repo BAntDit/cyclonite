@@ -5,7 +5,7 @@
 #include "renderPass.h"
 #include <iostream>
 
-namespace cyclonite {
+namespace cyclonite::render {
 RenderPass::FrameCommands::FrameCommands(vulkan::Device const& device)
   : vkDevice_{ device.handle() }
   , indices_{ nullptr }

@@ -7,6 +7,7 @@
 
 namespace examples::viewer {
 using namespace cyclonite;
+using namespace easy_mp;
 
 View::View() noexcept
   : systems_{ nullptr }
@@ -31,10 +32,10 @@ void View::init(cyclonite::vulkan::Device& device,
       taskManager,
       device,
       windowProperties,
-      render_target_output<type_list<render_target_output_candidate<VK_FORMAT_D32_SFLOAT>>>{},
-      render_target_output<
-        type_list<render_target_output_candidate<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
-        RenderTargetOutputSemantic::DEFAULT>{},
+      render::render_target_output<type_list<render::render_target_output_candidate<VK_FORMAT_D32_SFLOAT>>>{},
+      render::render_target_output<
+        type_list<render::render_target_output_candidate<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
+        render::RenderTargetOutputSemantic::DEFAULT>{},
       VkClearDepthStencilValue{ 1.0f, 0 },
       VkClearColorValue{ { 0.188f, 0.835f, 0.784f } },
       std::array{ VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR });

@@ -7,7 +7,7 @@
 
 #include "vulkan/frameBuffer.h"
 
-namespace cyclonite::render {
+namespace cyclonite {
 enum class RenderTargetOutputSemantic
 {
     UNDEFINED = 0,
@@ -64,7 +64,7 @@ public:
 
     [[nodiscard]] auto height() const -> uint32_t { return extent_.height; }
 
-    [[nodiscard]] auto swapChainLength() const -> size_t { return swapChainLength_; }
+    [[nodiscard]] auto frameBufferCount() const -> size_t { return frameBuffers_.size(); }
 
     [[nodiscard]] auto getColorAttachment(size_t bufferIndex, size_t attachmentIndex) const -> vulkan::ImageView const&;
 
@@ -100,7 +100,6 @@ private:
 
 protected:
     size_t colorAttachmentCount_;
-    size_t swapChainLength_;
     std::vector<vulkan::FrameBuffer> frameBuffers_;
     std::unordered_map<RenderTargetOutputSemantic, size_t> outputSemantics_;
 };
@@ -114,7 +113,6 @@ BaseRenderTarget::BaseRenderTarget(uint32_t width,
   , clearValues_{ std::array<VkClearValue, count + 1>{} }
   , hasDepthStencil_{ true }
   , colorAttachmentCount_{ count }
-  , swapChainLength_{ 0 }
   , frameBuffers_{}
   , outputSemantics_{}
 {
@@ -138,7 +136,6 @@ BaseRenderTarget::BaseRenderTarget(uint32_t width,
   , clearValues_{ std::array<VkClearValue, count>{} }
   , hasDepthStencil_{ false }
   , colorAttachmentCount_{ count }
-  , swapChainLength_{ 0 }
   , frameBuffers_{}
   , outputSemantics_{}
 {

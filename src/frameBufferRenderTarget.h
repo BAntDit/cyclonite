@@ -7,7 +7,7 @@
 
 #include "baseRenderTarget.h"
 
-namespace cyclonite::render {
+namespace cyclonite {
 class FrameBufferRenderTarget : public BaseRenderTarget
 {
 public:
@@ -74,8 +74,8 @@ inline auto getImage(vulkan::Device& device,
 template<template<typename> class container, size_t... idx>
 inline auto getColorAttachments(std::index_sequence<idx...>,
                                 vulkan::Device& device,
-                                [[maybe_unused]] uint32_t width,
-                                [[maybe_unused]] uint32_t height,
+                                uint32_t width,
+                                uint32_t height,
                                 size_t offset,
                                 container<vulkan::ImagePtr> const& outputs)
   -> std::array<vulkan::ImageView, sizeof...(idx)>
