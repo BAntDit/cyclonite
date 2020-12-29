@@ -8,7 +8,7 @@
 #include "baseRenderTarget.h"
 #include "surface.h"
 
-namespace cyclonite {
+namespace cyclonite::render {
 class SurfaceRenderTarget : public BaseRenderTarget
 {
 public:

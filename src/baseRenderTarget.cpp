@@ -4,7 +4,7 @@
 
 #include "baseRenderTarget.h"
 
-namespace cyclonite {
+namespace cyclonite::render {
 auto BaseRenderTarget::getColorAttachment(size_t bufferIndex, size_t attachmentIndex) const -> vulkan::ImageView const&
 {
     assert(attachmentIndex < colorAttachmentCount_);

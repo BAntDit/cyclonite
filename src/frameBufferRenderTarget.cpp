@@ -4,7 +4,7 @@
 
 #include "frameBufferRenderTarget.h"
 
-namespace cyclonite {
+namespace cyclonite::render {
 auto FrameBufferRenderTarget::swapBuffers(vulkan::Device const& device, uint32_t currentFrameImageIndex) -> uint32_t
 {
     (void)device;

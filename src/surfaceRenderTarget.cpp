@@ -4,7 +4,7 @@
 
 #include "surfaceRenderTarget.h"
 
-namespace cyclonite {
+namespace cyclonite::render {
 SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
                                          VkRenderPass vkRenderPass,
                                          Surface& surface,
