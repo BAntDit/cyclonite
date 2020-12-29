@@ -7,7 +7,7 @@
 
 #include "vulkan/frameBuffer.h"
 
-namespace cyclonite {
+namespace cyclonite::render {
 enum class RenderTargetOutputSemantic
 {
     UNDEFINED = 0,

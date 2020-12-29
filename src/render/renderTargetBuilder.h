@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_RENDERTARGETBUILDER_H
 #define CYCLONITE_RENDERTARGETBUILDER_H
 
-#include "frameBufferRenderTarget.h"
+#include "render/frameBufferRenderTarget.h"
 #include "surfaceRenderTarget.h"
 
 namespace cyclonite {

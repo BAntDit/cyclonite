@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_RENDERPASS_H
 #define CYCLONITE_RENDERPASS_H
 
-#include "renderTargetBuilder.h"
+#include "render/renderTargetBuilder.h"
 #include "surface.h"
 #include "typedefs.h"
 #include "vulkan/baseCommandBufferSet.h"
