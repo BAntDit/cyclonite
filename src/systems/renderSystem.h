@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_RENDERSYSTEM_H
 #define CYCLONITE_RENDERSYSTEM_H
 
-#include "../renderPass.h"
+#include "render/renderPass.h"
 #include "updateStages.h"
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
@@ -34,9 +34,9 @@ public:
 
     void finish();
 
-    [[nodiscard]] auto renderPass() const -> RenderPass const& { return *renderPass_; }
+    [[nodiscard]] auto renderPass() const -> render::RenderPass const& { return *renderPass_; }
 
-    [[nodiscard]] auto renderPass() -> RenderPass& { return *renderPass_; }
+    [[nodiscard]] auto renderPass() -> render::RenderPass& { return *renderPass_; }
 
 private:
     void _createDummyPipeline(vulkan::Device& device,
@@ -49,7 +49,7 @@ private:
 private:
     multithreading::TaskManager* taskManager_;
     vulkan::Device* device_;
-    std::unique_ptr<RenderPass> renderPass_;
+    std::unique_ptr<render::RenderPass> renderPass_;
 
     // tmp // dummy
     vulkan::Handle<VkDescriptorPool> descriptorPool_;
@@ -67,7 +67,7 @@ void RenderSystem::init(multithreading::TaskManager& taskManager,
 
     device_ = &device;
 
-    renderPass_ = std::make_unique<RenderPass>(device, std::forward<RenderPassArgs>(renderPassArgs)...);
+    renderPass_ = std::make_unique<render::RenderPass>(device, std::forward<RenderPassArgs>(renderPassArgs)...);
 
     descriptorPool_ = vulkan::Handle<VkDescriptorPool>{ device.handle(), vkDestroyDescriptorPool };
     descriptorSetLayout_ = vulkan::Handle<VkDescriptorSetLayout>{ device.handle(), vkDestroyDescriptorSetLayout };

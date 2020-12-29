@@ -4,7 +4,7 @@
 
 #include "surfaceRenderTarget.h"
 
-namespace cyclonite::render {
+namespace cyclonite {
 SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
                                          VkRenderPass vkRenderPass,
                                          Surface& surface,
@@ -22,18 +22,16 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
 {
     outputSemantics_[outputSemantic] = 0;
 
-    uint32_t imageCount = 0;
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, nullptr);
+    uint32_t bufferCount = 0;
+    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &bufferCount, nullptr);
 
-    swapChainLength_ = imageCount;
+    std::vector<VkImage> vkImages(bufferCount, VK_NULL_HANDLE);
 
-    std::vector<VkImage> vkImages(swapChainLength_, VK_NULL_HANDLE);
+    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &bufferCount, vkImages.data());
 
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, vkImages.data());
+    frameBuffers_.reserve(bufferCount);
 
-    frameBuffers_.reserve(swapChainLength_);
-
-    imageAvailableSemaphores_.reserve(swapChainLength_);
+    imageAvailableSemaphores_.reserve(bufferCount);
 
     auto depthImagePtr = std::make_shared<vulkan::Image>(device,
                                                          width(),
@@ -68,7 +66,7 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
         }
     }
 
-    imageIndices_.resize(imageCount, 0);
+    imageIndices_.resize(bufferCount, 0);
 }
 
 SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
@@ -86,18 +84,16 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
 {
     outputSemantics_[outputSemantic] = 0;
 
-    uint32_t imageCount = 0;
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, nullptr);
+    uint32_t bufferCount = 0;
+    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &bufferCount, nullptr);
 
-    swapChainLength_ = imageCount;
+    std::vector<VkImage> vkImages(bufferCount, VK_NULL_HANDLE);
 
-    std::vector<VkImage> vkImages(swapChainLength_, VK_NULL_HANDLE);
+    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &bufferCount, vkImages.data());
 
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, vkImages.data());
+    frameBuffers_.reserve(bufferCount);
 
-    frameBuffers_.reserve(swapChainLength_);
-
-    imageAvailableSemaphores_.reserve(swapChainLength_);
+    imageAvailableSemaphores_.reserve(bufferCount);
 
     VkSemaphoreCreateInfo semaphoreCreateInfo = {};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -121,7 +117,7 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
         }
     }
 
-    imageIndices_.resize(imageCount, 0);
+    imageIndices_.resize(bufferCount, 0);
 }
 
 auto SurfaceRenderTarget::acquireBackBufferIndex(vulkan::Device const& device, uint32_t frameIndex)
