@@ -47,68 +47,29 @@ void Node::Builder::_swapChainCreationErrorHandling(VkResult result)
     assert(false);
 }
 
-auto Node::Builder::addPass(PassType passType,
-                            input_attachment_indices_t<32> inputAttachmentIndices,
-                            uint32_t srcPassIndex,
-                            uint32_t dstPassIndex,
-                            VkPipelineStageFlags srcStageMask,
-                            VkPipelineStageFlags dstStageMask,
-                            VkAccessFlags srcAccessMask,
-                            VkAccessFlags dstAccessMask,
-                            VkDependencyFlags dependencyFlags) -> Node::Builder&
+auto Node::Builder::_getDepthStencilLayoutByFormat(VkFormat format) -> VkImageLayout
 {
-    auto&& subPassDependency = VkSubpassDependency{};
+    auto layout = VkImageLayout{ VK_IMAGE_LAYOUT_UNDEFINED };
 
-    subPassDependency.srcSubpass = srcPassIndex;
-    subPassDependency.dstSubpass = dstPassIndex;
-    subPassDependency.dstStageMask = srcStageMask;
-    subPassDependency.dstStageMask = dstStageMask;
-    subPassDependency.srcAccessMask = srcAccessMask;
-    subPassDependency.dstAccessMask = dstAccessMask;
-    subPassDependency.dependencyFlags = dependencyFlags;
+    switch (format) {
+        case VK_FORMAT_D16_UNORM:
+        case VK_FORMAT_X8_D24_UNORM_PACK32:
+        case VK_FORMAT_D32_SFLOAT:
+            layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+            break;
+        case VK_FORMAT_S8_UINT:
+            layout = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
+            break;
+        case VK_FORMAT_D16_UNORM_S8_UINT:
+        case VK_FORMAT_D24_UNORM_S8_UINT:
+        case VK_FORMAT_D32_SFLOAT_S8_UINT:
+            layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            break;
+        default:
+            layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    }
 
-    renderPasses_.emplace_back(std::make_tuple(passType, subPassDependency, inputAttachmentIndices));
-
-    return *this;
-}
-
-auto Node::Builder::addPass(PassType passType,
-                            uint32_t srcPassIndex,
-                            uint32_t dstPassIndex,
-                            VkPipelineStageFlags srcStageMask,
-                            VkPipelineStageFlags dstStageMask,
-                            VkAccessFlags srcAccessMask,
-                            VkAccessFlags dstAccessMask,
-                            VkDependencyFlags dependencyFlags) -> Node::Builder&
-{
-    return addPass(passType,
-                   std::monostate{},
-                   srcPassIndex,
-                   dstPassIndex,
-                   srcStageMask,
-                   dstStageMask,
-                   srcAccessMask,
-                   dstAccessMask,
-                   dependencyFlags);
-}
-
-auto Node::Builder::addPass(PassType passType,
-                            uint32_t dstPassIndex,
-                            VkPipelineStageFlags srcStageMask,
-                            VkPipelineStageFlags dstStageMask,
-                            VkAccessFlags srcAccessMask,
-                            VkAccessFlags dstAccessMask,
-                            VkDependencyFlags dependencyFlags) -> Node::Builder&
-{
-    return addPass(passType,
-                   std::monostate{},
-                   VK_SUBPASS_EXTERNAL,
-                   dstPassIndex,
-                   srcStageMask,
-                   dstStageMask,
-                   srcAccessMask,
-                   dstAccessMask,
-                   dependencyFlags);
+    return layout;
 }
 
 void Node::Builder::build()
@@ -116,68 +77,103 @@ void Node::Builder::build()
     auto renderPassCreateInfo = VkRenderPassCreateInfo{};
     renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 
+    auto colorAttachmentCount = std::visit(
+      [](auto&& attachments) -> size_t {
+          if constexpr (!std::is_same_v<std::decay_t<decltype(attachments)>, std::monostate>) {
+              return attachments.size();
+          }
+
+          return 0;
+      },
+      colorOutputs_);
+
     auto subPassDescriptions = std::vector<VkSubpassDescription>{};
 
     subPassDescriptions.reserve(renderPasses_.size());
 
     for (auto&& renderPass : renderPasses_) {
-        auto&& [passType, subPassDependency, inputAttachmentIndices] = renderPass;
+        auto&& [passType, subPassDependency, inputAttachmentIndices, colorAttachmentIndices, writeDepth] = renderPass;
         auto&& subPassDesc = VkSubpassDescription{};
 
         subPassDesc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
         std::visit(
-          [&](auto&& inputs) -> void {
+          [&](auto& inputs) -> std::vector<VkAttachmentReference> {
               if constexpr (!std::is_same_v<std::decay_t<decltype(inputs)>, std::monostate>) {
-                  auto refs = std::vector<VkAttachmentReference>{};
-                  refs.reserve(inputs.size());
-
-                  for (auto i : inputs) {
-                      auto&& ref = VkAttachmentReference{};
-                      ref.attachment = i;
-                      ref.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                      refs.emplace_back(ref);
-                  }
-
-                  subPassDesc.inputAttachmentCount = refs.size();
-                  subPassDesc.pInputAttachments = refs.data();
+                  subPassDesc.inputAttachmentCount = inputs.size();
+                  subPassDesc.pInputAttachments = inputs.data();
               }
           },
           inputAttachmentIndices);
 
-        auto colorAttachmentCount = std::visit(
-          [&](auto&& outputs) -> size_t {
+        std::visit(
+          [&](auto& outputs) -> std::vector<VkAttachmentReference> {
               if constexpr (!std::is_same_v<std::decay_t<decltype(outputs)>, std::monostate>) {
-                  auto refs = std::vector<VkAttachmentReference>{};
-                  refs.reserve(outputs.size());
-
-                  for (auto i = size_t{ 0 }, count = outputs.size(); i < count; i++) {
-                      auto&& ref = VkAttachmentReference{};
-
-                      ref.attachment = i;
-                      ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-                      refs.emplace_back(ref);
-                  }
-
-                  subPassDesc.colorAttachmentCount = refs.size();
-                  subPassDesc.pColorAttachments = refs.data();
-
-                  return refs.size();
+                  subPassDesc.colorAttachmentCount = outputs.size();
+                  subPassDesc.pColorAttachments = outputs.data();
               }
-
-              return 0;
           },
-          colorOutputs_);
+          colorAttachmentIndices);
 
-        if (depthFormat_ != VK_FORMAT_UNDEFINED) {
+        if (writeDepth && depthFormat_ != VK_FORMAT_UNDEFINED) {
             auto depthRef = VkAttachmentReference{};
-            depthRef.attachment = colorAttachmentCount;                         // depth always goes just after color
-            depthRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // TODO:: layout by format
+            depthRef.attachment = colorAttachmentCount; // depth always goes just after color
+            depthRef.layout = _getDepthStencilLayoutByFormat(depthFormat_);
 
             subPassDesc.pDepthStencilAttachment = &depthRef;
         }
 
         subPassDescriptions.emplace_back(subPassDesc);
+    } // render passes end
+
+    auto attachmentCount = (depthFormat_ != VK_FORMAT_UNDEFINED) ? colorAttachmentCount + 1 : colorAttachmentCount;
+
+    assert(attachmentCount > 0);
+
+    auto attachments = std::vector<VkAttachmentDescription>{};
+    attachments.reserve(attachmentCount);
+
+    auto isSurfacePass = surfaceProps_.has_value();
+
+    // just for now - no multisampling, no stencil ops
+    std::visit(
+      [&](auto&& outputs) -> void {
+          if constexpr (!std::is_same_v<std::decay_t<decltype(outputs)>, std::monostate>) {
+              for (auto&& [format, tiling, semantic] : outputs) {
+                  (void)semantic;
+                  (void)tiling;
+
+                  auto attachment = VkAttachmentDescription{};
+
+                  attachment.format = format;
+                  attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+                  attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+                  attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+                  attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                  attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                  attachment.finalLayout =
+                    isSurfacePass ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+                  attachments.emplace_back(attachment);
+              }
+          }
+      },
+      colorOutputs_);
+
+    if (depthFormat_ != VK_FORMAT_UNDEFINED) {
+        auto attachment = VkAttachmentDescription{};
+
+        attachment.format = depthFormat_;
+        attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+        attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachment.finalLayout = _getDepthStencilLayoutByFormat(depthFormat_);
+
+        attachments.emplace_back(attachment);
     }
+
+    // TODO:: prepare subpass dependencies
 }
 }
