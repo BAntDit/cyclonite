@@ -83,7 +83,11 @@ private:
                       array_list_t<std::tuple<VkFormat, VkImageTiling, RenderTargetOutputSemantic>, maxSize>>::type>;
 
     template<size_t maxSize>
-    using input_attachment_indices_t =
+    using attachment_ref_array_t =
+      to_variant_t<typename concat<type_list<std::monostate>, array_list_t<VkAttachmentReference, maxSize>>::type>;
+
+    template<size_t maxSize>
+    using attachment_idx_array_t =
       to_variant_t<typename concat<type_list<std::monostate>, array_list_t<uint32_t, maxSize>>::type>;
 
 public:
@@ -114,32 +118,28 @@ public:
                         std::array<VkPresentModeKHR, modeCandidateCount> const& presentModeCandidates,
                         VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags) -> Builder&;
 
-        // TODO:: add colorAttachmentIndices the same way as for input attachments / and ability to on/off depth-stencil
+        template<size_t inputRefCount, size_t outputRefCount>
         auto addPass(PassType passType,
-                     input_attachment_indices_t<32> inputAttachmentIndices,
+                     std::array<uint32_t, inputRefCount> const& inputAttachmentIndices,
+                     std::array<uint32_t, outputRefCount> const& colorAttachmentIndices,
                      uint32_t srcPassIndex,
                      uint32_t dstPassIndex,
                      VkPipelineStageFlags srcStageMask,
                      VkPipelineStageFlags dstStageMask,
                      VkAccessFlags srcAccessMask,
                      VkAccessFlags dstAccessMask,
+                     bool writeDepth,
                      VkDependencyFlags dependencyFlags) -> Builder&;
 
+        template<size_t outputRefCount>
         auto addPass(PassType passType,
-                     uint32_t srcPassIndex,
+                     std::array<uint32_t, outputRefCount> const& colorAttachmentIndices,
                      uint32_t dstPassIndex,
                      VkPipelineStageFlags srcStageMask,
                      VkPipelineStageFlags dstStageMask,
                      VkAccessFlags srcAccessMask,
                      VkAccessFlags dstAccessMask,
-                     VkDependencyFlags dependencyFlags) -> Builder&;
-
-        auto addPass(PassType passType,
-                     uint32_t dstPassIndex,
-                     VkPipelineStageFlags srcStageMask,
-                     VkPipelineStageFlags dstStageMask,
-                     VkAccessFlags srcAccessMask,
-                     VkAccessFlags dstAccessMask,
+                     bool writeDepth,
                      VkDependencyFlags dependencyFlags) -> Builder&;
 
         auto bindOutput(size_t outputIndex, RenderTargetOutputSemantic semantic) -> Builder&;
@@ -155,9 +155,14 @@ public:
 
         static void _swapChainCreationErrorHandling(VkResult result);
 
+        static auto _getDepthStencilLayoutByFormat(VkFormat format) -> VkImageLayout;
+
     private:
         using surface_properties_t =
           std::optional<std::tuple<Surface, vulkan::Handle<VkSwapchainKHR>, VkPresentModeKHR, VkColorSpaceKHR>>;
+
+        using render_pass_properties_t =
+          std::tuple<PassType, VkSubpassDependency, attachment_ref_array_t<32>, attachment_ref_array_t<32>, bool>;
 
         vulkan::Device* device_;
         uint32_t width_;
@@ -168,7 +173,7 @@ public:
         VkImageTiling depthTiling_;
         color_format_array_t<32> colorOutputs_;
         surface_properties_t surfaceProps_;
-        std::vector<std::tuple<PassType, VkSubpassDependency, input_attachment_indices_t<32>>> renderPasses_;
+        std::vector<render_pass_properties_t> renderPasses_;
     };
 
 private:
@@ -342,6 +347,80 @@ auto Node::Builder::setSurface(Surface&& surface,
     surfaceProps_ = std::make_tuple(std::move(surface), std::move(vkSwapChain), presentMode, colorSpace);
 
     return *this;
+}
+
+template<size_t inputRefCount, size_t outputRefCount>
+auto Node::Builder::addPass(PassType passType,
+                            std::array<uint32_t, inputRefCount> const& inputAttachmentIndices,
+                            std::array<uint32_t, outputRefCount> const& colorAttachmentIndices,
+                            uint32_t srcPassIndex,
+                            uint32_t dstPassIndex,
+                            VkPipelineStageFlags srcStageMask,
+                            VkPipelineStageFlags dstStageMask,
+                            VkAccessFlags srcAccessMask,
+                            VkAccessFlags dstAccessMask,
+                            bool writeDepth,
+                            VkDependencyFlags dependencyFlags) -> Node::Builder&
+{
+    auto&& subPassDependency = VkSubpassDependency{};
+
+    subPassDependency.srcSubpass = srcPassIndex;
+    subPassDependency.dstSubpass = dstPassIndex;
+    subPassDependency.dstStageMask = srcStageMask;
+    subPassDependency.dstStageMask = dstStageMask;
+    subPassDependency.srcAccessMask = srcAccessMask;
+    subPassDependency.dstAccessMask = dstAccessMask;
+    subPassDependency.dependencyFlags = dependencyFlags;
+
+    using input_refs_t =
+      std::conditional_t<inputRefCount != 0, std::array<VkAttachmentReference, inputRefCount>, std::monostate>;
+    using output_refs_t =
+      std::conditional_t<inputRefCount != 0, std::array<VkAttachmentReference, outputRefCount>, std::monostate>;
+
+    auto inputRefs = input_refs_t{};
+    auto outputRefs = output_refs_t{};
+
+    if constexpr (inputRefCount > 0) {
+        for (size_t i = 0; i < inputRefCount; i++) {
+            inputRefs[i].attachment = inputAttachmentIndices[i];
+            inputRefs[i].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        }
+    }
+
+    if constexpr (outputRefCount > 0) {
+        for (size_t i = 0; i < outputRefCount; i++) {
+            outputRefs[i].attachment = colorAttachmentIndices[i];
+            outputRefs[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        }
+    }
+
+    renderPasses_.emplace_back(passType, subPassDependency, inputRefs, outputRefs, writeDepth);
+
+    return *this;
+}
+
+template<size_t outputRefCount>
+auto Node::Builder::addPass(PassType passType,
+                            std::array<uint32_t, outputRefCount> const& colorAttachmentIndices,
+                            uint32_t dstPassIndex,
+                            VkPipelineStageFlags srcStageMask,
+                            VkPipelineStageFlags dstStageMask,
+                            VkAccessFlags srcAccessMask,
+                            VkAccessFlags dstAccessMask,
+                            bool writeDepth,
+                            VkDependencyFlags dependencyFlags) -> Node::Builder&
+{
+    return addPass(passType,
+                   std::array<uint32_t, 0>{},
+                   colorAttachmentIndices,
+                   VK_SUBPASS_EXTERNAL,
+                   dstPassIndex,
+                   srcStageMask,
+                   dstStageMask,
+                   srcAccessMask,
+                   dstAccessMask,
+                   writeDepth,
+                   dependencyFlags);
 }
 
 template<size_t candidateCount>
