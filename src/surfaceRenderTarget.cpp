@@ -10,11 +10,9 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
                                          Surface& surface,
                                          vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
                                          VkFormat depthStencilFormat,
-                                         VkClearDepthStencilValue clearDepthStencilValue,
                                          VkFormat surfaceFormat,
-                                         VkClearColorValue clearSurfaceValue,
                                          RenderTargetOutputSemantic outputSemantic)
-  : BaseRenderTarget(surface.width(), surface.height(), clearDepthStencilValue, std::array{ clearSurfaceValue })
+  : BaseRenderTarget(surface.width(), surface.height(), 1, true)
   , surface_{ std::move(surface) }
   , vkSwapChain_{ std::move(vkSwapChain) }
   , imageAvailableSemaphores_{}
@@ -74,9 +72,8 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
                                          Surface& surface,
                                          vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
                                          VkFormat surfaceFormat,
-                                         VkClearColorValue clearSurfaceValue,
                                          RenderTargetOutputSemantic outputSemantic)
-  : BaseRenderTarget(surface.width(), surface.height(), std::array{ clearSurfaceValue })
+  : BaseRenderTarget(surface.width(), surface.height())
   , surface_{ std::move(surface) }
   , vkSwapChain_{ std::move(vkSwapChain) }
   , imageAvailableSemaphores_{}

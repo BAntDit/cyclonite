@@ -17,9 +17,7 @@ public:
                         Surface& surface,
                         vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
                         VkFormat depthStencilFormat,
-                        VkClearDepthStencilValue clearDepthStencilValue,
                         VkFormat surfaceFormat,
-                        VkClearColorValue clearSurfaceValue,
                         RenderTargetOutputSemantic outputSemantic);
 
     SurfaceRenderTarget(vulkan::Device& device,
@@ -27,7 +25,6 @@ public:
                         Surface& surface,
                         vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
                         VkFormat surfaceFormat,
-                        VkClearColorValue clearSurfaceValue,
                         RenderTargetOutputSemantic outputSemantic);
 
     SurfaceRenderTarget(SurfaceRenderTarget const&) = delete;

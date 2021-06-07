@@ -79,6 +79,8 @@ public:
 
     [[nodiscard]] auto tiling() const -> VkImageTiling { return tiling_; }
 
+    [[nodiscard]] auto usage() const -> VkImageUsageFlags { return usage_; }
+
     [[nodiscard]] auto createFlags() const -> VkImageCreateFlags { return imageCreateFlags_; }
 
 private:
@@ -93,6 +95,8 @@ private:
     VkImageType imageType_;
 
     VkImageTiling tiling_;
+
+    VkImageUsageFlags usage_;
 
     VkImageCreateFlags imageCreateFlags_;
 

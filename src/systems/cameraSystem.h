@@ -60,17 +60,19 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
     using namespace easy_mp;
 
     if constexpr (STAGE == value_cast(UpdateStage::LATE_UPDATE)) {
-        auto&& [cameraEntity, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
+        auto&& [node, cameraEntity, frameIndex, frameFence, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
+
+        (void)frameIndex;
+        (void)frameFence;
         (void)dt;
 
         auto& uniformSystem = systemManager.template get<UniformSystem>();
         auto const& transformSystem = std::as_const(systemManager).template get<TransformSystem>();
-        auto const& transforms = transformSystem.worldMatrices();
 
         auto [transform, camera] =
           std::as_const(entityManager).template getComponents<components::Transform, components::Camera>(cameraEntity);
 
-        auto viewMatrix = glm::inverse(transforms[transform->globalIndex]);
+        auto viewMatrix = glm::inverse(transform->worldMatrix);
 
         auto projectionMatrix = std::visit(
           [](auto&& projection) -> mat4 {
