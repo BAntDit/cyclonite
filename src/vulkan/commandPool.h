@@ -84,13 +84,13 @@ auto CommandPool::allocCommandBuffers(BufferSet<CommandPool, Container>&& comman
     auto& commandBuffers = commandBufferSet.commandBuffers_;
 
     bool needsResets = true;
-    size_t allocateForm = 0;
+    size_t allocateFrom = 0;
 
     for (size_t i = 0, count = commandBuffers.size(); i < count; i++) {
         auto buffer = commandBuffers[i];
 
         if (needsResets && buffer != VK_NULL_HANDLE) {
-            allocateForm++;
+            allocateFrom++;
         } else if (needsResets && buffer == VK_NULL_HANDLE) {
             needsResets = false;
 
@@ -99,10 +99,10 @@ auto CommandPool::allocCommandBuffers(BufferSet<CommandPool, Container>&& comman
             commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
             commandBufferAllocateInfo.commandPool = static_cast<VkCommandPool>(pool);
             commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-            commandBufferAllocateInfo.commandBufferCount = static_cast<uint32_t>(count - allocateForm);
+            commandBufferAllocateInfo.commandBufferCount = static_cast<uint32_t>(count - allocateFrom);
 
             if (auto result =
-                  vkAllocateCommandBuffers(vkDevice_, &commandBufferAllocateInfo, commandBuffers.data() + allocateForm);
+                  vkAllocateCommandBuffers(vkDevice_, &commandBufferAllocateInfo, commandBuffers.data() + allocateFrom);
                 result != VK_SUCCESS) {
                 throw std::runtime_error("could not allocate command buffers");
             }

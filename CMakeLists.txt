@@ -22,8 +22,13 @@ set(PUBLIC_HEADERS
     src/geometry.h
     src/scene.h
     src/sceneNode.h
+    src/compositor/passType.h
+    src/compositor/links.h
     src/compositor/workspace.h
+    src/compositor/baseNode.h
     src/compositor/node.h
+    src/compositor/nodeBuilder.h
+    src/compositor/passIterator.h
     src/components/transform.h
     src/components/transformStorage.h
     src/components/mesh.h
@@ -35,9 +40,9 @@ set(PUBLIC_HEADERS
     src/systems/uniformSystem.h
     src/systems/renderSystem.h
     src/baseRenderTarget.h
-        src/surfaceRenderTarget.h
+    src/surfaceRenderTarget.h
     src/frameBufferRenderTarget.h
-    src/render/renderTargetBuilder.h
+    src/frameCommands.h
     src/render/renderPass.h
     src/sdl/sdlSupport.h
     src/sdl/sdlWindow.h
@@ -62,9 +67,11 @@ set(PUBLIC_HEADERS
     src/vulkan/staging.h
     src/vulkan/shaderModule.h
     src/multithreading/taskManager.h
+    src/shaders/shaderDefinitions.h
 )
 
 set(PRIVATE_HEADERS
+    src/compositor/internal/nodeBuilderInternal.h
     src/vulkan/internal/deviceCreationFunctions.h
     src/vulkan/internal/fillBufferCreationInfo.h
     src/vulkan/internal/fillImageCreationInfo.h
@@ -81,11 +88,16 @@ set(SOURCES
     src/surface.cpp
     src/baseRenderTarget.cpp
     src/frameBufferRenderTarget.cpp
-        src/surfaceRenderTarget.cpp
+    src/surfaceRenderTarget.cpp
+    src/frameCommands.cpp
     src/render/renderPass.cpp
     src/render/renderPassFrameCommands.cpp
-    src/compositor/nodeBuilder.cpp
+    src/compositor/passIterator.cpp
+    src/compositor/workspaceBuilder.cpp
     src/compositor/links.cpp
+    src/compositor/baseNode.cpp
+    src/compositor/node.cpp
+    src/compositor/workspace.cpp
     src/components/transform.cpp
     src/components/camera.cpp
     src/systems/transformSystem.cpp
@@ -110,6 +122,7 @@ set(SOURCES
     src/vulkan/buffer.cpp
     src/vulkan/staging.cpp
     src/multithreading/taskManager.cpp
+    src/shaders/shaderDefinitions.cpp
 )
 
 set(SHADER_SOURCES

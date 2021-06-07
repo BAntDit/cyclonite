@@ -45,5 +45,5 @@ void main() {
 
     gl_Position = viewProjMatrix * worldPosition;
 
-    vNormal = normal; // TODO:: compute view sapce normal
+    vNormal = normal; // TODO:: compute view space normal
 }

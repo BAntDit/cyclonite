@@ -91,7 +91,12 @@ void RenderSystem::update(SystemManager& systemManager, EntityManager& entityMan
     ((void)args, ...);
 
     if constexpr (STAGE == value_cast(UpdateStage::EARLY_UPDATE)) {
-        renderPass_->begin(*device_);
+        auto&& [node, camera, frameIndex, frameFence, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
+
+        (void)camera;
+        (void)dt;
+
+        node->begin(*device_, frameIndex, frameFence);
     }
 
     if constexpr (STAGE == value_cast(UpdateStage::RENDERING)) {
