@@ -10,6 +10,7 @@
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
 #include "baseSurface.h"
 #include <easy-mp/type_list.h>
+#include <vulkan/vulkan_xlib.h>
 
 namespace cyclonite::vulkan {
 class XlibSurface : public BaseSurface
