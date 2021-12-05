@@ -171,13 +171,10 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
         {
             auto* instanceData = reinterpret_cast<instanced_data_t*>(instancedDataBuffer_->ptr());
 
-            auto& transformSystem = systemManager.template get<TransformSystem>();
-            auto const& matrices = transformSystem.worldMatrices();
-
             auto view = entityManager.template getView<components::Transform, components::Mesh>();
 
             for (auto&& [entity, transform, mesh] : view) {
-                auto&& matrix = matrices[transform.globalIndex];
+                auto&& matrix = transform.worldMatrix;
                 auto subMeshCount = mesh.getSubMeshCount();
 
                 for (auto subMeshIndex = uint16_t{ 0 }; subMeshIndex < subMeshCount; subMeshIndex++) {
