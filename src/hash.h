@@ -16,8 +16,7 @@ auto tuple_hash(Tuple&& tuple, std::index_sequence<idx...> &&) -> size_t;
 template<typename T>
 auto hash_value(T&& value) -> size_t
 {
-    std::hash<std::decay_t<T>> hash_;
-    return hash_(std::forward<T>(value));
+    return std::hash<std::decay_t<T>>{}(std::forward<T>(value));
 }
 
 template<typename... Args>
