@@ -22,7 +22,7 @@ public:
 
     ~TransformSystem() = default;
 
-    void init(size_t initialTransformCount);
+    void init();
 
     template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
     void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
@@ -101,7 +101,7 @@ auto TransformSystem::create(EntityManager& entityManager,
 
     auto depth = parentTransform == nullptr ? 0 : parentTransform->depth + 1;
 
-    // to be able update parent transforms first
+    // to be able to update parent transforms first
     // all transforms must be in the right order
     auto it = std::upper_bound(transforms.begin(),
                                transforms.end(),
