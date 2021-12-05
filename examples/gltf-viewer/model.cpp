@@ -10,16 +10,14 @@ using namespace cyclonite;
 
 Model::Model() noexcept
   : timeSinceLastUpdate_{ .0f }
-  , entities_{ nullptr }
-  , camera_{ std::numeric_limits<uint64_t>::max() }
+  , workspace_{ nullptr }
 {}
 
-void Model::init(cyclonite::vulkan::Device& device,
-                 ecs_config_t::entity_manager_t& entities,
-                 ecs_config_t::system_manager_t& systems,
-                 std::filesystem::path const& path)
+void Model::init(std::shared_ptr<cyclonite::compositor::Workspace> const& workspace)
 {
-    entities_ = &entities;
+    workspace_ = workspace;
+
+    /* entities_ = &entities;
 
     gltf::Reader reader{};
     std::vector<enttx::Entity> pool{};
@@ -238,14 +236,6 @@ void Model::init(cyclonite::vulkan::Device& device,
 
     auto& cameraSystem = systems.get<systems::CameraSystem>();
     cameraSystem.init();
-    cameraSystem.createCamera(entities, camera_, components::Camera::PerspectiveProjection{ 1.f, 45.f, .1f, 100.f });
-}
-
-void Model::setCameraTransform(cyclonite::mat4 const& matrix)
-{
-    auto* transform = entities_->template getComponent<components::Transform>(camera_);
-
-    transform->matrix = matrix;
-    transform->state = components::Transform::State::UPDATE_COMPONENTS;
+    cameraSystem.createCamera(entities, camera_, components::Camera::PerspectiveProjection{ 1.f, 45.f, .1f, 100.f }); */
 }
 }

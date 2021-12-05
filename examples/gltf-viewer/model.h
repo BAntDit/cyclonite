@@ -17,23 +17,15 @@ private:
 public:
     Model() noexcept;
 
-    void init(cyclonite::vulkan::Device& device,
-              ecs_config_t::entity_manager_t& entities,
-              ecs_config_t::system_manager_t& systems,
-              std::filesystem::path const& path);
-
-    [[nodiscard]] auto camera() const -> enttx::Entity { return camera_; }
+    void init(std::shared_ptr<cyclonite::compositor::Workspace> const& workspace);
 
     [[nodiscard]] auto timeSinceLastUpdate() const -> cyclonite::real { return timeSinceLastUpdate_; }
 
     auto timeSinceLastUpdate() -> cyclonite::real& { return timeSinceLastUpdate_; }
 
-    void setCameraTransform(cyclonite::mat4 const& matrix);
-
 private:
     cyclonite::real timeSinceLastUpdate_;
-    ecs_config_t::entity_manager_t* entities_;
-    enttx::Entity camera_;
+    std::shared_ptr<cyclonite::compositor::Workspace> workspace_;
 };
 }
 
