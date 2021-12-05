@@ -1,12 +1,13 @@
 //
-// Created by anton on 4/18/21.
+// Created by anton on 11/11/21.
 //
 
 #include "frameCommands.h"
-#include "compositor/links.h"
-#include "vulkan/device.h"
+#include "baseRenderTarget.h"
+#include "links.h"
+#include "passIterator.h"
 
-namespace cyclonite {
+namespace cyclonite::compositor {
 static void _createDescriptorSet(VkDevice vkDevice,
                                  VkDescriptorPool vkDescriptorPool,
                                  VkDescriptorSetLayout descriptorSetLayout,
@@ -36,19 +37,29 @@ static void _createDescriptorSet(VkDevice vkDevice,
     }
 }
 
-FrameCommands::FrameCommands()
-  : indices_{ nullptr }
-  , vertices_{ nullptr }
-  , instances_{ nullptr }
-  , commands_{ nullptr }
-  , uniforms_{ nullptr }
-  , graphicsCommands_{ nullptr }
+FrameCommands::FrameCommands() noexcept
+  : swapChainIndex_{ 0 }
+  , indices_{}
+  , vertices_{}
+  , instances_{}
+  , commands_{}
+  , uniforms_{}
+  , commandCount_{}
+  , graphicsCommands_{}
 {}
 
+FrameCommands::FrameCommands(size_t swapChainIndex) noexcept
+  : FrameCommands()
+{
+    swapChainIndex_ = swapChainIndex;
+}
+
 void FrameCommands::update(vulkan::Device& device,
-                           compositor::Links const& links,
-                           compositor::PassIterator const& begin,
-                           compositor::PassIterator const& end)
+                           BaseRenderTarget const& renderTarget,
+                           VkRenderPass vkRenderPass,
+                           Links const& links,
+                           PassIterator const& begin,
+                           PassIterator const& end)
 {
     if (!graphicsCommands_) {
         graphicsCommands_ = std::make_unique<graphics_queue_commands_t>(device.commandPool().allocCommandBuffers(
@@ -59,10 +70,30 @@ void FrameCommands::update(vulkan::Device& device,
           [&](auto&& graphicsCommands) -> void {
               auto [commandBuffer] = graphicsCommands;
 
-              // all passes:
-              auto passIndex = size_t{0};
+              VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+              commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-              for (auto it = begin; it != end; it++) {
+              if (vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo) != VK_SUCCESS) {
+                  throw std::runtime_error("could not begin recording command buffer!");
+              }
+
+              VkRenderPassBeginInfo renderPassBeginInfo = {};
+              renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+              renderPassBeginInfo.renderPass = vkRenderPass;
+              renderPassBeginInfo.framebuffer = renderTarget.frameBuffer(swapChainIndex_).handle();
+              renderPassBeginInfo.renderArea.offset.x = 0;
+              renderPassBeginInfo.renderArea.offset.y = 0;
+              renderPassBeginInfo.renderArea.extent.width = renderTarget.width();
+              renderPassBeginInfo.renderArea.extent.height = renderTarget.height();
+              renderPassBeginInfo.clearValueCount = renderTarget.clearValues().size();
+              renderPassBeginInfo.pClearValues = renderTarget.clearValues().data();
+
+              vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+              // all passes:
+              auto passIndex = size_t{ 0 };
+
+              for (auto it = begin; it != end; it++) { // subpasses
                   auto [passType,
                         descriptorPool,
                         descriptorSetLayout,
@@ -71,8 +102,9 @@ void FrameCommands::update(vulkan::Device& device,
                         descriptorSetPtr,
                         flagsPtr] = *it;
 
-                  auto mask = static_cast<uint8_t>(1 << (passIndex % CHAR_BIT));
-                  bool isExpired = (static_cast<uint8_t>(*flagsPtr) & mask) != 0;
+                  auto& flags = *(flagsPtr + (swapChainIndex_ / CHAR_BIT));
+                  auto mask = static_cast<std::byte>(1 << (swapChainIndex_ % CHAR_BIT));
+                  bool isExpired = (flags & mask) != std::byte{ 0 };
 
                   if (isExpired && *descriptorSetPtr != VK_NULL_HANDLE) {
                       vkFreeDescriptorSets(device.handle(), descriptorPool, 1, descriptorSetPtr);
@@ -135,18 +167,27 @@ void FrameCommands::update(vulkan::Device& device,
                       }
 
                       for (auto i = size_t{ 0 }, count = links.size(); i < count; i++) {
-                          imageDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                          imageDescriptors[i].imageView = links.get(i).handle();
-                          imageDescriptors[i].sampler = VK_NULL_HANDLE;
+                          auto&& [idx, views, semantics] = links.get(i);
 
-                          auto& writeDescriptorSet = writeDescriptorSets[bufferDescriptorCount + i];
+                          for (auto j = size_t{ 0 }; j < value_cast(RenderTargetOutputSemantic::COUNT); j++) {
+                              auto semantic = semantics[j];
 
-                          writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                          writeDescriptorSet.dstSet = *descriptorSetPtr;
-                          writeDescriptorSet.dstBinding = bufferDescriptorCount + i;
-                          writeDescriptorSet.descriptorCount = 1;
-                          writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-                          writeDescriptorSet.pImageInfo = imageDescriptors.data() + imageDescriptorCount++;
+                              if (semantic == RenderTargetOutputSemantic::INVALID)
+                                  continue;
+
+                              imageDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                              imageDescriptors[i].imageView = views[j];
+                              imageDescriptors[i].sampler = VK_NULL_HANDLE;
+
+                              auto& writeDescriptorSet = writeDescriptorSets[bufferDescriptorCount + i];
+
+                              writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                              writeDescriptorSet.dstSet = *descriptorSetPtr;
+                              writeDescriptorSet.dstBinding = bufferDescriptorCount + i;
+                              writeDescriptorSet.descriptorCount = 1;
+                              writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+                              writeDescriptorSet.pImageInfo = imageDescriptors.data() + imageDescriptorCount++;
+                          }
                       }
 
                       vkUpdateDescriptorSets(device.handle(),
@@ -155,27 +196,50 @@ void FrameCommands::update(vulkan::Device& device,
                                              0,
                                              nullptr);
 
-                      auto flags = static_cast<uint8_t>(*flagsPtr) | mask;
-                      *flagsPtr = static_cast<std::byte>(flags);
+                      flags |= mask;
                   } // descriptor set update
 
-                  VkCommandBufferBeginInfo commandBufferBeginInfo = {};
-                  commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-                  if (vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo) != VK_SUCCESS) {
-                      throw std::runtime_error("could not begin recording command buffer!");
+                  if (passIndex != 0) {
+                      vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
                   }
 
-                  // TODO:: make it for all passes (subpasses)
-
-                  if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS) {
-                      throw std::runtime_error("could not record command buffer!");
+                  if (passType == compositor::PassType::SCENE) {
+                      vkCmdBindIndexBuffer(commandBuffer, indices_->handle(), 0, VK_INDEX_TYPE_UINT32);
+                      vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+                      vkCmdBindDescriptorSets(commandBuffer,
+                                              VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                              pipelineLayout,
+                                              0,
+                                              1,
+                                              descriptorSetPtr,
+                                              0,
+                                              nullptr);
+                      vkCmdDrawIndexedIndirect(
+                        commandBuffer, commands_->handle(), 0, commandCount_, sizeof(VkDrawIndexedIndirectCommand));
+                  } else if (passType == compositor::PassType::SCREEN) {
+                      vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+                      vkCmdBindDescriptorSets(commandBuffer,
+                                              VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                              pipelineLayout,
+                                              0,
+                                              1,
+                                              descriptorSetPtr,
+                                              0,
+                                              nullptr);
+                      vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+                  } else {
+                      // not implemented pass types
                   }
 
                   passIndex++;
-              } // pass cycle end
+              } // pass (subpass) cycle
 
+              vkCmdEndRenderPass(commandBuffer);
+
+              if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS) {
+                  throw std::runtime_error("could not record command buffer!");
+              }
           }));
-    } // graphic commands
+    } // graphics commands
 }
 }

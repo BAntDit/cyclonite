@@ -53,7 +53,7 @@ auto PassIterator::operator*() const -> std::
     auto pipelineLayout = static_cast<VkPipelineLayout>(*(basePipelineLayout_ + cursor_));
     auto pipeline = static_cast<VkPipeline>(*(basePipeline_ + cursor_));
     auto descriptorSet = baseDescriptorSet_ + cursor_;
-    auto flags = baseExpirationBitsByte_ + (cursor_ / CHAR_BIT);
+    auto flags = baseExpirationBitsByte_;
 
     return std::make_tuple(
       passType, descriptorPool, descriptorSetLayout, pipelineLayout, pipeline, descriptorSet, flags);
