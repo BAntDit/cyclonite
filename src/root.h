@@ -5,6 +5,7 @@
 #ifndef CYCLONITE_ROOT_H
 #define CYCLONITE_ROOT_H
 
+#include "compositor/workspace.h"
 #include "config.h"
 #include "input.h"
 #include "multithreading/taskManager.h"
@@ -63,6 +64,12 @@ public:
 
     [[nodiscard]] auto taskManager() const -> multithreading::TaskManager const& { return taskManager_; }
 
+    template<typename WorkspaceFactory>
+    auto createWorkspace(WorkspaceFactory&& workspaceFactory)
+      -> std::enable_if_t< // std::is_invocable_v<decltype(workspaceFactory), vulkan::Device&> &&
+        std::is_same_v<compositor::Workspace, std::decay_t<std::result_of_t<WorkspaceFactory()>>>,
+        std::shared_ptr<compositor::Workspace>&>;
+
 private:
     Capabilities capabilities_;
     multithreading::TaskManager taskManager_;
@@ -71,7 +78,18 @@ private:
     std::vector<VkPhysicalDevice> physicalDeviceList_;
     std::unordered_map<std::string, VkPhysicalDeviceProperties> physicalDevicePropertiesMap_;
     std::unique_ptr<vulkan::Device> vulkanDevice_;
+    std::vector<std::shared_ptr<compositor::Workspace>> workspaces_; // TODO:: maybe wrap to workspace
     Input input_;
 };
+
+template<typename WorkspaceFactory>
+auto Root::createWorkspace(WorkspaceFactory&& workspaceFactory)
+  -> std::enable_if_t< // std::is_invocable_v<decltype(workspaceFactory), vulkan::Device&> &&
+    std::is_same_v<compositor::Workspace, std::decay_t<std::result_of_t<WorkspaceFactory()>>>,
+    std::shared_ptr<compositor::Workspace>&>
+{
+    return workspaces_.emplace_back(
+      std::make_shared<compositor::Workspace>(workspaceFactory(compositor::Workspace::Builder{ *vulkanDevice_ })));
+}
 }
 #endif // CYCLONITE_ROOT_H
