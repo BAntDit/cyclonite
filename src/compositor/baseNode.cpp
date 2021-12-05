@@ -6,13 +6,15 @@
 
 namespace cyclonite::compositor {
 BaseNode::BaseNode() noexcept
-  : commandsIndex_{ 0 }
+  : uuid_{ getNewUniqueUUID() }
+  , commandsIndex_{ 0 }
   , camera_{}
   , inputs_{}
-  , outputs_{}
+  , publicSemanticBits_{}
   , vkRenderPass_{}
   , renderTarget_{}
   , signalSemaphores_{}
+  , frameCommands_{}
 {}
 
 auto BaseNode::passFinishedSemaphore() const -> vulkan::Handle<VkSemaphore> const&
@@ -21,8 +23,21 @@ auto BaseNode::passFinishedSemaphore() const -> vulkan::Handle<VkSemaphore> cons
     return signalSemaphores_[commandsIndex_];
 }
 
-auto BaseNode::descriptorPool() const -> VkDescriptorPool
+auto BaseNode::getRenderTargetBase() -> BaseRenderTarget&
 {
-    return static_cast<VkDescriptorPool>(descriptorPool_);
+    return const_cast<BaseRenderTarget&>(std::as_const(*this).getRenderTargetBase());
+}
+
+auto BaseNode::getRenderTargetBase() const -> BaseRenderTarget const&
+{
+    return std::visit(
+      [](auto&& rt) -> BaseRenderTarget const& {
+          if constexpr (std::is_base_of_v<BaseRenderTarget, std::decay_t<decltype(rt)>>) {
+              return rt;
+          }
+
+          std::terminate();
+      },
+      renderTarget_);
 }
 }

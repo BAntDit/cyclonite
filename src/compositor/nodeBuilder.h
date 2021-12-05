@@ -6,35 +6,41 @@
 #define CYCLONITE_NODEBUILDER_H
 
 #include "node.h"
+#include <utility>
 
 namespace cyclonite::compositor {
-template<typename NodeType>
+namespace {
+auto getDepthStencilImageLayoutByFormat(VkFormat format) -> VkImageLayout;
+}
+
+template<typename NodeConfig>
 class BaseNode::Builder
 {
 public:
-    Builder(vulkan::Device& device, uint32_t width, uint32_t height);
+    Builder(vulkan::Device& device);
+
+    void setOutputResolution(uint16_t width, uint16_t height);
 
     template<size_t inputLinkCount>
     auto createInputLinks() -> Builder&;
 
-    template<size_t outputLinkCount>
-    auto createOutputLinks() -> Builder&;
+    template<RenderTargetOutputSemantic... semantic>
+    auto setInputs(size_t nodeIndex) -> Builder&;
 
-    template<size_t inputCount>
-    auto setInputs(std::array<std::pair<size_t, vulkan::ImagePtr>, inputCount> const& inputs) -> Builder&;
-
-    template<size_t candidateCount>
-    auto setRenderTargetDepthProperties(VkImageTiling tiling,
-                                        std::array<VkFormat, candidateCount> const& formatCandidates) -> Builder&;
+    template<VkImageTiling Tiling, VkFormat... format, bool IsPublic = false>
+    auto setRenderTargetDepthProperties(render_target_output<type_list<render_target_candidate_t<format>...>,
+                                                             RenderTargetOutputSemantic::UNDEFINED,
+                                                             IsPublic,
+                                                             Tiling> &&) -> Builder&;
 
     template<typename... RenderTargetColorOutput>
     auto setRenderTargetColorProperties(RenderTargetColorOutput&&... colorOutput) -> Builder&;
 
-    template<size_t colorSpaceCandidateCount, size_t modeCandidateCount>
-    auto setSurface(Surface&& surface,
-                    std::array<VkColorSpaceKHR, colorSpaceCandidateCount> const& colorSpaceCandidates,
-                    std::array<VkPresentModeKHR, modeCandidateCount> const& presentModeCandidates,
-                    VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags) -> Builder&;
+    template<VkColorSpaceKHR... colorSpaceCandidate, VkPresentModeKHR... presentModeCandidate>
+    auto setSurface(WindowProperties&& windowProperties,
+                    surface_parameters<type_list<color_space_candidate_t<colorSpaceCandidate>...>,
+                                       type_list<present_mode_candidate_t<presentModeCandidate>...>>&&,
+                    VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) -> Builder&;
 
     template<size_t inputRefCount, size_t outputRefCount>
     auto addPass(PassType passType,
@@ -60,9 +66,7 @@ public:
                  bool writeDepth,
                  VkDependencyFlags dependencyFlags) -> Builder&;
 
-    auto bindOutput(size_t outputIndex, RenderTargetOutputSemantic semantic) -> Builder&; // TODO
-
-    auto build() -> std::unique_ptr<NodeType>;
+    auto build() -> Node<NodeConfig>;
 
 private:
     template<size_t candidateCount>
@@ -72,6 +76,16 @@ private:
                                      VkFormatFeatureFlags requiredFeatures) -> VkFormat;
 
     static void _swapChainCreationErrorHandling(VkResult result);
+
+    template<size_t count>
+    static auto _createFrameBufferRT(
+      vulkan::Device& device,
+      VkRenderPass vkRenderPass,
+      uint32_t width,
+      uint32_t height,
+      VkFormat depthStencilFormat,
+      std::array<std::tuple<VkFormat, VkImageTiling, RenderTargetOutputSemantic>, count> const& properties)
+      -> FrameBufferRenderTarget;
 
 private:
     using surface_properties_t =
@@ -83,9 +97,9 @@ private:
     uint32_t width_;
     uint32_t height_;
     Links inputLinks_;
-    Links outputLinks_;
     VkFormat depthFormat_;
     VkImageTiling depthTiling_;
+    std::bitset<value_cast(RenderTargetOutputSemantic::COUNT)> publicSemanticBits_;
     color_format_array_t<32> colorOutputs_;
     surface_properties_t surfaceProps_;
     std::vector<render_pass_properties_t> renderPasses_;
@@ -94,15 +108,15 @@ private:
     render_target_t renderTarget_;
 };
 
-template<typename NodeType>
-BaseNode::Builder<NodeType>::Builder(vulkan::Device& device, uint32_t width, uint32_t height)
+template<typename NodeConfig>
+BaseNode::Builder<NodeConfig>::Builder(vulkan::Device& device)
   : device_{ &device }
-  , width_{ width }
-  , height_{ height }
+  , width_{ 0 }
+  , height_{ 0 }
   , inputLinks_{}
-  , outputLinks_{}
   , depthFormat_{ VK_FORMAT_UNDEFINED }
   , depthTiling_{ VK_IMAGE_TILING_OPTIMAL }
+  , publicSemanticBits_{}
   , colorOutputs_{}
   , surfaceProps_{}
   , renderPasses_{}
@@ -111,50 +125,66 @@ BaseNode::Builder<NodeType>::Builder(vulkan::Device& device, uint32_t width, uin
   , renderTarget_{}
 {}
 
-template<typename NodeType>
+template<typename NodeConfig>
+void BaseNode::Builder<NodeConfig>::setOutputResolution(uint16_t width, uint16_t height)
+{
+    width_ = width;
+    height_ = height;
+}
+
+template<typename NodeConfig>
 template<size_t inputLinkCount>
-auto BaseNode::Builder<NodeType>::createInputLinks() -> Builder&
+auto BaseNode::Builder<NodeConfig>::createInputLinks() -> Builder&
 {
     inputLinks_ = Links::create<inputLinkCount>();
     return *this;
 }
 
-template<typename NodeType>
-template<size_t outputLinkCount>
-auto BaseNode::Builder<NodeType>::createOutputLinks() -> Builder&
+template<typename NodeConfig>
+template<RenderTargetOutputSemantic... semantic>
+auto BaseNode::Builder<NodeConfig>::setInputs(size_t nodeIndex) -> Builder&
 {
-    outputLinks_ = Links::create<outputLinkCount>();
-    return *this;
-}
+    auto it = std::find_if(
+      inputLinks_.begin(), inputLinks_.end(), [=](auto&& link) -> bool { return link.nodeIndex == nodeIndex; });
 
-template<typename NodeType>
-template<size_t inputCount>
-auto BaseNode::Builder<NodeType>::setInputs(std::array<std::pair<size_t, vulkan::ImagePtr>, inputCount> const& inputs)
-  -> Builder&
-{
-    for (auto&& [index, image] : inputs) {
-        inputLinks_.set(image, index);
-    }
-    return *this;
-}
+    assert(it != inputLinks_.end());
 
-template<typename NodeType>
-template<size_t candidateCount>
-auto BaseNode::Builder<NodeType>::setRenderTargetDepthProperties(
-  VkImageTiling tiling,
-  std::array<VkFormat, candidateCount> const& formatCandidates) -> Builder&
-{
-    depthFormat_ = _findSupportedFormat(
-      formatCandidates, device_->physicalDevice(), tiling, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    auto setter = []<size_t... idx>(Link & link,
+                                    std::index_sequence<idx...>&&,
+                                    std::array<RenderTargetOutputSemantic, sizeof...(idx)> && semantics)
+                    ->void
+    {
+        ((link.semantics[idx] = semantics[idx]), ...);
+    };
 
-    depthTiling_ = tiling;
+    setter(*it, std::make_index_sequence<sizeof...(semantic)>{}, std::array{ semantic... });
 
     return *this;
 }
 
-template<typename NodeType>
+template<typename NodeConfig>
+template<VkImageTiling Tiling, VkFormat... format, bool IsPublic>
+auto BaseNode::Builder<NodeConfig>::setRenderTargetDepthProperties(
+  render_target_output<type_list<render_target_candidate_t<format>...>,
+                       RenderTargetOutputSemantic::UNDEFINED,
+                       IsPublic,
+                       Tiling> &&) -> Builder&
+{
+    // TODO:: public depth (make possible to access depth outside of the node)
+
+    depthFormat_ = _findSupportedFormat(std::array<VkFormat, sizeof...(format)>{ format... },
+                                        device_->physicalDevice(),
+                                        Tiling,
+                                        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+    depthTiling_ = Tiling;
+
+    return *this;
+}
+
+template<typename NodeConfig>
 template<typename... RenderTargetColorOutput>
-auto BaseNode::Builder<NodeType>::setRenderTargetColorProperties(RenderTargetColorOutput&&... colorOutput) -> Builder&
+auto BaseNode::Builder<NodeConfig>::setRenderTargetColorProperties(RenderTargetColorOutput&&... colorOutput) -> Builder&
 {
     colorOutputs_ = std::array{ std::make_tuple(_findSupportedFormat(RenderTargetColorOutput::format_candidate_array_v,
                                                                      device_->physicalDevice(),
@@ -163,17 +193,22 @@ auto BaseNode::Builder<NodeType>::setRenderTargetColorProperties(RenderTargetCol
                                                 RenderTargetColorOutput::tiling_v,
                                                 RenderTargetColorOutput::semantic_v)... };
 
+    (publicSemanticBits_.set(value_cast(RenderTargetColorOutput::semantic_v), RenderTargetColorOutput::is_public_v),
+     ...);
+
     return *this;
 }
 
-template<typename NodeType>
-template<size_t colorSpaceCandidateCount, size_t modeCandidateCount>
-auto BaseNode::Builder<NodeType>::setSurface(
-  Surface&& surface,
-  std::array<VkColorSpaceKHR, colorSpaceCandidateCount> const& colorSpaceCandidates,
-  std::array<VkPresentModeKHR, modeCandidateCount> const& presentModeCandidates,
+template<typename NodeConfig>
+template<VkColorSpaceKHR... colorSpaceCandidate, VkPresentModeKHR... presentModeCandidate>
+auto BaseNode::Builder<NodeConfig>::setSurface(
+  WindowProperties&& windowProperties,
+  surface_parameters<type_list<color_space_candidate_t<colorSpaceCandidate>...>,
+                     type_list<present_mode_candidate_t<presentModeCandidate>...>>&&,
   VkCompositeAlphaFlagBitsKHR vkCompositeAlphaFlags) -> Builder&
 {
+    auto&& surface = Surface{ *device_, windowProperties };
+
     uint32_t availableFormatCount = 0;
     vkGetPhysicalDeviceSurfaceFormatsKHR(device_->physicalDevice(), surface.handle(), &availableFormatCount, nullptr);
 
@@ -190,9 +225,9 @@ auto BaseNode::Builder<NodeType>::setSurface(
     auto&& [requiredFormat, requiredTiling] = std::visit(
       [](auto&& outputs) -> std::pair<VkFormat, VkImageTiling> {
           if (!std::is_same_v<std::decay_t<decltype(outputs)>, std::monostate>) {
-              auto&& [format, tiling, _] = outputs[0];
+              auto&& [desiredFormat, desiredTiling, _] = outputs[0];
               (void)_;
-              return std::make_pair(format, tiling);
+              return std::make_pair(desiredFormat, desiredTiling);
           }
 
           return std::make_pair(VK_FORMAT_UNDEFINED, VK_IMAGE_TILING_MAX_ENUM);
@@ -201,7 +236,7 @@ auto BaseNode::Builder<NodeType>::setSurface(
 
     assert(requiredFormat != VK_FORMAT_UNDEFINED && requiredTiling != VK_IMAGE_TILING_MAX_ENUM);
 
-    for (auto&& requiredColorSpace : colorSpaceCandidates) {
+    for (auto&& requiredColorSpace : std::array{ colorSpaceCandidate... }) {
         for (auto&& availableFormat : availableFormats) {
             if (requiredFormat == availableFormat.format && requiredColorSpace == availableFormat.colorSpace) {
                 auto formatProperties = VkFormatProperties{};
@@ -233,7 +268,7 @@ auto BaseNode::Builder<NodeType>::setSurface(
 
     auto presentMode = VkPresentModeKHR{ VK_PRESENT_MODE_MAX_ENUM_KHR };
 
-    for (auto&& candidate : presentModeCandidates) {
+    for (auto&& candidate : std::array{ presentModeCandidate... }) {
         for (auto&& availableMode : availablePresentModes) {
             if (availableMode == candidate) {
                 presentMode = availableMode;
@@ -276,19 +311,19 @@ auto BaseNode::Builder<NodeType>::setSurface(
     return *this;
 }
 
-template<typename NodeType>
+template<typename NodeConfig>
 template<size_t inputRefCount, size_t outputRefCount>
-auto BaseNode::Builder<NodeType>::addPass(PassType passType,
-                                          std::array<uint32_t, inputRefCount> const& inputAttachmentIndices,
-                                          std::array<uint32_t, outputRefCount> const& colorAttachmentIndices,
-                                          uint32_t srcPassIndex,
-                                          uint32_t dstPassIndex,
-                                          VkPipelineStageFlags srcStageMask,
-                                          VkPipelineStageFlags dstStageMask,
-                                          VkAccessFlags srcAccessMask,
-                                          VkAccessFlags dstAccessMask,
-                                          bool writeDepth,
-                                          VkDependencyFlags dependencyFlags) -> Builder&
+auto BaseNode::Builder<NodeConfig>::addPass(PassType passType,
+                                            std::array<uint32_t, inputRefCount> const& inputAttachmentIndices,
+                                            std::array<uint32_t, outputRefCount> const& colorAttachmentIndices,
+                                            uint32_t srcPassIndex,
+                                            uint32_t dstPassIndex,
+                                            VkPipelineStageFlags srcStageMask,
+                                            VkPipelineStageFlags dstStageMask,
+                                            VkAccessFlags srcAccessMask,
+                                            VkAccessFlags dstAccessMask,
+                                            bool writeDepth,
+                                            VkDependencyFlags dependencyFlags) -> Builder&
 {
     auto&& subPassDependency = VkSubpassDependency{};
 
@@ -329,17 +364,17 @@ auto BaseNode::Builder<NodeType>::addPass(PassType passType,
     return *this;
 }
 
-template<typename NodeType>
+template<typename NodeConfig>
 template<size_t outputRefCount>
-auto BaseNode::Builder<NodeType>::addPass(PassType passType,
-                                          std::array<uint32_t, outputRefCount> const& colorAttachmentIndices,
-                                          uint32_t dstPassIndex,
-                                          VkPipelineStageFlags srcStageMask,
-                                          VkPipelineStageFlags dstStageMask,
-                                          VkAccessFlags srcAccessMask,
-                                          VkAccessFlags dstAccessMask,
-                                          bool writeDepth,
-                                          VkDependencyFlags dependencyFlags) -> Builder&
+auto BaseNode::Builder<NodeConfig>::addPass(PassType passType,
+                                            std::array<uint32_t, outputRefCount> const& colorAttachmentIndices,
+                                            uint32_t dstPassIndex,
+                                            VkPipelineStageFlags srcStageMask,
+                                            VkPipelineStageFlags dstStageMask,
+                                            VkAccessFlags srcAccessMask,
+                                            VkAccessFlags dstAccessMask,
+                                            bool writeDepth,
+                                            VkDependencyFlags dependencyFlags) -> Builder&
 {
     return addPass(passType,
                    std::array<uint32_t, 0>{},
@@ -354,8 +389,8 @@ auto BaseNode::Builder<NodeType>::addPass(PassType passType,
                    dependencyFlags);
 }
 
-template<typename NodeType>
-auto BaseNode::Builder<NodeType>::build() -> std::unique_ptr<NodeType>
+template<typename NodeConfig>
+auto BaseNode::Builder<NodeConfig>::build() -> Node<NodeConfig>
 {
     auto renderPassCreateInfo = VkRenderPassCreateInfo{};
     renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -401,7 +436,7 @@ auto BaseNode::Builder<NodeType>::build() -> std::unique_ptr<NodeType>
         if (writeDepth && depthFormat_ != VK_FORMAT_UNDEFINED) {
             auto depthRef = VkAttachmentReference{};
             depthRef.attachment = colorAttachmentCount; // depth always goes just after color
-            depthRef.layout = vulkan::internal::_getDepthStencilImageLayoutByFormat(depthFormat_);
+            depthRef.layout = getDepthStencilImageLayoutByFormat(depthFormat_);
 
             subPassDesc.pDepthStencilAttachment = &depthRef;
         }
@@ -452,7 +487,7 @@ auto BaseNode::Builder<NodeType>::build() -> std::unique_ptr<NodeType>
         attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachment.finalLayout = vulkan::internal::_getDepthStencilImageLayoutByFormat(depthFormat_);
+        attachment.finalLayout = getDepthStencilImageLayoutByFormat(depthFormat_);
 
         attachments.emplace_back(attachment);
     }
@@ -487,10 +522,10 @@ auto BaseNode::Builder<NodeType>::build() -> std::unique_ptr<NodeType>
         auto [format, semantic] = std::visit(
           [](auto& outputs) -> std::pair<VkFormat, RenderTargetOutputSemantic> {
               if constexpr (!std::is_same_v<std::decay_t<decltype(outputs)>, std::monostate>) {
-                  auto [format, tiling, semantic] = outputs[0];
-                  (void)tiling;
+                  auto [outputFormat, _, outputSemantic] = outputs[0];
+                  (void)_;
 
-                  return std::make_pair(format, semantic);
+                  return std::make_pair(outputFormat, outputSemantic);
               }
 
               return std::make_pair(VK_FORMAT_UNDEFINED, RenderTargetOutputSemantic::DEFAULT);
@@ -523,11 +558,11 @@ auto BaseNode::Builder<NodeType>::build() -> std::unique_ptr<NodeType>
         renderTarget_ = std::visit(
           [this](auto&& attachments) -> FrameBufferRenderTarget {
               if constexpr (!std::is_same_v<std::decay_t<decltype(attachments)>, std::monostate>) {
-                  return internal::_createFrameBufferRT(
+                  return _createFrameBufferRT(
                     *device_, static_cast<VkRenderPass>(vkRenderPass_), width_, height_, depthFormat_, attachments);
               }
 
-              return internal::_createFrameBufferRT(
+              return _createFrameBufferRT(
                 *device_,
                 static_cast<VkRenderPass>(vkRenderPass_),
                 width_,
@@ -540,11 +575,11 @@ auto BaseNode::Builder<NodeType>::build() -> std::unique_ptr<NodeType>
         frameBufferCount = 1;
     }
 
-    auto node = std::make_unique<NodeType>();
+    auto node = Node<NodeConfig>{};
 
     // signal semaphores
     {
-        auto&& signals = node->signalSemaphores_;
+        auto&& signals = node.signalSemaphores_;
 
         signals.reserve(frameBufferCount);
 
@@ -555,15 +590,15 @@ auto BaseNode::Builder<NodeType>::build() -> std::unique_ptr<NodeType>
             if (auto result = vkCreateSemaphore(device_->handle(),
                                                 &semaphoreCreateInfo,
                                                 nullptr,
-                                                &signals.emplace_back(device.handle(), vkDestroySemaphore));
+                                                &signals.emplace_back(device_->handle(), vkDestroySemaphore));
                 result != VK_SUCCESS) {
                 throw std::runtime_error("could not create image available semaphore.");
             }
         }
     }
 
-    node->vkRenderPass_ = std::move(vkRenderPass_);
-    node->renderTarget_ = std::move(renderTarget_);
+    node.vkRenderPass_ = std::move(vkRenderPass_);
+    node.renderTarget_ = std::move(renderTarget_);
 
     for (auto i = size_t{ 0 }, count = renderPasses_.size(); i < count; i++) {
         auto&& renderPass = renderPasses_[i];
@@ -572,18 +607,34 @@ auto BaseNode::Builder<NodeType>::build() -> std::unique_ptr<NodeType>
         (void)inputAttachmentIndices;
         (void)colorAttachmentIndices;
 
-        node->createPass(i, passType, device_, writeDepth, inputLinks_.size());
+        auto inputImageCount = uint32_t{ 0 };
+
+        for (auto&& input : inputLinks_) {
+            if (input.nodeIndex == std::numeric_limits<size_t>::max())
+                continue;
+
+            for (auto semanticIndex = size_t{ 0 }, semanticCount = value_cast(RenderTargetOutputSemantic::COUNT);
+                 semanticIndex < semanticCount;
+                 semanticIndex++) {
+                if (input.semantics[semanticIndex] != RenderTargetOutputSemantic::INVALID)
+                    inputImageCount++;
+            }
+        }
+
+        node._createPass(i, passType, device_, writeDepth, inputImageCount);
     }
+
+    node.publicSemanticBits_ = publicSemanticBits_;
 
     return node;
 }
 
-template<typename NodeType>
+template<typename NodeConfig>
 template<size_t candidateCount>
-auto BaseNode::Builder<NodeType>::_findSupportedFormat(std::array<VkFormat, candidateCount> const& candidates,
-                                                       VkPhysicalDevice physicalDevice,
-                                                       VkImageTiling requiredTiling,
-                                                       VkFormatFeatureFlags requiredFeatures) -> VkFormat
+auto BaseNode::Builder<NodeConfig>::_findSupportedFormat(std::array<VkFormat, candidateCount> const& candidates,
+                                                         VkPhysicalDevice physicalDevice,
+                                                         VkImageTiling requiredTiling,
+                                                         VkFormatFeatureFlags requiredFeatures) -> VkFormat
 {
     for (auto&& [candidate, _] : candidates) {
         (void)_;
@@ -603,8 +654,56 @@ auto BaseNode::Builder<NodeType>::_findSupportedFormat(std::array<VkFormat, cand
     throw std::runtime_error("could not find suitable format for render target");
 }
 
-template<typename NodeType>
-void BaseNode::Builder<NodeType>::_swapChainCreationErrorHandling(VkResult result)
+template<size_t... idx>
+static auto _get_output_images(
+  std::index_sequence<idx...>,
+  std::array<std::tuple<VkFormat, VkImageTiling, RenderTargetOutputSemantic>, sizeof...(idx)> const& properties)
+  -> std::array<std::variant<vulkan::ImagePtr, VkFormat>, sizeof...(idx)>
+{
+    return std::array<std::variant<vulkan::ImagePtr, VkFormat>, sizeof...(idx)>{
+        std::variant<vulkan::ImagePtr, VkFormat>{ std::get<0>(properties[idx]) }...
+    };
+}
+
+template<size_t... idx>
+static auto _get_output_semantics(
+  std::index_sequence<idx...>,
+  std::array<std::tuple<VkFormat, VkImageTiling, RenderTargetOutputSemantic>, sizeof...(idx)> const& properties)
+  -> std::array<RenderTargetOutputSemantic, sizeof...(idx)>
+{
+    return std::array<RenderTargetOutputSemantic, sizeof...(idx)>{ std::get<RenderTargetOutputSemantic>(
+      properties[idx])... };
+}
+
+template<typename NodeConfig>
+template<size_t count>
+auto BaseNode::Builder<NodeConfig>::_createFrameBufferRT(
+  vulkan::Device& device,
+  VkRenderPass vkRenderPass,
+  uint32_t width,
+  uint32_t height,
+  VkFormat depthStencilFormat,
+  std::array<std::tuple<VkFormat, VkImageTiling, RenderTargetOutputSemantic>, count> const& properties)
+  -> FrameBufferRenderTarget
+{
+    return (depthStencilFormat != VK_FORMAT_UNDEFINED)
+             ? FrameBufferRenderTarget{ device,
+                                        vkRenderPass,
+                                        width,
+                                        height,
+                                        depthStencilFormat,
+                                        _get_output_images(std::make_index_sequence<count>{}, properties),
+                                        _get_output_semantics(std::make_index_sequence<count>{}, properties) }
+             : FrameBufferRenderTarget{ device,
+                                        vkRenderPass,
+                                        width,
+                                        height,
+                                        _get_output_images(std::make_index_sequence<count>{}, properties),
+                                        _get_output_semantics(std::make_index_sequence<count>{}, properties) };
+}
+
+template<typename NodeConfig>
+void BaseNode::Builder<NodeConfig>::_swapChainCreationErrorHandling(VkResult result)
 {
     if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
         throw std::runtime_error("not enough RAM memory to create swap chain");

@@ -4,6 +4,7 @@
 
 #include "node.h"
 #include "shaders/shaderDefinitions.h"
+#include "vulkan/shaderModule.h"
 
 namespace cyclonite::compositor {
 void createPass(vulkan::Device& device,
@@ -91,13 +92,13 @@ void createPass(vulkan::Device& device,
         vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
         vertexShaderStageInfo.module = vertexShaderModule.handle();
-        vertexShaderStageInfo.pName = u8"main";
+        vertexShaderStageInfo.pName = "main";
 
         VkPipelineShaderStageCreateInfo fragmentShaderStageInfo = {};
         fragmentShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         fragmentShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
         fragmentShaderStageInfo.module = fragmentShaderModule.handle();
-        fragmentShaderStageInfo.pName = u8"main";
+        fragmentShaderStageInfo.pName = "main";
 
         std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = { vertexShaderStageInfo,
                                                                         fragmentShaderStageInfo };

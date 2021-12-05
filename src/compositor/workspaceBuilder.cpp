@@ -5,77 +5,73 @@
 #include "workspace.h"
 
 namespace cyclonite::compositor {
-static bool testDependency(BaseNode const& a, BaseNode const& b);
-
-static void writeNodeSignals(vulkan::Device const& device,
-                             std::vector<BaseNode> const& nodes,
-                             size_t index,
-                             std::vector<vulkan::Handle<VkSemaphore>>& toSignal,
-                             std::vector<VkSemaphore>& toWait,
-                             std::vector<uint32_t>& waitSignalsPerNode);
-
-Workspace::Builder::Builder(vulkan::Device& device)
+Workspace::Builder::Builder(vulkan::Device& device,
+                            uint8_t maxNodeCount /* = 10*/,
+                            size_t maxBytesPerNode /* = 64 * 1024*/)
   : device_{ &device }
+  , waitSemaphoresPerNodeCount_{}
   , nodeSignalSemaphores_{}
   , nodeWaitSemaphores_{}
-  , waitSemaphoresPerNodeCount_{}
+  , nodeCount_{ 0 }
+  , nodeStorage_{ maxNodeCount * maxBytesPerNode, std::byte{ 0 } }
+  , nodeSizes_{ maxNodeCount, size_t{ 0 } }
+  , nodeOffsets_{ maxNodeCount, size_t{ 0 } }
   , nodes_{}
-{}
-
-auto Workspace::Builder::build() -> Workspace {}
-
-static bool testDependency(BaseNode const& a, BaseNode const& b)
 {
-    auto const& inputs = a.getInputs();
-    auto const& outputs = b.getOutputs();
-
-    for (auto i = size_t{ 0 }, iCount = inputs.size(); i < iCount; i++) {
-        auto const& input = inputs.get(i);
-
-        for (auto j = size_t{ 0 }, jCount = inputs.size(); j < jCount; j++) {
-            auto const& output = outputs.get(j);
-
-            if (input == output)
-                return true;
-        }
-    }
-
-    return false;
+    nodes_.reserve(maxNodeCount);
 }
 
-static void writeNodeSignals(vulkan::Device const& device,
-                             std::vector<BaseNode> const& nodes,
-                             size_t index,
-                             std::vector<vulkan::Handle<VkSemaphore>>& toSignal,
-                             std::vector<VkSemaphore>& toWait,
-                             std::vector<uint32_t>& waitSignalsPerNode)
+auto Workspace::Builder::allocateNode(size_t size) -> void*
 {
-    assert(index < nodes.size());
+    auto offset = (nodeCount_ > 0) ? (nodeOffsets_[nodeCount_ - 1] + nodeSizes_[nodeCount_ - 1]) : size_t{ 0 };
 
-    auto const& node = nodes[index];
+    auto align = size_t{ 64 };
+    auto alignedSize = size + (((size % align) > 0) ? (align - (size % align)) : size_t{ 0 });
 
-    {
-        auto semaphoreCreateInfo = VkSemaphoreCreateInfo{};
-        semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    nodeSizes_[nodeCount_] = alignedSize;
+    nodeOffsets_[nodeCount_] = offset;
 
-        if (auto result = vkCreateSemaphore(device.handle(),
-                                            &semaphoreCreateInfo,
-                                            nullptr,
-                                            &toSignal.emplace_back(device.handle(), vkDestroySemaphore));
-            result != VK_SUCCESS) {
-            throw std::runtime_error("could not create node signal semaphore.");
+    nodeCount_++;
+
+    return nodeStorage_.data() + offset;
+}
+
+auto Workspace::Builder::build() -> Workspace
+{
+    Workspace workspace{};
+
+    workspace.nodeCount_ = nodeCount_;
+
+    [[maybe_unused]] auto const* storageBase = nodeStorage_.data();
+    workspace.nodeStorage_ = std::move(nodeStorage_);
+    assert(workspace.nodeStorage_.data() == storageBase);
+
+    workspace.nodes_ = std::move(nodes_);
+
+    uint32_t waitSemaphoreCount = 0;
+
+    for (auto const& node : workspace.nodes_) {
+        for (auto const& [nodeIndex, _a, _b] : (*node).getInputs()) {
+            (void)_a;
+            (void)_b;
+
+            if (nodeIndex == std::numeric_limits<size_t>::max())
+                continue;
+
+            waitSemaphoreCount++; // waiting for previous node
         }
+
+        waitSemaphoreCount += node.getExpectedWaitSignalCount();
     }
 
-    auto& waitSemaphoresCount = waitSignalsPerNode.emplace_back(0);
+    workspace.nodeWaitSemaphores_.resize(waitSemaphoreCount, VK_NULL_HANDLE);
+    workspace.nodeDstStageMasks_.resize(waitSemaphoreCount, VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM);
 
-    for (auto i = size_t{ 0 }, count = nodes.size(); i < count; i++) {
-        auto const& n = nodes[i];
+    workspace.nodeSignalSemaphores_.resize(workspace.nodes_.size(), VK_NULL_HANDLE);
 
-        if (testDependency(node, n)) {
-            toWait.emplace_back(static_cast<VkSemaphore>(toSignal[i]));
-            waitSemaphoresCount++;
-        }
-    }
+    /*workspace.submits_.resize(nodes.size(), VkSubmitInfo{});
+     */
+
+    return workspace;
 }
 }
