@@ -8,14 +8,18 @@
 #include "vulkan/frameBuffer.h"
 
 namespace cyclonite {
-enum class RenderTargetOutputSemantic
+enum class RenderTargetOutputSemantic : size_t
 {
     UNDEFINED = 0,
     DEFAULT = 1,
-    LINEAR_HDR_COLOR = 2,
+    VIEW_SPACE_NORMALS = 2,
+    ALBEDO = 3,
+    LINEAR_HDR_COLOR = 4,
+    FINAL_SRGB_COLOR = 6,
     MIN_VALUE = UNDEFINED,
-    MAX_VALUE = LINEAR_HDR_COLOR,
-    COUNT = MAX_VALUE + 1
+    MAX_VALUE = FINAL_SRGB_COLOR,
+    COUNT = MAX_VALUE + 1,
+    INVALID = COUNT
 };
 
 class BaseRenderTarget
@@ -52,7 +56,13 @@ public:
 
     [[nodiscard]] auto frameBuffers() const -> std::vector<vulkan::FrameBuffer> const& { return frameBuffers_; }
 
+    [[nodiscard]] auto frameBuffer(size_t bufferIndex) const -> vulkan::FrameBuffer const&;
+
+    [[nodiscard]] auto getAttachmentIndex(RenderTargetOutputSemantic semantic) const -> size_t;
+
     [[nodiscard]] auto colorAttachmentCount() const -> size_t { return colorAttachmentCount_; }
+
+    [[nodiscard]] auto clearValues() const -> std::vector<VkClearValue> const& { return clearValues_; }
 
 private:
     VkExtent2D extent_;
@@ -60,6 +70,7 @@ private:
 
 protected:
     size_t colorAttachmentCount_;
+    std::vector<VkClearValue> clearValues_;
     std::vector<vulkan::FrameBuffer> frameBuffers_;
     std::unordered_map<RenderTargetOutputSemantic, size_t> outputSemantics_;
 };
