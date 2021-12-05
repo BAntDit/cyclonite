@@ -54,7 +54,7 @@ public:
 
     auto operator=(Handle const& rhs) -> Handle& = delete;
 
-    auto operator=(Handle&& rhs) -> Handle&
+    auto operator=(Handle&& rhs) noexcept -> Handle&
     {
         reset();
 
