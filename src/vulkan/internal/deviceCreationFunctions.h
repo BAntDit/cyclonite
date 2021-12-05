@@ -15,25 +15,25 @@ static auto getVendorName(VkPhysicalDeviceProperties const& physicalDeviceProper
 
     switch (physicalDeviceProperties.vendorID) {
         case 0x1002:
-            result = u8"AMD";
+            result = "AMD";
             break;
         case 0x1010:
-            result = u8"ImgTec";
+            result = "ImgTec";
             break;
         case 0x10DE:
-            result = u8"NVIDIA";
+            result = "NVIDIA";
             break;
         case 0x13B5:
-            result = u8"ARM";
+            result = "ARM";
             break;
         case 0x5143:
-            result = u8"Qualcomm";
+            result = "Qualcomm";
             break;
         case 0x8086:
-            result = u8"INTEL";
+            result = "INTEL";
             break;
         default:
-            result = u8"unknown";
+            result = "unknown";
     }
 
     return result;
