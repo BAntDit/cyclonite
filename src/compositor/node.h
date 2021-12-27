@@ -128,6 +128,8 @@ template<typename Config>
 auto Node<Config>::begin(vulkan::Device& device, uint64_t frameNumber, VkFence frameFence /* = VK_NULL_HANDLE*/)
   -> std::pair<VkSemaphore, size_t>
 {
+    (void)frameFence;
+
     VkSemaphore waitSemaphore = VK_NULL_HANDLE;
 
     if constexpr (!is_surface_node) {
@@ -162,13 +164,7 @@ auto Node<Config>::begin(vulkan::Device& device, uint64_t frameNumber, VkFence f
     return std::make_pair(waitSemaphore, commandsIndex_);
 }
 
-template<typename Config> // TODO:: make pointers const - nobody can change em anyway
-void Node<Config>::update(uint32_t& signalCount, VkSemaphore* baseSignal, VkPipelineStageFlags* baseFlag)
-{
-    systems_->update(this, std::as_const(this)->cameraEntity(), signalCount, baseSignal, baseFlag);
-}
-
-static void createPass(vulkan::Device& device,
+inline void createPass(vulkan::Device& device,
                        uint32_t subPassIndex,
                        bool depthStencilRequired,
                        VkRenderPass renderPass,
@@ -182,6 +178,12 @@ static void createPass(vulkan::Device& device,
                        vulkan::Handle<VkPipelineLayout>& outPipelineLayout,
                        vulkan::Handle<VkPipeline>& outPipeline);
 
+template<typename Config> // TODO:: make pointers const - nobody can change em anyway
+void Node<Config>::update(uint32_t& signalCount, VkSemaphore* baseSignal, VkPipelineStageFlags* baseFlag)
+{
+    systems_.update(this, std::as_const(*this).cameraEntity(), signalCount, baseSignal, baseFlag);
+}
+
 template<typename Config>
 void Node<Config>::_createPass(uint32_t subPassIndex,
                                PassType passType,
@@ -192,8 +194,10 @@ void Node<Config>::_createPass(uint32_t subPassIndex,
     auto [width, height, bufferCount] = std::visit(
       [](auto&& rt) -> std::tuple<uint32_t, uint32_t, uint32_t> {
           if constexpr (!std::is_same_v<std::decay_t<decltype(rt)>, std::monostate>) {
-              return std::make_tuple(rt->width(), rt->height(), rt->frameBufferCount());
+              return std::make_tuple(rt.width(), rt.height(), rt.frameBufferCount());
           }
+
+          std::terminate();
       },
       renderTarget_);
 
@@ -220,6 +224,68 @@ auto Node<Config>::isSurfaceNode() -> bool
     return is_surface_node;
 }
 
+namespace details {
+template<uint64_t Id, typename T, typename... Ts>
+struct get_type_id;
+
+template<uint64_t Id, typename T, typename... Ts>
+struct get_type_id<Id, T, T, Ts...>
+{
+    static constexpr uint64_t id_v = Id;
+};
+
+template<uint64_t Id, typename T, typename Head, typename... Ts>
+struct get_type_id<Id, T, Head, Ts...>
+{
+    static constexpr uint64_t id_v = get_type_id<Id + 1, T, Ts...>::id_v;
+};
+
+template<uint64_t Id, typename T>
+struct get_type_id<Id, T>
+{
+    static constexpr uint64_t id_v = std::numeric_limits<uint64_t>::max();
+};
+
+template<uint64_t Id, typename... Ts>
+struct get_node_type;
+
+template<typename Head, typename... Ts>
+struct get_node_type<0, Head, Ts...>
+{
+    using type_t = Head;
+};
+
+template<uint64_t Id, typename Head, typename... Ts>
+struct get_node_type<Id, Head, Ts...>
+{
+    static_assert(Id < (sizeof...(Ts) + 1));
+    using type_t = get_node_type<Id - 1, Ts...>;
+};
+}
+
+template<typename... NodeTypes>
+struct node_type_register
+{
+    template<typename NodeConfig>
+    using node_key_t = easy_mp::type_pair<
+      Node<NodeConfig>,
+      std::integral_constant<uint64_t, details::get_type_id<0, Node<NodeConfig>, NodeTypes...>::id_v>>;
+
+    template<typename NodeConfig>
+    static constexpr auto get_config_type_id() -> uint64_t
+    {
+        return details::get_type_id<0, Node<NodeConfig>, NodeTypes...>::id_v;
+    }
+
+    template<typename NodeType>
+    static constexpr auto get_node_type_id() -> uint64_t
+    {
+        return details::get_type_id<0, NodeType, NodeTypes...>::id_v;
+    }
+
+    template<uint64_t Id>
+    using node_type_t = typename details::get_node_type<Id, NodeTypes...>::type_t;
+};
 }
 
 #endif // CYCLONITE_NODE_H
