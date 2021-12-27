@@ -1,7 +1,7 @@
 //
 // Created by bantdit on 1/7/20.
 //
-
+#pragma once
 #ifndef CYCLONITE_BASERENDERTARGET_H
 #define CYCLONITE_BASERENDERTARGET_H
 

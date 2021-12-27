@@ -11,12 +11,15 @@ namespace cyclonite {
 class FrameBufferRenderTarget : public BaseRenderTarget
 {
 public:
+    using framebuffer_attachment_t = std::variant<vulkan::ImagePtr, VkFormat>;
+
+public:
     template<size_t count>
     FrameBufferRenderTarget(vulkan::Device& device,
                             VkRenderPass vkRenderPass,
                             uint32_t width,
                             uint32_t height,
-                            std::array<std::variant<vulkan::ImagePtr, VkFormat>, count> const& images,
+                            std::array<framebuffer_attachment_t, count> const& images,
                             std::array<RenderTargetOutputSemantic, count> const& semantics);
 
     template<size_t count>
@@ -24,9 +27,16 @@ public:
                             VkRenderPass vkRenderPass,
                             uint32_t width,
                             uint32_t height,
-                            std::variant<VkFormat, vulkan::ImagePtr> const& depthStencil,
-                            std::array<std::variant<vulkan::ImagePtr, VkFormat>, count> const& images,
+                            framebuffer_attachment_t const& depthStencil,
+                            std::array<framebuffer_attachment_t, count> const& images,
                             std::array<RenderTargetOutputSemantic, count> const& semantics);
+
+    FrameBufferRenderTarget(vulkan::Device& device,
+                            VkRenderPass vkRenderPass,
+                            uint32_t width,
+                            uint32_t height,
+                            size_t bufferCount,
+                            framebuffer_attachment_t const& depthStencil);
 
     FrameBufferRenderTarget(FrameBufferRenderTarget const&) = delete;
 
@@ -47,7 +57,7 @@ private:
 inline auto getImageView(vulkan::Device& device,
                          [[maybe_unused]] uint32_t width,
                          [[maybe_unused]] uint32_t height,
-                         std::variant<VkFormat, vulkan::ImagePtr> const& image,
+                         FrameBufferRenderTarget::framebuffer_attachment_t const& image,
                          VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) -> vulkan::ImageView
 {
     return std::visit(
@@ -68,12 +78,13 @@ inline auto getImageView(vulkan::Device& device,
 }
 
 template<size_t... idx>
-inline auto getColorAttachments(std::index_sequence<idx...>,
-                                vulkan::Device& device,
-                                uint32_t width,
-                                uint32_t height,
-                                size_t offset,
-                                std::array<std::variant<VkFormat, vulkan::ImagePtr>, sizeof...(idx)> const& outputs)
+inline auto getColorAttachments(
+  std::index_sequence<idx...>,
+  vulkan::Device& device,
+  uint32_t width,
+  uint32_t height,
+  size_t offset,
+  std::array<FrameBufferRenderTarget::framebuffer_attachment_t, sizeof...(idx)> const& outputs)
   -> std::array<vulkan::ImageView, sizeof...(idx)>
 {
     return std::array{ (getImageView(device,
@@ -85,15 +96,16 @@ inline auto getColorAttachments(std::index_sequence<idx...>,
 }
 
 template<size_t count>
-FrameBufferRenderTarget::FrameBufferRenderTarget(
-  vulkan::Device& device,
-  VkRenderPass vkRenderPass,
-  uint32_t width,
-  uint32_t height,
-  std::array<std::variant<vulkan::ImagePtr, VkFormat>, count> const& images,
-  std::array<RenderTargetOutputSemantic, count> const& semantics)
+FrameBufferRenderTarget::FrameBufferRenderTarget(vulkan::Device& device,
+                                                 VkRenderPass vkRenderPass,
+                                                 uint32_t width,
+                                                 uint32_t height,
+                                                 std::array<framebuffer_attachment_t, count> const& images,
+                                                 std::array<RenderTargetOutputSemantic, count> const& semantics)
   : BaseRenderTarget(width, height, count)
 {
+    static_assert(count > 0);
+
     assert(images.size() % count == 0);
 
     auto bufferCount = images.size() / count;
@@ -116,16 +128,17 @@ FrameBufferRenderTarget::FrameBufferRenderTarget(
 }
 
 template<size_t count>
-FrameBufferRenderTarget::FrameBufferRenderTarget(
-  vulkan::Device& device,
-  VkRenderPass vkRenderPass,
-  uint32_t width,
-  uint32_t height,
-  std::variant<VkFormat, vulkan::ImagePtr> const& depthStencil,
-  std::array<std::variant<vulkan::ImagePtr, VkFormat>, count> const& images,
-  std::array<RenderTargetOutputSemantic, count> const& semantics)
+FrameBufferRenderTarget::FrameBufferRenderTarget(vulkan::Device& device,
+                                                 VkRenderPass vkRenderPass,
+                                                 uint32_t width,
+                                                 uint32_t height,
+                                                 framebuffer_attachment_t const& depthStencil,
+                                                 std::array<framebuffer_attachment_t, count> const& images,
+                                                 std::array<RenderTargetOutputSemantic, count> const& semantics)
   : BaseRenderTarget(width, height, count, true)
 {
+    static_assert(count > 0);
+
     assert(images.size() % count == 0);
 
     auto bufferCount = images.size() / count;
