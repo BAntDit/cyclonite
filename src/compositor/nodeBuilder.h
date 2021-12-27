@@ -9,9 +9,7 @@
 #include <utility>
 
 namespace cyclonite::compositor {
-namespace {
-auto getDepthStencilImageLayoutByFormat(VkFormat format) -> VkImageLayout;
-}
+inline auto getDepthStencilImageLayoutByFormat(VkFormat format) -> VkImageLayout;
 
 template<typename NodeConfig>
 class BaseNode::Builder
@@ -19,7 +17,7 @@ class BaseNode::Builder
 public:
     Builder(vulkan::Device& device);
 
-    void setOutputResolution(uint16_t width, uint16_t height);
+    auto setOutputResolution(uint16_t width, uint16_t height) -> Builder&;
 
     template<size_t inputLinkCount>
     auto createInputLinks() -> Builder&;
@@ -34,7 +32,8 @@ public:
                                                              Tiling> &&) -> Builder&;
 
     template<typename... RenderTargetColorOutput>
-    auto setRenderTargetColorProperties(RenderTargetColorOutput&&... colorOutput) -> Builder&;
+    auto setRenderTargetColorProperties(RenderTargetColorOutput&&...)
+      -> std::enable_if_t<(sizeof...(RenderTargetColorOutput) > 0), Builder&>;
 
     template<VkColorSpaceKHR... colorSpaceCandidate, VkPresentModeKHR... presentModeCandidate>
     auto setSurface(WindowProperties&& windowProperties,
@@ -126,10 +125,12 @@ BaseNode::Builder<NodeConfig>::Builder(vulkan::Device& device)
 {}
 
 template<typename NodeConfig>
-void BaseNode::Builder<NodeConfig>::setOutputResolution(uint16_t width, uint16_t height)
+auto BaseNode::Builder<NodeConfig>::setOutputResolution(uint16_t width, uint16_t height) -> Builder&
 {
     width_ = width;
     height_ = height;
+
+    return *this;
 }
 
 template<typename NodeConfig>
@@ -184,7 +185,8 @@ auto BaseNode::Builder<NodeConfig>::setRenderTargetDepthProperties(
 
 template<typename NodeConfig>
 template<typename... RenderTargetColorOutput>
-auto BaseNode::Builder<NodeConfig>::setRenderTargetColorProperties(RenderTargetColorOutput&&... colorOutput) -> Builder&
+auto BaseNode::Builder<NodeConfig>::setRenderTargetColorProperties(RenderTargetColorOutput&&...)
+  -> std::enable_if_t<(sizeof...(RenderTargetColorOutput) > 0), Builder&>
 {
     colorOutputs_ = std::array{ std::make_tuple(_findSupportedFormat(RenderTargetColorOutput::format_candidate_array_v,
                                                                      device_->physicalDevice(),
@@ -224,7 +226,7 @@ auto BaseNode::Builder<NodeConfig>::setSurface(
 
     auto&& [requiredFormat, requiredTiling] = std::visit(
       [](auto&& outputs) -> std::pair<VkFormat, VkImageTiling> {
-          if (!std::is_same_v<std::decay_t<decltype(outputs)>, std::monostate>) {
+          if constexpr (!std::is_same_v<std::decay_t<decltype(outputs)>, std::monostate>) {
               auto&& [desiredFormat, desiredTiling, _] = outputs[0];
               (void)_;
               return std::make_pair(desiredFormat, desiredTiling);
@@ -340,7 +342,7 @@ auto BaseNode::Builder<NodeConfig>::addPass(PassType passType,
     using input_refs_t =
       std::conditional_t<inputRefCount != 0, std::array<VkAttachmentReference, inputRefCount>, std::monostate>;
     using output_refs_t =
-      std::conditional_t<inputRefCount != 0, std::array<VkAttachmentReference, outputRefCount>, std::monostate>;
+      std::conditional_t<outputRefCount != 0, std::array<VkAttachmentReference, outputRefCount>, std::monostate>;
 
     auto inputRefs = input_refs_t{};
     auto outputRefs = output_refs_t{};
@@ -416,7 +418,7 @@ auto BaseNode::Builder<NodeConfig>::build() -> Node<NodeConfig>
         subPassDesc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
         std::visit(
-          [&](auto& inputs) -> std::vector<VkAttachmentReference> {
+          [&](auto& inputs) -> void {
               if constexpr (!std::is_same_v<std::decay_t<decltype(inputs)>, std::monostate>) {
                   subPassDesc.inputAttachmentCount = inputs.size();
                   subPassDesc.pInputAttachments = inputs.data();
@@ -425,7 +427,7 @@ auto BaseNode::Builder<NodeConfig>::build() -> Node<NodeConfig>
           inputAttachmentIndices);
 
         std::visit(
-          [&](auto& outputs) -> std::vector<VkAttachmentReference> {
+          [&](auto& outputs) -> void {
               if constexpr (!std::is_same_v<std::decay_t<decltype(outputs)>, std::monostate>) {
                   subPassDesc.colorAttachmentCount = outputs.size();
                   subPassDesc.pColorAttachments = outputs.data();
@@ -554,25 +556,21 @@ auto BaseNode::Builder<NodeConfig>::build() -> Node<NodeConfig>
             renderTarget_ = std::move(rt);
         }
     } else {
+        frameBufferCount = 1;
+
         // and for now - no render to mips / no grab passes
         renderTarget_ = std::visit(
-          [this](auto&& attachments) -> FrameBufferRenderTarget {
+          [frameBufferCount, this](auto&& attachments) -> FrameBufferRenderTarget {
               if constexpr (!std::is_same_v<std::decay_t<decltype(attachments)>, std::monostate>) {
                   return _createFrameBufferRT(
                     *device_, static_cast<VkRenderPass>(vkRenderPass_), width_, height_, depthFormat_, attachments);
               }
 
-              return _createFrameBufferRT(
-                *device_,
-                static_cast<VkRenderPass>(vkRenderPass_),
-                width_,
-                height_,
-                depthFormat_,
-                std::array<std::tuple<VkFormat, VkImageTiling, RenderTargetOutputSemantic>, 0>{});
+              return FrameBufferRenderTarget{ *device_,         static_cast<VkRenderPass>(vkRenderPass_),
+                                              width_,           height_,
+                                              frameBufferCount, depthFormat_ };
           },
           colorOutputs_);
-
-        frameBufferCount = 1;
     }
 
     auto node = Node<NodeConfig>{};
@@ -621,7 +619,7 @@ auto BaseNode::Builder<NodeConfig>::build() -> Node<NodeConfig>
             }
         }
 
-        node._createPass(i, passType, device_, writeDepth, inputImageCount);
+        node._createPass(i, passType, *device_, writeDepth, inputImageCount);
     }
 
     node.publicSemanticBits_ = publicSemanticBits_;
@@ -636,9 +634,7 @@ auto BaseNode::Builder<NodeConfig>::_findSupportedFormat(std::array<VkFormat, ca
                                                          VkImageTiling requiredTiling,
                                                          VkFormatFeatureFlags requiredFeatures) -> VkFormat
 {
-    for (auto&& [candidate, _] : candidates) {
-        (void)_;
-
+    for (auto&& candidate : candidates) {
         VkFormatProperties formatProperties = {};
         vkGetPhysicalDeviceFormatProperties(physicalDevice, candidate, &formatProperties);
 
@@ -661,7 +657,7 @@ static auto _get_output_images(
   -> std::array<std::variant<vulkan::ImagePtr, VkFormat>, sizeof...(idx)>
 {
     return std::array<std::variant<vulkan::ImagePtr, VkFormat>, sizeof...(idx)>{
-        std::variant<vulkan::ImagePtr, VkFormat>{ std::get<0>(properties[idx]) }...
+        FrameBufferRenderTarget::framebuffer_attachment_t{ std::get<0>(properties[idx]) }...
     };
 }
 
