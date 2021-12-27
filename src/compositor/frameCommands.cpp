@@ -54,6 +54,49 @@ FrameCommands::FrameCommands(size_t swapChainIndex) noexcept
     swapChainIndex_ = swapChainIndex;
 }
 
+void FrameCommands::setIndexBuffer(VkQueue graphicQueue, std::shared_ptr<vulkan::Buffer> const& indices)
+{
+    if (indices_ != indices) {
+        _resetCommands(graphicQueue);
+        indices_ = indices;
+    }
+}
+
+void FrameCommands::setVertexBuffer(VkQueue graphicQueue, std::shared_ptr<vulkan::Buffer> const& vertices)
+{
+    if (vertices_ != vertices) {
+        _resetCommands(graphicQueue);
+        vertices_ = vertices;
+    }
+}
+
+void FrameCommands::setInstanceBuffer(VkQueue graphicQueue, std::shared_ptr<vulkan::Buffer> const& instances)
+{
+    if (instances_ != instances) {
+        _resetCommands(graphicQueue);
+        instances_ = instances;
+    }
+}
+
+void FrameCommands::setCommandBuffer(VkQueue graphicQueue,
+                                     std::shared_ptr<vulkan::Buffer> const& commands,
+                                     uint32_t commandCount)
+{
+    if (commands != commands_) {
+        _resetCommands(graphicQueue);
+        commands_ = commands;
+        commandCount_ = commandCount;
+    }
+}
+
+void FrameCommands::setUniformBuffer(VkQueue graphicQueue, std::shared_ptr<vulkan::Buffer> const& uniforms)
+{
+    if (uniforms_ != uniforms) {
+        _resetCommands(graphicQueue);
+        uniforms_ = uniforms;
+    }
+}
+
 void FrameCommands::update(vulkan::Device& device,
                            BaseRenderTarget const& renderTarget,
                            VkRenderPass vkRenderPass,
@@ -241,5 +284,26 @@ void FrameCommands::update(vulkan::Device& device,
               }
           }));
     } // graphics commands
+}
+
+void FrameCommands::_resetCommands(VkQueue graphicQueue)
+{
+    if (graphicsCommands_) {
+        if (auto result = vkQueueWaitIdle(graphicQueue); result != VK_SUCCESS) {
+            if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
+                throw std::runtime_error("could not wait until graphics queue gets idle, out of host memory");
+            }
+
+            if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+                throw std::runtime_error("could not wait until graphics queue gets idle, out of device memory");
+            }
+
+            if (result == VK_ERROR_DEVICE_LOST) {
+                throw std::runtime_error("could not wait until graphics queue gets idle, device lost");
+            }
+        }
+
+        graphicsCommands_.reset(nullptr);
+    }
 }
 }
