@@ -18,6 +18,7 @@ void MeshSystem::init(vulkan::Device& device,
     commandCount_ = 0;
 
     vkTransferQueue_ = device.hostTransferQueue();
+    vkGraphicQueue_ = device.graphicsQueue();
 
     commands_.reserve(initialCommandCapacity);
 

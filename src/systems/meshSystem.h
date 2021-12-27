@@ -72,6 +72,7 @@ private:
 private:
     vulkan::Device* devicePtr_;
     VkQueue vkTransferQueue_;
+    VkQueue vkGraphicQueue_;
 
     std::vector<VkDrawIndexedIndirectCommand> commands_;
     std::unique_ptr<vulkan::Staging> commandBuffer_;
@@ -215,13 +216,13 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
         auto&& [node, cameraEntity, signalCount, baseSignal, baseMask] =
           std::forward_as_tuple(std::forward<Args>(args)...);
 
-        auto& frame = node.getCurrentFrame(*devicePtr_);
-        auto idx = (*node).commandsIndex();
+        auto& frame = node->getCurrentFrame(*devicePtr_);
+        auto idx = (*node).commandIndex();
 
-        auto const signal = std::as_const(transferSemaphores_[idx]);
+        auto const& signal = std::as_const(transferSemaphores_[idx]);
         auto commandBufferCount = verticesUpdateRequired_ ? uint32_t{ 3 } : uint32_t{ 2 };
 
-        *(baseSignal + signalCount) = signal;
+        *(baseSignal + signalCount) = static_cast<VkSemaphore>(signal);
         *(baseMask + signalCount) = VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
         signalCount++;
 
@@ -230,16 +231,16 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
         submitInfo.commandBufferCount = commandBufferCount;
         submitInfo.pCommandBuffers = transferCommands_->pCommandBuffers();
         submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signal;
+        submitInfo.pSignalSemaphores = &signal;
 
         if (auto result = vkQueueSubmit(vkTransferQueue_, 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS) {
             throw std::runtime_error("mesh system data could not be transferred");
         }
 
-        frame.setIndexBuffer(gpuIndexBuffer_);
-        frame.setVertexBuffer(gpuVertexBuffer_);
-        frame.setInstanceBuffer(gpuInstancedDataBuffer_);
-        frame.setCommandBuffer(gpuCommandBuffer_, commandCount_);
+        frame.setIndexBuffer(devicePtr_->graphicsQueue(), gpuIndexBuffer_);
+        frame.setVertexBuffer(devicePtr_->graphicsQueue(), gpuVertexBuffer_);
+        frame.setInstanceBuffer(devicePtr_->graphicsQueue(), gpuInstancedDataBuffer_);
+        frame.setCommandBuffer(devicePtr_->graphicsQueue(), gpuCommandBuffer_, commandCount_);
     }
 
     (void)systemManager;

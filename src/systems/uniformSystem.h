@@ -48,7 +48,7 @@ public:
     void setViewProjectionMatrix(mat4& viewProjMatrix);
 
 private:
-    VkDevice vkDevice_;
+    vulkan::Device* devicePtr_;
     VkQueue vkTransferQueue_;
     std::unique_ptr<vulkan::Staging> uniforms_;
     std::shared_ptr<vulkan::Buffer> gpuUniforms_;
@@ -62,30 +62,34 @@ void UniformSystem::update(SystemManager& systemManager, EntityManager& entityMa
     using namespace easy_mp;
 
     (void)entityManager;
+    (void)systemManager;
 
     ((void)args, ...);
 
     if constexpr (STAGE == value_cast(UpdateStage::TRANSFER_STAGE)) {
-        auto& renderSystem = systemManager.template get<RenderSystem>();
-        auto& renderPass = renderSystem.renderPass();
-        auto& frame = renderPass.frame();
-        auto idx = renderPass.commandsIndex();
-        auto const* signal = &std::as_const(transferSemaphores_[idx]);
+        auto&& [node, cameraEntity, signalCount, baseSignal, baseMask] =
+          std::forward_as_tuple(std::forward<Args>(args)...);
 
-        frame.addWaitSemaphore(*signal, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT);
+        auto& frame = node->getCurrentFrame(*devicePtr_);
+        auto idx = (*node).commandIndex();
+        auto const& signal = std::as_const(transferSemaphores_[idx]);
+
+        *(baseSignal + signalCount) = static_cast<VkSemaphore>(signal);
+        *(baseMask + signalCount) = VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+        signalCount++;
 
         VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.commandBufferCount = transferCommands_->commandBufferCount();
         submitInfo.pCommandBuffers = transferCommands_->pCommandBuffers();
         submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signal;
+        submitInfo.pSignalSemaphores = &signal;
 
         if (auto result = vkQueueSubmit(vkTransferQueue_, 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS) {
             throw std::runtime_error("could not transfer uniforms");
         }
 
-        frame.setUniformBuffer(gpuUniforms_);
+        frame.setUniformBuffer(devicePtr_->graphicsQueue(), gpuUniforms_);
     }
 }
 }

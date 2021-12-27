@@ -67,9 +67,6 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
         (void)baseSignal;
         (void)baseMask;
 
-        auto& uniformSystem = systemManager.template get<UniformSystem>();
-        auto const& transformSystem = std::as_const(systemManager).template get<TransformSystem>();
-
         auto [transform, camera] =
           std::as_const(entityManager).template getComponents<components::Transform, components::Camera>(cameraEntity);
 
@@ -110,6 +107,8 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
           camera->projection);
 
         auto viewProjectionMatrix = glm::transpose(projectionMatrix) * viewMatrix; // ?? transpose two times
+
+        auto& uniformSystem = systemManager.template get<UniformSystem>();
 
         uniformSystem.setViewMatrix(viewMatrix);
 
