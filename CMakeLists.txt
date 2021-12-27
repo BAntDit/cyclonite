@@ -123,6 +123,7 @@ set(SOURCES
     src/vulkan/imageView.cpp
     src/vulkan/buffer.cpp
     src/vulkan/staging.cpp
+    src/vulkan/frameBuffer.cpp
     src/multithreading/taskManager.cpp
     src/shaders/shaderDefinitions.cpp
 )
