@@ -19,6 +19,7 @@ Workspace::Builder::Builder(vulkan::Device& device,
   , nodes_{}
 {
     nodes_.reserve(maxNodeCount);
+    nodeTypeIds_.reserve(maxNodeCount);
 }
 
 auto Workspace::Builder::allocateNode(size_t size) -> void*
@@ -47,6 +48,7 @@ auto Workspace::Builder::build() -> Workspace
     assert(workspace.nodeStorage_.data() == storageBase);
 
     workspace.nodes_ = std::move(nodes_);
+    workspace.nodeTypeIds_ = std::move(nodeTypeIds_);
 
     uint32_t waitSemaphoreCount = 0;
 
