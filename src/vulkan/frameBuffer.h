@@ -61,6 +61,12 @@ public:
                 uint32_t height,
                 std::array<vulkan::ImageView, colorAttachmentsCount>&& attachments);
 
+    FrameBuffer(vulkan::Device const& device,
+                VkRenderPass vkRenderPass,
+                uint32_t width,
+                uint32_t height,
+                vulkan::ImageView&& depthStencilAttachment);
+
     FrameBuffer(FrameBuffer const&) = delete;
 
     FrameBuffer(FrameBuffer&&) = default;
@@ -132,7 +138,7 @@ FrameBuffer::FrameBuffer(vulkan::Device const& device,
     else
         vkAttachments = std::array<VkImageView, colorAttachmentsCount>{};
 
-    VkFramebufferCreateInfo framebufferInfo = {};
+    auto framebufferInfo = VkFramebufferCreateInfo{};
 
     framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebufferInfo.renderPass = vkRenderPass;
@@ -142,8 +148,10 @@ FrameBuffer::FrameBuffer(vulkan::Device const& device,
 
     std::visit(
       [this, &framebufferInfo](auto& array) -> void {
-          for (size_t i = 0; i < colorAttachmentsCount; i++) {
-              array[i] = attachment_list_traits::get_attachment(colorAttachments_, i).handle();
+          if constexpr (colorAttachmentsCount > 0) {
+              for (size_t i = 0; i < colorAttachmentsCount; i++) {
+                  array[i] = attachment_list_traits::get_attachment(colorAttachments_, i).handle();
+              }
           }
 
           if (array.size() > colorAttachmentsCount) {
