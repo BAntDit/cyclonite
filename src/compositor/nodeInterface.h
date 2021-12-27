@@ -58,6 +58,10 @@ public:
 
     [[nodiscard]] auto operator*() const -> BaseNode const&;
 
+    auto getRawPtr() -> void* { return node_; }
+
+    [[nodiscard]] auto getRawPtr() const -> void const* { return node_; }
+
 private:
     void* node_;
     make_expired_func_t makeExpired_;
