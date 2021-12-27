@@ -31,7 +31,19 @@ public:
                 PassIterator const& begin,
                 PassIterator const& end);
 
+    void setIndexBuffer(VkQueue graphicQueue, std::shared_ptr<vulkan::Buffer> const& indices);
+
+    void setVertexBuffer(VkQueue graphicQueue, std::shared_ptr<vulkan::Buffer> const& vertices);
+
+    void setInstanceBuffer(VkQueue graphicQueue, std::shared_ptr<vulkan::Buffer> const& instances);
+
+    void setCommandBuffer(VkQueue graphicQueue, std::shared_ptr<vulkan::Buffer> const& commands, uint32_t commandCount);
+
+    void setUniformBuffer(VkQueue graphicQueue, std::shared_ptr<vulkan::Buffer> const& uniforms);
+
 private:
+    void _resetCommands(VkQueue graphicQueue);
+
     using graphics_queue_commands_t = vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>;
 
     size_t swapChainIndex_ = 0;
