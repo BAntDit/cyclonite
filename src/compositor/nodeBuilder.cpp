@@ -6,7 +6,7 @@
 #include "vulkan/internal/imageHelpers.h"
 
 namespace cyclonite::compositor {
-inline auto getDepthStencilImageLayoutByFormat(VkFormat format) -> VkImageLayout
+auto getDepthStencilImageLayoutByFormat(VkFormat format) -> VkImageLayout
 {
     return vulkan::internal::_getDepthStencilImageLayoutByFormat(format);
 }

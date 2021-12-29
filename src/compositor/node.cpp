@@ -7,19 +7,19 @@
 #include "vulkan/shaderModule.h"
 
 namespace cyclonite::compositor {
-inline void createPass(vulkan::Device& device,
-                       uint32_t subPassIndex,
-                       bool depthStencilRequired,
-                       VkRenderPass renderPass,
-                       std::array<uint32_t, 4> const& viewport,
-                       uint32_t commandBufferCount,
-                       uint32_t imageInputCount,
-                       PassType inPassType,
-                       PassType& outPassType,
-                       vulkan::Handle<VkDescriptorPool>& outDescriptorPool,
-                       vulkan::Handle<VkDescriptorSetLayout>& outDescriptorSetLayout,
-                       vulkan::Handle<VkPipelineLayout>& outPipelineLayout,
-                       vulkan::Handle<VkPipeline>& outPipeline)
+void createPass(vulkan::Device& device,
+                uint32_t subPassIndex,
+                bool depthStencilRequired,
+                VkRenderPass renderPass,
+                std::array<uint32_t, 4> const& viewport,
+                uint32_t commandBufferCount,
+                uint32_t imageInputCount,
+                PassType inPassType,
+                PassType& outPassType,
+                vulkan::Handle<VkDescriptorPool>& outDescriptorPool,
+                vulkan::Handle<VkDescriptorSetLayout>& outDescriptorSetLayout,
+                vulkan::Handle<VkPipelineLayout>& outPipelineLayout,
+                vulkan::Handle<VkPipeline>& outPipeline)
 {
     // pass type
     outPassType = inPassType;
