@@ -20,7 +20,7 @@ enum class ShaderType
     COUNT = MAX_VALUE + 1
 };
 
-inline std::vector<uint32_t> const& getShader(ShaderType shaderType);
+extern std::vector<uint32_t> const& getShader(ShaderType shaderType);
 }
 
 #endif // CYCLONITE_SHADERDEFINITIONS_H
