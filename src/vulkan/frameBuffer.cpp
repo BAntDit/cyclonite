@@ -4,8 +4,7 @@
 
 #include "frameBuffer.h"
 
-namespace cyclonite::vulkan
-{
+namespace cyclonite::vulkan {
 FrameBuffer::FrameBuffer(vulkan::Device const& device,
                          VkRenderPass vkRenderPass,
                          uint32_t width,

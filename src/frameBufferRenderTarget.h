@@ -87,12 +87,11 @@ inline auto getColorAttachments(
   std::array<FrameBufferRenderTarget::framebuffer_attachment_t, sizeof...(idx)> const& outputs)
   -> std::array<vulkan::ImageView, sizeof...(idx)>
 {
-    return std::array{ (getImageView(device,
-                                     width,
-                                     height,
-                                     outputs[offset + idx],
-                                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT),
-                        ...) };
+    return std::array{ getImageView(device,
+                                    width,
+                                    height,
+                                    outputs[offset + idx],
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)... };
 }
 
 template<size_t count>

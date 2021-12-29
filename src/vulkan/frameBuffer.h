@@ -41,7 +41,7 @@ private:
         }
     };
 
-    using attachment_list_traits = attachment_traits<std::make_index_sequence<16u>>;
+    using attachment_list_traits = attachment_traits<std::make_index_sequence<32u>>;
 
     using attachment_list_t = attachment_list_traits::type_t;
 
@@ -120,7 +120,7 @@ FrameBuffer::FrameBuffer(vulkan::Device const& device,
                          std::optional<vulkan::ImageView>&& depthStencilAttachment,
                          std::array<vulkan::ImageView, colorAttachmentsCount>&& attachments)
   : depthStencilAttachments_{ std::move(depthStencilAttachment) }
-  , colorAttachments_{ std::move(attachments) }
+  , colorAttachments_(std::move(attachments))
   , vkFrameBuffer_{ device.handle(), vkDestroyFramebuffer }
 {
     assert(colorAttachmentsCount <=
