@@ -8,6 +8,20 @@
 #include "baseNode.h"
 
 namespace cyclonite::compositor {
+extern void createPass(vulkan::Device& device,
+                       uint32_t subPassIndex,
+                       bool depthStencilRequired,
+                       VkRenderPass renderPass,
+                       std::array<uint32_t, 4> const& viewport,
+                       uint32_t commandBufferCount,
+                       uint32_t imageInputCount,
+                       PassType inPassType,
+                       PassType& outPassType,
+                       vulkan::Handle<VkDescriptorPool>& outDescriptorPool,
+                       vulkan::Handle<VkDescriptorSetLayout>& outDescriptorSetLayout,
+                       vulkan::Handle<VkPipelineLayout>& outPipelineLayout,
+                       vulkan::Handle<VkPipeline>& outPipeline);
+
 template<typename Config>
 class Node : public BaseNode
 {
@@ -163,20 +177,6 @@ auto Node<Config>::begin(vulkan::Device& device, uint64_t frameNumber, VkFence f
 
     return std::make_pair(waitSemaphore, commandsIndex_);
 }
-
-inline void createPass(vulkan::Device& device,
-                       uint32_t subPassIndex,
-                       bool depthStencilRequired,
-                       VkRenderPass renderPass,
-                       std::array<uint32_t, 4> const& viewport,
-                       uint32_t commandBufferCount,
-                       uint32_t imageInputCount,
-                       PassType inPassType,
-                       PassType& outPassType,
-                       vulkan::Handle<VkDescriptorPool>& outDescriptorPool,
-                       vulkan::Handle<VkDescriptorSetLayout>& outDescriptorSetLayout,
-                       vulkan::Handle<VkPipelineLayout>& outPipelineLayout,
-                       vulkan::Handle<VkPipeline>& outPipeline);
 
 template<typename Config> // TODO:: make pointers const - nobody can change em anyway
 void Node<Config>::update(uint32_t& signalCount, VkSemaphore* baseSignal, VkPipelineStageFlags* baseFlag)

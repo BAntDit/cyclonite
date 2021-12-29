@@ -9,7 +9,7 @@
 #include <utility>
 
 namespace cyclonite::compositor {
-inline auto getDepthStencilImageLayoutByFormat(VkFormat format) -> VkImageLayout;
+extern auto getDepthStencilImageLayoutByFormat(VkFormat format) -> VkImageLayout;
 
 template<typename NodeConfig>
 class BaseNode::Builder
@@ -99,7 +99,7 @@ private:
     VkFormat depthFormat_;
     VkImageTiling depthTiling_;
     std::bitset<value_cast(RenderTargetOutputSemantic::COUNT)> publicSemanticBits_;
-    color_format_array_t<32> colorOutputs_;
+    color_format_array_t<16> colorOutputs_;
     surface_properties_t surfaceProps_;
     std::vector<render_pass_properties_t> renderPasses_;
     std::vector<VkSubpassDependency> dependencies_;
