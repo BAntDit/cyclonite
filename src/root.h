@@ -65,10 +65,7 @@ public:
     [[nodiscard]] auto taskManager() const -> multithreading::TaskManager const& { return taskManager_; }
 
     template<typename WorkspaceFactory>
-    auto createWorkspace(WorkspaceFactory&& workspaceFactory)
-      -> std::enable_if_t< // std::is_invocable_v<decltype(workspaceFactory), vulkan::Device&> &&
-        std::is_same_v<compositor::Workspace, std::decay_t<std::result_of_t<WorkspaceFactory()>>>,
-        std::shared_ptr<compositor::Workspace>&>;
+    auto createWorkspace(WorkspaceFactory&& workspaceFactory) -> std::shared_ptr<compositor::Workspace> const&;
 
 private:
     Capabilities capabilities_;
@@ -83,10 +80,7 @@ private:
 };
 
 template<typename WorkspaceFactory>
-auto Root::createWorkspace(WorkspaceFactory&& workspaceFactory)
-  -> std::enable_if_t< // std::is_invocable_v<decltype(workspaceFactory), vulkan::Device&> &&
-    std::is_same_v<compositor::Workspace, std::decay_t<std::result_of_t<WorkspaceFactory()>>>,
-    std::shared_ptr<compositor::Workspace>&>
+auto Root::createWorkspace(WorkspaceFactory&& workspaceFactory) -> std::shared_ptr<compositor::Workspace> const&
 {
     return workspaces_.emplace_back(
       std::make_shared<compositor::Workspace>(workspaceFactory(compositor::Workspace::Builder{ *vulkanDevice_ })));
