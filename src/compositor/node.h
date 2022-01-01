@@ -55,6 +55,14 @@ public:
 
     void end(VkSubmitInfo&) {}
 
+    auto systems() -> system_manager_t& { return systems_; }
+
+    [[nodiscard]] auto systems() const -> system_manager_t const& { return systems_; }
+
+    auto entities() -> entity_manager_t& { return entities_; }
+
+    [[nodiscard]] auto entities() const -> entity_manager_t const& { return entities_; }
+
     ~Node() = default;
 
     void _createPass(uint32_t subPassIndex,
@@ -283,8 +291,9 @@ struct node_type_register
         return details::get_type_id<0, NodeType, NodeTypes...>::id_v;
     }
 
-    template<uint64_t Id>
-    using node_type_t = typename details::get_node_type<Id, NodeTypes...>::type_t;
+    template<typename NodeConfig>
+    using node_type_t = typename details::get_node_type<details::get_type_id<0, Node<NodeConfig>, NodeTypes...>::id_v,
+                                                        NodeTypes...>::type_t;
 };
 }
 

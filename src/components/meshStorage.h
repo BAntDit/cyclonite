@@ -89,7 +89,7 @@ auto MeshStorage<MAX_SUBMESH_COUNT>::create(uint32_t index, uint16_t subMeshCoun
         freeRanges_.insert(std::make_pair(newOffset, newCount));
     }
 
-    freeRanges_.remove(it);
+    freeRanges_.erase(it);
 
     auto meshIndex = std::numeric_limits<uint32_t>::max();
 
@@ -115,6 +115,8 @@ auto MeshStorage<MAX_SUBMESH_COUNT>::create(uint32_t index, uint16_t subMeshCoun
 
     meshes_[meshIndex] = Mesh{ store_.data() + rangeOffset, subMeshCount };
     indices_[index] = meshIndex;
+
+    return meshes_[meshIndex];
 }
 
 template<size_t MAX_SUBMESH_COUNT>
@@ -128,6 +130,8 @@ void MeshStorage<MAX_SUBMESH_COUNT>::destroy(uint32_t index)
     auto [ptr, count] = mesh.getSubMeshSetMemory();
     auto offset = ptr - store_.data();
 
+    assert(offset > 0);
+
     auto freeOffset = offset;
     auto freeCount = count;
 
@@ -135,7 +139,7 @@ void MeshStorage<MAX_SUBMESH_COUNT>::destroy(uint32_t index)
     {
         auto prevIt = std::find_if(freeRanges_.cbegin(), freeRanges_.cend(), [=](auto range) -> bool {
             auto [rangeOffset, rangeCount] = range;
-            return (offset == (rangeOffset + rangeCount));
+            return (static_cast<size_t>(offset) == (rangeOffset + rangeCount));
         });
 
         if (prevIt != freeRanges_.cend()) {
@@ -143,7 +147,7 @@ void MeshStorage<MAX_SUBMESH_COUNT>::destroy(uint32_t index)
             freeOffset = rangeOffset;
             freeCount = freeCount + rangeCount;
 
-            freeRanges_.remove(prevIt);
+            freeRanges_.erase(prevIt);
         }
     }
 
@@ -161,7 +165,7 @@ void MeshStorage<MAX_SUBMESH_COUNT>::destroy(uint32_t index)
             auto [rangeOffset, rangeCount] = (*nextIt);
             freeCount = freeCount + rangeCount;
 
-            freeRanges_.remove(nextIt);
+            freeRanges_.erase(nextIt);
         }
     }
 
