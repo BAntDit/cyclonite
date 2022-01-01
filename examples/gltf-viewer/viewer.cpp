@@ -3,33 +3,17 @@
 //
 
 #include "viewer.h"
-#include "controller.h"
+#include "appConfig.h"
 #include "model.h"
-#include "view.h"
-#include <chrono>
 
 using namespace cyclonite;
 using namespace easy_mp;
 
 namespace examples::viewer {
-namespace {
-struct MainNodeConfig : public cyclonite::DefaultConfigs
-{};
-
-struct SurfaceNodeConfig : public cyclonite::DefaultConfigs
-{
-    using ecs_config_t = EcsConfig<type_list<components::Mesh>,
-                                   type_list<components::MeshStorage<1>>,
-                                   type_list<systems::RenderSystem, systems::MeshSystem, systems::UniformSystem>,
-                                   value_cast(UpdateStage::COUNT)>;
-};
-}
 
 Viewer::Viewer()
   : root_{ std::make_unique<cyclonite::Root>() }
   , model_{ nullptr }
-  , view_{ nullptr }
-  , controller_{ nullptr }
 {}
 
 auto Viewer::init(cyclonite::Options options) -> Viewer&
@@ -48,7 +32,8 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
     uint32_t height = 768;
 
     auto&& workspace = root_->createWorkspace([=](auto&& workspaceBuilder) -> cyclonite::compositor::Workspace {
-        workspaceBuilder.template createNode<MainNodeConfig>(
+        workspaceBuilder.createNode(
+          node_type_register_t::node_key_t<MainNodeConfig>{},
           [width = width, height = height](auto&& nodeBuilder) -> cyclonite::compositor::Node<MainNodeConfig> {
               return nodeBuilder.setOutputResolution(width, height)
                 .setRenderTargetDepthProperties(
@@ -76,7 +61,8 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
                 .build();
           });
 
-        workspaceBuilder.template createNode<SurfaceNodeConfig>(
+        workspaceBuilder.createNode(
+          node_type_register_t::node_key_t<SurfaceNodeConfig>{},
           [width = width, height = height](auto&& nodeBuilder) -> cyclonite::compositor::Node<SurfaceNodeConfig> {
               return nodeBuilder.setOutputResolution(width, height)
                 .setRenderTargetColorProperties(
@@ -98,19 +84,19 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
                          VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                          false,
                          0)
-                .setInputs<cyclonite::RenderTargetOutputSemantic::VIEW_SPACE_NORMALS,
-                           cyclonite::RenderTargetOutputSemantic::ALBEDO>(0)
+                .template setInputs<cyclonite::RenderTargetOutputSemantic::VIEW_SPACE_NORMALS,
+                                    cyclonite::RenderTargetOutputSemantic::ALBEDO>(0)
                 .build();
           });
 
         return workspaceBuilder.build();
     });
 
-    view_ = std::make_unique<View>();
-    // TODO:: create workspace in the view init
-
     model_ = std::make_unique<Model>();
-    model_->init(workspace);
+    model_->init(root_->device(), "./scene.gltf", workspace);
+
+    // view_ = std::make_unique<View>();
+    // TODO:: create workspace in the view init
 
     // TODO:: sync
     // one node for whole scene normal pass
@@ -132,9 +118,9 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
 
 auto Viewer::run() -> Viewer&
 {
-    auto start = std::chrono::high_resolution_clock::now();
+    // auto start = std::chrono::high_resolution_clock::now();
 
-    while (controller_->alive()) {
+    /* while (controller_->alive()) {
         auto end = std::chrono::high_resolution_clock::now();
 
         auto dt = std::chrono::duration<real, std::ratio<1>>{ end - start }.count();
@@ -143,7 +129,7 @@ auto Viewer::run() -> Viewer&
 
         controller_->update(*model_, dt);
         view_->draw(*model_);
-    }
+    }*/
 
     return *this;
 }

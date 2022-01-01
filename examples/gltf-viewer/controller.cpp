@@ -75,11 +75,14 @@ void Controller::onMouseButtonUp(uint8_t button, int32_t x, int32_t y)
 
 void Controller::onMouseMotion(int32_t x, int32_t y)
 {
+    (void)x;
+    (void)y;
+
     if (isInRotation_) {
-        auto& renderSystem = systems_->get<systems::RenderSystem>();
-        auto& renderPass = renderSystem.renderPass();
-        auto [left, top, width, height] = renderPass.viewport();
-        auto speed = 30.f;
+        // auto& renderSystem = systems_->get<systems::RenderSystem>();
+        // auto& renderPass = renderSystem.renderPass();
+        // auto [left, top, width, height] = renderPass.viewport();
+        /*auto speed = 30.f;
 
         (void)left;
         (void)top;
@@ -88,7 +91,7 @@ void Controller::onMouseMotion(int32_t x, int32_t y)
         rotate_.y = pi * 2.f * speed * (static_cast<real>(y) - rotationStart_.y) / static_cast<real>(height);
 
         rotationStart_.x = x;
-        rotationStart_.y = y;
+        rotationStart_.y = y;*/
     }
 }
 
@@ -102,6 +105,8 @@ void Controller::onMouseWheel(int32_t y)
 
 void Controller::update(Model& model, real dt)
 {
+    (void)model;
+
     input_->pollEvent();
 
     distance_ += scroll_;
@@ -128,11 +133,11 @@ void Controller::update(Model& model, real dt)
 
     up = glm::normalize(glm::cross(fw, lf));
 
-    model.setCameraTransform(mat4{ glm::vec4{ lf.x, lf.y, lf.z, 0.0f },
+    /*model.setCameraTransform(mat4{ glm::vec4{ lf.x, lf.y, lf.z, 0.0f },
                                    glm::vec4{ up.x, up.y, up.z, 0.0f },
                                    glm::vec4{ fw.x, fw.y, fw.z, 0.0f },
                                    glm::vec4{ target_.x - pos.x, target_.y - pos.y, target_.z - pos.z, 1.0f } });
 
-    model.timeSinceLastUpdate() = dt;
+    model.timeSinceLastUpdate() = dt;*/
 }
 }

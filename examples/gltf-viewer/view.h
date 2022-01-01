@@ -12,20 +12,15 @@ class Model;
 
 class View
 {
-private:
-    using ecs_config_t = Viewer::ecs_config_t;
-
 public:
     View() noexcept;
 
-    void init(cyclonite::vulkan::Device& device,
-              cyclonite::multithreading::TaskManager& taskManager,
-              ecs_config_t::system_manager_t& systems);
+    void init(cyclonite::compositor::Workspace const& workspace);
 
-    void draw(Model const& model);
+    void draw();
 
 private:
-    ecs_config_t::system_manager_t* systems_;
+    std::shared_ptr<cyclonite::compositor::Workspace> workspace_;
 };
 }
 

@@ -8,6 +8,7 @@ set(HEADER_FILES
     controller.h
     gltf/reader.h
     viewer.h
+    appConfig.h
 )
 
 set(SOURCE_FILES
