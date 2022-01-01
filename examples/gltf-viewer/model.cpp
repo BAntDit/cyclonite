@@ -3,62 +3,58 @@
 //
 
 #include "model.h"
+#include "appConfig.h"
 #include "gltf/reader.h"
 
 namespace examples::viewer {
 using namespace cyclonite;
 
 Model::Model() noexcept
-  : timeSinceLastUpdate_{ .0f }
-  , workspace_{ nullptr }
+  : workspace_{ nullptr }
+  , camera_{ std::numeric_limits<uint64_t>::max() }
 {}
 
-void Model::init(std::shared_ptr<cyclonite::compositor::Workspace> const& workspace)
+void Model::init(vulkan::Device& device,
+                 std::string const& path,
+                 std::shared_ptr<cyclonite::compositor::Workspace> const& workspace)
 {
     workspace_ = workspace;
 
-    /* entities_ = &entities;
+    auto& node = workspace_->get(node_type_register_t::node_key_t<MainNodeConfig>{});
 
     gltf::Reader reader{};
     std::vector<enttx::Entity> pool{};
     std::unordered_map<size_t, enttx::Entity> nodeIdxToEntity{};
     std::unordered_map<std::tuple<size_t, size_t, size_t>, uint64_t, hash> geometryIdentifiers_{};
 
-    reader.read(path, [&](auto&&... args) -> void {
+    reader.read(path, [&](auto dataType, auto&&... args) -> void {
         auto&& t = std::forward_as_tuple(args...);
 
-        // scene node count
-        if constexpr (std::is_same_v<std::decay_t<decltype(std::get<0>(t))>, uint32_t>) {
+        // transform system initialization
+        if constexpr (gltf::reader_data_test<gltf::ReaderDataType::NODE_COUNT, decltype(dataType)>()) {
             auto [nodeCount] = t;
 
-            systems.get<systems::TransformSystem>().init(nodeCount);
+            node.systems().get<systems::TransformSystem>().init();
 
-            pool = entities.create(
+            pool = node.entities().create(
               std::vector<enttx::Entity>(nodeCount, enttx::Entity{ std::numeric_limits<uint64_t>::max() }));
         }
 
-        // initial resources
-        if constexpr (std::is_same_v<std::decay_t<decltype(std::get<0>(t))>,
-                                     std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>>) {
-            auto&& [initials] = t;
-            auto [vertexCount, indexCount, instanceCount, commandCount] = initials;
+        // mesh system initialization
+        if constexpr (gltf::reader_data_test<gltf::ReaderDataType::VERTEX_INDEX_INSTANCE_COUNT, decltype(dataType)>()) {
+            auto [vertexCount, indexCount, instanceCount, commandCount] = t;
 
-            auto& renderSystem = systems.get<systems::RenderSystem>();
+            auto& meshSystem = node.systems().get<systems::MeshSystem>();
 
-            auto const& renderPass = renderSystem.renderPass();
-            auto swapChainLength = renderPass.getSwapChainLength();
-
-            auto& meshSystem = systems.get<systems::MeshSystem>();
-
-            meshSystem.init(device, swapChainLength, commandCount, instanceCount, indexCount, vertexCount);
+            meshSystem.init(device, 1, commandCount, instanceCount, indexCount, vertexCount);
         }
 
-        // node parse
-        if constexpr (std::is_same_v<std::decay_t<decltype(std::get<0>(t))>, gltf::Reader::Node>) {
-            auto&& [node, parentIdx, nodeIdx] = t;
-            auto&& [translation, scale, orientation] = node;
+        // node
+        if constexpr (gltf::reader_data_test<gltf::ReaderDataType::NODE, decltype(dataType)>()) {
+            auto&& [gltfNode, parentIdx, nodeIdx] = t;
+            auto&& [translation, scale, orientation] = gltfNode;
 
-            auto& transformSystem = systems.get<systems::TransformSystem>();
+            auto& transformSystem = node.systems().get<systems::TransformSystem>();
 
             assert(!pool.empty());
 
@@ -74,15 +70,15 @@ void Model::init(std::shared_ptr<cyclonite::compositor::Workspace> const& worksp
                 parent = (*it).second;
             }
 
-            transformSystem.create(entities, parent, entity, translation, scale, orientation);
+            transformSystem.create(node.entities(), parent, entity, translation, scale, orientation);
         }
 
-        // geometry parse
-        if constexpr (std::is_same_v<std::decay_t<decltype(std::get<0>(t))>, gltf::Reader::Primitive>) {
+        // geometry
+        if constexpr (gltf::reader_data_test<gltf::ReaderDataType::GEOMETRY, decltype(dataType)>()) {
             auto&& [primitive] = t;
-            auto&& [pos, nor, ind] = primitive;
+            auto&& [posIdx, normalIdx, indexIdx] = primitive;
 
-            auto const& posAccessor = reader.accessors()[pos];
+            auto const& posAccessor = reader.accessors()[posIdx];
 
             auto&& [positionBufferViewIdx, positionOffset, positionComponentType, posNormalized, vertexCount, posType] =
               posAccessor;
@@ -90,21 +86,21 @@ void Model::init(std::shared_ptr<cyclonite::compositor::Workspace> const& worksp
             (void)positionComponentType;
             (void)posNormalized;
 
-            auto const& norAccessor = reader.accessors()[nor];
-            auto&& [normalBufferViewIdx, normalOffset, normalComponentType, norNormalized, norCount, norType] =
-              norAccessor;
+            auto const& normalAccessor = reader.accessors()[normalIdx];
+            auto&& [normalBufferViewIdx, normalOffset, normalComponentType, normalNormalized, normalCount, normalType] =
+              normalAccessor;
 
             (void)normalComponentType;
-            (void)norNormalized;
+            (void)normalNormalized;
 
-            auto const& idxAccessor = reader.accessors()[ind];
+            auto const& indicesAccessor = reader.accessors()[indexIdx];
             auto&& [indexBufferViewIdx, indexOffset, indexComponentType, indNormalized, indexCount, indType] =
-              idxAccessor;
+              indicesAccessor;
 
             (void)indNormalized;
             (void)indType;
 
-            auto& meshSystem = systems.get<systems::MeshSystem>();
+            auto& meshSystem = node.systems().get<systems::MeshSystem>();
 
             auto geometry = meshSystem.createGeometry(vertexCount, indexCount);
 
@@ -126,7 +122,7 @@ void Model::init(std::shared_ptr<cyclonite::compositor::Workspace> const& worksp
                                    : posByteStride;
 
                 auto norStride = norByteStride == 0
-                                   ? norType == reinterpret_cast<char const*>(u8"vec4") ? sizeof(vec4) : sizeof(vec3)
+                                   ? normalType == reinterpret_cast<char const*>(u8"vec4") ? sizeof(vec4) : sizeof(vec3)
                                    : norByteStride;
 
                 auto vertexIdx = size_t{ 0 };
@@ -181,21 +177,20 @@ void Model::init(std::shared_ptr<cyclonite::compositor::Workspace> const& worksp
                 }
             } // end index reading
 
-            geometryIdentifiers_.emplace(std::make_tuple(pos, nor, ind), geometry->id());
+            geometryIdentifiers_.emplace(std::make_tuple(posIdx, normalIdx, indexIdx), geometry->id());
 
             meshSystem.requestVertexDeviceBufferUpdate();
         }
 
-        // parse mesh
-        if constexpr (std::is_same_v<std::decay_t<decltype(std::get<0>(t))>, std::vector<gltf::Reader::Primitive>>) {
+        // mesh
+        if constexpr (gltf::reader_data_test<gltf::ReaderDataType::MESH, decltype(dataType)>()) {
             auto primitiveToKey = [](gltf::Reader::Primitive const& p) -> std::tuple<size_t, size_t, size_t> {
                 auto [pos, nor, idx] = p;
                 return std::make_tuple(pos, nor, idx);
             };
 
             auto&& [primitives, nodeIdx] = t;
-
-            auto& meshSystem = systems.get<systems::MeshSystem>();
+            auto& meshSystem = node.systems().get<systems::MeshSystem>();
 
             assert(nodeIdxToEntity.count(nodeIdx) != 0);
             auto entity = nodeIdxToEntity[nodeIdx];
@@ -204,9 +199,9 @@ void Model::init(std::shared_ptr<cyclonite::compositor::Workspace> const& worksp
                 auto key = primitiveToKey(primitives[0]);
 
                 assert(geometryIdentifiers_.count(key) != 0);
-                auto const& geometry = geometryIdentifiers_[key];
+                auto geometry = geometryIdentifiers_[key];
 
-                meshSystem.createMesh(entities, entity, geometry);
+                meshSystem.createMesh(node.entities(), entity, geometry);
             } else {
                 std::vector<uint64_t> geometries{};
 
@@ -219,23 +214,30 @@ void Model::init(std::shared_ptr<cyclonite::compositor::Workspace> const& worksp
                     geometries.push_back(geometryIdentifiers_[key]);
                 }
 
-                meshSystem.createMesh(entities, entity, geometries);
+                meshSystem.createMesh(node.entities(), entity, geometries);
             }
         }
     });
 
-    camera_ = entities.create();
+    {
+        camera_ = node.entities().create();
 
-    auto& transformSystem = systems.get<systems::TransformSystem>();
-    transformSystem.create(*entities_,
-                           enttx::Entity{ std::numeric_limits<uint64_t>::max() },
-                           camera_,
-                           vec3{ 0.f, 0.f, 0.f },
-                           vec3{ 1.f },
-                           quat{ 1.f, 0.f, 0.f, 0.f });
+        auto& transformSystem = node.systems().get<systems::TransformSystem>();
 
-    auto& cameraSystem = systems.get<systems::CameraSystem>();
-    cameraSystem.init();
-    cameraSystem.createCamera(entities, camera_, components::Camera::PerspectiveProjection{ 1.f, 45.f, .1f, 100.f }); */
+        auto& entities = node.entities();
+
+        transformSystem.create(entities,
+                               enttx::Entity{ std::numeric_limits<uint64_t>::max() },
+                               camera_,
+                               vec3{ 0.f, 0.f, 0.f },
+                               vec3{ 1.f },
+                               quat{ 1.f, 0.f, 0.f, 0.f });
+
+        auto& cameraSystem = node.systems().get<systems::CameraSystem>();
+
+        cameraSystem.init();
+        cameraSystem.createCamera(
+          entities, camera_, components::Camera::PerspectiveProjection{ 1.f, 45.f, .1f, 100.f });
+    }
 }
 }

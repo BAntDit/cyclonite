@@ -9,8 +9,6 @@
 
 namespace examples::viewer {
 class Model;
-class View;
-class Controller;
 
 class Viewer final : public cyclonite::BaseApp<Viewer>
 {
@@ -26,8 +24,6 @@ public:
 private:
     std::unique_ptr<cyclonite::Root> root_;
     std::unique_ptr<Model> model_;
-    std::unique_ptr<View> view_;
-    std::unique_ptr<Controller> controller_;
 };
 }
 
