@@ -131,6 +131,8 @@ set(SOURCES
 set(SHADER_SOURCES
     src/shaders/default.vert
     src/shaders/default.frag
+    src/shaders/screen.vert
+    src/shaders/screen.frag
 )
 
 add_library(${PROJECT_NAME} SHARED

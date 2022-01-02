@@ -5,6 +5,8 @@
 #include "viewer.h"
 #include "appConfig.h"
 #include "model.h"
+#include "view.h"
+#include "controller.h"
 
 using namespace cyclonite;
 using namespace easy_mp;
@@ -95,32 +97,20 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
     model_ = std::make_unique<Model>();
     model_->init(root_->device(), "./scene.gltf", workspace);
 
-    // view_ = std::make_unique<View>();
-    // TODO:: create workspace in the view init
-
-    // TODO:: sync
-    // one node for whole scene normal pass
-    // one node for surface pass
-
-    /*
     view_ = std::make_unique<View>();
-    view_->init(root_->device(), root_->taskManager(), systems_);
-
-    model_ = std::make_unique<Model>();
-    model_->init(root_->device(), entities_, systems_, "./scene.gltf");
+    view_->init(workspace);
 
     controller_ = std::make_unique<Controller>();
-    controller_->init(root_->input(), systems_);
-    */
+    controller_->init(root_->input(), width, height);
 
     return *this;
 }
 
 auto Viewer::run() -> Viewer&
 {
-    // auto start = std::chrono::high_resolution_clock::now();
+    auto start = std::chrono::high_resolution_clock::now();
 
-    /* while (controller_->alive()) {
+    while (controller_->alive()) {
         auto end = std::chrono::high_resolution_clock::now();
 
         auto dt = std::chrono::duration<real, std::ratio<1>>{ end - start }.count();
@@ -128,8 +118,9 @@ auto Viewer::run() -> Viewer&
         start = end;
 
         controller_->update(*model_, dt);
-        view_->draw(*model_);
-    }*/
+
+        view_->draw(root_->device());
+    }
 
     return *this;
 }

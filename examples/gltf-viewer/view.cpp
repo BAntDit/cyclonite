@@ -13,11 +13,12 @@ View::View() noexcept
   : workspace_{ nullptr }
 {}
 
-void View::init(compositor::Workspace const& workspace)
+void View::init(std::shared_ptr<compositor::Workspace> const& workspace)
 {
-    (void)workspace;
-    // workspace_ = workspace;
+    workspace_ = workspace;
 }
 
-void View::draw() {}
+void View::draw(cyclonite::vulkan::Device& device) {
+    workspace_->render(device);
+}
 }
