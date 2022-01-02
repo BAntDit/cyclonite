@@ -240,4 +240,14 @@ void Model::init(vulkan::Device& device,
           entities, camera_, components::Camera::PerspectiveProjection{ 1.f, 45.f, .1f, 100.f });
     }
 }
+
+void Model::setCameraTransform(mat4 const& transform)
+{
+    auto& node = workspace_->get(node_type_register_t::node_key_t<MainNodeConfig>{});
+
+    auto* transformComponent = node.entities().getComponent<cyclonite::components::Transform>(camera_);
+
+    transformComponent->matrix = transform;
+    transformComponent->state = cyclonite::components::Transform::State::UPDATE_COMPONENTS;
+}
 }

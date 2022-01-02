@@ -22,6 +22,8 @@ public:
               std::string const& path,
               std::shared_ptr<cyclonite::compositor::Workspace> const& workspace);
 
+    void setCameraTransform(cyclonite::mat4 const& transform);
+
 private:
     std::shared_ptr<cyclonite::compositor::Workspace> workspace_;
     enttx::Entity camera_;

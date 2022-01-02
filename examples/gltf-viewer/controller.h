@@ -18,7 +18,7 @@ private:
 public:
     Controller() noexcept;
 
-    void init(cyclonite::Input& input, ecs_config_t::system_manager_t& systems);
+    void init(cyclonite::Input& input, uint32_t width, uint32_t height);
 
     void onQuit();
 
@@ -38,8 +38,9 @@ public:
 
 private:
     cyclonite::Input* input_;
-    ecs_config_t::system_manager_t* systems_;
     bool shutdown_;
+    uint32_t width_;
+    uint32_t height_;
     bool isInRotation_;
     cyclonite::vec2 rotationStart_;
     cyclonite::vec2 rotate_;
