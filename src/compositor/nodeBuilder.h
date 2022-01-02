@@ -494,6 +494,10 @@ auto BaseNode::Builder<NodeConfig>::build() -> Node<NodeConfig>
         attachments.emplace_back(attachment);
     }
 
+    renderPassCreateInfo.attachmentCount = attachments.size();
+    renderPassCreateInfo.pAttachments = attachments.data();
+    renderPassCreateInfo.subpassCount = subPassDescriptions.size();
+    renderPassCreateInfo.pSubpasses = subPassDescriptions.data();
     renderPassCreateInfo.dependencyCount = dependencies_.size();
     renderPassCreateInfo.pDependencies = dependencies_.data();
 
