@@ -44,11 +44,11 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
                     RenderTargetOutputSemantic::UNDEFINED>{})
                 .setRenderTargetColorProperties(
                   cyclonite::compositor::render_target_output<
-                    type_list<cyclonite::compositor::render_target_candidate_t<VK_FORMAT_R16G16B16_SFLOAT>>,
+                    type_list<cyclonite::compositor::render_target_candidate_t<VK_FORMAT_R16G16B16A16_SFLOAT>>,
                     cyclonite::RenderTargetOutputSemantic::VIEW_SPACE_NORMALS,
                     true>{},
                   cyclonite::compositor::render_target_output<
-                    type_list<cyclonite::compositor::render_target_candidate_t<VK_FORMAT_R8G8B8_UINT>>,
+                    type_list<cyclonite::compositor::render_target_candidate_t<VK_FORMAT_R8G8B8A8_UNORM>>,
                     cyclonite::RenderTargetOutputSemantic::ALBEDO,
                     true>{})
                 .addPass(cyclonite::compositor::PassType::SCENE,
