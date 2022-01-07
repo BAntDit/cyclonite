@@ -4,9 +4,9 @@
 
 #include "viewer.h"
 #include "appConfig.h"
+#include "controller.h"
 #include "model.h"
 #include "view.h"
-#include "controller.h"
 
 using namespace cyclonite;
 using namespace easy_mp;
@@ -66,10 +66,11 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
         workspaceBuilder.createNode(
           node_type_register_t::node_key_t<SurfaceNodeConfig>{},
           [width = width, height = height](auto&& nodeBuilder) -> cyclonite::compositor::Node<SurfaceNodeConfig> {
-              return nodeBuilder.setOutputResolution(width, height)
+              return nodeBuilder.template createInputLinks<1>()
+                .setOutputResolution(width, height)
                 .setRenderTargetColorProperties(
                   cyclonite::compositor::render_target_output<
-                    type_list<cyclonite::compositor::render_target_candidate_t<VK_FORMAT_R8G8B8_UINT>>,
+                    type_list<cyclonite::compositor::render_target_candidate_t<VK_FORMAT_B8G8R8A8_SRGB>>,
                     cyclonite::RenderTargetOutputSemantic::FINAL_SRGB_COLOR>{})
                 .setSurface(
                   cyclonite::WindowProperties{ "test-viewer", 0, 0, width, height, false },
