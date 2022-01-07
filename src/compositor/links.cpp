@@ -106,7 +106,7 @@ auto Links::size() const -> size_t
               return links.size();
           }
 
-          std::terminate();
+          return 0;
       },
       links_);
 }

@@ -145,20 +145,23 @@ template<typename NodeConfig>
 template<RenderTargetOutputSemantic... semantic>
 auto BaseNode::Builder<NodeConfig>::setInputs(size_t nodeIndex) -> Builder&
 {
-    auto it = std::find_if(
-      inputLinks_.begin(), inputLinks_.end(), [=](auto&& link) -> bool { return link.nodeIndex == nodeIndex; });
+    auto it = std::find_if(inputLinks_.begin(), inputLinks_.end(), [=](auto&& link) -> bool {
+        return link.nodeIndex == std::numeric_limits<size_t>::max();
+    });
 
     assert(it != inputLinks_.end());
 
     auto setter = []<size_t... idx>(Link & link,
+                                    size_t nodeIndex,
                                     std::index_sequence<idx...>&&,
                                     std::array<RenderTargetOutputSemantic, sizeof...(idx)> && semantics)
                     ->void
     {
+        link.nodeIndex = nodeIndex;
         ((link.semantics[idx] = semantics[idx]), ...);
     };
 
-    setter(*it, std::make_index_sequence<sizeof...(semantic)>{}, std::array{ semantic... });
+    setter(*it, nodeIndex, std::make_index_sequence<sizeof...(semantic)>{}, std::array{ semantic... });
 
     return *this;
 }
