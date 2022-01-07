@@ -18,7 +18,8 @@ void View::init(std::shared_ptr<compositor::Workspace> const& workspace)
     workspace_ = workspace;
 }
 
-void View::draw(cyclonite::vulkan::Device& device) {
+void View::draw(cyclonite::vulkan::Device& device)
+{
     workspace_->render(device);
 }
 }
