@@ -26,7 +26,6 @@ public:
 
 private:
     std::shared_ptr<cyclonite::compositor::Workspace> workspace_;
-    enttx::Entity camera_;
 };
 }
 

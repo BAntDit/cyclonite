@@ -11,7 +11,6 @@ using namespace cyclonite;
 
 Model::Model() noexcept
   : workspace_{ nullptr }
-  , camera_{ std::numeric_limits<uint64_t>::max() }
 {}
 
 void Model::init(vulkan::Device& device,
@@ -220,7 +219,9 @@ void Model::init(vulkan::Device& device,
     });
 
     {
-        camera_ = node.entities().create();
+        auto cameraEntity = node.entities().create();
+
+        node.cameraEntity() = cameraEntity;
 
         auto& transformSystem = node.systems().get<systems::TransformSystem>();
 
@@ -228,7 +229,7 @@ void Model::init(vulkan::Device& device,
 
         transformSystem.create(entities,
                                enttx::Entity{ std::numeric_limits<uint64_t>::max() },
-                               camera_,
+                               cameraEntity,
                                vec3{ 0.f, 0.f, 0.f },
                                vec3{ 1.f },
                                quat{ 1.f, 0.f, 0.f, 0.f });
@@ -237,7 +238,7 @@ void Model::init(vulkan::Device& device,
 
         cameraSystem.init();
         cameraSystem.createCamera(
-          entities, camera_, components::Camera::PerspectiveProjection{ 1.f, 45.f, .1f, 100.f });
+          entities, cameraEntity, components::Camera::PerspectiveProjection{ 1.f, 45.f, .1f, 100.f });
     }
 }
 
@@ -245,7 +246,7 @@ void Model::setCameraTransform(mat4 const& transform)
 {
     auto& node = workspace_->get(node_type_register_t::node_key_t<MainNodeConfig>{});
 
-    auto* transformComponent = node.entities().getComponent<cyclonite::components::Transform>(camera_);
+    auto* transformComponent = node.entities().getComponent<cyclonite::components::Transform>(node.cameraEntity());
 
     transformComponent->matrix = transform;
     transformComponent->state = cyclonite::components::Transform::State::UPDATE_COMPONENTS;
