@@ -23,7 +23,8 @@ FrameBufferRenderTarget::FrameBufferRenderTarget(vulkan::Device& device,
                        width,
                        height,
                        depthStencil,
-                       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT));
+                       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+                       VK_IMAGE_ASPECT_DEPTH_BIT));
     }
 }
 
