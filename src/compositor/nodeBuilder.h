@@ -334,7 +334,7 @@ auto BaseNode::Builder<NodeConfig>::addPass(PassType passType,
 
     subPassDependency.srcSubpass = srcPassIndex;
     subPassDependency.dstSubpass = dstPassIndex;
-    subPassDependency.dstStageMask = srcStageMask;
+    subPassDependency.srcStageMask = srcStageMask;
     subPassDependency.dstStageMask = dstStageMask;
     subPassDependency.srcAccessMask = srcAccessMask;
     subPassDependency.dstAccessMask = dstAccessMask;
