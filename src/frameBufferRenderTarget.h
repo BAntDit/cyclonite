@@ -58,18 +58,23 @@ inline auto getImageView(vulkan::Device& device,
                          [[maybe_unused]] uint32_t width,
                          [[maybe_unused]] uint32_t height,
                          FrameBufferRenderTarget::framebuffer_attachment_t const& image,
-                         VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) -> vulkan::ImageView
+                         VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                         VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT) -> vulkan::ImageView
 {
     return std::visit(
       [&](auto&& out) -> vulkan::ImageView {
-          if constexpr (std::is_same_v<std::decay_t<decltype(out)>, vulkan::ImagePtr>) {
-              return vulkan::ImageView{ device, out };
-          }
+          if (usageFlags & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+
+              if constexpr (std::is_same_v<std::decay_t<decltype(out)>, vulkan::ImagePtr>) {
+                  return vulkan::ImageView{ device, out, VK_IMAGE_VIEW_TYPE_2D, aspectFlags };
+              }
 
           if constexpr (std::is_same_v<std::decay_t<decltype(out)>, VkFormat>) {
               return vulkan::ImageView{ device,
                                         std::make_shared<vulkan::Image>(
-                                          device, width, height, 1, 1, 1, out, VK_IMAGE_TILING_OPTIMAL, usageFlags) };
+                                          device, width, height, 1, 1, 1, out, VK_IMAGE_TILING_OPTIMAL, usageFlags),
+                                        VK_IMAGE_VIEW_TYPE_2D,
+                                        aspectFlags };
           }
 
           std::terminate();
@@ -159,7 +164,8 @@ FrameBufferRenderTarget::FrameBufferRenderTarget(vulkan::Device& device,
                        width,
                        height,
                        depthStencil,
-                       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT),
+                       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+                       VK_IMAGE_ASPECT_DEPTH_BIT),
           getColorAttachments(std::make_index_sequence<count>{}, device, width, height, count * i, images));
     }
 }
