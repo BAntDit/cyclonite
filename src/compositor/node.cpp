@@ -14,6 +14,7 @@ void createPass(vulkan::Device& device,
                 std::array<uint32_t, 4> const& viewport,
                 uint32_t commandBufferCount,
                 uint32_t imageInputCount,
+                uint32_t attachmentCount,
                 PassType inPassType,
                 PassType& outPassType,
                 vulkan::Handle<VkDescriptorPool>& outDescriptorPool,
@@ -153,23 +154,31 @@ void createPass(vulkan::Device& device,
 
         // TMP::
         // TODO:: must come from material
-        VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState = {};
-        pipelineColorBlendAttachmentState.blendEnable = VK_FALSE;
-        pipelineColorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-        pipelineColorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-        pipelineColorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
-        pipelineColorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-        pipelineColorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        pipelineColorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
-        pipelineColorBlendAttachmentState.colorWriteMask =
-          VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        constexpr size_t maxColorAttachmentCount = 32;
+        auto pipelineColorBlendAttachmentStates = std::array<VkPipelineColorBlendAttachmentState, maxColorAttachmentCount>{};
+
+        assert(attachmentCount < maxColorAttachmentCount);
+        for (uint32_t i = 0; i < attachmentCount; i++)
+        {
+            auto& pipelineColorBlendAttachmentState = pipelineColorBlendAttachmentStates[i];
+
+            pipelineColorBlendAttachmentState.blendEnable = VK_FALSE;
+            pipelineColorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+            pipelineColorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+            pipelineColorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+            pipelineColorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+            pipelineColorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+            pipelineColorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+            pipelineColorBlendAttachmentState.colorWriteMask =
+              VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        }
 
         VkPipelineColorBlendStateCreateInfo colorBlendState = {}; // TODO:: and blend state too
         colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
         colorBlendState.logicOpEnable = VK_FALSE;
         colorBlendState.logicOp = VK_LOGIC_OP_COPY;
-        colorBlendState.attachmentCount = 1;
-        colorBlendState.pAttachments = &pipelineColorBlendAttachmentState;
+        colorBlendState.attachmentCount = attachmentCount;
+        colorBlendState.pAttachments = pipelineColorBlendAttachmentStates.data();
         colorBlendState.blendConstants[0] = 0.0f;
         colorBlendState.blendConstants[1] = 0.0f;
         colorBlendState.blendConstants[2] = 0.0f;
