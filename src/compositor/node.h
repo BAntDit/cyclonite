@@ -35,7 +35,7 @@ public:
     using entity_manager_t = typename ecs_config_t::entity_manager_t;
     using system_manager_t = typename ecs_config_t::system_manager_t;
 
-    Node();
+    explicit Node(size_t bufferCount);
 
     Node(Node const&) = delete;
 
@@ -94,8 +94,8 @@ private:
 };
 
 template<typename Config>
-Node<Config>::Node()
-  : BaseNode()
+Node<Config>::Node(size_t bufferCount)
+  : BaseNode{ bufferCount }
   , entities_{}
   , systems_{ &entities_ }
 {}
@@ -103,7 +103,7 @@ Node<Config>::Node()
 template<typename Config>
 auto Node<Config>::getCurrentFrame(vulkan::Device& device) -> FrameCommands&
 {
-    assert(commandsIndex_ < frameCommands_.size()); // TODO:: fix assert
+    assert(commandsIndex_ < frameCommands_.size());
 
     auto& frameCommand = frameCommands_[commandsIndex_];
 

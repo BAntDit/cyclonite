@@ -104,7 +104,7 @@ public:
     ~BaseNode() = default;
 
 protected:
-    BaseNode() noexcept;
+    explicit BaseNode(size_t bufferCount) noexcept;
 
 private:
     using render_target_t = std::variant<std::monostate, SurfaceRenderTarget, FrameBufferRenderTarget>;
