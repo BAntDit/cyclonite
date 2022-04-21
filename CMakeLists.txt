@@ -48,6 +48,8 @@ set(PUBLIC_HEADERS
     src/sdl/sdlSupport.h
     src/sdl/sdlWindow.h
     src/vulkan/handle.h
+    src/vulkan/sharedHandle.h
+    src/vulkan/weakHandle.h
     src/vulkan/instance.h
     src/vulkan/device.h
     src/vulkan/baseCommandBufferSet.h

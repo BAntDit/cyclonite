@@ -14,7 +14,7 @@ template<typename T>
 class Handle
 {
 public:
-    Handle()
+    Handle() noexcept
       : Handle([](T, VkAllocationCallbacks const*) -> void {})
     {}
 

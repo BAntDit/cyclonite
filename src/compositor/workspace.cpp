@@ -27,7 +27,7 @@ void Workspace::render(vulkan::Device& device)
         assert(semaphoreOffset < nodeWaitSemaphores_.size() && semaphoreOffset < nodeDstStageMasks_.size());
 
         auto& node = nodes_[index];
-        auto& inputs = (*node).getInputs();
+        auto& inputs = node.getInputs();
 
         auto [swapChainSemaphore, commandsIndex] = node.begin(device, frameNumber_);
 
@@ -41,13 +41,17 @@ void Workspace::render(vulkan::Device& device)
             semaphoreCount++;
         }
 
-        for (auto& [idx, views, semantics] : inputs) {
-            if (idx == std::numeric_limits<size_t>::max())
+        for (size_t linkIdx = 0, linkCount = inputs.size(); linkIdx < linkCount; linkIdx++) {
+            auto& [inputLinkIdx, sampler, views, semantics] = inputs.get(linkIdx);
+
+            (void)sampler;
+
+            if (inputLinkIdx == std::numeric_limits<size_t>::max())
                 continue;
 
-            auto const& n = nodes_[idx];
+            auto const& inputNode = nodes_[inputLinkIdx];
 
-            auto signal = static_cast<VkSemaphore>((*n).passFinishedSemaphore());
+            auto signal = static_cast<VkSemaphore>(inputNode.passFinishedSemaphore());
 
             if (signal != VK_NULL_HANDLE) { // wait all nodes this node depends on
                 *(baseSemaphore + semaphoreCount) = signal;
@@ -57,9 +61,9 @@ void Workspace::render(vulkan::Device& device)
 
             for (auto i = size_t{ 0 }; i < value_cast(RenderTargetOutputSemantic::COUNT); i++) {
                 auto const& rt =
-                  n.isSurfaceNode()
-                    ? static_cast<BaseRenderTarget const&>((*n).getRenderTarget<SurfaceRenderTarget>())
-                    : static_cast<BaseRenderTarget const&>((*n).getRenderTarget<FrameBufferRenderTarget>());
+                  inputNode.isSurfaceNode()
+                    ? static_cast<BaseRenderTarget const&>((*inputNode).getRenderTarget<SurfaceRenderTarget>())
+                    : static_cast<BaseRenderTarget const&>((*inputNode).getRenderTarget<FrameBufferRenderTarget>());
 
                 auto semantic = semantics[i];
 
@@ -73,7 +77,7 @@ void Workspace::render(vulkan::Device& device)
                     }
                 }
             } // all input's views
-        }     // all inputs
+        }
 
         node.update(semaphoreCount, baseSemaphore, baseDstStageMask);
 

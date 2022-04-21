@@ -27,7 +27,7 @@ void createPass(vulkan::Device& device,
 
     constexpr auto maxDescriptorCount = size_t{ 35 };
 
-    const auto bufferDescriptorCount = inPassType == PassType::SCENE ? uint32_t{ 3 } : uint32_t{ 1 };
+    const auto bufferDescriptorCount = inPassType == PassType::SCENE ? uint32_t{ 3 } : uint32_t{ 0 };
     const auto descriptorCount = bufferDescriptorCount + imageInputCount;
 
     // descriptor pool
@@ -155,11 +155,11 @@ void createPass(vulkan::Device& device,
         // TMP::
         // TODO:: must come from material
         constexpr size_t maxColorAttachmentCount = 32;
-        auto pipelineColorBlendAttachmentStates = std::array<VkPipelineColorBlendAttachmentState, maxColorAttachmentCount>{};
+        auto pipelineColorBlendAttachmentStates =
+          std::array<VkPipelineColorBlendAttachmentState, maxColorAttachmentCount>{};
 
         assert(attachmentCount < maxColorAttachmentCount);
-        for (uint32_t i = 0; i < attachmentCount; i++)
-        {
+        for (uint32_t i = 0; i < attachmentCount; i++) {
             auto& pipelineColorBlendAttachmentState = pipelineColorBlendAttachmentStates[i];
 
             pipelineColorBlendAttachmentState.blendEnable = VK_FALSE;
@@ -184,36 +184,38 @@ void createPass(vulkan::Device& device,
         colorBlendState.blendConstants[2] = 0.0f;
         colorBlendState.blendConstants[3] = 0.0f;
 
-        std::array<VkDescriptorSetLayoutBinding, maxDescriptorCount> bindings = { VkDescriptorSetLayoutBinding{},
-                                                                                  VkDescriptorSetLayoutBinding{},
-                                                                                  VkDescriptorSetLayoutBinding{} };
+        std::array<VkDescriptorSetLayoutBinding, maxDescriptorCount> bindings = {};
 
         if (inPassType == PassType::SCENE) {
+            bindings[0] = VkDescriptorSetLayoutBinding{};
             bindings[0].binding = 0;
             bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             bindings[0].descriptorCount = 1;
             bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+            bindings[1] = VkDescriptorSetLayoutBinding{};
             bindings[1].binding = 1;
             bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             bindings[1].descriptorCount = 1;
             bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+            bindings[2] = VkDescriptorSetLayoutBinding{};
             bindings[2].binding = 2;
             bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             bindings[2].descriptorCount = 1;
             bindings[2].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
         } else if (inPassType == PassType::SCREEN) {
-            bindings[0].binding = 0;
-            bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            bindings[0].descriptorCount = 1;
-            bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+            // bindings[0].binding = 0;
+            // bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            // bindings[0].descriptorCount = 1;
+            // bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
         } else {
             assert(false);
         }
 
         {
             for (auto i = uint32_t{ bufferDescriptorCount }; i < descriptorCount; i++) {
+                bindings[i] = VkDescriptorSetLayoutBinding{};
                 bindings[i].binding = i;
-                bindings[i].descriptorCount = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+                bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 bindings[i].descriptorCount = 1;
                 bindings[i].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
             }

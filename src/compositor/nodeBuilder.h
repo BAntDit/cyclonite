@@ -137,7 +137,7 @@ template<typename NodeConfig>
 template<size_t inputLinkCount>
 auto BaseNode::Builder<NodeConfig>::createInputLinks() -> Builder&
 {
-    inputLinks_ = Links::create<inputLinkCount>();
+    inputLinks_ = Links::create<inputLinkCount>(*device_);
     return *this;
 }
 
@@ -475,7 +475,7 @@ auto BaseNode::Builder<NodeConfig>::build() -> Node<NodeConfig>
                   attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                   attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
                   attachment.finalLayout =
-                    isSurfacePass ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                    isSurfacePass ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
                   attachments.emplace_back(attachment);
               }

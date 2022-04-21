@@ -8,6 +8,7 @@
 #include "baseRenderTarget.h"
 #include "uuids.h"
 #include "vulkan/imageView.h"
+#include "vulkan/sharedHandle.h"
 #include <easy-mp/containers.h>
 #include <easy-mp/enum.h>
 #include <easy-mp/type_list.h>
@@ -18,6 +19,7 @@ using namespace easy_mp;
 struct Link
 {
     size_t nodeIndex;
+    VkSampler sampler;
     std::array<VkImageView, value_cast(RenderTargetOutputSemantic::COUNT)> views;
     std::array<RenderTargetOutputSemantic, value_cast(RenderTargetOutputSemantic::COUNT)> semantics;
 };
@@ -138,7 +140,7 @@ public:
 
 public:
     template<size_t linkCount>
-    static auto create() -> Links;
+    static auto create(vulkan::Device& device) -> Links;
 
     Links() = default;
 
@@ -176,16 +178,36 @@ private:
 };
 
 template<size_t linkCount>
-auto Links::create() -> Links
+auto Links::create(vulkan::Device& device) -> Links
 {
     static_assert(linkCount <= maxInputCount);
 
     Links links;
     links.links_ = std::conditional_t<linkCount != 0, std::array<Link, linkCount>, std::monostate>{};
 
-    for (auto& [index, views, semantics] : links) {
+    for (auto& [index, sampler, views, semantics] : links) {
         index = std::numeric_limits<size_t>::max();
 
+        {
+            auto samplerInfo = VkSamplerCreateInfo{};
+
+            samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+            samplerInfo.magFilter = VK_FILTER_NEAREST;
+            samplerInfo.minFilter = VK_FILTER_NEAREST;
+            samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            samplerInfo.mipLodBias = 0.f;
+            samplerInfo.maxAnisotropy = 1.f;
+            samplerInfo.minLod = 0.f;
+            samplerInfo.maxLod = 1.f;
+            samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+
+            if (auto result = vkCreateSampler(device.handle(), &samplerInfo, nullptr, &sampler); result != VK_SUCCESS) {
+                throw std::runtime_error("could not create link sampler");
+            }
+        }
         for (auto i = size_t{ 0 }; i < value_cast(RenderTargetOutputSemantic::COUNT); i++) {
             views[i] = VK_NULL_HANDLE;
             semantics[i] = RenderTargetOutputSemantic::INVALID;

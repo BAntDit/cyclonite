@@ -210,7 +210,7 @@ void FrameCommands::update(vulkan::Device& device,
                       }
 
                       for (auto i = size_t{ 0 }, count = links.size(); i < count; i++) {
-                          auto&& [idx, views, semantics] = links.get(i);
+                          auto&& [idx, sampler, views, semantics] = links.get(i);
 
                           for (auto j = size_t{ 0 }; j < value_cast(RenderTargetOutputSemantic::COUNT); j++) {
                               auto semantic = semantics[j];
@@ -220,7 +220,7 @@ void FrameCommands::update(vulkan::Device& device,
 
                               imageDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                               imageDescriptors[i].imageView = views[j];
-                              imageDescriptors[i].sampler = VK_NULL_HANDLE;
+                              imageDescriptors[i].sampler = sampler;
 
                               auto& writeDescriptorSet = writeDescriptorSets[bufferDescriptorCount + i];
 
@@ -228,7 +228,7 @@ void FrameCommands::update(vulkan::Device& device,
                               writeDescriptorSet.dstSet = *descriptorSetPtr;
                               writeDescriptorSet.dstBinding = bufferDescriptorCount + i;
                               writeDescriptorSet.descriptorCount = 1;
-                              writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+                              writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                               writeDescriptorSet.pImageInfo = imageDescriptors.data() + imageDescriptorCount++;
                           }
                       }

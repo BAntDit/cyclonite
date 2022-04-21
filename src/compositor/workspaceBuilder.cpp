@@ -53,9 +53,10 @@ auto Workspace::Builder::build() -> Workspace
     uint32_t waitSemaphoreCount = 0;
 
     for (auto const& node : workspace.nodes_) {
-        for (auto const& [nodeIndex, _a, _b] : (*node).getInputs()) {
+        for (auto const& [nodeIndex, sampler, _a, _b] : (*node).getInputs()) {
             (void)_a;
             (void)_b;
+            (void)sampler;
 
             if (nodeIndex == std::numeric_limits<size_t>::max())
                 continue;
