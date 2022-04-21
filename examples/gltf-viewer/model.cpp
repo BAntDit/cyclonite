@@ -21,6 +21,8 @@ void Model::init(vulkan::Device& device,
 
     auto& node = workspace_->get(node_type_register_t::node_key_t<MainNodeConfig>{});
 
+    node.systems().get<systems::UniformSystem>().init(device, 1);
+
     gltf::Reader reader{};
     std::vector<enttx::Entity> pool{};
     std::unordered_map<size_t, enttx::Entity> nodeIdxToEntity{};

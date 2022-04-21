@@ -30,10 +30,6 @@ auto Links::Iterator::operator<=>(Links::Iterator const& rhs) const -> int32_t
         return -1;
     if (index_ > rhs.index_)
         return 1;
-    if (index_ < rhs.index_)
-        return -1;
-    if (index_ > rhs.index_)
-        return 1;
 
     return 0;
 }

@@ -103,6 +103,8 @@ Node<Config>::Node()
 template<typename Config>
 auto Node<Config>::getCurrentFrame(vulkan::Device& device) -> FrameCommands&
 {
+    assert(commandsIndex_ < frameCommands_.size()); // TODO:: fix assert
+
     auto& frameCommand = frameCommands_[commandsIndex_];
 
     auto begin = PassIterator{ pass_count_v,

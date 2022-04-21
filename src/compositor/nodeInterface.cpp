@@ -87,4 +87,19 @@ auto NodeInterface::getCurrentFrame(vulkan::Device& device) -> FrameCommands&
 {
     return getFrame_(node_, device);
 }
+
+auto NodeInterface::passFinishedSemaphore() const -> vulkan::Handle<VkSemaphore> const&
+{
+    return get().passFinishedSemaphore();
+}
+
+auto NodeInterface::getInputs() const -> Links const&
+{
+    return std::as_const(*this).getInputs();
+}
+auto NodeInterface::getInputs() -> Links&
+{
+    return get().getInputs();
+}
+
 }

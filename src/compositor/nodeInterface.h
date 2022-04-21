@@ -11,6 +11,7 @@
 namespace cyclonite::compositor {
 class BaseNode;
 class FrameCommands;
+class Links;
 
 class NodeInterface
 {
@@ -61,6 +62,12 @@ public:
     auto getRawPtr() -> void* { return node_; }
 
     [[nodiscard]] auto getRawPtr() const -> void const* { return node_; }
+
+    [[nodiscard]] auto passFinishedSemaphore() const -> vulkan::Handle<VkSemaphore> const&;
+
+    [[nodiscard]] auto getInputs() const -> Links const&;
+
+    auto getInputs() -> Links&;
 
 private:
     void* node_;
