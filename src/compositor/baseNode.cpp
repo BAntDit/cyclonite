@@ -5,7 +5,7 @@
 #include "baseNode.h"
 
 namespace cyclonite::compositor {
-BaseNode::BaseNode() noexcept
+BaseNode::BaseNode(size_t bufferCount) noexcept
   : uuid_{ getNewUniqueUUID() }
   , commandsIndex_{ 0 }
   , camera_{}
@@ -15,7 +15,12 @@ BaseNode::BaseNode() noexcept
   , renderTarget_{}
   , signalSemaphores_{}
   , frameCommands_{}
-{}
+{
+    frameCommands_.reserve(bufferCount);
+
+    for (auto i = size_t{ 0 }; i < bufferCount; i++)
+        frameCommands_.emplace_back(FrameCommands{ i });
+}
 
 auto BaseNode::passFinishedSemaphore() const -> vulkan::Handle<VkSemaphore> const&
 {

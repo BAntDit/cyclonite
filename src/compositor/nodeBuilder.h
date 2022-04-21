@@ -580,7 +580,7 @@ auto BaseNode::Builder<NodeConfig>::build() -> Node<NodeConfig>
           colorOutputs_);
     }
 
-    auto node = Node<NodeConfig>{};
+    auto node = Node<NodeConfig>{ frameBufferCount };
 
     // signal semaphores
     {
