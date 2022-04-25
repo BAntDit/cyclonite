@@ -15,9 +15,18 @@ class View
 public:
     View() noexcept;
 
-    void init(std::shared_ptr<cyclonite::compositor::Workspace> const&);
+    void init(cyclonite::multithreading::TaskManager& taskManager,
+              cyclonite::vulkan::Device& device,
+              std::shared_ptr<cyclonite::compositor::Workspace> const&);
 
     void draw(cyclonite::vulkan::Device& device);
+
+    [[nodiscard]] auto workspace() const -> std::shared_ptr<cyclonite::compositor::Workspace> const&
+    {
+        return workspace_;
+    }
+
+    [[nodiscard]] auto workspace() -> std::shared_ptr<cyclonite::compositor::Workspace>& { return workspace_; }
 
 private:
     std::shared_ptr<cyclonite::compositor::Workspace> workspace_;

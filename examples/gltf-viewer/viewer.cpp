@@ -99,7 +99,7 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
     model_->init(root_->device(), "./scene.gltf", workspace);
 
     view_ = std::make_unique<View>();
-    view_->init(workspace);
+    view_->init(root_->taskManager(), root_->device(), workspace);
 
     controller_ = std::make_unique<Controller>();
     controller_->init(root_->input(), width, height);
@@ -128,7 +128,19 @@ auto Viewer::run() -> Viewer&
 
 void Viewer::done()
 {
-    // systems_.get<systems::RenderSystem>().finish();
+    assert(view_);
+    auto& workspace = view_->workspace();
+
+    assert(workspace);
+    {
+        auto& node = workspace->get(node_type_register_t::node_key_t<MainNodeConfig>{});
+        node.systems().get<systems::RenderSystem>().finish();
+    }
+
+    {
+        auto& node = workspace->get(node_type_register_t::node_key_t<SurfaceNodeConfig>{});
+        node.systems().get<systems::RenderSystem>().finish();
+    }
 }
 }
 
