@@ -28,7 +28,7 @@ public:
     auto operator=(RenderSystem &&) -> RenderSystem& = default;
 
     template<typename... RenderPassArgs>
-    void init(multithreading::TaskManager& taskManager, vulkan::Device& device, RenderPassArgs&&... renderPassArgs);
+    void init(multithreading::TaskManager& taskManager, vulkan::Device& device);
 
     template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
     void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
@@ -38,21 +38,12 @@ public:
 private:
     multithreading::TaskManager* taskManager_;
     vulkan::Device* device_;
-
-    // tmp // dummy
-    vulkan::Handle<VkDescriptorPool> descriptorPool_;
-    vulkan::Handle<VkDescriptorSetLayout> descriptorSetLayout_;
-    vulkan::Handle<VkPipelineLayout> pipelineLayout_;
-    vulkan::Handle<VkPipeline> pipeline_;
 };
 
 template<typename... RenderPassArgs>
-void RenderSystem::init(multithreading::TaskManager& taskManager,
-                        vulkan::Device& device,
-                        RenderPassArgs&&... renderPassArgs)
+void RenderSystem::init(multithreading::TaskManager& taskManager, vulkan::Device& device)
 {
     taskManager_ = &taskManager;
-
     device_ = &device;
 }
 
@@ -62,6 +53,17 @@ void RenderSystem::update(SystemManager& systemManager, EntityManager& entityMan
     using namespace easy_mp;
 
     if constexpr (STAGE == value_cast(UpdateStage::RENDERING)) {
+        auto&& [node, cameraEntity, signalCount, baseSignal, baseMask] =
+          std::forward_as_tuple(std::forward<Args>(args)...);
+
+        (void)cameraEntity;
+        (void)signalCount;
+        (void)baseSignal;
+        (void)baseMask;
+
+        assert(device_ != nullptr);
+
+        node->writeFrameCommands(*device_);
     }
 
     (void)systemManager;

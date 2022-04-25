@@ -94,10 +94,11 @@ auto Workspace::Builder::createNode(type_pair<Node<NodeConfig>, NodeTypeId>, Nod
       [](void* node, VkSubmitInfo& submitInfo) -> void {
           (reinterpret_cast<Node<NodeConfig>*>(node))->end(submitInfo);
       },
-      [](void* node, vulkan::Device& device) -> FrameCommands& {
-          return (reinterpret_cast<Node<NodeConfig>*>(node))->getCurrentFrame(device);
-      },
-      [](void* node) -> void { (reinterpret_cast<Node<NodeConfig>*>(node))->~Node<NodeConfig>(); });
+      [](void* node) -> FrameCommands& { return (reinterpret_cast<Node<NodeConfig>*>(node))->getCurrentFrame(); },
+      [](void* node) -> void { (reinterpret_cast<Node<NodeConfig>*>(node))->~Node<NodeConfig>(); },
+      [](void* node, vulkan::Device& device) -> void {
+          return (reinterpret_cast<Node<NodeConfig>*>(node))->writeFrameCommands(device);
+      });
 
     nodeTypeIds_.emplace_back(NodeTypeId::value);
 

@@ -247,6 +247,9 @@ void FrameCommands::update(vulkan::Device& device,
                   }
 
                   if (passType == compositor::PassType::SCENE) {
+                      assert(indices_);
+                      assert(commands_);
+
                       vkCmdBindIndexBuffer(commandBuffer, indices_->handle(), 0, VK_INDEX_TYPE_UINT32);
                       vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
                       vkCmdBindDescriptorSets(commandBuffer,

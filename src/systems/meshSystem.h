@@ -216,7 +216,7 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
         auto&& [node, cameraEntity, signalCount, baseSignal, baseMask] =
           std::forward_as_tuple(std::forward<Args>(args)...);
 
-        auto& frame = node->getCurrentFrame(*devicePtr_);
+        auto& frame = node->getCurrentFrame();
         auto idx = (*node).commandIndex();
 
         auto const& signal = std::as_const(transferSemaphores_[idx]);

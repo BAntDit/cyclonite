@@ -13,8 +13,9 @@ NodeInterface::NodeInterface(void* node,
                              begin_func_t beginFunc,
                              update_func_t updateFunc,
                              end_func_t endFunc,
-                             get_current_frame_func_t getFrameFunc_,
-                             dispose_func_t disposeFunc) noexcept
+                             get_current_frame_func_t getFrameFunc,
+                             dispose_func_t disposeFunc,
+                             write_frame_commands_func_t writeFrameCommandsFunc) noexcept
   : node_{ node }
   , makeExpired_{ makeExpiredFunc }
   , getExpectedWaitSignalCount_{ getExpectedWaitSignalsFunc }
@@ -22,8 +23,9 @@ NodeInterface::NodeInterface(void* node,
   , begin_{ beginFunc }
   , update_{ updateFunc }
   , end_{ endFunc }
-  , getFrame_{ getFrameFunc_ }
+  , getFrame_{ getFrameFunc }
   , dispose_{ disposeFunc }
+  , writeFrameCommands_{ writeFrameCommandsFunc }
 {
     assert(node_ != nullptr);
 }
@@ -83,9 +85,9 @@ auto NodeInterface::operator*() const -> BaseNode const&
     return get();
 }
 
-auto NodeInterface::getCurrentFrame(vulkan::Device& device) -> FrameCommands&
+auto NodeInterface::getCurrentFrame() -> FrameCommands&
 {
-    return getFrame_(node_, device);
+    return getFrame_(node_);
 }
 
 auto NodeInterface::passFinishedSemaphore() const -> vulkan::Handle<VkSemaphore> const&
@@ -97,9 +99,14 @@ auto NodeInterface::getInputs() const -> Links const&
 {
     return std::as_const(*this).getInputs();
 }
+
 auto NodeInterface::getInputs() -> Links&
 {
     return get().getInputs();
 }
 
+void NodeInterface::writeFrameCommands(vulkan::Device& device)
+{
+    return writeFrameCommands_(node_, device);
+}
 }

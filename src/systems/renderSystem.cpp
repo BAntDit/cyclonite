@@ -17,6 +17,9 @@ std::vector<uint32_t> const defaultFragmentShaderCode = {
 namespace cyclonite::systems {
 void RenderSystem::finish()
 {
+    assert(taskManager_ != nullptr);
+    assert(device_ != nullptr);
+
     auto gfxStop = taskManager_->submit([queue = device_->graphicsQueue()]() -> void {
         if (auto result = vkQueueWaitIdle(queue); result != VK_SUCCESS) {
             if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
