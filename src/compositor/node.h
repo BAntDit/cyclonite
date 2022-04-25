@@ -45,7 +45,9 @@ public:
 
     auto operator=(Node &&) -> Node& = default;
 
-    auto getCurrentFrame(vulkan::Device& device) -> FrameCommands&;
+    auto getCurrentFrame() -> FrameCommands&;
+
+    void writeFrameCommands(vulkan::Device& device);
 
     void makeExpired(size_t swapChainIndex);
 
@@ -101,7 +103,14 @@ Node<Config>::Node(size_t bufferCount)
 {}
 
 template<typename Config>
-auto Node<Config>::getCurrentFrame(vulkan::Device& device) -> FrameCommands&
+auto Node<Config>::getCurrentFrame() -> FrameCommands&
+{
+    assert(commandsIndex_ < frameCommands_.size());
+    return frameCommands_[commandsIndex_];
+}
+
+template<typename Config>
+void Node<Config>::writeFrameCommands(vulkan::Device& device)
 {
     assert(commandsIndex_ < frameCommands_.size());
 
@@ -128,8 +137,6 @@ auto Node<Config>::getCurrentFrame(vulkan::Device& device) -> FrameCommands&
                              expirationBits_.data() };
 
     frameCommand.update(device, getRenderTargetBase(), static_cast<VkRenderPass>(vkRenderPass_), inputs_, begin, end);
-
-    return frameCommand;
 }
 
 template<typename Config>

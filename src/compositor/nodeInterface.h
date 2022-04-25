@@ -21,7 +21,8 @@ class NodeInterface
     using begin_func_t = std::pair<VkSemaphore, size_t> (*)(void*, vulkan::Device&, uint64_t);
     using update_func_t = void (*)(void*, uint32_t&, VkSemaphore*, VkPipelineStageFlags* baseFlag);
     using end_func_t = void (*)(void*, VkSubmitInfo&);
-    using get_current_frame_func_t = FrameCommands& (*)(void*, vulkan::Device&);
+    using get_current_frame_func_t = FrameCommands& (*)(void*);
+    using write_frame_commands_func_t = void (*)(void*, vulkan::Device&);
     using dispose_func_t = void (*)(void*);
 
 public:
@@ -32,12 +33,13 @@ public:
                   begin_func_t beginFunc,
                   update_func_t updateFunc,
                   end_func_t endFunc,
-                  get_current_frame_func_t getFrameFunc_,
-                  dispose_func_t disposeFunc) noexcept;
+                  get_current_frame_func_t getFrameFunc,
+                  dispose_func_t disposeFunc,
+                  write_frame_commands_func_t writeFrameCommandsFunc) noexcept;
 
     void makeExpired(size_t index);
 
-    auto getCurrentFrame(vulkan::Device& device) -> FrameCommands&;
+    auto getCurrentFrame() -> FrameCommands&;
 
     [[nodiscard]] auto getExpectedWaitSignalCount() const -> uint32_t;
 
@@ -69,6 +71,8 @@ public:
 
     auto getInputs() -> Links&;
 
+    void writeFrameCommands(vulkan::Device& device);
+
 private:
     void* node_;
     make_expired_func_t makeExpired_;
@@ -79,6 +83,7 @@ private:
     end_func_t end_;
     get_current_frame_func_t getFrame_;
     dispose_func_t dispose_;
+    write_frame_commands_func_t writeFrameCommands_;
 };
 }
 
