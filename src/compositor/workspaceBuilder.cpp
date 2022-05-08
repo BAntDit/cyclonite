@@ -72,8 +72,7 @@ auto Workspace::Builder::build() -> Workspace
 
     workspace.nodeSignalSemaphores_.resize(workspace.nodes_.size(), VK_NULL_HANDLE);
 
-    /*workspace.submits_.resize(nodes.size(), VkSubmitInfo{});
-     */
+    workspace.submits_.resize(workspace.nodes_.size(), VkSubmitInfo{});
 
     return workspace;
 }
