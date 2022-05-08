@@ -629,6 +629,8 @@ auto BaseNode::Builder<NodeConfig>::build() -> Node<NodeConfig>
         node._createPass(i, passType, *device_, writeDepth, inputImageCount);
     }
 
+    node.inputs_ = std::move(inputLinks_);
+
     node.publicSemanticBits_ = publicSemanticBits_;
 
     return node;
