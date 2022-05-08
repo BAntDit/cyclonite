@@ -242,6 +242,12 @@ void Model::init(vulkan::Device& device,
         cameraSystem.createCamera(
           entities, cameraEntity, components::Camera::PerspectiveProjection{ 1.f, 45.f, .1f, 100.f });
     }
+
+    // screen systems initialization
+    {
+        auto& node = workspace_->get(node_type_register_t::node_key_t<SurfaceNodeConfig>{});
+        node.systems().get<systems::UniformSystem>().init(device, node.getRenderTargetBase().frameBufferCount());
+    }
 }
 
 void Model::setCameraTransform(mat4 const& transform)
