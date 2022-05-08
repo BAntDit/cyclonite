@@ -50,6 +50,7 @@ void Workspace::render(vulkan::Device& device)
                 continue;
 
             auto const& inputNode = nodes_[inputLinkIdx];
+            auto const inputCommandIndex = (*inputNode).commandIndex();
 
             auto signal = static_cast<VkSemaphore>(inputNode.passFinishedSemaphore());
 
@@ -69,7 +70,7 @@ void Workspace::render(vulkan::Device& device)
 
                 if (semantic != RenderTargetOutputSemantic::INVALID) {
                     auto& view = views[i];
-                    auto const& attachment = rt.getColorAttachment(commandsIndex, semantic);
+                    auto const& attachment = rt.getColorAttachment(inputCommandIndex, semantic);
 
                     if (view != attachment.handle()) {
                         view = attachment.handle();
@@ -83,6 +84,7 @@ void Workspace::render(vulkan::Device& device)
 
         semaphoreOffset += semaphoreCount;
 
+        assert(submitCount < submits_.size());
         auto& submit = submits_[submitCount++] = {};
 
         // TODO:: NODE END
