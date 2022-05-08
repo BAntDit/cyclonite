@@ -47,8 +47,8 @@ void createPass(vulkan::Device& device,
             poolSizes[2].descriptorCount = maxSets;
 
         } else if (inPassType == PassType::SCREEN) {
-            poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            poolSizes[0].descriptorCount = maxSets;
+            // poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            // poolSizes[0].descriptorCount = maxSets;
         } else {
             assert(false);
         }
