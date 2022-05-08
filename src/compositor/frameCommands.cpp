@@ -174,12 +174,14 @@ void FrameCommands::update(vulkan::Device& device,
                               bufferDescriptors[bufferDescriptorCount].offset = 0;
                               bufferDescriptors[bufferDescriptorCount].range = VK_WHOLE_SIZE;
 
-                              writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                              writeDescriptorSets[0].dstSet = *descriptorSetPtr;
-                              writeDescriptorSets[0].dstBinding = bufferDescriptorCount;
-                              writeDescriptorSets[0].descriptorCount = 1;
-                              writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                              writeDescriptorSets[0].pBufferInfo = bufferDescriptors.data() + bufferDescriptorCount++;
+                              auto setIdx = bufferDescriptorCount;
+                              writeDescriptorSets[setIdx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                              writeDescriptorSets[setIdx].dstSet = *descriptorSetPtr;
+                              writeDescriptorSets[setIdx].dstBinding = bufferDescriptorCount;
+                              writeDescriptorSets[setIdx].descriptorCount = 1;
+                              writeDescriptorSets[setIdx].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                              writeDescriptorSets[setIdx].pBufferInfo =
+                                bufferDescriptors.data() + bufferDescriptorCount++;
                           }
 
                           if (instances_) {
@@ -187,28 +189,34 @@ void FrameCommands::update(vulkan::Device& device,
                               bufferDescriptors[bufferDescriptorCount].offset = 0;
                               bufferDescriptors[bufferDescriptorCount].range = VK_WHOLE_SIZE;
 
-                              writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                              writeDescriptorSets[1].dstSet = *descriptorSetPtr;
-                              writeDescriptorSets[1].dstBinding = bufferDescriptorCount;
-                              writeDescriptorSets[1].descriptorCount = 1;
-                              writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                              writeDescriptorSets[1].pBufferInfo = bufferDescriptors.data() + bufferDescriptorCount++;
+                              auto setIdx = bufferDescriptorCount;
+                              writeDescriptorSets[setIdx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                              writeDescriptorSets[setIdx].dstSet = *descriptorSetPtr;
+                              writeDescriptorSets[setIdx].dstBinding = bufferDescriptorCount;
+                              writeDescriptorSets[setIdx].descriptorCount = 1;
+                              writeDescriptorSets[setIdx].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                              writeDescriptorSets[setIdx].pBufferInfo =
+                                bufferDescriptors.data() + bufferDescriptorCount++;
+                          }
+
+                          // TODO:: move this out SCENE conditions
+                          if (uniforms_) {
+                              bufferDescriptors[bufferDescriptorCount].buffer = uniforms_->handle();
+                              bufferDescriptors[bufferDescriptorCount].offset = 0;
+                              bufferDescriptors[bufferDescriptorCount].range = VK_WHOLE_SIZE;
+
+                              auto setIdx = bufferDescriptorCount;
+                              writeDescriptorSets[setIdx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                              writeDescriptorSets[setIdx].dstSet = *descriptorSetPtr;
+                              writeDescriptorSets[setIdx].dstBinding = bufferDescriptorCount;
+                              writeDescriptorSets[setIdx].descriptorCount = 1;
+                              writeDescriptorSets[setIdx].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                              writeDescriptorSets[setIdx].pBufferInfo =
+                                bufferDescriptors.data() + bufferDescriptorCount++;
                           }
                       }
 
-                      if (uniforms_) {
-                          bufferDescriptors[bufferDescriptorCount].buffer = uniforms_->handle();
-                          bufferDescriptors[bufferDescriptorCount].offset = 0;
-                          bufferDescriptors[bufferDescriptorCount].range = VK_WHOLE_SIZE;
-
-                          writeDescriptorSets[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                          writeDescriptorSets[2].dstSet = *descriptorSetPtr;
-                          writeDescriptorSets[2].dstBinding = bufferDescriptorCount;
-                          writeDescriptorSets[2].descriptorCount = 1;
-                          writeDescriptorSets[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                          writeDescriptorSets[2].pBufferInfo = bufferDescriptors.data() + bufferDescriptorCount++;
-                      }
-
+                      auto descriptorSetIdx = bufferDescriptorCount;
                       for (auto i = size_t{ 0 }, count = links.size(); i < count; i++) {
                           auto&& [idx, sampler, views, semantics] = links.get(i);
 
@@ -218,15 +226,16 @@ void FrameCommands::update(vulkan::Device& device,
                               if (semantic == RenderTargetOutputSemantic::INVALID)
                                   continue;
 
-                              imageDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                              imageDescriptors[i].imageView = views[j];
-                              imageDescriptors[i].sampler = sampler;
+                              imageDescriptors[imageDescriptorCount].imageLayout =
+                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                              imageDescriptors[imageDescriptorCount].imageView = views[j];
+                              imageDescriptors[imageDescriptorCount].sampler = sampler;
 
-                              auto& writeDescriptorSet = writeDescriptorSets[bufferDescriptorCount + i];
+                              auto& writeDescriptorSet = writeDescriptorSets[descriptorSetIdx];
 
                               writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
                               writeDescriptorSet.dstSet = *descriptorSetPtr;
-                              writeDescriptorSet.dstBinding = bufferDescriptorCount + i;
+                              writeDescriptorSet.dstBinding = descriptorSetIdx++;
                               writeDescriptorSet.descriptorCount = 1;
                               writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                               writeDescriptorSet.pImageInfo = imageDescriptors.data() + imageDescriptorCount++;
@@ -239,7 +248,7 @@ void FrameCommands::update(vulkan::Device& device,
                                              0,
                                              nullptr);
 
-                      flags |= mask;
+                      flags &= ~mask;
                   } // descriptor set update
 
                   if (passIndex != 0) {
