@@ -56,7 +56,7 @@ public:
 
     void update(uint32_t& signalCount, VkSemaphore* baseSignal, VkPipelineStageFlags* baseFlag);
 
-    void end(VkSubmitInfo&) {}
+    void end(vulkan::Device& device);
 
     auto systems() -> system_manager_t& { return systems_; }
 
@@ -194,6 +194,19 @@ auto Node<Config>::begin(vulkan::Device& device, uint64_t frameNumber, VkFence f
     }
 
     return std::make_pair(waitSemaphore, commandsIndex_);
+}
+
+template<typename Config>
+void Node<Config>::end(vulkan::Device& device) {
+    if constexpr (is_surface_node) {
+        auto& rt = getRenderTarget<SurfaceRenderTarget>();
+        rt.swapBuffers(device, passFinishedSemaphore(), commandIndex());
+    }
+    // TODO::
+    /*else {
+        auto& rt = getRenderTarget<FrameBufferRenderTarget>();
+        rt.swapBuffers(device, commandIndex());
+    }*/
 }
 
 template<typename Config> // TODO:: make pointers const - nobody can change em anyway
