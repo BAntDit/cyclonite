@@ -98,7 +98,7 @@ void Workspace::render(vulkan::Device& device)
         submit.signalSemaphoreCount = signalCount;
         submit.pSignalSemaphores = &(*std::as_const(node)).passFinishedSemaphore();
 
-        node.end(submit); // do there the render system do in the end - send pass finished semaphore
+        node.end(device); // do there the render system do in the end - send pass finished semaphore
     }
 
     if (auto result = vkQueueSubmit(device.graphicsQueue(), submitCount, submits_.data(), VK_NULL_HANDLE);
