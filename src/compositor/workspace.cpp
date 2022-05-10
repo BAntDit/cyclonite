@@ -22,6 +22,7 @@ void Workspace::render(vulkan::Device& device)
 {
     auto semaphoreOffset = size_t{ 0 };
     auto submitCount = uint32_t{ 0 };
+    auto presentationNodeIndex = std::numeric_limits<uint8_t>::max();
 
     for (auto index = uint8_t{ 0 }, count = nodeCount_; index < count; index++) {
         assert(semaphoreOffset < nodeWaitSemaphores_.size() && semaphoreOffset < nodeDstStageMasks_.size());
@@ -39,6 +40,9 @@ void Workspace::render(vulkan::Device& device)
             *(baseSemaphore + semaphoreCount) = swapChainSemaphore;
             *(baseDstStageMask + semaphoreCount) = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             semaphoreCount++;
+
+            assert(presentationNodeIndex == std::numeric_limits<uint8_t>::max());
+            presentationNodeIndex = index;
         }
 
         for (size_t linkIdx = 0, linkCount = inputs.size(); linkIdx < linkCount; linkIdx++) {
@@ -104,6 +108,16 @@ void Workspace::render(vulkan::Device& device)
     if (auto result = vkQueueSubmit(device.graphicsQueue(), submitCount, submits_.data(), VK_NULL_HANDLE);
         result != VK_SUCCESS) {
         throw std::runtime_error{ "submit commands failed" };
+    }
+
+    if (presentationNodeIndex < nodeCount_) {
+        auto& presentationNode = nodes_[presentationNodeIndex];
+
+        assert(presentationNode.isSurfaceNode());
+
+        auto& rt = presentationNode.get().getRenderTarget<SurfaceRenderTarget>();
+
+        rt.swapBuffers(device, presentationNode.get().passFinishedSemaphore(), presentationNode.get().commandIndex());
     }
 
     /* auto frameFence = static_cast<VkFence>(frameFences_[frameIndex_]);
