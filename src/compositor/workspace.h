@@ -91,9 +91,7 @@ auto Workspace::Builder::createNode(type_pair<Node<NodeConfig>, NodeTypeId>, Nod
       [](void* node, uint32_t& signalCount, VkSemaphore* baseSignal, VkPipelineStageFlags* baseFlag) -> void {
           (reinterpret_cast<Node<NodeConfig>*>(node))->update(signalCount, baseSignal, baseFlag);
       },
-      [](void* node, vulkan::Device& device) -> void {
-          (reinterpret_cast<Node<NodeConfig>*>(node))->end(device);
-      },
+      [](void* node, vulkan::Device& device) -> void { (reinterpret_cast<Node<NodeConfig>*>(node))->end(device); },
       [](void* node) -> FrameCommands& { return (reinterpret_cast<Node<NodeConfig>*>(node))->getCurrentFrame(); },
       [](void* node) -> void { (reinterpret_cast<Node<NodeConfig>*>(node))->~Node<NodeConfig>(); },
       [](void* node, vulkan::Device& device) -> void {

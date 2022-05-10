@@ -92,11 +92,13 @@ inline auto getColorAttachments(
   std::array<FrameBufferRenderTarget::framebuffer_attachment_t, sizeof...(idx)> const& outputs)
   -> std::array<vulkan::ImageView, sizeof...(idx)>
 {
+    // TODO:: make possible to create FB readonly (no sample bit)
     return std::array{ getImageView(device,
                                     width,
                                     height,
                                     outputs[offset + idx],
-                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)... };
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |
+                                      VK_IMAGE_USAGE_SAMPLED_BIT)... };
 }
 
 template<size_t count>

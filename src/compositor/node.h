@@ -197,16 +197,9 @@ auto Node<Config>::begin(vulkan::Device& device, uint64_t frameNumber, VkFence f
 }
 
 template<typename Config>
-void Node<Config>::end(vulkan::Device& device) {
-    if constexpr (is_surface_node) {
-        auto& rt = getRenderTarget<SurfaceRenderTarget>();
-        rt.swapBuffers(device, passFinishedSemaphore(), commandIndex());
-    }
-    // TODO::
-    /*else {
-        auto& rt = getRenderTarget<FrameBufferRenderTarget>();
-        rt.swapBuffers(device, commandIndex());
-    }*/
+void Node<Config>::end(vulkan::Device& device)
+{
+    (void)device;
 }
 
 template<typename Config> // TODO:: make pointers const - nobody can change em anyway
