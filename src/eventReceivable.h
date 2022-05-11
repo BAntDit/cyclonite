@@ -7,6 +7,7 @@
 
 #include <atomic>
 #include <memory>
+#include <cstdint>
 
 namespace cyclonite {
 class EventReceivable

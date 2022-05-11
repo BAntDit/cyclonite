@@ -9,6 +9,7 @@
 #include <fstream>
 #include <istream>
 #include <nlohmann/json.hpp>
+#include <optional>
 
 #include "../../arena.h"
 #include "../../multithreading/taskManager.h"
