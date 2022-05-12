@@ -136,6 +136,7 @@ void Workspace::render(vulkan::Device& device)
     assert(swapChainLength_ != 0);
 
     frameIndex_ = frameNumber_++ % swapChainLength_;*/
+    frameNumber_++;
 }
 
 Workspace::~Workspace()
