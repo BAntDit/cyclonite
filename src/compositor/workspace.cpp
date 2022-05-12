@@ -117,7 +117,7 @@ void Workspace::render(vulkan::Device& device)
 
         auto& rt = presentationNode.get().getRenderTarget<SurfaceRenderTarget>();
 
-        rt.swapBuffers(device, presentationNode.get().passFinishedSemaphore(), presentationNode.get().commandIndex());
+        rt.swapBuffers(device, presentationNode.get().passFinishedSemaphore());
     }
 
     /* auto frameFence = static_cast<VkFence>(frameFences_[frameIndex_]);

@@ -16,7 +16,7 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
   , surface_{ std::move(surface) }
   , vkSwapChain_{ std::move(vkSwapChain) }
   , imageAvailableSemaphores_{}
-  , imageIndices_{}
+  , currentImageIndex_{ std::numeric_limits<uint32_t>::max() }
 {
     outputSemantics_[outputSemantic] = 0;
 
@@ -63,8 +63,6 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
             throw std::runtime_error("could not create image available semaphore.");
         }
     }
-
-    imageIndices_.resize(bufferCount, 0);
 }
 
 SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
@@ -77,7 +75,7 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
   , surface_{ std::move(surface) }
   , vkSwapChain_{ std::move(vkSwapChain) }
   , imageAvailableSemaphores_{}
-  , imageIndices_{}
+  , currentImageIndex_{ std::numeric_limits<uint32_t>::max() }
 {
     outputSemantics_[outputSemantic] = 0;
 
@@ -113,8 +111,6 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
             throw std::runtime_error("could not create image available semaphore.");
         }
     }
-
-    imageIndices_.resize(bufferCount, 0);
 }
 
 auto SurfaceRenderTarget::acquireBackBufferIndex(vulkan::Device const& device, uint32_t frameIndex)
@@ -127,17 +123,13 @@ auto SurfaceRenderTarget::acquireBackBufferIndex(vulkan::Device const& device, u
                           std::numeric_limits<uint64_t>::max(),
                           wait,
                           VK_NULL_HANDLE,
-                          imageIndices_.data() + frameIndex);
+                          &currentImageIndex_);
 
-    return std::make_pair(imageIndices_[frameIndex], wait);
+    return std::make_pair(currentImageIndex_, wait);
 }
 
-void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device,
-                                      vulkan::Handle<VkSemaphore> const& signal,
-                                      uint32_t currentFrameImageIndex)
+void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device, vulkan::Handle<VkSemaphore> const& signal)
 {
-    assert(currentFrameImageIndex < imageIndices_.size());
-
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
@@ -146,7 +138,7 @@ void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device,
     presentInfo.pSwapchains = &std::as_const(vkSwapChain_);
 
     // image at index currentFrameImageIndex gets available after signal
-    presentInfo.pImageIndices = imageIndices_.data() + currentFrameImageIndex;
+    presentInfo.pImageIndices = &currentImageIndex_;
 
     vkQueuePresentKHR(device.graphicsQueue(), &presentInfo);
 }
