@@ -55,9 +55,11 @@ void NodeInterface::update(uint32_t& signalCount, VkSemaphore* baseSignal, VkPip
     return update_(node_, signalCount, baseSignal, baseFlag);
 }
 
-void NodeInterface::end(vulkan::Device& device)
+auto NodeInterface::end(VkSemaphore* waitSemaphores,
+                        VkPipelineStageFlags const* waitDstStageMasks,
+                        uint32_t waitSemaphoreCount) -> VkSubmitInfo
 {
-    return end_(node_, device);
+    return end_(node_, waitSemaphores, waitDstStageMasks, waitSemaphoreCount);
 }
 
 void NodeInterface::dispose()
