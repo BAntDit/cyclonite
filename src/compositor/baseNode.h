@@ -106,6 +106,8 @@ public:
 protected:
     explicit BaseNode(size_t bufferCount) noexcept;
 
+    auto frameCommands() const -> std::pair<uint32_t, VkCommandBuffer const*>;
+
 private:
     using render_target_t = std::variant<std::monostate, SurfaceRenderTarget, FrameBufferRenderTarget>;
 

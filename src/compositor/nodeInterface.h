@@ -20,7 +20,10 @@ class NodeInterface
     using is_surface_node_func_t = bool (*)();
     using begin_func_t = std::pair<VkSemaphore, size_t> (*)(void*, vulkan::Device&, uint64_t);
     using update_func_t = void (*)(void*, uint32_t&, VkSemaphore*, VkPipelineStageFlags* baseFlag);
-    using end_func_t = void (*)(void*, vulkan::Device& device);
+    using end_func_t = VkSubmitInfo (*)(void*,
+                                        VkSemaphore* waitSemaphores,
+                                        VkPipelineStageFlags const* waitDstStageMasks,
+                                        uint32_t waitSemaphoreCount);
     using get_current_frame_func_t = FrameCommands& (*)(void*);
     using write_frame_commands_func_t = void (*)(void*, vulkan::Device&);
     using dispose_func_t = void (*)(void*);
@@ -49,7 +52,8 @@ public:
 
     void update(uint32_t& signalCount, VkSemaphore* baseSignal, VkPipelineStageFlags* baseFlag);
 
-    void end(vulkan::Device& device);
+    auto end(VkSemaphore* waitSemaphores, VkPipelineStageFlags const* waitDstStageMasks, uint32_t waitSemaphoreCount)
+      -> VkSubmitInfo;
 
     void dispose();
 

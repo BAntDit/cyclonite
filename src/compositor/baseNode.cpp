@@ -45,4 +45,10 @@ auto BaseNode::getRenderTargetBase() const -> BaseRenderTarget const&
       },
       renderTarget_);
 }
+
+auto BaseNode::frameCommands() const -> std::pair<uint32_t, VkCommandBuffer const*>
+{
+    return std::make_pair(static_cast<uint32_t>(frameCommands_[commandsIndex_].graphicsCommands_->commandBufferCount()),
+                          frameCommands_[commandsIndex_].graphicsCommands_->pCommandBuffers());
+}
 }

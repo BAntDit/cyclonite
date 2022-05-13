@@ -89,20 +89,7 @@ void Workspace::render(vulkan::Device& device)
         semaphoreOffset += semaphoreCount;
 
         assert(submitCount < submits_.size());
-        auto& submit = submits_[submitCount++] = {};
-
-        // TODO:: NODE END
-        submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submit.waitSemaphoreCount = semaphoreCount;
-        submit.pWaitSemaphores = baseSemaphore;
-        submit.pWaitDstStageMask = baseDstStageMask;
-        // command buffers
-        auto const signalCount = uint32_t{ 1 };
-
-        submit.signalSemaphoreCount = signalCount;
-        submit.pSignalSemaphores = &(*std::as_const(node)).passFinishedSemaphore();
-
-        node.end(device); // do there the render system do in the end - send pass finished semaphore
+        submits_[submitCount++] = node.end(baseSemaphore, baseDstStageMask, semaphoreCount);
     }
 
     if (auto result = vkQueueSubmit(device.graphicsQueue(), submitCount, submits_.data(), VK_NULL_HANDLE);
