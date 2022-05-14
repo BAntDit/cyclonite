@@ -18,9 +18,9 @@ public:
 
     MeshStorage();
 
-    [[nodiscard]] auto get(uint32_t index) const -> Mesh const& { return meshes_[index]; }
+    [[nodiscard]] auto get(uint32_t index) const -> Mesh const&;
 
-    auto get(uint32_t index) -> Mesh& { return meshes_[index]; }
+    auto get(uint32_t index) -> Mesh&;
 
     auto create(uint32_t index, uint16_t subMeshCount) -> Mesh&;
 
@@ -61,6 +61,22 @@ MeshStorage<MAX_SUBMESH_COUNT>::MeshStorage()
 
     freeIndices_.reserve(MAX_SUBMESH_COUNT);
     freeIndices_.emplace_back(0);
+}
+
+template<size_t MAX_SUBMESH_COUNT>
+auto MeshStorage<MAX_SUBMESH_COUNT>::get(uint32_t index) const -> Mesh const&
+{
+    assert(index < indices_.size());
+    auto idx = indices_[index];
+
+    assert(idx < meshes_.size());
+    return meshes_[idx];
+}
+
+template<size_t MAX_SUBMESH_COUNT>
+auto MeshStorage<MAX_SUBMESH_COUNT>::get(uint32_t index) -> Mesh&
+{
+    return const_cast<Mesh&>(std::as_const(*this).get(index));
 }
 
 template<size_t MAX_SUBMESH_COUNT>
