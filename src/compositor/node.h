@@ -205,6 +205,7 @@ auto Node<Config>::end(VkSemaphore* waitSemaphores,
 {
     auto submit = VkSubmitInfo{};
     auto [count, commands] = frameCommands();
+    auto const signalSemaphoreCount = uint32_t{ 1 };
 
     submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submit.waitSemaphoreCount = waitSemaphoreCount;
@@ -212,7 +213,7 @@ auto Node<Config>::end(VkSemaphore* waitSemaphores,
     submit.pWaitDstStageMask = waitDstStageMasks;
     submit.commandBufferCount = count;
     submit.pCommandBuffers = commands;
-    submit.signalSemaphoreCount = 0;
+    submit.signalSemaphoreCount = signalSemaphoreCount;
     submit.pSignalSemaphores = &passFinishedSemaphore();
 
     return submit;
