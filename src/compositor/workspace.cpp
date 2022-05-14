@@ -12,6 +12,7 @@ Workspace::Workspace() noexcept
   , nodeCount_{ 0 }
   , nodeStorage_{}
   , nodes_{}
+  , nodeTypeIds_{}
   , nodeDstStageMasks_{}
   , nodeWaitSemaphores_{}
   , nodeSignalSemaphores_{}

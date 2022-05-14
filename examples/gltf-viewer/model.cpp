@@ -244,10 +244,10 @@ void Model::init(vulkan::Device& device,
     }
 
     // screen systems initialization
-    {
+    /*{
         auto& node = workspace_->get(node_type_register_t::node_key_t<SurfaceNodeConfig>{});
         node.systems().get<systems::UniformSystem>().init(device, node.getRenderTargetBase().frameBufferCount());
-    }
+    }*/
 }
 
 void Model::setCameraTransform(mat4 const& transform)
