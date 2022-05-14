@@ -15,11 +15,10 @@ struct MainNodeConfig : public cyclonite::DefaultConfigs
 
 struct SurfaceNodeConfig : public cyclonite::DefaultConfigs
 {
-    using ecs_config_t =
-      cyclonite::EcsConfig<easy_mp::type_list<>,
-                           easy_mp::type_list<>,
-                           easy_mp::type_list<cyclonite::systems::RenderSystem, cyclonite::systems::UniformSystem>,
-                           easy_mp::value_cast(cyclonite::UpdateStage::COUNT)>;
+    using ecs_config_t = cyclonite::EcsConfig<easy_mp::type_list<>,
+                                              easy_mp::type_list<>,
+                                              easy_mp::type_list<cyclonite::systems::RenderSystem>,
+                                              easy_mp::value_cast(cyclonite::UpdateStage::COUNT)>;
 };
 
 using node_type_register_t = cyclonite::compositor::node_type_register<cyclonite::compositor::Node<MainNodeConfig>,
