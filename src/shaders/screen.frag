@@ -18,10 +18,12 @@ void main() {
 
     albedo = vec3(dot(albedo, abs(norm2))) * 0.33;
 
-    norm = norm * step(vUV.x, 0.5);
-    albedo = albedo * step(0.5, vUV.x);
+    norm = norm * step(vUV.x, 0.498);
+    albedo = albedo * step(0.502, vUV.x);
 
-    vec3 outC = abs(norm) + albedo;
+    vec3 white = vec3(1., 1., 0.) * step(0.498, vUV.x) *  step(vUV.x, 0.502);
+
+    vec3 outC = abs(norm) + albedo + white;
 
     outColor = vec4(outC, 1.0);
 }
