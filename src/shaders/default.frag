@@ -7,6 +7,6 @@ layout (location = 0) out vec4 outNormal;
 layout (location = 1) out vec4 outAlbedo;
 
 void main() {
-    outAlbedo = vec4(1., 0., 0., 1.);
+    outAlbedo = vec4(1., 1., 1., 1.);
     outNormal = vec4(vNormal, 1.);
 }
