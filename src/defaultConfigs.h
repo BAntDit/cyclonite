@@ -7,6 +7,7 @@
 
 #include "components/camera.h"
 #include "components/mesh.h"
+#include "components/meshStorage.h"
 #include "components/transform.h"
 #include "components/transformStorage.h"
 #include "config.h"
@@ -27,9 +28,13 @@
 namespace cyclonite {
 struct DefaultConfigs
 {
+    constexpr static uint8_t pass_count = 1;
+
+    constexpr static bool is_surface_node = true;
+
     using ecs_config_t = EcsConfig<easy_mp::type_list<components::Transform, components::Mesh, components::Camera>,
                                    easy_mp::type_list<components::TransformStorage<32, 1>,
-                                                      enttx::ComponentStorage<16, 1, components::Mesh>,
+                                                      components::MeshStorage<1024>,
                                                       enttx::ComponentStorage<1, 1, components::Camera>>,
                                    easy_mp::type_list<systems::TransformSystem,
                                                       systems::CameraSystem,

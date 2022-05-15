@@ -14,7 +14,7 @@ template<typename T>
 class Handle
 {
 public:
-    Handle()
+    Handle() noexcept
       : Handle([](T, VkAllocationCallbacks const*) -> void {})
     {}
 
@@ -54,7 +54,7 @@ public:
 
     auto operator=(Handle const& rhs) -> Handle& = delete;
 
-    auto operator=(Handle&& rhs) -> Handle&
+    auto operator=(Handle&& rhs) noexcept -> Handle&
     {
         reset();
 

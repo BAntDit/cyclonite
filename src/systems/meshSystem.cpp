@@ -18,6 +18,7 @@ void MeshSystem::init(vulkan::Device& device,
     commandCount_ = 0;
 
     vkTransferQueue_ = device.hostTransferQueue();
+    vkGraphicQueue_ = device.graphicsQueue();
 
     commands_.reserve(initialCommandCapacity);
 
@@ -185,8 +186,11 @@ auto MeshSystem::createGeometry(uint32_t vertexCount, uint32_t indexCount) -> st
     return geometry;
 }
 
-void MeshSystem::_addSubMesh(components::Mesh& mesh, std::shared_ptr<Geometry> const& geometry)
+void MeshSystem::_addSubMesh(components::SubMesh& subMesh, uint64_t geometryId)
 {
+    assert(geometries_.count(geometryId) != 0);
+    auto& geometry = geometries_[geometryId];
+
     auto firstIndex = geometry->firstIndex();
     auto baseVertex = geometry->baseVertex();
 
@@ -220,7 +224,8 @@ void MeshSystem::_addSubMesh(components::Mesh& mesh, std::shared_ptr<Geometry> c
 
     // TODO:: realloc buffers and transfer commands if commands_ size > commandBuffer_->size()
 
-    mesh.subMeshes.emplace_back(idx, geometry);
+    subMesh.commandIndex = idx;
+    subMesh.geometryId = geometryId;
 }
 
 auto MeshSystem::_getDumpCommandIndex() -> size_t

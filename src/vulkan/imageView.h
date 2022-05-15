@@ -60,6 +60,8 @@ private:
     Handle<VkImageView> vkImageView_;
     VkImageViewType vkImageViewType_;
 };
+
+using ImageViewPtr = std::shared_ptr<ImagePtr>;
 }
 
 #endif // CYCLONITE_IMAGEVIEW_H

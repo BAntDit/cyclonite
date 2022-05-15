@@ -17,9 +17,7 @@ public:
                         Surface& surface,
                         vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
                         VkFormat depthStencilFormat,
-                        VkClearDepthStencilValue clearDepthStencilValue,
                         VkFormat surfaceFormat,
-                        VkClearColorValue clearSurfaceValue,
                         RenderTargetOutputSemantic outputSemantic);
 
     SurfaceRenderTarget(vulkan::Device& device,
@@ -27,7 +25,6 @@ public:
                         Surface& surface,
                         vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
                         VkFormat surfaceFormat,
-                        VkClearColorValue clearSurfaceValue,
                         RenderTargetOutputSemantic outputSemantic);
 
     SurfaceRenderTarget(SurfaceRenderTarget const&) = delete;
@@ -42,15 +39,13 @@ public:
 
     auto acquireBackBufferIndex(vulkan::Device const& device, uint32_t frameIndex) -> std::pair<uint32_t, VkSemaphore>;
 
-    void swapBuffers(vulkan::Device const& device,
-                     vulkan::Handle<VkSemaphore> const& signal,
-                     uint32_t currentFrameImageIndex);
+    void swapBuffers(vulkan::Device const& device, vulkan::Handle<VkSemaphore> const& signal);
 
 private:
     std::optional<Surface> surface_;
     vulkan::Handle<VkSwapchainKHR> vkSwapChain_;
     std::vector<vulkan::Handle<VkSemaphore>> imageAvailableSemaphores_;
-    std::vector<uint32_t> imageIndices_;
+    uint32_t currentImageIndex_;
 };
 }
 

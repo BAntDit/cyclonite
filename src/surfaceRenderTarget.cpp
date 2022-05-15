@@ -10,30 +10,26 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
                                          Surface& surface,
                                          vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
                                          VkFormat depthStencilFormat,
-                                         VkClearDepthStencilValue clearDepthStencilValue,
                                          VkFormat surfaceFormat,
-                                         VkClearColorValue clearSurfaceValue,
                                          RenderTargetOutputSemantic outputSemantic)
-  : BaseRenderTarget(surface.width(), surface.height(), clearDepthStencilValue, std::array{ clearSurfaceValue })
+  : BaseRenderTarget(surface.width(), surface.height(), 1, true)
   , surface_{ std::move(surface) }
   , vkSwapChain_{ std::move(vkSwapChain) }
   , imageAvailableSemaphores_{}
-  , imageIndices_{}
+  , currentImageIndex_{ std::numeric_limits<uint32_t>::max() }
 {
     outputSemantics_[outputSemantic] = 0;
 
-    uint32_t imageCount = 0;
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, nullptr);
+    uint32_t bufferCount = 0;
+    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &bufferCount, nullptr);
 
-    swapChainLength_ = imageCount;
+    std::vector<VkImage> vkImages(bufferCount, VK_NULL_HANDLE);
 
-    std::vector<VkImage> vkImages(swapChainLength_, VK_NULL_HANDLE);
+    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &bufferCount, vkImages.data());
 
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, vkImages.data());
+    frameBuffers_.reserve(bufferCount);
 
-    frameBuffers_.reserve(swapChainLength_);
-
-    imageAvailableSemaphores_.reserve(swapChainLength_);
+    imageAvailableSemaphores_.reserve(bufferCount);
 
     auto depthImagePtr = std::make_shared<vulkan::Image>(device,
                                                          width(),
@@ -67,8 +63,6 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
             throw std::runtime_error("could not create image available semaphore.");
         }
     }
-
-    imageIndices_.resize(imageCount, 0);
 }
 
 SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
@@ -76,28 +70,25 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
                                          Surface& surface,
                                          vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
                                          VkFormat surfaceFormat,
-                                         VkClearColorValue clearSurfaceValue,
                                          RenderTargetOutputSemantic outputSemantic)
-  : BaseRenderTarget(surface.width(), surface.height(), std::array{ clearSurfaceValue })
+  : BaseRenderTarget(surface.width(), surface.height())
   , surface_{ std::move(surface) }
   , vkSwapChain_{ std::move(vkSwapChain) }
   , imageAvailableSemaphores_{}
-  , imageIndices_{}
+  , currentImageIndex_{ std::numeric_limits<uint32_t>::max() }
 {
     outputSemantics_[outputSemantic] = 0;
 
-    uint32_t imageCount = 0;
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, nullptr);
+    uint32_t bufferCount = 0;
+    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &bufferCount, nullptr);
 
-    swapChainLength_ = imageCount;
+    std::vector<VkImage> vkImages(bufferCount, VK_NULL_HANDLE);
 
-    std::vector<VkImage> vkImages(swapChainLength_, VK_NULL_HANDLE);
+    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &bufferCount, vkImages.data());
 
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &imageCount, vkImages.data());
+    frameBuffers_.reserve(bufferCount);
 
-    frameBuffers_.reserve(swapChainLength_);
-
-    imageAvailableSemaphores_.reserve(swapChainLength_);
+    imageAvailableSemaphores_.reserve(bufferCount);
 
     VkSemaphoreCreateInfo semaphoreCreateInfo = {};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -120,8 +111,6 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
             throw std::runtime_error("could not create image available semaphore.");
         }
     }
-
-    imageIndices_.resize(imageCount, 0);
 }
 
 auto SurfaceRenderTarget::acquireBackBufferIndex(vulkan::Device const& device, uint32_t frameIndex)
@@ -134,17 +123,13 @@ auto SurfaceRenderTarget::acquireBackBufferIndex(vulkan::Device const& device, u
                           std::numeric_limits<uint64_t>::max(),
                           wait,
                           VK_NULL_HANDLE,
-                          imageIndices_.data() + frameIndex);
+                          &currentImageIndex_);
 
-    return std::make_pair(imageIndices_[frameIndex], wait);
+    return std::make_pair(currentImageIndex_, wait);
 }
 
-void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device,
-                                      vulkan::Handle<VkSemaphore> const& signal,
-                                      uint32_t currentFrameImageIndex)
+void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device, vulkan::Handle<VkSemaphore> const& signal)
 {
-    assert(currentFrameImageIndex < imageIndices_.size());
-
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
@@ -153,7 +138,7 @@ void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device,
     presentInfo.pSwapchains = &std::as_const(vkSwapChain_);
 
     // image at index currentFrameImageIndex gets available after signal
-    presentInfo.pImageIndices = imageIndices_.data() + currentFrameImageIndex;
+    presentInfo.pImageIndices = &currentImageIndex_;
 
     vkQueuePresentKHR(device.graphicsQueue(), &presentInfo);
 }

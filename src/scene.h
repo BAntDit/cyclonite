@@ -7,8 +7,8 @@
 
 #include "config.h"
 
+// TODO:: it is not necessary, remove
 namespace cyclonite {
-// TODO:: main TODO for the next time - make possible to fill scene with data for rendering
 template<typename EcsConfig>
 class Scene
 {

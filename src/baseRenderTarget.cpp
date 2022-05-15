@@ -5,6 +5,34 @@
 #include "baseRenderTarget.h"
 
 namespace cyclonite {
+BaseRenderTarget::BaseRenderTarget(uint32_t width,
+                                   uint32_t height,
+                                   size_t colorAttachmentCount /* = 1*/,
+                                   bool hasDepthStencil /*= false*/)
+  : extent_{}
+  , hasDepthStencil_{ hasDepthStencil }
+  , colorAttachmentCount_{ colorAttachmentCount }
+  , clearValues_{}
+  , frameBuffers_{}
+  , outputSemantics_{}
+{
+    extent_.width = width;
+    extent_.height = height;
+
+    // just for now
+    if (hasDepthStencil_) {
+        clearValues_.reserve(colorAttachmentCount + 1);
+        clearValues_.resize(colorAttachmentCount, VkClearValue{});
+
+        auto depthClear = VkClearValue{};
+        depthClear.depthStencil = VkClearDepthStencilValue{ 1.f, 0 };
+
+        clearValues_.push_back(depthClear);
+    } else {
+        clearValues_.resize(colorAttachmentCount, VkClearValue{});
+    }
+}
+
 auto BaseRenderTarget::getColorAttachment(size_t bufferIndex, size_t attachmentIndex) const -> vulkan::ImageView const&
 {
     assert(attachmentIndex < colorAttachmentCount_);
@@ -29,55 +57,15 @@ auto BaseRenderTarget::hasAttachment(RenderTargetOutputSemantic semantic) const 
     return outputSemantics_.count(semantic) > 0;
 }
 
-void BaseRenderTarget::setDepthStencilClearValue(VkClearDepthStencilValue clearValue)
-{
-    assert(hasDepthStencil_);
-
-    std::visit([&](auto&& clearValues) -> void { clearValues[clearValues.size() - 1].depthStencil = clearValue; },
-               clearValues_);
-}
-
-void BaseRenderTarget::setColorAttachmentClearValue(RenderTargetOutputSemantic semantic, VkClearColorValue clearValue)
+auto BaseRenderTarget::getAttachmentIndex(RenderTargetOutputSemantic semantic) const -> size_t
 {
     assert(hasAttachment(semantic));
-
-    auto idx = outputSemantics_.find(semantic)->second;
-
-    std::visit([&](auto&& clearValues) -> void { clearValues[idx].color = clearValue; }, clearValues_);
+    return outputSemantics_.at(semantic);
 }
 
-auto BaseRenderTarget::getDepthStencilClearValue() const -> VkClearDepthStencilValue
+auto BaseRenderTarget::frameBuffer(size_t bufferIndex) const -> vulkan::FrameBuffer const&
 {
-    assert(hasDepthStencil_);
-
-    return std::visit(
-      [](auto&& clearValues) -> VkClearDepthStencilValue { return clearValues[clearValues.size() - 1].depthStencil; },
-      clearValues_);
-}
-
-auto BaseRenderTarget::getColorAttachmentClearValue(RenderTargetOutputSemantic semantic) const -> VkClearColorValue
-{
-    assert(hasAttachment(semantic));
-
-    auto idx = outputSemantics_.find(semantic)->second;
-
-    return std::visit([&](auto&& clearValues) -> VkClearColorValue { return clearValues[idx].color; }, clearValues_);
-}
-
-auto BaseRenderTarget::getColorAttachmentClearValue(size_t attachmentIndex) const -> VkClearColorValue
-{
-    assert(attachmentIndex < colorAttachmentCount_);
-
-    return std::visit([&](auto&& clearValues) -> VkClearColorValue { return clearValues[attachmentIndex].color; },
-                      clearValues_);
-}
-
-auto BaseRenderTarget::getClearValues() const -> std::pair<size_t, VkClearValue const*>
-{
-    return std::visit(
-      [](auto&& clearValues) -> std::pair<size_t, VkClearValue const*> {
-          return std::make_pair(clearValues.size(), clearValues.data());
-      },
-      clearValues_);
+    assert(bufferIndex < frameBuffers_.size());
+    return frameBuffers_[bufferIndex];
 }
 }

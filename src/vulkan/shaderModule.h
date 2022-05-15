@@ -14,7 +14,7 @@ public:
     ShaderModule(Device const& device,
                  std::vector<uint32_t> const& code,
                  VkShaderStageFlags stageFlags,
-                 std::string const& entryPointName = u8"main",
+                 std::string const& entryPointName = "main",
                  uint32_t constantOffset = 0,
                  uint32_t constantSize = 0);
 
@@ -23,7 +23,7 @@ public:
                  std::vector<uint32_t> const& code,
                  VkShaderStageFlags stageFlags,
                  std::array<VkDescriptorType, bindingCount> const& bindings,
-                 std::string const& entryPointName = u8"main",
+                 std::string const& entryPointName = "main",
                  uint32_t constantOffset = 0,
                  uint32_t constantSize = 0);
 

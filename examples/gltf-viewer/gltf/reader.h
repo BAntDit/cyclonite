@@ -36,10 +36,10 @@ auto _testVersion(nlohmann::json const& asset) -> bool
     // check minVersion at first
     {
         // it must contains minor and major version at once, rest part of version is optional
-        std::regex re(u8"^(\\d+).(\\d+)($|.\\d+$|(.\\d+.\\d+$))");
+        std::regex re("^(\\d+).(\\d+)($|.\\d+$|(.\\d+.\\d+$))");
         std::smatch matches;
 
-        auto it = asset.find(u8"minVersion");
+        auto it = asset.find(reinterpret_cast<char const*>(u8"minVersion"));
 
         if (it != asset.end()) {
             if (!it.value().is_string()) {
@@ -67,7 +67,7 @@ auto _testVersion(nlohmann::json const& asset) -> bool
 
     // check version
     {
-        auto it = asset.find(u8"version");
+        auto it = asset.find(reinterpret_cast<char const*>(u8"version"));
 
         // if there is no minVersion, the target version must be
         // From spec: https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#asset
@@ -83,7 +83,7 @@ auto _testVersion(nlohmann::json const& asset) -> bool
         auto version = it.value().get<std::string>();
 
         // it must contain major version only, rest part is optional
-        std::regex re(u8"^(\\d+)($|.(\\d+))($|.\\d+$|(.\\d+.\\d+$))");
+        std::regex re("^(\\d+)($|.(\\d+))($|.\\d+$|(.\\d+.\\d+$))");
         std::smatch matches;
 
         if (std::regex_match(version, matches, re)) {
@@ -145,6 +145,29 @@ auto _readArray(nlohmann::json const& array) -> std::array<T, Size>
     }
 
     return result;
+}
+enum class ReaderDataType : uint8_t
+{
+    NODE_COUNT,
+    BUFFER,
+    BUFFER_VIEW,
+    ACCESSOR,
+    VERTEX_INDEX_INSTANCE_COUNT,
+    NODE,
+    GEOMETRY,
+    MESH,
+    COUNT,
+    MIN_VALUE = NODE_COUNT,
+    MAX_VALUE = COUNT
+};
+
+template<ReaderDataType DataTypeValue>
+using reader_data_type_t = std::integral_constant<ReaderDataType, DataTypeValue>;
+
+template<ReaderDataType DataValue, typename DataType>
+inline constexpr auto reader_data_test() -> bool
+{
+    return std::is_same_v<std::decay_t<DataType>, reader_data_type_t<DataValue>>;
 }
 }
 
@@ -339,7 +362,7 @@ void Reader::read(std::istream& stream, F&& f)
                 file.close();
             }
 
-            f(buffers_[i], i);
+            f(reader_data_type_t<ReaderDataType::BUFFER>{}, buffers_[i], i);
         }
     }
 
@@ -379,7 +402,7 @@ void Reader::read(std::istream& stream, F&& f)
                 throw std::runtime_error("buffer view stride has wrong value");
             }
 
-            f(bufferViews_[i], i);
+            f(reader_data_type_t<ReaderDataType::BUFFER_VIEW>{}, bufferViews_[i], i);
         }
     }
 
@@ -422,7 +445,7 @@ void Reader::read(std::istream& stream, F&& f)
                 throw std::runtime_error("accessor type has wrong value");
             }
 
-            f(accessors_[i], i);
+            f(reader_data_type_t<ReaderDataType::ACCESSOR>{}, accessors_[i], i);
         }
     }
 
@@ -437,14 +460,18 @@ void Reader::read(std::istream& stream, F&& f)
     auto const& scene = scenes.at(defaultSceneIdx);
     auto const& rootNodes = _getJsonProperty(scene, reinterpret_cast<char const*>(u8"nodes"));
 
-    f(static_cast<uint32_t>(nodes.size()));
+    f(reader_data_type_t<ReaderDataType::NODE_COUNT>{}, static_cast<uint32_t>(nodes.size()));
 
     for (size_t i = 0, count = rootNodes.size(); i < count; i++) {
         auto idx = rootNodes.at(i).get<size_t>();
         _countNode(nodes, meshes, accessors, instanceCommands, idx);
     }
 
-    f(std::make_tuple(vertexCount_, indexCount_, instanceCount_, static_cast<uint32_t>(instanceCommands.size())));
+    f(reader_data_type_t<ReaderDataType::VERTEX_INDEX_INSTANCE_COUNT>{},
+      vertexCount_,
+      indexCount_,
+      instanceCount_,
+      static_cast<uint32_t>(instanceCommands.size()));
 
     for (size_t i = 0, count = rootNodes.size(); i < count; i++) {
         auto idx = rootNodes.at(i).get<size_t>();
@@ -534,12 +561,12 @@ void Reader::_readNode(
             auto& [key, value] = (*it);
 
             if (std::get<0>(value)++ == 0) {
-                f(meshPrimitive);
+                f(reader_data_type_t<ReaderDataType::GEOMETRY>{}, meshPrimitive);
             }
         } // primitives cycle end
     }     // mesh parse end
 
-    f(Node{ position, scale, rotation }, parentIdx, nodeIdx);
+    f(reader_data_type_t<ReaderDataType::NODE>{}, Node{ position, scale, rotation }, parentIdx, nodeIdx);
 
     if (auto childrenIt = node.find(reinterpret_cast<char const*>(u8"children")); childrenIt != node.end()) {
         auto const& children = *childrenIt;
@@ -551,7 +578,7 @@ void Reader::_readNode(
     }
 
     if (!meshPrimitives.empty())
-        f(meshPrimitives, nodeIdx);
+        f(reader_data_type_t<ReaderDataType::MESH>{}, meshPrimitives, nodeIdx);
 }
 }
 

@@ -8,6 +8,7 @@ set(HEADER_FILES
     controller.h
     gltf/reader.h
     viewer.h
+    appConfig.h
 )
 
 set(SOURCE_FILES
@@ -23,7 +24,7 @@ add_executable(${PROJECT_NAME} ${HEADER_FILES} ${SOURCE_FILES})
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
 
-    CXX_STANDARD 17
+    CXX_STANDARD 20
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS OFF
 

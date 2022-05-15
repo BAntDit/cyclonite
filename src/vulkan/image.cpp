@@ -31,6 +31,7 @@ Image::Image(Device& device,
   , format_{ format }
   , imageType_{ imageType }
   , tiling_{ tiling }
+  , usage_{ imageUsageFlags }
   , imageCreateFlags_{ imageCreateFlags }
   , allocatedMemory_{}
   , vkImage_{ device.handle(), vkDestroyImage }
@@ -122,6 +123,7 @@ Image::Image(VkImage vkImage, uint32_t width, uint32_t height, VkFormat format, 
   , format_{ format }
   , imageType_{ VK_IMAGE_TYPE_2D }
   , tiling_{ tiling }
+  , usage_{ VK_IMAGE_USAGE_FLAG_BITS_MAX_ENUM }
   , imageCreateFlags_{ 0 }
   , allocatedMemory_{}
   , vkImage_{}

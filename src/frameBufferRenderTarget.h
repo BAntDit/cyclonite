@@ -11,25 +11,32 @@ namespace cyclonite {
 class FrameBufferRenderTarget : public BaseRenderTarget
 {
 public:
+    using framebuffer_attachment_t = std::variant<vulkan::ImagePtr, VkFormat>;
+
+public:
     template<size_t count>
     FrameBufferRenderTarget(vulkan::Device& device,
                             VkRenderPass vkRenderPass,
-                            uint32_t swapChainLength,
                             uint32_t width,
                             uint32_t height,
-                            VkFormat depthStencilFormat,
-                            VkClearDepthStencilValue clearDepthStencilValue,
-                            std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> const& colorOutputs,
-                            std::array<VkClearColorValue, count> const& clearColorValues);
+                            std::array<framebuffer_attachment_t, count> const& images,
+                            std::array<RenderTargetOutputSemantic, count> const& semantics);
 
     template<size_t count>
     FrameBufferRenderTarget(vulkan::Device& device,
                             VkRenderPass vkRenderPass,
-                            uint32_t swapChainLength,
                             uint32_t width,
                             uint32_t height,
-                            std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> const& colorOutputs,
-                            std::array<VkClearColorValue, count> const& clearColorValues);
+                            framebuffer_attachment_t const& depthStencil,
+                            std::array<framebuffer_attachment_t, count> const& images,
+                            std::array<RenderTargetOutputSemantic, count> const& semantics);
+
+    FrameBufferRenderTarget(vulkan::Device& device,
+                            VkRenderPass vkRenderPass,
+                            uint32_t width,
+                            uint32_t height,
+                            size_t bufferCount,
+                            framebuffer_attachment_t const& depthStencil);
 
     FrameBufferRenderTarget(FrameBufferRenderTarget const&) = delete;
 
@@ -42,47 +49,127 @@ public:
     auto operator=(FrameBufferRenderTarget &&) -> FrameBufferRenderTarget& = default;
 
     auto swapBuffers(vulkan::Device const& device, uint32_t currentFrameImageIndex) -> uint32_t;
+
+private:
+    std::vector<vulkan::Handle<VkSemaphore>> bufferAvailableSemaphores_;
 };
 
-template<size_t count>
-FrameBufferRenderTarget::FrameBufferRenderTarget(
+inline auto getImageView(vulkan::Device& device,
+                         [[maybe_unused]] uint32_t width,
+                         [[maybe_unused]] uint32_t height,
+                         FrameBufferRenderTarget::framebuffer_attachment_t const& image,
+                         VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                         VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT) -> vulkan::ImageView
+{
+    return std::visit(
+      [&](auto&& out) -> vulkan::ImageView {
+          if (usageFlags & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+
+              if constexpr (std::is_same_v<std::decay_t<decltype(out)>, vulkan::ImagePtr>) {
+                  return vulkan::ImageView{ device, out, VK_IMAGE_VIEW_TYPE_2D, aspectFlags };
+              }
+
+          if constexpr (std::is_same_v<std::decay_t<decltype(out)>, VkFormat>) {
+              return vulkan::ImageView{ device,
+                                        std::make_shared<vulkan::Image>(
+                                          device, width, height, 1, 1, 1, out, VK_IMAGE_TILING_OPTIMAL, usageFlags),
+                                        VK_IMAGE_VIEW_TYPE_2D,
+                                        aspectFlags };
+          }
+
+          std::terminate();
+      },
+      image);
+}
+
+template<size_t... idx>
+inline auto getColorAttachments(
+  std::index_sequence<idx...>,
   vulkan::Device& device,
-  VkRenderPass vkRenderPass,
-  uint32_t swapChainLength,
   uint32_t width,
   uint32_t height,
-  VkFormat depthStencilFormat,
-  VkClearDepthStencilValue clearDepthStencilValue,
-  std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> const& colorOutputs,
-  std::array<VkClearColorValue, count> const& clearColorValues)
-  : BaseRenderTarget(width, height, clearDepthStencilValue, clearColorValues)
+  size_t offset,
+  std::array<FrameBufferRenderTarget::framebuffer_attachment_t, sizeof...(idx)> const& outputs)
+  -> std::array<vulkan::ImageView, sizeof...(idx)>
 {
-    swapChainLength_ = swapChainLength;
-
-    (void)depthStencilFormat;
-    (void)device;
-    (void)vkRenderPass;
-    (void)colorOutputs;
-
-    throw std::runtime_error("not implemented yet");
+    // TODO:: make possible to create FB readonly (no sample bit)
+    return std::array{ getImageView(device,
+                                    width,
+                                    height,
+                                    outputs[offset + idx],
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT |
+                                      VK_IMAGE_USAGE_SAMPLED_BIT)... };
 }
 
 template<size_t count>
-FrameBufferRenderTarget::FrameBufferRenderTarget(
-  vulkan::Device& device,
-  VkRenderPass vkRenderPass,
-  uint32_t swapChainLength,
-  uint32_t width,
-  uint32_t height,
-  std::array<std::pair<VkFormat, RenderTargetOutputSemantic>, count> const& colorOutputs,
-  std::array<VkClearColorValue, count> const& clearColorValues)
-  : BaseRenderTarget(width, height, clearColorValues)
+FrameBufferRenderTarget::FrameBufferRenderTarget(vulkan::Device& device,
+                                                 VkRenderPass vkRenderPass,
+                                                 uint32_t width,
+                                                 uint32_t height,
+                                                 std::array<framebuffer_attachment_t, count> const& images,
+                                                 std::array<RenderTargetOutputSemantic, count> const& semantics)
+  : BaseRenderTarget(width, height, count)
 {
-    swapChainLength_ = swapChainLength;
+    static_assert(count > 0);
 
-    (void)device;
-    (void)vkRenderPass;
-    (void)colorOutputs;
+    assert(images.size() % count == 0);
+
+    auto bufferCount = images.size() / count;
+
+    for (auto i = size_t{ 0 }; i < count; i++) {
+        auto&& semantic = semantics[i];
+        outputSemantics_[semantic] = i;
+    }
+
+    frameBuffers_.reserve(bufferCount);
+
+    for (auto i = size_t{ 0 }; i < bufferCount; i++) {
+        frameBuffers_.emplace_back(
+          device,
+          vkRenderPass,
+          width,
+          height,
+          getColorAttachments(std::make_index_sequence<count>{}, device, width, height, count * i, images));
+    }
+}
+
+template<size_t count>
+FrameBufferRenderTarget::FrameBufferRenderTarget(vulkan::Device& device,
+                                                 VkRenderPass vkRenderPass,
+                                                 uint32_t width,
+                                                 uint32_t height,
+                                                 framebuffer_attachment_t const& depthStencil,
+                                                 std::array<framebuffer_attachment_t, count> const& images,
+                                                 std::array<RenderTargetOutputSemantic, count> const& semantics)
+  : BaseRenderTarget(width, height, count, true)
+{
+    static_assert(count > 0);
+
+    assert(images.size() % count == 0);
+
+    auto bufferCount = images.size() / count;
+
+    for (auto i = size_t{ 0 }; i < count; i++) {
+        auto&& semantic = semantics[i];
+        outputSemantics_[semantic] = i;
+    }
+
+    frameBuffers_.reserve(bufferCount);
+
+    for (auto i = size_t{ 0 }; i < bufferCount; i++) {
+        frameBuffers_.emplace_back(
+          device,
+          vkRenderPass,
+          width,
+          height,
+          getImageView(device,
+                       width,
+                       height,
+                       depthStencil,
+                       VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+                       VK_IMAGE_ASPECT_DEPTH_BIT),
+          getColorAttachments(std::make_index_sequence<count>{}, device, width, height, count * i, images));
+    }
 }
 }
 

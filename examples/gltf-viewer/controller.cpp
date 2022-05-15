@@ -13,8 +13,9 @@ constexpr static real pi = boost::math::constants::pi<real>();
 
 Controller::Controller() noexcept
   : input_{ nullptr }
-  , systems_{ nullptr }
   , shutdown_{ false }
+  , width_{ 0 }
+  , height_{ 0 }
   , isInRotation_{ false }
   , rotationStart_{}
   , rotate_{}
@@ -28,10 +29,14 @@ Controller::Controller() noexcept
   , target_{ 0.f }
 {}
 
-void Controller::init(cyclonite::Input& input, ecs_config_t::system_manager_t& systems)
+void Controller::init(cyclonite::Input& input, uint32_t width, uint32_t height)
 {
     input_ = &input;
-    systems_ = &systems;
+
+    width_ = width;
+    height_ = height;
+
+    // TODO:: add on resize
 
     input.quit += Event<>::EventHandler(this, &Controller::onQuit);
     input.keyDown += Event<SDL_Keycode, uint16_t>::EventHandler(this, &Controller::onKeyDown);
@@ -76,16 +81,10 @@ void Controller::onMouseButtonUp(uint8_t button, int32_t x, int32_t y)
 void Controller::onMouseMotion(int32_t x, int32_t y)
 {
     if (isInRotation_) {
-        auto& renderSystem = systems_->get<systems::RenderSystem>();
-        auto& renderPass = renderSystem.renderPass();
-        auto [left, top, width, height] = renderPass.viewport();
         auto speed = 30.f;
 
-        (void)left;
-        (void)top;
-
-        rotate_.x = pi * 2.f * speed * (static_cast<real>(x) - rotationStart_.x) / static_cast<real>(width);
-        rotate_.y = pi * 2.f * speed * (static_cast<real>(y) - rotationStart_.y) / static_cast<real>(height);
+        rotate_.x = pi * 2.f * speed * (static_cast<real>(x) - rotationStart_.x) / static_cast<real>(width_);
+        rotate_.y = pi * 2.f * speed * (static_cast<real>(y) - rotationStart_.y) / static_cast<real>(height_);
 
         rotationStart_.x = x;
         rotationStart_.y = y;
@@ -133,6 +132,7 @@ void Controller::update(Model& model, real dt)
                                    glm::vec4{ fw.x, fw.y, fw.z, 0.0f },
                                    glm::vec4{ target_.x - pos.x, target_.y - pos.y, target_.z - pos.z, 1.0f } });
 
-    model.timeSinceLastUpdate() = dt;
+    (void)dt;
+    // model.timeSinceLastUpdate() = dt;
 }
 }
