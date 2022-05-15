@@ -1,54 +1,31 @@
 //
 // Created by bantdit on 1/7/20.
 //
-
+#pragma once
 #ifndef CYCLONITE_BASERENDERTARGET_H
 #define CYCLONITE_BASERENDERTARGET_H
 
 #include "vulkan/frameBuffer.h"
 
 namespace cyclonite {
-enum class RenderTargetOutputSemantic
+enum class RenderTargetOutputSemantic : size_t
 {
     UNDEFINED = 0,
     DEFAULT = 1,
-    LINEAR_HDR_COLOR = 2,
+    VIEW_SPACE_NORMALS = 2,
+    ALBEDO = 3,
+    LINEAR_HDR_COLOR = 4,
+    FINAL_SRGB_COLOR = 6,
     MIN_VALUE = UNDEFINED,
-    MAX_VALUE = LINEAR_HDR_COLOR,
-    COUNT = MAX_VALUE + 1
+    MAX_VALUE = FINAL_SRGB_COLOR,
+    COUNT = MAX_VALUE + 1,
+    INVALID = COUNT
 };
 
 class BaseRenderTarget
 {
-private:
-    template<typename Indices>
-    struct attachment_traits;
-
-    template<size_t... idx>
-    struct attachment_traits<std::index_sequence<idx...>>
-    {
-        using clear_values_type_t = std::variant<std::array<VkClearValue, idx>...>;
-
-        template<typename T>
-        constexpr static auto attachment_count(T&& t) -> size_t
-        {
-            return std::visit([](auto&& attachments) -> size_t { return attachments.size(); }, std::forward<T>(t));
-        }
-    };
-
-    using attachment_list_traits = attachment_traits<std::make_index_sequence<17u>>; // +1 depth
-
-    using clear_value_list_t = attachment_list_traits::clear_values_type_t;
-
 public:
-    template<size_t count>
-    BaseRenderTarget(uint32_t width,
-                     uint32_t height,
-                     VkClearDepthStencilValue clearDepthStencilValue,
-                     std::array<VkClearColorValue, count> const& clearColorValues);
-
-    template<size_t count>
-    BaseRenderTarget(uint32_t width, uint32_t height, std::array<VkClearColorValue, count> const& clearColorValues);
+    BaseRenderTarget(uint32_t width, uint32_t height, size_t colorAttachmentCount = 1, bool hasDepthStencil = false);
 
     BaseRenderTarget(BaseRenderTarget const&) = delete;
 
@@ -64,7 +41,7 @@ public:
 
     [[nodiscard]] auto height() const -> uint32_t { return extent_.height; }
 
-    [[nodiscard]] auto swapChainLength() const -> size_t { return swapChainLength_; }
+    [[nodiscard]] auto frameBufferCount() const -> size_t { return frameBuffers_.size(); }
 
     [[nodiscard]] auto getColorAttachment(size_t bufferIndex, size_t attachmentIndex) const -> vulkan::ImageView const&;
 
@@ -79,79 +56,24 @@ public:
 
     [[nodiscard]] auto frameBuffers() const -> std::vector<vulkan::FrameBuffer> const& { return frameBuffers_; }
 
+    [[nodiscard]] auto frameBuffer(size_t bufferIndex) const -> vulkan::FrameBuffer const&;
+
+    [[nodiscard]] auto getAttachmentIndex(RenderTargetOutputSemantic semantic) const -> size_t;
+
     [[nodiscard]] auto colorAttachmentCount() const -> size_t { return colorAttachmentCount_; }
 
-    void setDepthStencilClearValue(VkClearDepthStencilValue clearValue);
-
-    void setColorAttachmentClearValue(RenderTargetOutputSemantic semantic, VkClearColorValue clearValue);
-
-    [[nodiscard]] auto getDepthStencilClearValue() const -> VkClearDepthStencilValue;
-
-    [[nodiscard]] auto getColorAttachmentClearValue(RenderTargetOutputSemantic semantic) const -> VkClearColorValue;
-
-    [[nodiscard]] auto getColorAttachmentClearValue(size_t attachmentIndex) const -> VkClearColorValue;
-
-    [[nodiscard]] auto getClearValues() const -> std::pair<size_t, VkClearValue const*>;
+    [[nodiscard]] auto clearValues() const -> std::vector<VkClearValue> const& { return clearValues_; }
 
 private:
     VkExtent2D extent_;
-    clear_value_list_t clearValues_;
     bool hasDepthStencil_;
 
 protected:
     size_t colorAttachmentCount_;
-    size_t swapChainLength_;
+    std::vector<VkClearValue> clearValues_;
     std::vector<vulkan::FrameBuffer> frameBuffers_;
     std::unordered_map<RenderTargetOutputSemantic, size_t> outputSemantics_;
 };
-
-template<size_t count>
-BaseRenderTarget::BaseRenderTarget(uint32_t width,
-                                   uint32_t height,
-                                   VkClearDepthStencilValue clearDepthStencilValue,
-                                   std::array<VkClearColorValue, count> const& clearColorValues)
-  : extent_{}
-  , clearValues_{ std::array<VkClearValue, count + 1>{} }
-  , hasDepthStencil_{ true }
-  , colorAttachmentCount_{ count }
-  , swapChainLength_{ 0 }
-  , frameBuffers_{}
-  , outputSemantics_{}
-{
-    extent_.width = width;
-    extent_.height = height;
-
-    std::visit(
-      [&](auto&& clearValues) -> void {
-          for (size_t i = 0; i < count; i++)
-              clearValues[i].color = clearColorValues[i];
-          clearValues[count].depthStencil = clearDepthStencilValue;
-      },
-      clearValues_);
-}
-
-template<size_t count>
-BaseRenderTarget::BaseRenderTarget(uint32_t width,
-                                   uint32_t height,
-                                   std::array<VkClearColorValue, count> const& clearColorValues)
-  : extent_{}
-  , clearValues_{ std::array<VkClearValue, count>{} }
-  , hasDepthStencil_{ false }
-  , colorAttachmentCount_{ count }
-  , swapChainLength_{ 0 }
-  , frameBuffers_{}
-  , outputSemantics_{}
-{
-    extent_.width = width;
-    extent_.height = height;
-
-    std::visit(
-      [&](auto&& clearValues) -> void {
-          for (size_t i = 0; i < count; i++)
-              clearValues[i].color = clearColorValues[i];
-      },
-      clearValues_);
-}
 }
 
 #endif // CYCLONITE_BASERENDERTARGET_H

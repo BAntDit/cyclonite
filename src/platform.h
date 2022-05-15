@@ -9,6 +9,7 @@
 
 #if defined(SDL_VIDEO_DRIVER_X11)
 #define VK_USE_PLATFORM_XLIB_KHR
+#include <X11/Xlib.h>
 #elif defined(SDL_VIDEO_DRIVER_WAYLAND)
 #define VK_USE_PLATFORM_WAYLAND_KHR
 #elif define(SDL_VIDEO_DRIVER_ANDROID)

@@ -6,6 +6,8 @@
 #include <glm/gtx/matrix_decompose.hpp>
 
 namespace cyclonite::systems {
+void TransformSystem::init() {}
+
 void TransformSystem::_decompose(mat4& mat, vec3& position, vec3& scale, quat& orientation)
 {
     vec3 skew{};
@@ -14,10 +16,5 @@ void TransformSystem::_decompose(mat4& mat, vec3& position, vec3& scale, quat& o
     auto success = glm::decompose(mat, scale, orientation, position, skew, perspective);
 
     assert(success);
-}
-
-void TransformSystem::init(size_t initialTransformCount)
-{
-    worldMatrices_.reserve(initialTransformCount);
 }
 }

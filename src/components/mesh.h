@@ -5,7 +5,6 @@
 #ifndef CYCLONITE_MESH_H
 #define CYCLONITE_MESH_H
 
-#include "../vulkan/staging.h"
 #include "geometry.h"
 
 namespace cyclonite::systems {
@@ -13,24 +12,29 @@ class MeshSystem;
 }
 
 namespace cyclonite::components {
+struct SubMesh
+{
+    uint32_t commandIndex;
+    uint32_t geometryId;
+};
+
 struct Mesh
 {
-public:
-    friend class systems::MeshSystem;
+    Mesh() noexcept;
 
-    struct SubMesh
-    {
-        SubMesh(size_t commandIdx, std::shared_ptr<Geometry> const& geometry)
-          : geometry{ geometry }
-          , commandIndex{ commandIdx }
-        {}
+    Mesh(SubMesh* baseSubMesh, uint16_t subMeshCount) noexcept;
 
-        std::shared_ptr<Geometry> geometry;
-        size_t commandIndex;
-    };
+    auto getSubMesh(uint16_t index) -> SubMesh&;
+
+    [[nodiscard]] auto getSubMesh(uint16_t index) const -> SubMesh const&;
+
+    [[nodiscard]] auto getSubMeshCount() const -> uint16_t { return subMeshCount_; }
+
+    [[nodiscard]] auto getSubMeshSetMemory() const -> std::pair<SubMesh*, size_t>;
 
 private:
-    std::vector<SubMesh> subMeshes;
+    SubMesh* baseSubMesh_;
+    uint16_t subMeshCount_;
 };
 }
 

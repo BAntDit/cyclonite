@@ -6,6 +6,7 @@
 #define CYCLONITE_MODEL_H
 
 #include "viewer.h"
+#include <cyclonite.h>
 #include <filesystem>
 
 namespace examples::viewer {
@@ -18,22 +19,13 @@ public:
     Model() noexcept;
 
     void init(cyclonite::vulkan::Device& device,
-              ecs_config_t::entity_manager_t& entities,
-              ecs_config_t::system_manager_t& systems,
-              std::filesystem::path const& path);
+              std::string const& path,
+              std::shared_ptr<cyclonite::compositor::Workspace> const& workspace);
 
-    [[nodiscard]] auto camera() const -> enttx::Entity { return camera_; }
-
-    [[nodiscard]] auto timeSinceLastUpdate() const -> cyclonite::real { return timeSinceLastUpdate_; }
-
-    auto timeSinceLastUpdate() -> cyclonite::real& { return timeSinceLastUpdate_; }
-
-    void setCameraTransform(cyclonite::mat4 const& matrix);
+    void setCameraTransform(cyclonite::mat4 const& transform);
 
 private:
-    cyclonite::real timeSinceLastUpdate_;
-    ecs_config_t::entity_manager_t* entities_;
-    enttx::Entity camera_;
+    std::shared_ptr<cyclonite::compositor::Workspace> workspace_;
 };
 }
 

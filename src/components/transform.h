@@ -32,13 +32,13 @@ struct Transform
     vec3 scale;
     quat orientation;
     mat4 matrix;
+    mat4 worldMatrix;
 
     State state;
 
     enttx::Entity parent;
 
     size_t depth;
-    size_t globalIndex;
 };
 }
 

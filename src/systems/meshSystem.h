@@ -48,14 +48,7 @@ public:
       -> std::enable_if_t<is_contiguous_v<Geometries> || std::is_same_v<uint64_t, std::decay_t<Geometries>>,
                           components::Mesh&>;
 
-    template<typename Geometries>
-    auto addSubMeshes(components::Mesh& mesh, Geometries&& geometries)
-      -> std::enable_if_t<is_contiguous_v<Geometries> || std::is_same_v<uint64_t, std::decay_t<Geometries>>>;
-
-    // TODO:: update submesh vertices method
-    void markToDeleteMesh();
-
-    void markToDeleteSubMesh();
+    // TODO:: delete Mesh
 
     void init(vulkan::Device& device,
               size_t swapChainLength,
@@ -70,7 +63,7 @@ public:
     void requestVertexDeviceBufferUpdate();
 
 private:
-    void _addSubMesh(components::Mesh& mesh, std::shared_ptr<Geometry> const& geometry);
+    void _addSubMesh(components::SubMesh& subMesh, uint64_t geometryId);
 
     void _reAllocCommandBuffer(size_t size);
 
@@ -79,6 +72,7 @@ private:
 private:
     vulkan::Device* devicePtr_;
     VkQueue vkTransferQueue_;
+    VkQueue vkGraphicQueue_;
 
     std::vector<VkDrawIndexedIndirectCommand> commands_;
     std::unique_ptr<vulkan::Staging> commandBuffer_;
@@ -107,28 +101,25 @@ auto MeshSystem::createMesh(EntityManager& entityManager, enttx::Entity entity, 
   -> std::enable_if_t<is_contiguous_v<Geometries> || std::is_same_v<uint64_t, std::decay_t<Geometries>>,
                       components::Mesh&>
 {
-    auto& mesh = entityManager.template assign<components::Mesh>(entity);
+    auto subMeshCount = uint16_t{ 0 };
+    auto geometryIdentifiers = std::add_pointer_t<uint64_t>{ nullptr };
+    if constexpr (is_contiguous_v<Geometries>) {
+        assert(std::size(geometries) < std::numeric_limits<uint16_t>::max());
+        subMeshCount = static_cast<uint16_t>(std::size(geometries));
+        geometryIdentifiers = std::data(geometries);
+    } else {
+        subMeshCount = uint16_t{ 1 };
+        geometryIdentifiers = &geometries;
+    }
 
-    addSubMeshes(mesh, std::forward<Geometries>(geometries));
+    auto& mesh = entityManager.template assign<components::Mesh>(entity, subMeshCount);
+    assert(subMeshCount == mesh.getSubMeshCount());
+
+    for (auto i = uint16_t{ 0 }; i < subMeshCount; i++) {
+        _addSubMesh(mesh.getSubMesh(i), *(geometryIdentifiers + i));
+    }
 
     return mesh;
-}
-
-template<typename Geometries>
-auto MeshSystem::addSubMeshes(components::Mesh& mesh, Geometries&& geometries)
-  -> std::enable_if_t<is_contiguous_v<Geometries> || std::is_same_v<uint64_t, std::decay_t<Geometries>>>
-{
-    if constexpr (is_contiguous_v<Geometries>) {
-        mesh.subMeshes.reserve(geometries.size());
-
-        for (auto geometryId : geometries) {
-            assert(geometries_.count(geometryId) != 0);
-            _addSubMesh(mesh, geometries_[geometryId]);
-        }
-    } else {
-        assert(geometries_.count(geometries) != 0);
-        _addSubMesh(mesh, geometries_[geometries]);
-    }
 }
 
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
@@ -139,9 +130,12 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
             auto view = entityManager.template getView<components::Mesh>();
 
             for (auto&& [entity, mesh] : view) {
-                auto&& [subMeshes] = mesh;
+                (void)entity;
 
-                for (auto& subMesh : subMeshes) {
+                for (auto subMeshIndex = uint16_t{ 0 }, subMeshCount = mesh.getSubMeshCount();
+                     subMeshIndex < subMeshCount;
+                     subMeshIndex++) {
+                    auto const& subMesh = mesh.getSubMesh(subMeshIndex);
                     commands_[subMesh.commandIndex].instanceCount++;
                 }
             }
@@ -178,16 +172,14 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
         {
             auto* instanceData = reinterpret_cast<instanced_data_t*>(instancedDataBuffer_->ptr());
 
-            auto& transformSystem = systemManager.template get<TransformSystem>();
-            auto const& matrices = transformSystem.worldMatrices();
-
             auto view = entityManager.template getView<components::Transform, components::Mesh>();
 
             for (auto&& [entity, transform, mesh] : view) {
-                auto&& [subMeshes] = mesh;
-                auto&& matrix = matrices[transform.globalIndex];
+                auto&& matrix = transform.worldMatrix;
+                auto subMeshCount = mesh.getSubMeshCount();
 
-                for (auto& subMesh : subMeshes) {
+                for (auto subMeshIndex = uint16_t{ 0 }; subMeshIndex < subMeshCount; subMeshIndex++) {
+                    auto&& subMesh = mesh.getSubMesh(subMeshIndex);
                     auto&& command = commands_[subMesh.commandIndex];
 
                     if (command.firstInstance == std::numeric_limits<uint32_t>::max())
@@ -221,30 +213,34 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
     }
 
     if constexpr (STAGE == value_cast(UpdateStage::TRANSFER_STAGE)) {
-        auto& renderSystem = systemManager.template get<RenderSystem>();
-        auto& renderPass = renderSystem.renderPass();
-        auto& frame = renderPass.frame();
-        auto idx = renderPass.commandsIndex();
-        auto const* signal = &std::as_const(transferSemaphores_[idx]);
+        auto&& [node, cameraEntity, signalCount, baseSignal, baseMask] =
+          std::forward_as_tuple(std::forward<Args>(args)...);
+
+        auto& frame = node->getCurrentFrame();
+        auto idx = (*node).commandIndex();
+
+        auto const& signal = std::as_const(transferSemaphores_[idx]);
         auto commandBufferCount = verticesUpdateRequired_ ? uint32_t{ 3 } : uint32_t{ 2 };
 
-        frame.addWaitSemaphore(*signal, VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT);
+        *(baseSignal + signalCount) = static_cast<VkSemaphore>(signal);
+        *(baseMask + signalCount) = VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+        signalCount++;
 
         VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.commandBufferCount = commandBufferCount;
         submitInfo.pCommandBuffers = transferCommands_->pCommandBuffers();
         submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signal;
+        submitInfo.pSignalSemaphores = &signal;
 
         if (auto result = vkQueueSubmit(vkTransferQueue_, 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS) {
             throw std::runtime_error("mesh system data could not be transferred");
         }
 
-        frame.setIndexBuffer(gpuIndexBuffer_);
-        frame.setVertexBuffer(gpuVertexBuffer_);
-        frame.setInstanceBuffer(gpuInstancedDataBuffer_);
-        frame.setCommandBuffer(gpuCommandBuffer_, commandCount_);
+        frame.setIndexBuffer(devicePtr_->graphicsQueue(), gpuIndexBuffer_);
+        frame.setVertexBuffer(devicePtr_->graphicsQueue(), gpuVertexBuffer_);
+        frame.setInstanceBuffer(devicePtr_->graphicsQueue(), gpuInstancedDataBuffer_);
+        frame.setCommandBuffer(devicePtr_->graphicsQueue(), gpuCommandBuffer_, commandCount_);
     }
 
     (void)systemManager;
