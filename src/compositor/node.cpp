@@ -143,7 +143,7 @@ void createPass(vulkan::Device& device,
         rasterizationState.rasterizerDiscardEnable = VK_FALSE; // just for now
         rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
         rasterizationState.lineWidth = 1.0f;
-        rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+        rasterizationState.cullMode = inPassType == PassType::SCREEN ? VK_CULL_MODE_FRONT_BIT : VK_CULL_MODE_BACK_BIT;
         rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
         rasterizationState.depthBiasEnable = VK_FALSE;
 
