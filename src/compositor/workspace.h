@@ -58,6 +58,10 @@ public:
 private:
     Workspace() noexcept;
 
+    void beginFrame();
+
+    void endFrame(vulkan::Device& device);
+
 private:
     uint32_t frameNumber_;
     uint32_t frameIndex_;
@@ -72,6 +76,9 @@ private:
     std::vector<VkSemaphore> nodeWaitSemaphores_;
     std::vector<VkSemaphore> nodeSignalSemaphores_;
     std::vector<VkSubmitInfo> submits_;
+
+    uint32_t submitCount_;
+    uint8_t presentationNodeIndex_;
 };
 
 template<typename NodeConfig, typename NodeTypeId, typename NodeFactory>

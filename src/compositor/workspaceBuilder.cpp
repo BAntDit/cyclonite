@@ -52,7 +52,9 @@ auto Workspace::Builder::build() -> Workspace
 
     uint32_t waitSemaphoreCount = 0;
 
-    for (auto const& node : workspace.nodes_) {
+    for (auto i = uint8_t{0}; i < nodeCount_; i++) {
+        auto const& node = workspace.nodes_[i];
+
         for (auto const& [nodeIndex, sampler, _a, _b] : (*node).getInputs()) {
             (void)_a;
             (void)_b;
@@ -65,6 +67,13 @@ auto Workspace::Builder::build() -> Workspace
         }
 
         waitSemaphoreCount += node.getExpectedWaitSignalCount();
+
+        if (node.isSurfaceNode())
+        {
+            // workspace can have only one presentation node
+            assert(workspace.presentationNodeIndex_ == std::numeric_limits<uint8_t>::max());
+            workspace.presentationNodeIndex_ = i;
+        }
     }
 
     workspace.nodeWaitSemaphores_.resize(waitSemaphoreCount, VK_NULL_HANDLE);
