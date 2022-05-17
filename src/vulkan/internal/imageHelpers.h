@@ -27,6 +27,9 @@ inline auto viewTypeToImageType(VkImageViewType imageViewType) -> VkImageType
         }
         default:
             assert(false);
+#if defined(NDEBUG)
+            std::terminate();
+#endif
     }
 }
 

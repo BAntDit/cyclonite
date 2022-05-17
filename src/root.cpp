@@ -12,28 +12,56 @@ Root::Root()
   , vulkanInstance_
 {
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
+#if !defined(NDEBUG)
     std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_KHRONOS_validation" },
                                        std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
                                                                    VK_KHR_SURFACE_EXTENSION_NAME,
                                                                    VK_KHR_XLIB_SURFACE_EXTENSION_NAME })
+#else
+    std::make_unique<vulkan::Instance>(
+      std::array<char const*, 0>{},
+      std::array<char const*, 2>{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_XLIB_SURFACE_EXTENSION_NAME })
+#endif
 #elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
+#if !defined(NDEBUG)
     std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_LUNARG_standard_validation" },
                                        std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
                                                                    VK_KHR_SURFACE_EXTENSION_NAME,
                                                                    VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME })
+#else
+    std::make_unique<vulkan::Instance>(
+      std::array<char const*, 0>{},
+      std::array<char const*, 2>{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME })
+#endif
 #elif defined(VK_USE_PLATFORM_WIN32_KHR)
+#if !defined(NDEBUG)
     std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_LUNARG_standard_validation" },
                                        std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
                                                                    VK_KHR_SURFACE_EXTENSION_NAME,
                                                                    VK_KHR_WIN32_SURFACE_EXTENSION_NAME })
+#else
+    std::make_unique<vulkan::Instance>(
+      std::array<char const*, 0>{},
+      std::array<char const*, 2>{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME })
+#endif
 #elif defined(VK_USE_PLATFORM_ANDROID_KHR)
+#if !defined(NDEBUG)
     std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_LUNARG_standard_validation" },
                                        std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
                                                                    VK_KHR_SURFACE_EXTENSION_NAME,
                                                                    VK_KHR_ANDROID_SURFACE_EXTENSION_NAME })
 #else
+    std::make_unique<vulkan::Instance>(
+      std::array<char const*, 0>{},
+      std::array<char const*, 2>{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_ANDROID_SURFACE_EXTENSION_NAME })
+#endif
+#else
+#if !defined(NDEBUG)
     std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_LUNARG_standard_validation" },
                                        std::array<char const*, 1>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME })
+#else
+    std::make_unique<vulkan::Instance>(std::array<char const*, 0>{}, std::array<char const*, 0>{})
+#endif
 #endif
 }
 , physicalDeviceList_{}, physicalDevicePropertiesMap_{}, vulkanDevice_{ nullptr }, input_{}

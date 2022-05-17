@@ -55,7 +55,10 @@ Instance::Instance(std::array<char const*, N> const& reqLayers, std::array<char 
 
     testExtensions(reqExtensions);
 
-    createInstance(static_cast<uint32_t>(N), reqLayers.data(), static_cast<uint32_t>(M), reqExtensions.data());
+    createInstance(static_cast<uint32_t>(N),
+                   N > 0 ? reqLayers.data() : nullptr,
+                   static_cast<uint32_t>(M),
+                   M > 0 ? reqExtensions.data() : nullptr);
 }
 
 template<size_t N>

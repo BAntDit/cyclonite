@@ -5,6 +5,7 @@
 #include "instance.h"
 
 namespace cyclonite::vulkan {
+#if !defined(NDEBUG)
 static VKAPI_ATTR VkBool32 VKAPI_CALL dbgCallback(VkFlags msgFlags,
                                                   VkDebugReportObjectTypeEXT objectTypeEXT,
                                                   uint64_t object,
@@ -46,6 +47,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL dbgCallback(VkFlags msgFlags,
      */
     return VK_FALSE;
 }
+#endif
 
 template<size_t N>
 constexpr auto getExtensionNamesArray(std::array<const char*, N>&& list) -> decltype(list)
@@ -58,14 +60,15 @@ void Instance::createInstance(uint32_t layerCount,
                               uint32_t extensionCount,
                               char const* const* extensionNames)
 {
-    VkApplicationInfo appInfo = {};
+    auto appInfo = VkApplicationInfo{};
 
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = PROJECT_NAME;
     appInfo.apiVersion = VK_API_VERSION_1_0;
     appInfo.applicationVersion = VK_MAKE_VERSION(VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
 
-    VkDebugReportCallbackCreateInfoEXT debugReportCallbackCreateInfo = {};
+#if !defined(NDEBUG)
+    auto debugReportCallbackCreateInfo = VkDebugReportCallbackCreateInfoEXT{};
 
     debugReportCallbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
     debugReportCallbackCreateInfo.pNext = nullptr;
@@ -74,12 +77,15 @@ void Instance::createInstance(uint32_t layerCount,
                                           VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT;
     debugReportCallbackCreateInfo.pfnCallback = dbgCallback;
     debugReportCallbackCreateInfo.pUserData = nullptr;
+#endif
 
-    VkInstanceCreateInfo instanceInfo = {};
+    auto instanceInfo = VkInstanceCreateInfo{};
 
     instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceInfo.pApplicationInfo = &appInfo;
+#if !defined(NDEBUG)
     instanceInfo.pNext = &debugReportCallbackCreateInfo;
+#endif
     instanceInfo.enabledExtensionCount = extensionCount;
     instanceInfo.ppEnabledExtensionNames = extensionNames;
     instanceInfo.enabledLayerCount = layerCount;

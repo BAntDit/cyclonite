@@ -107,8 +107,7 @@ void Workspace::endFrame(vulkan::Device& device)
         throw std::runtime_error{ "submit commands failed" };
     }
 
-    if (presentationNodeIndex_ != std::numeric_limits<uint8_t>::max())
-    {
+    if (presentationNodeIndex_ != std::numeric_limits<uint8_t>::max()) {
         auto& presentationNode = nodes_[presentationNodeIndex_];
 
         assert(presentationNode.isSurfaceNode());

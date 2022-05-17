@@ -4,6 +4,7 @@
 
 #include "shaderDefinitions.h"
 #include <cassert>
+#include <exception>
 
 namespace cyclonite::shaders {
 static std::vector<uint32_t> const defaultVertexShaderCode = {
@@ -35,6 +36,9 @@ std::vector<uint32_t> const& getShader(ShaderType shaderType)
             return screenFragmentShaderCode;
         default:
             assert(false);
+#if defined(NDEBUG)
+            std::terminate();
+#endif
     }
 }
 }

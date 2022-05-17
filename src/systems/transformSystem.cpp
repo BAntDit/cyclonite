@@ -13,7 +13,7 @@ void TransformSystem::_decompose(mat4& mat, vec3& position, vec3& scale, quat& o
     vec3 skew{};
     vec4 perspective{};
 
-    auto success = glm::decompose(mat, scale, orientation, position, skew, perspective);
+    [[maybe_unused]] auto success = glm::decompose(mat, scale, orientation, position, skew, perspective);
 
     assert(success);
 }

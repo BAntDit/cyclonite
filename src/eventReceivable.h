@@ -6,8 +6,8 @@
 #define CYCLONITE_EVENTRECEIVABLE_H
 
 #include <atomic>
-#include <memory>
 #include <cstdint>
+#include <memory>
 
 namespace cyclonite {
 class EventReceivable
