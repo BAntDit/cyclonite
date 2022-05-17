@@ -115,6 +115,9 @@ void FrameCommands::update(vulkan::Device& device,
 
               VkCommandBufferBeginInfo commandBufferBeginInfo = {};
               commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+              // TODO:: fix - make this flag unnecessary
+              // better fix sync
+              commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
               if (vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo) != VK_SUCCESS) {
                   throw std::runtime_error("could not begin recording command buffer!");
