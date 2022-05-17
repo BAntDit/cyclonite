@@ -4,7 +4,7 @@
 
 #include "androidSurface.h"
 
-#if defined(VK_USE_PLATFORM_WAYLAND_KHR)
+#if defined(VK_USE_PLATFORM_ANDROID_KHR)
 
 namespace cyclonite::vulkan {
 AndroidSurface::AndroidSurface(VkInstance vkInstance, ANativeWindow* window)
