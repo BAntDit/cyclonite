@@ -397,6 +397,8 @@ auto BaseNode::Builder<NodeConfig>::addPass(PassType passType,
 template<typename NodeConfig>
 auto BaseNode::Builder<NodeConfig>::build() -> Node<NodeConfig>
 {
+    constexpr auto passCount = NodeConfig::pass_count;
+
     auto renderPassCreateInfo = VkRenderPassCreateInfo{};
     renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 
@@ -410,13 +412,14 @@ auto BaseNode::Builder<NodeConfig>::build() -> Node<NodeConfig>
       },
       colorOutputs_);
 
-    auto subPassDescriptions = std::vector<VkSubpassDescription>{};
+    auto subPassDescriptions = std::array<VkSubpassDescription, passCount>{};
+    auto depthRefs = std::array<VkAttachmentReference, passCount>{};
 
-    subPassDescriptions.reserve(renderPasses_.size());
+    for (auto passIndex = uint8_t{0}; passIndex < passCount; passIndex++) {
+        auto& renderPass = renderPasses_[passIndex];
+        auto& subPassDesc = subPassDescriptions[passIndex];
 
-    for (auto&& renderPass : renderPasses_) {
         auto&& [passType, inputAttachmentIndices, colorAttachmentIndices, writeDepth] = renderPass;
-        auto&& subPassDesc = VkSubpassDescription{};
 
         subPassDesc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
@@ -439,14 +442,12 @@ auto BaseNode::Builder<NodeConfig>::build() -> Node<NodeConfig>
           colorAttachmentIndices);
 
         if (writeDepth && depthFormat_ != VK_FORMAT_UNDEFINED) {
-            auto depthRef = VkAttachmentReference{};
+            auto& depthRef = depthRefs[passIndex];
             depthRef.attachment = colorAttachmentCount; // depth always goes just after color
             depthRef.layout = getDepthStencilImageLayoutByFormat(depthFormat_);
 
             subPassDesc.pDepthStencilAttachment = &depthRef;
         }
-
-        subPassDescriptions.emplace_back(subPassDesc);
     } // render passes end
 
     auto attachmentCount = (depthFormat_ != VK_FORMAT_UNDEFINED) ? colorAttachmentCount + 1 : colorAttachmentCount;
