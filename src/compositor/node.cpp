@@ -262,9 +262,8 @@ void createPass(vulkan::Device& device,
         graphicsPipelineCreateInfo.subpass = subPassIndex;
         graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 
+        auto depthStencilStateCreateInfo = VkPipelineDepthStencilStateCreateInfo{};
         if (depthStencilRequired) {
-            auto depthStencilStateCreateInfo = VkPipelineDepthStencilStateCreateInfo{};
-
             depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
             depthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
             depthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
