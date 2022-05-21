@@ -15,6 +15,12 @@ std::vector<uint32_t> const defaultFragmentShaderCode = {
 */
 
 namespace cyclonite::systems {
+void RenderSystem::init(multithreading::TaskManager& taskManager, vulkan::Device& device)
+{
+    taskManager_ = &taskManager;
+    device_ = &device;
+}
+
 void RenderSystem::finish()
 {
     assert(taskManager_ != nullptr);

@@ -27,7 +27,6 @@ public:
 
     auto operator=(RenderSystem &&) -> RenderSystem& = default;
 
-    template<typename... RenderPassArgs>
     void init(multithreading::TaskManager& taskManager, vulkan::Device& device);
 
     template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
@@ -39,13 +38,6 @@ private:
     multithreading::TaskManager* taskManager_;
     vulkan::Device* device_;
 };
-
-template<typename... RenderPassArgs>
-void RenderSystem::init(multithreading::TaskManager& taskManager, vulkan::Device& device)
-{
-    taskManager_ = &taskManager;
-    device_ = &device;
-}
 
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
 void RenderSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
