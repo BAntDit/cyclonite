@@ -36,12 +36,15 @@ set(PUBLIC_HEADERS
     src/components/mesh.h
     src/components/meshStorage.h
     src/components/camera.h
+    src/components/animation.h
+    src/components/animationStorage.h
     src/systems/updateStages.h
     src/systems/transformSystem.h
     src/systems/meshSystem.h
     src/systems/cameraSystem.h
     src/systems/uniformSystem.h
     src/systems/renderSystem.h
+    src/systems/animationSystem.h
     src/baseRenderTarget.h
     src/surfaceRenderTarget.h
     src/frameBufferRenderTarget.h
@@ -104,11 +107,14 @@ set(SOURCES
     src/components/transform.cpp
     src/components/camera.cpp
     src/components/mesh.cpp
+    src/components/animation.cpp
+    src/components/animationStorage.cpp
     src/systems/transformSystem.cpp
     src/systems/cameraSystem.cpp
     src/systems/meshSystem.cpp
     src/systems/uniformSystem.cpp
     src/systems/renderSystem.cpp
+    src/systems/animationSystem.cpp
     src/sdl/sdlSupport.cpp
     src/sdl/sdlWindow.cpp
     src/vulkan/instance.cpp
