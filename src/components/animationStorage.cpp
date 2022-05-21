@@ -112,9 +112,9 @@ auto AnimationStorage::create(uint32_t index, uint16_t channelCount) -> Animatio
             }
 
             if ((offset + size) == old) {
-                freeRanges_.insert(std::make_pair(offset, old + add));
+                freeRanges_.insert(std::make_pair(offset, size + add));
             } else {
-                freeRanges_.insert(std::make_pair(old, old + add));
+                freeRanges_.insert(std::make_pair(old, add));
             }
         } else {
             rangeOffset = offset;
