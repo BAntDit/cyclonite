@@ -415,7 +415,7 @@ auto BaseNode::Builder<NodeConfig>::build() -> Node<NodeConfig>
     auto subPassDescriptions = std::array<VkSubpassDescription, passCount>{};
     auto depthRefs = std::array<VkAttachmentReference, passCount>{};
 
-    for (auto passIndex = uint8_t{0}; passIndex < passCount; passIndex++) {
+    for (auto passIndex = uint8_t{ 0 }; passIndex < passCount; passIndex++) {
         auto& renderPass = renderPasses_[passIndex];
         auto& subPassDesc = subPassDescriptions[passIndex];
 
