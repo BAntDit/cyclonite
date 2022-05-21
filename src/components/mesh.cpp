@@ -3,7 +3,6 @@
 //
 
 #include "mesh.h"
-#include "systems/meshSystem.h"
 
 namespace cyclonite::components {
 Mesh::Mesh() noexcept

@@ -39,7 +39,7 @@ public:
     auto end() { return meshes_.end(); }
 
 private:
-    std::array<components::SubMesh, maxSubMeshCount> store_;
+    std::array<SubMesh, maxSubMeshCount> store_;
     std::array<Mesh, maxSubMeshCount> meshes_;
     std::set<std::pair<size_t, size_t>, decltype([](auto a, auto b) -> bool { return a.second < b.second; })>
       freeRanges_;
@@ -124,7 +124,11 @@ auto MeshStorage<MAX_SUBMESH_COUNT>::create(uint32_t index, uint16_t subMeshCoun
     }
 
     if (index >= indices_.size()) {
-        indices_.resize(indices_.size() * 2, std::numeric_limits<uint32_t>::max());
+        auto old = indices_.size();
+        auto diff = index - old;
+        auto add = diff > old ? diff : old;
+
+        indices_.resize(old + add, std::numeric_limits<uint32_t>::max());
     }
 
     assert(indices_[index] == std::numeric_limits<uint32_t>::max());
@@ -146,7 +150,7 @@ void MeshStorage<MAX_SUBMESH_COUNT>::destroy(uint32_t index)
     auto [ptr, count] = mesh.getSubMeshSetMemory();
     auto offset = ptr - store_.data();
 
-    assert(offset > 0);
+    assert(offset >= 0);
 
     auto freeOffset = offset;
     auto freeCount = count;

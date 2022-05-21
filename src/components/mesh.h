@@ -5,11 +5,9 @@
 #ifndef CYCLONITE_MESH_H
 #define CYCLONITE_MESH_H
 
-#include "geometry.h"
-
-namespace cyclonite::systems {
-class MeshSystem;
-}
+#include <cstddef>
+#include <cstdint>
+#include <utility>
 
 namespace cyclonite::components {
 struct SubMesh
