@@ -20,6 +20,7 @@ set(PUBLIC_HEADERS
     src/error.h
     src/typedefs.h
     src/geometry.h
+    src/animationClip.h
     src/scene.h
     src/sceneNode.h
     src/compositor/nodeInterface.h
