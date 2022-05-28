@@ -21,8 +21,10 @@ set(PUBLIC_HEADERS
     src/typedefs.h
     src/geometry.h
     src/animationClip.h
-    src/scene.h
-    src/sceneNode.h
+    src/resources/resourceState.h
+    src/resources/resourceDependency.h
+    src/resources/resource.h
+    src/resources/resourceManager.h
     src/compositor/nodeInterface.h
     src/compositor/passType.h
     src/compositor/links.h
@@ -96,6 +98,8 @@ set(SOURCES
     src/baseRenderTarget.cpp
     src/frameBufferRenderTarget.cpp
     src/surfaceRenderTarget.cpp
+    src/resources/resource.cpp
+    src/resources/resourceManager.cpp
     src/compositor/nodeBuilder.cpp
     src/compositor/nodeInterface.cpp
     src/compositor/frameCommands.cpp

@@ -2,8 +2,8 @@
 // Created by anton on 5/21/22.
 //
 
-#include <bit>
 #include "animationStorage.h"
+#include <bit>
 
 namespace cyclonite::components {
 AnimationStorage::AnimationStorage()
@@ -93,7 +93,7 @@ auto AnimationStorage::create(uint32_t index, uint16_t channelCount) -> Animatio
                 assert(ofs >= 0);
 
                 static_assert(sizeof(anim.baseChannel_) == sizeof(decltype(ofs)));
-                new (&anim.baseChannel_) decltype(ofs) { ofs };
+                new (&anim.baseChannel_) decltype(ofs){ ofs };
             }
 
             store_.resize(old + add, AnimationChannel{});
@@ -108,7 +108,7 @@ auto AnimationStorage::create(uint32_t index, uint16_t channelCount) -> Animatio
                 static_assert(sizeof(intptr_t) == sizeof(AnimationChannel*));
                 auto ofs = std::bit_cast<intptr_t>(anim.baseChannel_);
 
-                new (&anim.baseChannel_) AnimationChannel*{ store_.data() + ofs };
+                new (&anim.baseChannel_) AnimationChannel* { store_.data() + ofs };
             }
 
             if ((offset + size) == old) {

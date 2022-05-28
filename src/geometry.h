@@ -10,6 +10,7 @@
 #include "typedefs.h"
 #include <cstdint>
 
+// TODO:: move to the resources
 namespace cyclonite {
 class Geometry
 {

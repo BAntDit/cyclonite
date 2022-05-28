@@ -5,8 +5,8 @@
 #ifndef CYCLONITE_ANIMATION_H
 #define CYCLONITE_ANIMATION_H
 
-#include <utility>
 #include <enttx/entity.h>
+#include <utility>
 
 namespace cyclonite::components {
 class AnimationStorage;

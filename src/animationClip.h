@@ -7,8 +7,7 @@
 
 #include <vector>
 
-namespace cyclonite
-{
+namespace cyclonite {
 class AnimationClip
 {
 public:
