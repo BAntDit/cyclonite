@@ -25,4 +25,11 @@ Resource::ResourceTag::ResourceTag() noexcept
   : index{ std::numeric_limits<uint16_t>::max() }
   , isFixedSizePerItem{ false }
 {}
+
+Resource::Resource() noexcept
+  : id_{}
+  , state_{ ResourceState::UNLOADED }
+  , dependencies_{ nullptr, 0 }
+  , resourceManager_{ nullptr }
+{}
 }

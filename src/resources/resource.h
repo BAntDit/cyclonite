@@ -21,10 +21,8 @@ class Resource
 {
     friend class ResourceManager;
 
-private:
-    Resource(ResourceManager& resourceManager, size_t actualOrExpectedSize) noexcept;
-
-    Resource(ResourceManager& resourceManager, size_t dependenciesCount, size_t actualOrExpectedSize) noexcept;
+protected:
+    Resource() noexcept;
 
 public:
     class Id
@@ -52,7 +50,9 @@ public:
 
     Resource(Resource&&) = delete;
 
-    virtual ~Resource();
+    virtual ~Resource() = default;
+
+    [[nodiscard]] auto id() const -> Resource::Id { return id_; }
 
     auto operator=(Resource const&) -> Resource& = delete;
 
@@ -92,7 +92,6 @@ private:
     using resource_dependencies_t = std::pair<ResourceDependency*, size_t>;
 
     Id id_;
-    size_t size_;
     ResourceState state_;
     resource_dependencies_t dependencies_;
     ResourceManager* resourceManager_;

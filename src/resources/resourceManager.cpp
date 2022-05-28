@@ -110,8 +110,8 @@ void ResourceManager::erase(Resource::Id id)
     std::fill_n(storage.data() + offset, size, std::byte{ 0 });
 
     auto prevRange = std::find_if(ranges.cbegin(), ranges.cend(), [freeOffset](auto&& range) -> bool {
-       auto&& [rangeOffset, rangeSize] = range;
-       return freeOffset == (rangeOffset + rangeSize);
+        auto&& [rangeOffset, rangeSize] = range;
+        return freeOffset == (rangeOffset + rangeSize);
     });
 
     if (prevRange != ranges.cend()) {
@@ -141,5 +141,27 @@ void ResourceManager::erase(Resource::Id id)
     size = 0;
     storageIndex = std::numeric_limits<uint16_t>::max();
     isFixed = false;
+}
+
+auto ResourceManager::isValid(Resource::Id id) const -> bool
+{
+    return id.index() < resources_.size() && resources_[id.index()].version == id.version();
+}
+
+auto ResourceManager::isValid(Resource const& resource) const -> bool
+{
+    return isValid(resource.id());
+}
+
+auto ResourceManager::get(Resource::Id id) const -> Resource const&
+{
+    assert(isValid(id));
+    auto const& resource = resources_[id.index()];
+    return *reinterpret_cast<Resource const*>(storages_[resource.storage_index].data() + resource.offset);
+}
+
+auto ResourceManager::get(Resource::Id id) -> Resource&
+{
+    return const_cast<Resource&>(std::as_const(*this).get(id));
 }
 }

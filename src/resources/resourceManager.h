@@ -78,15 +78,25 @@ public:
 
     void erase(Resource::Id id);
 
-    auto get() const -> Resource const&;
+    [[nodiscard]] auto isValid(Resource::Id id) const -> bool;
 
-    auto get() -> Resource&;
+    [[nodiscard]] auto isValid(Resource const& resource) const -> bool;
+
+    [[nodiscard]] auto get(Resource::Id id) const -> Resource const&;
+
+    auto get(Resource::Id id) -> Resource&;
 
     template<ResourceTypeConcept R>
-    auto getAs() const -> R const&;
+    [[nodiscard]] auto getAs(Resource::Id id) const -> R const&
+    {
+        return get(id).as<R>();
+    }
 
     template<ResourceTypeConcept R>
-    auto getAs() -> R&;
+    auto getAs(Resource::Id id) -> R&
+    {
+        return get(id).as<R>();
+    }
 
 private:
     template<typename R, size_t N, bool B>
@@ -183,7 +193,10 @@ auto ResourceManager::create(Args&&... args) -> Resource::Id
     (void)_1;
     (void)_2;
 
-    new (storages_[storage].data() + offset) R(std::forward<Args>(args)...);
+    Resource* resource = new (storages_[storage].data() + offset) R(std::forward<Args>(args)...);
+
+    resource->id_ = id;
+    resource->resourceManager_ = this;
 
     return id;
 }
