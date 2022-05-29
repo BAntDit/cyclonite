@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_RESOURCE_H
 #define CYCLONITE_RESOURCE_H
 
-#include "resourceDependency.h"
+#include "resourceState.h"
 #include <atomic>
 #include <cassert>
 #include <concepts>
@@ -23,6 +23,14 @@ class Resource
 
 protected:
     Resource() noexcept;
+
+    explicit Resource(size_t dynamicSize) noexcept;
+
+    [[nodiscard]] auto dynamicDataSize() const -> size_t { return dynamicSize_; }
+
+    [[nodiscard]] auto dynamicDataOffset() const -> size_t { return dynamicOffset_; }
+
+    auto dynamicData() -> std::byte*;
 
 public:
     class Id
@@ -74,8 +82,8 @@ protected:
 
         ResourceTag() noexcept;
 
-        std::uint16_t index;
-        bool isFixedSizePerItem;
+        uint16_t staticDataIndex;  // index to the data which size is known in compile time (type itself)
+        uint16_t dynamicDataIndex; // index to the data which size is known in runtime only (dynamically allocated)
 
     private:
         static std::atomic_uint16_t _lastTagIndex;
@@ -89,18 +97,17 @@ private:
     static auto type_tag() -> ResourceTag& { return tag; }
 
 private:
-    using resource_dependencies_t = std::pair<ResourceDependency*, size_t>;
-
     Id id_;
-    ResourceState state_;
-    resource_dependencies_t dependencies_;
     ResourceManager* resourceManager_;
+    size_t dynamicOffset_;
+    size_t dynamicSize_;
+    ResourceState state_;
 };
 
 template<typename T>
 auto Resource::as() const -> T const& requires std::derived_from<T, Resource>
 {
-    assert(instance_tag().index == T::type_tag_const().index);
+    assert(instance_tag().staticDataIndex == T::type_tag_const().fixedPartIndex);
     return static_cast<T>(*this);
 }
 
@@ -113,7 +120,7 @@ auto Resource::as() -> T& requires std::derived_from<T, Resource>
 template<typename T>
 auto Resource::is() const -> bool requires std::derived_from<T, Resource>
 {
-    return instance_tag().index == T::type_tag_const().index;
+    return instance_tag().staticDataIndex == T::type_tag_const().fixedPartIndex;
 }
 }
 

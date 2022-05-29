@@ -142,7 +142,7 @@ void Model::init(vulkan::Device& device,
                 }
             } // end vertex reading
 
-            { // index reading
+            { // fixedPartIndex reading
                 auto const& idxBufferView = reader.bufferViews()[indexBufferViewIdx];
                 auto&& [idxBufferIdx, idxByteOffset, idxByteLength, idxByteStride] = idxBufferView;
                 auto& idxBuffer = reader.buffers()[idxBufferIdx];
@@ -176,7 +176,7 @@ void Model::init(vulkan::Device& device,
                         }
                     } break;
                 }
-            } // end index reading
+            } // end fixedPartIndex reading
 
             geometryIdentifiers_.emplace(std::make_tuple(posIdx, normalIdx, indexIdx), geometry->id());
 

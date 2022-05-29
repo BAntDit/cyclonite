@@ -5,16 +5,16 @@
 #include "resourceManager.h"
 
 namespace cyclonite::resources {
-ResourceManager::ResourceManager(size_t expectedResourceCount, size_t expectedDependencyCount)
+ResourceManager::ResourceManager(size_t expectedResourceCount)
   : resources_{}
   , freeResourceIndices_{}
-  , dependencies_{}
   , storages_{}
+  , freeItems_{}
+  , buffers_{}
   , freeRanges_{}
 {
     resources_.reserve(expectedResourceCount);
     freeResourceIndices_.reserve(expectedResourceCount);
-    dependencies_.reserve(expectedDependencyCount);
 }
 
 auto ResourceManager::allocResource(Resource::ResourceTag tag, size_t size) -> Resource::Id
@@ -34,8 +34,40 @@ auto ResourceManager::allocResource(Resource::ResourceTag tag, size_t size) -> R
 
     assert(index < resources_.size());
 
-    auto& storage = storages_[tag.index];
-    auto& ranges = freeRanges_[tag.index];
+    auto& storage = storages_[tag.staticDataIndex];
+    auto& items = freeItems_[tag.staticDataIndex];
+
+    auto itemIndex = uint32_t{ 0 };
+
+    if (items.size() > 1) {
+        itemIndex = items.back();
+        items.pop_back();
+    } else {
+        itemIndex = items.back()++;
+    }
+
+    if ((itemIndex * size) >= storage.size()) {
+        storage.resize(storage.size() * 2, std::byte{ 0 });
+    }
+
+    auto& resource = resources_[index];
+    resource.size = size;
+    resource.version = version;
+    resource.static_index = tag.staticDataIndex;
+    resource.dynamic_index = tag.dynamicDataIndex;
+    resource.item = itemIndex;
+
+    return Resource::Id{ index, version };
+}
+
+auto ResourceManager::allocDynamicBuffer(Resource::ResourceTag tag, size_t size) -> size_t
+{
+    assert(tag.dynamicDataIndex < buffers_.size());
+
+    auto bufferIndex = tag.dynamicDataIndex;
+
+    auto& buffer = buffers_[bufferIndex];
+    auto& ranges = freeRanges_[bufferIndex];
 
     auto it = std::lower_bound(ranges.cbegin(), ranges.cend(), size, [](auto range, auto value) -> bool {
         auto [rangeOffset, rangeSize] = range;
@@ -45,9 +77,9 @@ auto ResourceManager::allocResource(Resource::ResourceTag tag, size_t size) -> R
     });
 
     if (it == ranges.cend()) {
-        auto prevSize = storage.size();
+        auto prevSize = buffers_.size();
         auto newRangeOffset = prevSize;
-        auto newRangeSize = prevSize;
+        auto newRangeSize = std::max(prevSize, size);
 
         auto mergeIt = std::find_if(ranges.cbegin(), ranges.cend(), [newRangeOffset](auto range) -> bool {
             return newRangeOffset == (range.first + range.second);
@@ -62,7 +94,7 @@ auto ResourceManager::allocResource(Resource::ResourceTag tag, size_t size) -> R
 
         ranges.insert(std::pair{ static_cast<size_t>(newRangeOffset), static_cast<size_t>(newRangeSize) });
 
-        storage.resize(prevSize * 2, std::byte{ 0 });
+        buffer.resize(prevSize * 2, std::byte{ 0 });
 
         it = std::lower_bound(ranges.cbegin(), ranges.cend(), size, [](auto range, auto value) -> bool {
             auto [rangeOffset, rangeSize] = range;
@@ -73,7 +105,7 @@ auto ResourceManager::allocResource(Resource::ResourceTag tag, size_t size) -> R
     }
 
     if (it == ranges.cend()) {
-        throw std::runtime_error("no enough memory to place resource");
+        throw std::runtime_error("no enough memory to alloc resource buffer");
     }
 
     auto [allocOffset, allocSize] = *it;
@@ -85,29 +117,18 @@ auto ResourceManager::allocResource(Resource::ResourceTag tag, size_t size) -> R
         ranges.insert(std::pair{ static_cast<size_t>(newRangeOffset), static_cast<size_t>(newRangeSize) });
     }
 
-    auto& resource = resources_[index];
-    resource.version = version;
-    resource.storage_index = tag.index;
-    resource.is_fixed_size = tag.isFixedSizePerItem;
-    resource.size = size;
-    resource.offset = allocOffset;
-
-    return Resource::Id{ index, version };
+    return allocOffset;
 }
 
-void ResourceManager::erase(Resource::Id id)
+void ResourceManager::freeDynamicBuffer(uint16_t dynamicIndex, size_t offset, size_t size)
 {
-    auto& [offset, size, version, storageIndex, isFixed] = resources_[id.index()];
-
-    version++;
+    assert(dynamicIndex < buffers_.size());
+    assert(size > 0);
 
     auto freeOffset = offset;
     auto freeSize = size;
 
-    auto& storage = storages_[storageIndex];
-    auto& ranges = freeRanges_[storageIndex];
-
-    std::fill_n(storage.data() + offset, size, std::byte{ 0 });
+    auto& ranges = freeRanges_[dynamicIndex];
 
     auto prevRange = std::find_if(ranges.cbegin(), ranges.cend(), [freeOffset](auto&& range) -> bool {
         auto&& [rangeOffset, rangeSize] = range;
@@ -137,10 +158,41 @@ void ResourceManager::erase(Resource::Id id)
 
     ranges.insert(std::pair{ static_cast<size_t>(freeOffset), static_cast<size_t>(freeSize) });
 
-    offset = std::numeric_limits<size_t>::max();
+    auto& buffer = buffers_[dynamicIndex];
+    std::fill_n(buffer.data() + offset, size, std::byte{ 0 });
+}
+
+void ResourceManager::erase(Resource::Id id)
+{
+    {
+        auto& resource = get(id);
+        auto const& tag = resource.instance_tag();
+
+        if (tag.dynamicDataIndex < buffers_.size()) {
+            freeDynamicBuffer(tag.dynamicDataIndex, resource.dynamicDataOffset(), resource.dynamicDataSize());
+        }
+
+        resource.dynamicOffset_ = std::numeric_limits<size_t>::max();
+        resource.dynamicSize_ = 0;
+    }
+
+    auto& [size, version, itemIndex, staticIndex, dynamicIndex] = resources_[id.index()];
+
+    auto& freeItems = freeItems_[staticIndex];
+    auto& storage = storages_[staticIndex];
+
+    auto freeOffset = size * itemIndex;
+    auto freeSize = size;
+
+    std::fill_n(storage.data() + freeOffset, size, std::byte{ 0 });
+
+    freeItems.push_back(itemIndex);
+
     size = 0;
-    storageIndex = std::numeric_limits<uint16_t>::max();
-    isFixed = false;
+    version++;
+    itemIndex = std::numeric_limits<uint32_t>::max();
+    staticIndex = std::numeric_limits<uint16_t>::max();
+    dynamicIndex = std::numeric_limits<uint16_t>::max();
 }
 
 auto ResourceManager::isValid(Resource::Id id) const -> bool
@@ -157,11 +209,19 @@ auto ResourceManager::get(Resource::Id id) const -> Resource const&
 {
     assert(isValid(id));
     auto const& resource = resources_[id.index()];
-    return *reinterpret_cast<Resource const*>(storages_[resource.storage_index].data() + resource.offset);
+    return *reinterpret_cast<Resource const*>(storages_[resource.static_index].data() + resource.item * resource.size);
 }
 
 auto ResourceManager::get(Resource::Id id) -> Resource&
 {
     return const_cast<Resource&>(std::as_const(*this).get(id));
+}
+
+auto ResourceManager::getDynamicData(Resource::Id id) -> std::byte*
+{
+    auto& resource = get(id);
+    auto const& tag = resource.instance_tag();
+
+    return buffers_[tag.dynamicDataIndex].data() + resource.dynamicDataOffset();
 }
 }

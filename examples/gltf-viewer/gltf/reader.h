@@ -383,7 +383,7 @@ void Reader::read(std::istream& stream, F&& f)
               jsonBufferView, reinterpret_cast<char const*>(u8"buffer"), std::numeric_limits<size_t>::max());
 
             if (bufferView.bufferIdx == std::numeric_limits<size_t>::max()) {
-                throw std::runtime_error("buffer view must contains buffer index.");
+                throw std::runtime_error("buffer view must contains buffer fixedPartIndex.");
             }
 
             bufferView.byteOffset =

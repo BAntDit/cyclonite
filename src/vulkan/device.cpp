@@ -39,7 +39,7 @@ Device::Device(multithreading::TaskManager const& taskManager,
       internal::getBestQueueFamilyIndex(familyPropertiesList, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT);
 
     if (graphicsQueueFamilyIndex == std::numeric_limits<uint32_t>::max()) {
-        throw std::runtime_error("could not found valid graphics queue family index for device: " + name_);
+        throw std::runtime_error("could not found valid graphics queue family fixedPartIndex for device: " + name_);
     }
 
     uint32_t computeQueueFamilyIndex =
@@ -48,7 +48,7 @@ Device::Device(multithreading::TaskManager const& taskManager,
         : internal::getBestQueueFamilyIndex(familyPropertiesList, VK_QUEUE_COMPUTE_BIT, 1u);
 
     if (computeQueueFamilyIndex == std::numeric_limits<uint32_t>::max()) {
-        throw std::runtime_error("could not found valid compute queue family index for device: " + name_);
+        throw std::runtime_error("could not found valid compute queue family fixedPartIndex for device: " + name_);
     }
 
     uint32_t deviceHostTransferQueueFamilyIndex =

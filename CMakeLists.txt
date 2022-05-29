@@ -22,9 +22,9 @@ set(PUBLIC_HEADERS
     src/geometry.h
     src/animationClip.h
     src/resources/resourceState.h
-    src/resources/resourceDependency.h
     src/resources/resource.h
     src/resources/resourceManager.h
+    src/resources/buffer.h
     src/compositor/nodeInterface.h
     src/compositor/passType.h
     src/compositor/links.h

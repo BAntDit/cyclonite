@@ -137,7 +137,7 @@ void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device, vulkan::Hand
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &std::as_const(vkSwapChain_);
 
-    // image at index currentFrameImageIndex gets available after signal
+    // image at fixedPartIndex currentFrameImageIndex gets available after signal
     presentInfo.pImageIndices = &currentImageIndex_;
 
     vkQueuePresentKHR(device.graphicsQueue(), &presentInfo);

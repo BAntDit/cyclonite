@@ -177,10 +177,10 @@ auto Node<Config>::begin(vulkan::Device& device, uint64_t frameNumber, VkFence f
         auto&& rt = getRenderTarget<SurfaceRenderTarget>();
         auto frameIndex = frameNumber % rt.frameBufferCount();
 
-        // it acquires image index for the frame
-        // image index matches with commands for this image
-        // (so, fame image index == commands index we're going to render)
-        // returns: commands index (image index), semaphore to be sure image is available
+        // it acquires image fixedPartIndex for the frame
+        // image fixedPartIndex matches with commands for this image
+        // (so, fame image fixedPartIndex == commands fixedPartIndex we're going to render)
+        // returns: commands fixedPartIndex (image fixedPartIndex), semaphore to be sure image is available
         auto [commandsIndex, wait] = rt.acquireBackBufferIndex(device, frameIndex);
 
         /*if (fences_[commandsIndex] != VK_NULL_HANDLE) {
