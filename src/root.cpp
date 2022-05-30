@@ -7,6 +7,7 @@
 namespace cyclonite {
 Root::Root()
   : capabilities_{}
+  , resourceManager_{ nullptr }
   , taskManager_{}
   , sdlSupport_{}
   , vulkanInstance_
@@ -156,5 +157,17 @@ auto Root::getDeviceId(std::string const& deviceName) const -> uint32_t
     (void)name;
 
     return properties.deviceID;
+}
+
+auto Root::resourceManager() -> resources::ResourceManager&
+{
+    assert(resourceManager_); // decalre resources first
+    return *resourceManager_;
+}
+
+auto Root::resourceManager() const -> resources::ResourceManager const&
+{
+    assert(resourceManager_); // declare resources first
+    return *resourceManager_;
 }
 }

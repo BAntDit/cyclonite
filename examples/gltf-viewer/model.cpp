@@ -17,6 +17,8 @@ void Model::init(vulkan::Device& device,
                  std::string const& path,
                  std::shared_ptr<cyclonite::compositor::Workspace> const& workspace)
 {
+    // TODO:: adds resource count compute
+
     workspace_ = workspace;
 
     auto& node = workspace_->get(node_type_register_t::node_key_t<MainNodeConfig>{});

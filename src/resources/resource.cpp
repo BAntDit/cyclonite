@@ -2,8 +2,8 @@
 // Created by anton on 5/25/22.
 //
 
-#include "resourceManager.h"
 #include "resource.h"
+#include "resourceManager.h"
 #include <limits>
 
 namespace cyclonite::resources {

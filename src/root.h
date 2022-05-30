@@ -10,6 +10,7 @@
 #include "input.h"
 #include "multithreading/taskManager.h"
 #include "platform.h"
+#include "resources/resourceManager.h"
 #include "sdl/sdlSupport.h"
 #include "surface.h"
 #include "vulkan/device.h"
@@ -44,6 +45,8 @@ public:
 
     void init(uint32_t deviceId);
 
+    void declareResources(size_t initialResourceCount, resources::ResourceRegInfoSpecialization auto&&... regInfo);
+
     [[nodiscard]] auto getDeviceCount() const -> size_t { return physicalDeviceList_.size(); }
 
     [[nodiscard]] auto getDeviceId(size_t deviceIndex = 0) const -> uint32_t;
@@ -64,18 +67,23 @@ public:
 
     [[nodiscard]] auto taskManager() const -> multithreading::TaskManager const& { return taskManager_; }
 
+    [[nodiscard]] auto resourceManager() -> resources::ResourceManager&;
+
+    [[nodiscard]] auto resourceManager() const -> resources::ResourceManager const&;
+
     template<typename WorkspaceFactory>
     auto createWorkspace(WorkspaceFactory&& workspaceFactory) -> std::shared_ptr<compositor::Workspace> const&;
 
 private:
     Capabilities capabilities_;
+    std::unique_ptr<resources::ResourceManager> resourceManager_;
     multithreading::TaskManager taskManager_;
     sdl::SDLSupport sdlSupport_;
     std::unique_ptr<vulkan::Instance> vulkanInstance_;
     std::vector<VkPhysicalDevice> physicalDeviceList_;
     std::unordered_map<std::string, VkPhysicalDeviceProperties> physicalDevicePropertiesMap_;
     std::unique_ptr<vulkan::Device> vulkanDevice_;
-    std::vector<std::shared_ptr<compositor::Workspace>> workspaces_; // TODO:: maybe wrap to workspace
+    std::vector<std::shared_ptr<compositor::Workspace>> workspaces_;
     Input input_;
 };
 
@@ -84,6 +92,14 @@ auto Root::createWorkspace(WorkspaceFactory&& workspaceFactory) -> std::shared_p
 {
     return workspaces_.emplace_back(
       std::make_shared<compositor::Workspace>(workspaceFactory(compositor::Workspace::Builder{ *vulkanDevice_ })));
+}
+
+void Root::declareResources(size_t initialResourceCount, resources::ResourceRegInfoSpecialization auto&&... regInfo)
+{
+    assert(!resourceManager_);
+
+    resourceManager_ = std::make_unique<resources::ResourceManager>(initialResourceCount);
+    resourceManager_->template registerResources(std::forward<decltype(regInfo)>(regInfo)...);
 }
 }
 #endif // CYCLONITE_ROOT_H
