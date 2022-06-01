@@ -5,6 +5,7 @@
 #include "model.h"
 #include "appConfig.h"
 #include "gltf/reader.h"
+#include "resources/buffer.h"
 
 namespace examples::viewer {
 using namespace cyclonite;
@@ -13,11 +14,11 @@ Model::Model() noexcept
   : workspace_{ nullptr }
 {}
 
-void Model::init(vulkan::Device& device,
+void Model::init(cyclonite::Root& root,
                  std::string const& path,
                  std::shared_ptr<cyclonite::compositor::Workspace> const& workspace)
 {
-    // TODO:: adds resource count compute
+    auto& device = root.device();
 
     workspace_ = workspace;
 
@@ -25,13 +26,36 @@ void Model::init(vulkan::Device& device,
 
     node.systems().get<systems::UniformSystem>().init(device, 1);
 
+    // maps
+    std::unordered_map<size_t, cyclonite::resources::Resource::Id> gltfBufferIndexToResourceId{};
+    std::unordered_map<size_t, enttx::Entity> nodeIdxToEntity{};
+
     gltf::Reader reader{};
     std::vector<enttx::Entity> pool{};
-    std::unordered_map<size_t, enttx::Entity> nodeIdxToEntity{};
     std::unordered_map<std::tuple<size_t, size_t, size_t>, uint64_t, hash> geometryIdentifiers_{};
 
     reader.read(path, [&](auto dataType, auto&&... args) -> void {
         auto&& t = std::forward_as_tuple(args...);
+
+        if constexpr (gltf::reader_data_test<gltf::ReaderDataType::RESOURCE_COUNT, decltype(dataType)>()) {
+            auto [bufferCount, geometryCount] = t;
+
+            constexpr auto expectedBufferCount = size_t{ 1 };
+            constexpr auto initialBufferMemory = size_t{ 64 * 1024 * 1024 };
+
+            root.declareResources(
+              bufferCount + geometryCount,
+              resource_reg_info_t<cyclonite::resources::Buffer, expectedBufferCount, initialBufferMemory>{});
+        }
+
+        if constexpr (gltf::reader_data_test<gltf::ReaderDataType::BUFFER_STREAM, decltype(dataType)>()) {
+            auto&& [bufferIndex, bufferSize, stream] = t;
+
+            auto bufferId = root.resourceManager().create<cyclonite::resources::Buffer>(bufferSize);
+            root.resourceManager().get(bufferId).load(stream);
+
+            gltfBufferIndexToResourceId.insert(static_cast<size_t>(bufferIndex), bufferId);
+        }
 
         // transform system initialization
         if constexpr (gltf::reader_data_test<gltf::ReaderDataType::NODE_COUNT, decltype(dataType)>()) {
@@ -110,15 +134,19 @@ void Model::init(vulkan::Device& device,
             { // vertex reading
                 auto const& posBufferView = reader.bufferViews()[positionBufferViewIdx];
                 auto&& [posBufferIdx, posByteOffset, posByteLength, posByteStride] = posBufferView;
-                auto const& posBuffer = reader.buffers()[posBufferIdx];
-
                 (void)posByteLength;
+
+                assert(gltfBufferIndexToResourceId.count(posBufferIdx));
+                auto posBufferId = gltfBufferIndexToResourceId[posBufferIdx];
+                auto& posBuffer = root.resourceManager().get(posBufferId).as<cyclonite::resources::Buffer>();
 
                 auto const& norBufferView = reader.bufferViews()[normalBufferViewIdx];
                 auto&& [norBufferIdx, norByteOffset, norByteLength, norByteStride] = norBufferView;
-                auto const& norBuffer = reader.buffers()[norBufferIdx];
-
                 (void)norByteLength;
+
+                assert(gltfBufferIndexToResourceId.count(norBufferIdx));
+                auto norBufferId = gltfBufferIndexToResourceId[norBufferIdx];
+                auto& norBuffer = root.resourceManager().get(norBufferId).as<cyclonite::resources::Buffer>();
 
                 auto posStride = posByteStride == 0
                                    ? posType == reinterpret_cast<char const*>(u8"vec4") ? sizeof(vec4) : sizeof(vec3)

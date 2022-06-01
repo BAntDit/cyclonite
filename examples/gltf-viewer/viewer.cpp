@@ -96,7 +96,7 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
     });
 
     model_ = std::make_unique<Model>();
-    model_->init(root_->device(), "./scene.gltf", workspace);
+    model_->init(*root_, "./scene.gltf", workspace);
 
     view_ = std::make_unique<View>();
     view_->init(root_->taskManager(), root_->device(), workspace);

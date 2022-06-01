@@ -146,19 +146,22 @@ auto _readArray(nlohmann::json const& array) -> std::array<T, Size>
 
     return result;
 }
+
 enum class ReaderDataType : uint8_t
 {
+    RESOURCE_COUNT,
     NODE_COUNT,
-    BUFFER,
+    BUFFER_BYTES,
+    BUFFER_STREAM,
     BUFFER_VIEW,
     ACCESSOR,
     VERTEX_INDEX_INSTANCE_COUNT,
     NODE,
     GEOMETRY,
     MESH,
-    COUNT,
     MIN_VALUE = NODE_COUNT,
-    MAX_VALUE = COUNT
+    MAX_VALUE = MESH,
+    COUNT = MAX_VALUE + 1
 };
 
 template<ReaderDataType DataTypeValue>
@@ -219,10 +222,6 @@ public:
 
     [[nodiscard]] auto bufferViews() const -> std::vector<BufferView> const& { return bufferViews_; }
 
-    [[nodiscard]] auto buffers() const -> std::vector<std::vector<std::byte>> const& { return buffers_; }
-
-    [[nodiscard]] auto buffers() -> std::vector<std::vector<std::byte>>& { return buffers_; }
-
     template<typename F>
     void read(std::pair<void const*, size_t> buffer, F&& f);
 
@@ -253,7 +252,6 @@ private:
       F&& f);
 
     std::filesystem::path basePath_;
-    std::vector<std::vector<std::byte>> buffers_;
     std::vector<BufferView> bufferViews_;
     std::vector<Accessor> accessors_;
 
@@ -290,7 +288,6 @@ void Reader::read(std::pair<void const*, size_t> buffer, F&& f)
 template<typename F>
 void Reader::read(std::istream& stream, F&& f)
 {
-    buffers_.clear();
     bufferViews_.clear();
     accessors_.clear();
 
@@ -321,13 +318,59 @@ void Reader::read(std::istream& stream, F&& f)
         throw std::runtime_error("asset has unsupported glTF version");
     }
 
+    // count resources:
+    {
+        using unique_geometry_key_t = std::tuple<size_t, size_t, size_t>;
+        std::set<intance_key_t, cyclonite::hash> uniqueGeometry = {};
+
+        auto const& buffers = _getJsonProperty(input, reinterpret_cast<char const*>(u8"buffers"));
+        auto bufferCount = buffers.size();
+
+        auto const& meshes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"meshes"));
+        auto meshCount = meshes.size();
+
+        for (auto meshIndex = size_t{ 0 }; meshIndex < meshCount; meshIndex++) {
+            auto const& mesh = meshes.at(meshIndex);
+            auto const& primitives = _getJsonProperty(mesh, reinterpret_cast<char const*>(u8"primitives"));
+
+            for (size_t j = 0, primitiveCount = primitives.size(); j < primitiveCount; j++) {
+                auto& primitive = primitives.at(j);
+
+                auto idxIndices = _getOptional(
+                  primitive, reinterpret_cast<char const*>(u8"indices"), std::numeric_limits<size_t>::max());
+
+                if (idxIndices == std::numeric_limits<size_t>::max()) // skip non-indexed geometry
+                    continue;
+
+                auto attributes = _getJsonProperty(primitive, reinterpret_cast<char const*>(u8"attributes"));
+
+                auto idxPositions = _getOptional(
+                  attributes, reinterpret_cast<char const*>(u8"POSITION"), std::numeric_limits<size_t>::max());
+                auto idxNormals = _getOptional(
+                  attributes, reinterpret_cast<char const*>(u8"NORMAL"), std::numeric_limits<size_t>::max());
+
+                if (idxPositions >= std::numeric_limits<size_t>::max() ||
+                    idxNormals >= std::numeric_limits<size_t>::max())
+                    continue;
+
+                auto geometryIt = uniqueGeometry.find(std::make_tuple(idxIndices, idxPositions, idxNormals));
+
+                if (geometryIt == uniqueGeometry.end()) {
+                    uniqueGeometry.emplace(std::make_tuple(idxIndices, idxPositions, idxNormals));
+                }
+            }
+        }
+
+        auto geometryCount = uniqueGeometry.size();
+
+        f(reader_data_test<ReaderDataType::RESOURCE_COUNT>, bufferCount, geometryCount);
+    }
+
     // buffers:
     {
         auto const& buffers = _getJsonProperty(input, reinterpret_cast<char const*>(u8"buffers"));
 
         auto bufferCount = buffers.size();
-
-        buffers_.reserve(bufferCount);
 
         for (size_t i = 0; i < bufferCount; i++) {
             auto const& jsonBuffer = buffers.at(i);
@@ -343,26 +386,22 @@ void Reader::read(std::istream& stream, F&& f)
                 throw std::runtime_error("glTF json buffer must has byteLength property as number");
             }
 
-            auto& buffer = buffers_.emplace_back(byteLength, std::byte{ 0 });
-
             auto bufferUri = _getOptional<std::string>(jsonBuffer, reinterpret_cast<char const*>("uri"), "");
 
             auto path = basePath_ / bufferUri;
 
-            auto* bufferPtr = reinterpret_cast<char*>(buffer.data());
-
             {
-                std::ifstream file;
+                std::ifstream file{};
 
                 file.exceptions(std::ios::failbit);
                 file.open(path.string(), std::ifstream::binary);
                 file.exceptions(std::ios::badbit);
                 file.seekg(0, std::ifstream::beg);
-                file.read(bufferPtr, byteLength);
+
+                f(reader_data_type_t<ReaderDataType::BUFFER_STREAM>{}, i, byteLength, std::ref(file));
+
                 file.close();
             }
-
-            f(reader_data_type_t<ReaderDataType::BUFFER>{}, buffers_[i], i);
         }
     }
 
@@ -449,35 +488,37 @@ void Reader::read(std::istream& stream, F&& f)
         }
     }
 
-    using intance_key_t = std::tuple<size_t, size_t, size_t>;
+    {
+        using intance_key_t = std::tuple<size_t, size_t, size_t>;
+        std::unordered_map<intance_key_t, std::tuple<uint32_t, uint32_t, uint32_t>, cyclonite::hash>
+          instanceCommands = {};
 
-    std::unordered_map<intance_key_t, std::tuple<uint32_t, uint32_t, uint32_t>, cyclonite::hash> instanceCommands = {};
+        auto const& scenes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"scenes"));
+        auto const& nodes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"nodes"));
+        auto defaultSceneIdx = _getOptional(input, reinterpret_cast<char const*>(u8"scene"), static_cast<size_t>(0));
+        auto const& meshes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"meshes"));
+        auto const& scene = scenes.at(defaultSceneIdx);
+        auto const& rootNodes = _getJsonProperty(scene, reinterpret_cast<char const*>(u8"nodes"));
 
-    auto const& scenes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"scenes"));
-    auto const& nodes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"nodes"));
-    auto defaultSceneIdx = _getOptional(input, reinterpret_cast<char const*>(u8"scene"), static_cast<size_t>(0));
-    auto const& meshes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"meshes"));
-    auto const& scene = scenes.at(defaultSceneIdx);
-    auto const& rootNodes = _getJsonProperty(scene, reinterpret_cast<char const*>(u8"nodes"));
+        f(reader_data_type_t<ReaderDataType::NODE_COUNT>{}, static_cast<uint32_t>(nodes.size()));
 
-    f(reader_data_type_t<ReaderDataType::NODE_COUNT>{}, static_cast<uint32_t>(nodes.size()));
+        for (size_t i = 0, count = rootNodes.size(); i < count; i++) {
+            auto idx = rootNodes.at(i).get<size_t>();
+            _countNode(nodes, meshes, accessors, instanceCommands, idx);
+        }
 
-    for (size_t i = 0, count = rootNodes.size(); i < count; i++) {
-        auto idx = rootNodes.at(i).get<size_t>();
-        _countNode(nodes, meshes, accessors, instanceCommands, idx);
-    }
+        f(reader_data_type_t<ReaderDataType::VERTEX_INDEX_INSTANCE_COUNT>{},
+          vertexCount_,
+          indexCount_,
+          instanceCount_,
+          static_cast<uint32_t>(instanceCommands.size()));
 
-    f(reader_data_type_t<ReaderDataType::VERTEX_INDEX_INSTANCE_COUNT>{},
-      vertexCount_,
-      indexCount_,
-      instanceCount_,
-      static_cast<uint32_t>(instanceCommands.size()));
+        for (size_t i = 0, count = rootNodes.size(); i < count; i++) {
+            auto idx = rootNodes.at(i).get<size_t>();
 
-    for (size_t i = 0, count = rootNodes.size(); i < count; i++) {
-        auto idx = rootNodes.at(i).get<size_t>();
-
-        _readNode(
-          nodes, meshes, accessors, instanceCommands, std::numeric_limits<size_t>::max(), idx, std::forward<F>(f));
+            _readNode(
+              nodes, meshes, accessors, instanceCommands, std::numeric_limits<size_t>::max(), idx, std::forward<F>(f));
+        }
     }
 }
 

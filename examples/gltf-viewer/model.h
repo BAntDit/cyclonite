@@ -18,7 +18,7 @@ private:
 public:
     Model() noexcept;
 
-    void init(cyclonite::vulkan::Device& device,
+    void init(cyclonite::Root& root,
               std::string const& path,
               std::shared_ptr<cyclonite::compositor::Workspace> const& workspace);
 
