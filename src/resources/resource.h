@@ -10,6 +10,7 @@
 #include <cassert>
 #include <concepts>
 #include <cstddef>
+#include <filesystem>
 #include <utility>
 
 namespace cyclonite::resources {
@@ -75,6 +76,12 @@ public:
     template<typename T>
     [[nodiscard]] auto is() const -> bool requires std::derived_from<T, Resource>;
 
+    virtual void load(std::filesystem::path const& path);
+
+    virtual void load(void const* data, size_t size);
+
+    virtual void load(std::istream& stream);
+
 protected:
     struct ResourceTag
     {
@@ -101,7 +108,9 @@ private:
     ResourceManager* resourceManager_;
     size_t dynamicOffset_;
     size_t dynamicSize_;
-    ResourceState state_;
+
+protected:
+    std::atomic<ResourceState> state_;
 };
 
 template<typename T>

@@ -4,6 +4,9 @@
 
 #include "resource.h"
 #include "resourceManager.h"
+#include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <fstream>
 #include <limits>
 
 namespace cyclonite::resources {
@@ -46,5 +49,29 @@ Resource::Resource(size_t dynamicSize) noexcept
 auto Resource::dynamicData() -> std::byte*
 {
     return resourceManager_->getDynamicData(id_);
+}
+
+void Resource::load(std::filesystem::path const& path)
+{
+    std::ifstream file{};
+    file.exceptions(std::ios::failbit);
+    file.open(path.string());
+    file.exceptions(std::ios::badbit);
+
+    load(file);
+}
+
+void Resource::load(void const* data, size_t size)
+{
+    using source_array_t = boost::iostreams::array_source;
+    boost::iostreams::stream<source_array_t> stream(reinterpret_cast<char const*>(data), size);
+
+    load(stream);
+}
+
+void Resource::load(std::istream& stream)
+{
+    (void)stream;
+    state_ = ResourceState::COMPLETE;
 }
 }

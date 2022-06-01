@@ -25,6 +25,7 @@ set(PUBLIC_HEADERS
     src/resources/resource.h
     src/resources/resourceManager.h
     src/resources/buffer.h
+    src/resources/bufferView.h
     src/compositor/nodeInterface.h
     src/compositor/passType.h
     src/compositor/links.h
@@ -99,6 +100,7 @@ set(SOURCES
     src/frameBufferRenderTarget.cpp
     src/surfaceRenderTarget.cpp
     src/resources/resource.cpp
+    src/resources/buffer.cpp
     src/resources/resourceManager.cpp
     src/compositor/nodeBuilder.cpp
     src/compositor/nodeInterface.cpp
