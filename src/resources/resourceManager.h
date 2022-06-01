@@ -34,21 +34,7 @@ template<typename T>
 concept ResourceRegInfoSpecialization = internal::is_resource_reg_info_specialization_v<T, resource_reg_info_t>;
 
 template<typename T>
-concept ResourceTypeConcept = requires()
-{
-    {
-        T {}
-    }
-    ->std::derived_from<Resource>;
-    {
-        T::type_tag()
-    }
-    ->std::same_as<Resource::ResourceTag&>;
-    {
-        T::type_tag_const()
-    }
-    ->std::same_as<Resource::ResourceTag const&>;
-};
+concept ResourceTypeConcept = std::derived_from<T, Resource>;
 
 class ResourceManager
 {
@@ -113,10 +99,17 @@ private:
     auto getDynamicData(Resource::Id id) -> std::byte*;
 
 private:
+    struct free_range_comparator
+    {
+        auto operator()(std::pair<size_t, size_t> const& a, std::pair<size_t, size_t> const& b) const -> bool
+        {
+            return a.second < b.second;
+        }
+    };
+
     using resource_storage_t = std::vector<std::byte>;
     using free_items_t = std::vector<uint32_t>;
-    using free_ranges_t =
-      std::set<std::pair<size_t, size_t>, decltype([](auto a, auto b) -> bool { return a.second < b.second; })>;
+    using free_ranges_t = std::set<std::pair<size_t, size_t>, free_range_comparator>;
 
     struct resource_t
     {
@@ -155,7 +148,7 @@ template<ResourceTypeConcept R, uint32_t InitialCapacity>
 void ResourceManager::registerFixedSizeResource()
 {
     R::type_tag().staticDataIndex = ++Resource::ResourceTag::_lastTagIndex;
-    assert(R::type_tag().fixedPartIndex == storages_.size());
+    assert(R::type_tag().staticDataIndex == storages_.size());
 
     auto size = sizeof(R);
     assert((size % 64) == 0);
@@ -205,7 +198,7 @@ void ResourceManager::registerResources(ResourceRegInfoSpecialization auto&&... 
 template<ResourceTypeConcept R, typename... Args>
 auto ResourceManager::create(Args&&... args) -> Resource::Id
 {
-    auto id = allocResource(R::get_tag_const(), sizeof(R));
+    auto id = allocResource(R::type_tag_const(), sizeof(R));
 
     auto const [size, version, itemIndex, staticIndex, _] = resources_[id.index()];
     (void)version;
@@ -217,7 +210,7 @@ auto ResourceManager::create(Args&&... args) -> Resource::Id
     resource->resourceManager_ = this;
 
     if (resource->dynamicDataSize() > 0) {
-        resource->dynamicOffset_ = allocDynamicBuffer(R::get_tag_const(), resource->dynamicDataSize());
+        resource->dynamicOffset_ = allocDynamicBuffer(R::type_tag_const(), resource->dynamicDataSize());
     }
 
     return id;

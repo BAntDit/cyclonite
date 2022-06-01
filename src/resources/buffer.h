@@ -28,8 +28,8 @@ public:
 
 public:
     static ResourceTag tag;
-    static auto type_tag_const() -> ResourceTag const& { return tag; }
-    static auto type_tag() -> ResourceTag& { return tag; }
+    static auto type_tag_const() -> ResourceTag const& { return Buffer::tag; }
+    static auto type_tag() -> ResourceTag& { return Buffer::tag; }
 };
 
 template<typename DataType>

@@ -116,8 +116,8 @@ protected:
 template<typename T>
 auto Resource::as() const -> T const& requires std::derived_from<T, Resource>
 {
-    assert(instance_tag().staticDataIndex == T::type_tag_const().fixedPartIndex);
-    return static_cast<T>(*this);
+    assert(instance_tag().staticDataIndex == T::type_tag_const().staticDataIndex);
+    return *static_cast<T const*>(this);
 }
 
 template<typename T>
@@ -129,7 +129,7 @@ auto Resource::as() -> T& requires std::derived_from<T, Resource>
 template<typename T>
 auto Resource::is() const -> bool requires std::derived_from<T, Resource>
 {
-    return instance_tag().staticDataIndex == T::type_tag_const().fixedPartIndex;
+    return instance_tag().staticDataIndex == T::type_tag_const().staticDataIndex;
 }
 }
 

@@ -39,10 +39,18 @@ private:
     auto allocChannelRange(uint16_t channelCount) -> std::pair<size_t, size_t>;
 
 private:
+    // comparator is not a lambda to avoid subobject-linkage warning
+    struct free_range_comparator
+    {
+        auto operator()(std::pair<size_t, size_t> const& a, std::pair<size_t, size_t> const& b) const -> bool
+        {
+            return a.second < b.second;
+        }
+    };
+
     std::vector<AnimationChannel> store_;
     std::vector<Animation> animations_;
-    std::set<std::pair<size_t, size_t>, decltype([](auto a, auto b) -> bool { return a.second < b.second; })>
-      freeRanges_;
+    std::set<std::pair<size_t, size_t>, free_range_comparator> freeRanges_;
     std::vector<uint32_t> freeIndices_; // mesh indices
     std::vector<uint32_t> indices_;
 };

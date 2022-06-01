@@ -43,18 +43,19 @@ void Model::init(cyclonite::Root& root,
             constexpr auto expectedBufferCount = size_t{ 1 };
             constexpr auto initialBufferMemory = size_t{ 64 * 1024 * 1024 };
 
-            root.declareResources(
-              bufferCount + geometryCount,
-              resource_reg_info_t<cyclonite::resources::Buffer, expectedBufferCount, initialBufferMemory>{});
+            root.declareResources(bufferCount + geometryCount,
+                                  cyclonite::resources::resource_reg_info_t<cyclonite::resources::Buffer,
+                                                                            expectedBufferCount,
+                                                                            initialBufferMemory>{});
         }
 
         if constexpr (gltf::reader_data_test<gltf::ReaderDataType::BUFFER_STREAM, decltype(dataType)>()) {
             auto&& [bufferIndex, bufferSize, stream] = t;
 
-            auto bufferId = root.resourceManager().create<cyclonite::resources::Buffer>(bufferSize);
+            auto bufferId = root.resourceManager().template create<cyclonite::resources::Buffer>(bufferSize);
             root.resourceManager().get(bufferId).load(stream);
 
-            gltfBufferIndexToResourceId.insert(static_cast<size_t>(bufferIndex), bufferId);
+            gltfBufferIndexToResourceId.insert(std::pair{ static_cast<size_t>(bufferIndex), bufferId });
         }
 
         // transform system initialization
@@ -138,7 +139,7 @@ void Model::init(cyclonite::Root& root,
 
                 assert(gltfBufferIndexToResourceId.count(posBufferIdx));
                 auto posBufferId = gltfBufferIndexToResourceId[posBufferIdx];
-                auto& posBuffer = root.resourceManager().get(posBufferId).as<cyclonite::resources::Buffer>();
+                auto& posBuffer = root.resourceManager().get(posBufferId).template as<cyclonite::resources::Buffer>();
 
                 auto const& norBufferView = reader.bufferViews()[normalBufferViewIdx];
                 auto&& [norBufferIdx, norByteOffset, norByteLength, norByteStride] = norBufferView;
@@ -146,7 +147,7 @@ void Model::init(cyclonite::Root& root,
 
                 assert(gltfBufferIndexToResourceId.count(norBufferIdx));
                 auto norBufferId = gltfBufferIndexToResourceId[norBufferIdx];
-                auto& norBuffer = root.resourceManager().get(norBufferId).as<cyclonite::resources::Buffer>();
+                auto& norBuffer = root.resourceManager().get(norBufferId).template as<cyclonite::resources::Buffer>();
 
                 auto posStride = posByteStride == 0
                                    ? posType == reinterpret_cast<char const*>(u8"vec4") ? sizeof(vec4) : sizeof(vec3)
@@ -158,12 +159,16 @@ void Model::init(cyclonite::Root& root,
 
                 auto vertexIdx = size_t{ 0 };
 
-                for (auto& vertex : geometry->vertices()) {
-                    auto pos = glm::make_vec3(reinterpret_cast<real const*>(posBuffer.data() + posByteOffset +
-                                                                            positionOffset + posStride * vertexIdx));
+                assert(vertexCount == normalCount);
+                auto posSrc = posBuffer.template view<real>(posByteOffset + positionOffset, vertexCount, posStride);
+                auto norSrc = norBuffer.template view<real>(posByteOffset + normalOffset, normalCount, norStride);
 
-                    auto nor = glm::make_vec3(reinterpret_cast<real const*>(norBuffer.data() + norByteOffset +
-                                                                            normalOffset + norStride * vertexIdx));
+                for (auto& vertex : geometry->vertices()) {
+                    auto pos =
+                      glm::make_vec3(reinterpret_cast<real const*>(std::next(posSrc.begin(), vertexIdx).ptr()));
+
+                    auto nor =
+                      glm::make_vec3(reinterpret_cast<real const*>(std::next(norSrc.begin(), vertexIdx).ptr()));
 
                     vertex.position = pos;
                     vertex.normal = nor;
@@ -175,13 +180,17 @@ void Model::init(cyclonite::Root& root,
             { // fixedPartIndex reading
                 auto const& idxBufferView = reader.bufferViews()[indexBufferViewIdx];
                 auto&& [idxBufferIdx, idxByteOffset, idxByteLength, idxByteStride] = idxBufferView;
-                auto& idxBuffer = reader.buffers()[idxBufferIdx];
+                (void)idxByteLength;
+
+                assert(gltfBufferIndexToResourceId.count(idxBufferIdx));
+                auto idxBufferId = gltfBufferIndexToResourceId[idxBufferIdx];
+                auto& idxBuffer = root.resourceManager().get(idxBufferId).template as<cyclonite::resources::Buffer>();
 
                 switch (indexComponentType) {
                     case 5121: { // unsigned byte
                         auto stride = idxByteStride == 0 ? sizeof(uint8_t) : idxByteStride;
-                        auto src =
-                          RawDataView<uint8_t>{ idxBuffer.data(), idxByteOffset + indexOffset, indexCount, stride };
+                        auto src = idxBuffer.template view<uint8_t>(idxByteOffset + indexOffset, indexCount, stride);
+
                         auto indexIdx = size_t{ 0 };
                         for (auto& index : geometry->indices()) {
                             index = static_cast<index_type_t>(*std::next(src.begin(), indexIdx++));
@@ -189,8 +198,8 @@ void Model::init(cyclonite::Root& root,
                     } break;
                     case 5123: { // unsigned short
                         auto stride = idxByteStride == 0 ? sizeof(uint16_t) : idxByteStride;
-                        auto src =
-                          RawDataView<uint16_t>{ idxBuffer.data(), idxByteOffset + indexOffset, indexCount, stride };
+                        auto src = idxBuffer.template view<uint16_t>(idxByteOffset + indexOffset, indexCount, stride);
+
                         auto indexIdx = size_t{ 0 };
                         for (auto& index : geometry->indices()) {
                             index = static_cast<index_type_t>(*std::next(src.begin(), indexIdx++));
@@ -198,8 +207,8 @@ void Model::init(cyclonite::Root& root,
                     } break;
                     case 5125: { // unsigned int
                         auto stride = idxByteStride == 0 ? sizeof(uint32_t) : idxByteStride;
-                        auto src =
-                          RawDataView<uint32_t>{ idxBuffer.data(), idxByteOffset + indexOffset, indexCount, stride };
+                        auto src = idxBuffer.template view<uint32_t>(idxByteOffset + indexOffset, indexCount, stride);
+
                         auto indexIdx = size_t{ 0 };
                         for (auto& index : geometry->indices()) {
                             index = static_cast<index_type_t>(*std::next(src.begin(), indexIdx++));

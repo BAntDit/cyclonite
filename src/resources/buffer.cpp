@@ -5,6 +5,8 @@
 #include "buffer.h"
 
 namespace cyclonite::resources {
+Resource::ResourceTag Buffer::tag{};
+
 Buffer::Buffer(size_t size) noexcept
   : Resource(size)
 {}

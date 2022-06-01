@@ -321,7 +321,7 @@ void Reader::read(std::istream& stream, F&& f)
     // count resources:
     {
         using unique_geometry_key_t = std::tuple<size_t, size_t, size_t>;
-        std::set<intance_key_t, cyclonite::hash> uniqueGeometry = {};
+        std::set<unique_geometry_key_t, std::less<std::tuple<size_t, size_t, size_t>>> uniqueGeometry = {};
 
         auto const& buffers = _getJsonProperty(input, reinterpret_cast<char const*>(u8"buffers"));
         auto bufferCount = buffers.size();
@@ -363,7 +363,7 @@ void Reader::read(std::istream& stream, F&& f)
 
         auto geometryCount = uniqueGeometry.size();
 
-        f(reader_data_test<ReaderDataType::RESOURCE_COUNT>, bufferCount, geometryCount);
+        f(reader_data_type_t<ReaderDataType::RESOURCE_COUNT>{}, bufferCount, geometryCount);
     }
 
     // buffers:

@@ -184,7 +184,7 @@ void ResourceManager::erase(Resource::Id id)
     auto freeOffset = size * itemIndex;
     auto freeSize = size;
 
-    std::fill_n(storage.data() + freeOffset, size, std::byte{ 0 });
+    std::fill_n(storage.data() + freeOffset, freeSize, std::byte{ 0 });
 
     freeItems.push_back(itemIndex);
 
