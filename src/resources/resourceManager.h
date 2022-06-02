@@ -151,7 +151,6 @@ void ResourceManager::registerFixedSizeResource()
     assert(R::type_tag().staticDataIndex == storages_.size());
 
     auto size = sizeof(R);
-    assert((size % 64) == 0);
 
     storages_.template emplace_back(size * InitialCapacity, std::byte{ 0 });
 
