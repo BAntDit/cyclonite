@@ -164,8 +164,10 @@ void ResourceManager::freeDynamicBuffer(uint16_t dynamicIndex, size_t offset, si
 
 void ResourceManager::erase(Resource::Id id)
 {
+    auto& resource = get(id);
+
     {
-        auto& resource = get(id);
+
         auto const& tag = resource.instance_tag();
 
         if (tag.dynamicDataIndex < buffers_.size()) {
@@ -175,6 +177,8 @@ void ResourceManager::erase(Resource::Id id)
         resource.dynamicOffset_ = std::numeric_limits<size_t>::max();
         resource.dynamicSize_ = 0;
     }
+
+    resource.~Resource();
 
     auto& [size, version, itemIndex, staticIndex, dynamicIndex] = resources_[id.index()];
 

@@ -5,14 +5,14 @@
 #ifndef CYCLONITE_GEOMETRY_H
 #define CYCLONITE_GEOMETRY_H
 
-#include "./vulkan/staging.h"
-#include "rawDataView.h"
+#include "bufferView.h"
+#include "resource.h"
 #include "typedefs.h"
+#include "vulkan/staging.h"
 #include <cstdint>
 
-// TODO:: move to the resources
-namespace cyclonite {
-class Geometry
+namespace cyclonite::resources {
+class Geometry : public Resource
 {
 public:
     Geometry(uint32_t vertexCount,
@@ -20,39 +20,31 @@ public:
              vulkan::Staging::AllocatedMemory&& vertices,
              vulkan::Staging::AllocatedMemory&& indices) noexcept;
 
-    Geometry(Geometry const&) = delete;
-
-    Geometry(Geometry&&) = default;
-
-    ~Geometry() = default;
-
-    auto operator=(Geometry const&) -> Geometry& = delete;
-
-    auto operator=(Geometry &&) -> Geometry& = default;
-
-    [[nodiscard]] auto id() const -> uint64_t { return id_; }
+    [[nodiscard]] auto instance_tag() const -> ResourceTag const& override { return tag; }
 
     [[nodiscard]] auto vertexCount() const -> uint32_t { return vertexCount_; }
 
     [[nodiscard]] auto indexCount() const -> uint32_t { return indexCount_; }
 
-    [[nodiscard]] auto vertices() const -> RawDataView<vertex_t>;
+    [[nodiscard]] auto vertices() const -> BufferView<vertex_t>;
 
-    [[nodiscard]] auto indices() const -> RawDataView<index_type_t>;
+    [[nodiscard]] auto indices() const -> BufferView<index_type_t>;
 
     [[nodiscard]] auto firstIndex() const -> uint32_t;
 
     [[nodiscard]] auto baseVertex() const -> uint32_t;
 
 private:
-    static std::atomic_uint64_t _lastGeometryId;
-
-private:
-    uint64_t id_;
     uint32_t vertexCount_;
     uint32_t indexCount_;
+    // TODO:: refactor gpu staging to resource
     vulkan::Staging::AllocatedMemory vertices_;
     vulkan::Staging::AllocatedMemory indices_;
+
+public:
+    static ResourceTag tag; // TODO:: make private
+    static auto type_tag_const() -> ResourceTag const& { return Geometry::tag; }
+    static auto type_tag() -> ResourceTag& { return Geometry::tag; }
 };
 }
 

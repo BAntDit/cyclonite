@@ -3,17 +3,21 @@
 //
 
 #include "meshSystem.h"
-#include "vulkan/device.h"
+#include "resources/geometry.h"
+#include "root.h"
 
 namespace cyclonite::systems {
-void MeshSystem::init(vulkan::Device& device,
+void MeshSystem::init(Root& root,
                       size_t swapChainLength,
                       size_t initialCommandCapacity,
                       size_t initialInstanceCapacity,
                       size_t initialIndexCapacity,
                       size_t initialVertexCapacity)
 {
+    auto& device = root.device();
+
     devicePtr_ = &device;
+    resourceManager_ = &root.resourceManager();
 
     commandCount_ = 0;
 
@@ -171,28 +175,24 @@ void MeshSystem::requestVertexDeviceBufferUpdate()
     verticesUpdateRequired_ = true;
 }
 
-auto MeshSystem::createGeometry(uint32_t vertexCount, uint32_t indexCount) -> std::shared_ptr<Geometry>
+auto MeshSystem::createGeometry(uint32_t vertexCount, uint32_t indexCount) -> uint64_t
 {
-    auto geometry = std::make_shared<Geometry>(vertexCount,
-                                               indexCount,
-                                               vertexBuffer_->alloc(vertexCount * sizeof(vertex_t)),
-                                               indexBuffer_->alloc(indexCount * sizeof(index_type_t)));
+    // TODO:: move outside after stagings
+    auto id =
+      resourceManager_->template create<resources::Geometry>(vertexCount,
+                                                             indexCount,
+                                                             vertexBuffer_->alloc(vertexCount * sizeof(vertex_t)),
+                                                             indexBuffer_->alloc(indexCount * sizeof(index_type_t)));
 
-    auto [it, success] = geometries_.emplace(geometry->id(), geometry);
-
-    assert(success);
-    (void)success;
-
-    return geometry;
+    return static_cast<uint64_t>(id);
 }
 
 void MeshSystem::_addSubMesh(components::SubMesh& subMesh, uint64_t geometryId)
 {
-    assert(geometries_.count(geometryId) != 0);
-    auto& geometry = geometries_[geometryId];
+    auto& geometry = resourceManager_->get(resources::Resource::Id{ geometryId }).template as<resources::Geometry>();
 
-    auto firstIndex = geometry->firstIndex();
-    auto baseVertex = geometry->baseVertex();
+    auto firstIndex = geometry.firstIndex();
+    auto baseVertex = geometry.baseVertex();
 
     auto idx = std::numeric_limits<size_t>::max();
 
@@ -215,7 +215,7 @@ void MeshSystem::_addSubMesh(components::SubMesh& subMesh, uint64_t geometryId)
 
         auto&& command = commands_[idx];
 
-        command.indexCount = geometry->indexCount();
+        command.indexCount = geometry.indexCount();
         command.instanceCount = 0;
         command.firstIndex = firstIndex;
         command.firstInstance = 0;

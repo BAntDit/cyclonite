@@ -6,6 +6,7 @@
 #include "appConfig.h"
 #include "gltf/reader.h"
 #include "resources/buffer.h"
+#include "resources/geometry.h"
 
 namespace examples::viewer {
 using namespace cyclonite;
@@ -41,12 +42,14 @@ void Model::init(cyclonite::Root& root,
             auto [bufferCount, geometryCount] = t;
 
             constexpr auto expectedBufferCount = size_t{ 1 };
+            constexpr auto expectedGeometryCount = size_t{ 32 };
             constexpr auto initialBufferMemory = size_t{ 64 * 1024 * 1024 };
 
-            root.declareResources(bufferCount + geometryCount,
-                                  cyclonite::resources::resource_reg_info_t<cyclonite::resources::Buffer,
-                                                                            expectedBufferCount,
-                                                                            initialBufferMemory>{});
+            root.declareResources(
+              bufferCount + geometryCount,
+              cyclonite::resources::
+                resource_reg_info_t<cyclonite::resources::Buffer, expectedBufferCount, initialBufferMemory>{},
+              cyclonite::resources::resource_reg_info_t<cyclonite::resources::Geometry, expectedGeometryCount, 0>{});
         }
 
         if constexpr (gltf::reader_data_test<gltf::ReaderDataType::BUFFER_STREAM, decltype(dataType)>()) {
@@ -74,7 +77,7 @@ void Model::init(cyclonite::Root& root,
 
             auto& meshSystem = node.systems().get<systems::MeshSystem>();
 
-            meshSystem.init(device, 1, commandCount, instanceCount, indexCount, vertexCount);
+            meshSystem.init(root, 1, commandCount, instanceCount, indexCount, vertexCount);
         }
 
         // node
@@ -130,7 +133,9 @@ void Model::init(cyclonite::Root& root,
 
             auto& meshSystem = node.systems().get<systems::MeshSystem>();
 
-            auto geometry = meshSystem.createGeometry(vertexCount, indexCount);
+            auto geometryId = meshSystem.createGeometry(vertexCount, indexCount);
+            auto& geometry =
+              root.resourceManager().get(resources::Resource::Id{ geometryId }).template as<resources::Geometry>();
 
             { // vertex reading
                 auto const& posBufferView = reader.bufferViews()[positionBufferViewIdx];
@@ -163,7 +168,7 @@ void Model::init(cyclonite::Root& root,
                 auto posSrc = posBuffer.template view<real>(posByteOffset + positionOffset, vertexCount, posStride);
                 auto norSrc = norBuffer.template view<real>(posByteOffset + normalOffset, normalCount, norStride);
 
-                for (auto& vertex : geometry->vertices()) {
+                for (auto& vertex : geometry.vertices()) {
                     auto pos =
                       glm::make_vec3(reinterpret_cast<real const*>(std::next(posSrc.begin(), vertexIdx).ptr()));
 
@@ -192,7 +197,7 @@ void Model::init(cyclonite::Root& root,
                         auto src = idxBuffer.template view<uint8_t>(idxByteOffset + indexOffset, indexCount, stride);
 
                         auto indexIdx = size_t{ 0 };
-                        for (auto& index : geometry->indices()) {
+                        for (auto& index : geometry.indices()) {
                             index = static_cast<index_type_t>(*std::next(src.begin(), indexIdx++));
                         }
                     } break;
@@ -201,7 +206,7 @@ void Model::init(cyclonite::Root& root,
                         auto src = idxBuffer.template view<uint16_t>(idxByteOffset + indexOffset, indexCount, stride);
 
                         auto indexIdx = size_t{ 0 };
-                        for (auto& index : geometry->indices()) {
+                        for (auto& index : geometry.indices()) {
                             index = static_cast<index_type_t>(*std::next(src.begin(), indexIdx++));
                         }
                     } break;
@@ -210,14 +215,14 @@ void Model::init(cyclonite::Root& root,
                         auto src = idxBuffer.template view<uint32_t>(idxByteOffset + indexOffset, indexCount, stride);
 
                         auto indexIdx = size_t{ 0 };
-                        for (auto& index : geometry->indices()) {
+                        for (auto& index : geometry.indices()) {
                             index = static_cast<index_type_t>(*std::next(src.begin(), indexIdx++));
                         }
                     } break;
                 }
             } // end fixedPartIndex reading
 
-            geometryIdentifiers_.emplace(std::make_tuple(posIdx, normalIdx, indexIdx), geometry->id());
+            geometryIdentifiers_.emplace(std::make_tuple(posIdx, normalIdx, indexIdx), geometry.id());
 
             meshSystem.requestVertexDeviceBufferUpdate();
         }

@@ -16,11 +16,10 @@ set(PUBLIC_HEADERS
     src/root.h
     src/surface.h
     src/arena.h
-    src/rawDataView.h
     src/error.h
     src/typedefs.h
-    src/geometry.h
     src/animationClip.h
+    src/resources/geometry.h
     src/resources/resourceState.h
     src/resources/resource.h
     src/resources/resourceManager.h
@@ -94,13 +93,13 @@ set(SOURCES
     src/eventReceivable.cpp
     src/input.cpp
     src/root.cpp
-    src/geometry.cpp
     src/surface.cpp
     src/baseRenderTarget.cpp
     src/frameBufferRenderTarget.cpp
     src/surfaceRenderTarget.cpp
     src/resources/resource.cpp
     src/resources/buffer.cpp
+    src/resources/geometry.cpp
     src/resources/resourceManager.cpp
     src/compositor/nodeBuilder.cpp
     src/compositor/nodeInterface.cpp

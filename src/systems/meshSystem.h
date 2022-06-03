@@ -5,10 +5,8 @@
 #ifndef CYCLONITE_MESHSYSTEM_H
 #define CYCLONITE_MESHSYSTEM_H
 
-#include "../components/mesh.h"
-#include "../components/transform.h"
-#include "../geometry.h"
-#include "renderSystem.h"
+#include "components/mesh.h"
+#include "components/transform.h"
 #include "transformSystem.h"
 #include "vulkan/buffer.h"
 #include "vulkan/commandBufferSet.h"
@@ -17,7 +15,14 @@
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
 #include <glm/gtc/type_ptr.hpp>
-#include <unordered_map>
+
+namespace cyclonite {
+class Root;
+}
+
+namespace cyclonite::resources {
+class ResourceManager;
+}
 
 namespace cyclonite::systems {
 using namespace easy_mp;
@@ -41,7 +46,7 @@ public:
 
     auto operator=(MeshSystem &&) -> MeshSystem& = default;
 
-    auto createGeometry(uint32_t vertexCount, uint32_t indexCount) -> std::shared_ptr<Geometry>;
+    auto createGeometry(uint32_t vertexCount, uint32_t indexCount) -> uint64_t;
 
     template<typename EntityManager, typename Geometries>
     auto createMesh(EntityManager& entityManager, enttx::Entity entity, Geometries&& geometries)
@@ -50,7 +55,7 @@ public:
 
     // TODO:: delete Mesh
 
-    void init(vulkan::Device& device,
+    void init(Root& root,
               size_t swapChainLength,
               size_t initialCommandCapacity,
               size_t initialInstanceCapacity,
@@ -71,6 +76,7 @@ private:
 
 private:
     vulkan::Device* devicePtr_;
+    resources::ResourceManager* resourceManager_;
     VkQueue vkTransferQueue_;
     VkQueue vkGraphicQueue_;
 
@@ -92,8 +98,6 @@ private:
     std::vector<vulkan::Handle<VkSemaphore>> transferSemaphores_;
     std::unique_ptr<transfer_commands_t> transferCommands_;
     bool verticesUpdateRequired_;
-
-    std::unordered_map<uint64_t, std::shared_ptr<Geometry>> geometries_;
 };
 
 template<typename EntityManager, typename Geometries>

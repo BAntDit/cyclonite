@@ -12,8 +12,8 @@
 namespace cyclonite::components {
 struct SubMesh
 {
+    uint64_t geometryId;
     uint32_t commandIndex;
-    uint32_t geometryId;
 };
 
 struct Mesh

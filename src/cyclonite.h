@@ -8,7 +8,6 @@
 #include "app.h"
 #include "event.h"
 #include "hash.h"
-#include "rawDataView.h"
 #include "root.h"
 
 #endif //CYCLONITE_CYCLONITE_H
