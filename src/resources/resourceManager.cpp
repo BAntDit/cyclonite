@@ -228,4 +228,20 @@ auto ResourceManager::getDynamicData(Resource::Id id) -> std::byte*
 
     return buffers_[tag.dynamicDataIndex].data() + resource.dynamicDataOffset();
 }
+
+ResourceManager::~ResourceManager()
+{
+    for (auto index = size_t{ 0 }, count = resources_.size(); index < count; index++) {
+        auto&& [size, version, _1, _2, _3] = resources_[index];
+
+        (void)_1;
+        (void)_2;
+        (void)_3;
+
+        if (size == 0)
+            continue;
+
+        erase(Resource::Id{ static_cast<uint32_t>(index), version });
+    }
+}
 }

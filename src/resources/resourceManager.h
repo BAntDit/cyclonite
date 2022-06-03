@@ -47,7 +47,7 @@ public:
 
     ResourceManager(ResourceManager&&) = default;
 
-    ~ResourceManager() = default;
+    ~ResourceManager();
 
     auto operator=(ResourceManager const&) -> ResourceManager& = delete;
 

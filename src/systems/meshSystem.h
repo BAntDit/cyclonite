@@ -11,8 +11,8 @@
 #include "vulkan/buffer.h"
 #include "vulkan/commandBufferSet.h"
 #include "vulkan/commandPool.h"
-#include "vulkan/staging.h"
 #include "vulkan/device.h"
+#include "vulkan/staging.h"
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
 #include <glm/gtc/type_ptr.hpp>
