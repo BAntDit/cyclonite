@@ -26,8 +26,10 @@ public:
 
     void load(std::istream& stream) override;
 
-public:
+private:
     static ResourceTag tag;
+
+public:
     static auto type_tag_const() -> ResourceTag const& { return Buffer::tag; }
     static auto type_tag() -> ResourceTag& { return Buffer::tag; }
 };

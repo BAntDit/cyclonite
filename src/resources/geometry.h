@@ -41,8 +41,10 @@ private:
     vulkan::Staging::AllocatedMemory vertices_;
     vulkan::Staging::AllocatedMemory indices_;
 
+private:
+    static ResourceTag tag;
+
 public:
-    static ResourceTag tag; // TODO:: make private
     static auto type_tag_const() -> ResourceTag const& { return Geometry::tag; }
     static auto type_tag() -> ResourceTag& { return Geometry::tag; }
 };
