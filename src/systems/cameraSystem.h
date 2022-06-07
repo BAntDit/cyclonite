@@ -6,12 +6,12 @@
 #define CYCLONITE_CAMERASYSTEM_H
 
 #include "../components/camera.h"
+#include "resources/staging.h"
 #include "transformSystem.h"
 #include "uniformSystem.h"
 #include "updateStages.h"
 #include "vulkan/commandBufferSet.h"
 #include "vulkan/commandPool.h"
-#include "vulkan/staging.h"
 #include <components/transform.h>
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>

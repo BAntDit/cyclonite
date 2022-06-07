@@ -60,13 +60,40 @@ auto ResourceManager::allocResource(Resource::ResourceTag tag, size_t size) -> R
     return Resource::Id{ index, version };
 }
 
-auto ResourceManager::allocDynamicBuffer(Resource::ResourceTag tag, size_t size) -> size_t
+void ResourceManager::resizeDynamicBuffer(Resource::ResourceTag tag, size_t additionalSize)
 {
     assert(tag.dynamicDataIndex < buffers_.size());
-
     auto bufferIndex = tag.dynamicDataIndex;
 
     auto& buffer = buffers_[bufferIndex];
+    auto& ranges = freeRanges_[bufferIndex];
+
+    auto prevSize = buffers_.size();
+    auto newRangeOffset = prevSize;
+    auto addSize = std::max(prevSize, additionalSize);
+    auto newRangeSize = addSize;
+
+    auto mergeIt = std::find_if(ranges.cbegin(), ranges.cend(), [newRangeOffset](auto range) -> bool {
+        return newRangeOffset == (range.first + range.second);
+    });
+
+    if (mergeIt != ranges.cend()) {
+        auto [mergeOffset, mergeSize] = *mergeIt;
+        newRangeOffset = mergeOffset;
+        newRangeSize = newRangeSize + mergeSize;
+        ranges.erase(mergeIt);
+    }
+
+    ranges.insert(std::pair{ static_cast<size_t>(newRangeOffset), static_cast<size_t>(newRangeSize) });
+
+    buffer.resize(prevSize + addSize, std::byte{ 0 });
+}
+
+auto ResourceManager::allocDynamicBuffer(Resource::ResourceTag tag, size_t size, bool resizeAllowed) -> size_t
+{
+    assert(tag.dynamicDataIndex < buffers_.size());
+    auto bufferIndex = tag.dynamicDataIndex;
+
     auto& ranges = freeRanges_[bufferIndex];
 
     auto it = std::lower_bound(ranges.cbegin(), ranges.cend(), size, [](auto range, auto value) -> bool {
@@ -76,25 +103,8 @@ auto ResourceManager::allocDynamicBuffer(Resource::ResourceTag tag, size_t size)
         return rangeSize < value;
     });
 
-    if (it == ranges.cend()) {
-        auto prevSize = buffers_.size();
-        auto newRangeOffset = prevSize;
-        auto newRangeSize = std::max(prevSize, size);
-
-        auto mergeIt = std::find_if(ranges.cbegin(), ranges.cend(), [newRangeOffset](auto range) -> bool {
-            return newRangeOffset == (range.first + range.second);
-        });
-
-        if (mergeIt != ranges.cend()) {
-            auto [mergeOffset, mergeSize] = *mergeIt;
-            newRangeOffset = mergeOffset;
-            newRangeSize = newRangeSize + mergeSize;
-            ranges.erase(mergeIt);
-        }
-
-        ranges.insert(std::pair{ static_cast<size_t>(newRangeOffset), static_cast<size_t>(newRangeSize) });
-
-        buffer.resize(prevSize * 2, std::byte{ 0 });
+    if (it == ranges.cend() && resizeAllowed) {
+        resizeDynamicBuffer(tag, size);
 
         it = std::lower_bound(ranges.cbegin(), ranges.cend(), size, [](auto range, auto value) -> bool {
             auto [rangeOffset, rangeSize] = range;
@@ -105,7 +115,7 @@ auto ResourceManager::allocDynamicBuffer(Resource::ResourceTag tag, size_t size)
     }
 
     if (it == ranges.cend()) {
-        throw std::runtime_error("no enough memory to alloc resource buffer");
+        throw std::bad_alloc{};
     }
 
     auto [allocOffset, allocSize] = *it;
@@ -160,6 +170,32 @@ void ResourceManager::freeDynamicBuffer(uint16_t dynamicIndex, size_t offset, si
 
     auto& buffer = buffers_[dynamicIndex];
     std::fill_n(buffer.data() + offset, size, std::byte{ 0 });
+}
+
+void ResourceManager::handleDynamicBufferBadAlloc(Resource::ResourceTag tag, size_t requiredSize) noexcept
+{
+    auto& storage = storages_[tag.staticDataIndex];
+    auto tmpBuffer = std::move(buffers_[tag.dynamicDataIndex]);
+
+    resizeDynamicBuffer(tag, requiredSize);
+
+    freeRanges_[tag.dynamicDataIndex].clear();
+    freeRanges_[tag.dynamicDataIndex].insert(
+      std::pair{ size_t{ 0 }, static_cast<size_t>(buffers_[tag.dynamicDataIndex].size()) });
+
+    for (auto&& [size, version, itemIndex, staticIndex, _] : resources_) {
+        (void)version;
+        (void)_;
+
+        if (staticIndex != tag.staticDataIndex)
+            continue;
+
+        assert(size > 0);
+
+        auto& resource = *reinterpret_cast<Resource*>(storage.data() + itemIndex * size);
+
+        resource.handleDynamicBufferRealloc();
+    }
 }
 
 void ResourceManager::erase(Resource::Id id)

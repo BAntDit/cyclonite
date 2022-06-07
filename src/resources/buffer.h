@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_RESOURCE_BUFFER_H
 #define CYCLONITE_RESOURCE_BUFFER_H
 
-#include "bufferView.h"
+#include "buffers/bufferView.h"
 #include "resource.h"
 #include <array>
 
@@ -13,7 +13,7 @@ namespace cyclonite::resources {
 class Buffer : public Resource
 {
 public:
-    explicit Buffer(size_t size) noexcept;
+    Buffer(ResourceManager* resourceManager, size_t size) noexcept;
 
     [[nodiscard]] auto instance_tag() const -> ResourceTag const& override { return tag; }
 
@@ -22,7 +22,7 @@ public:
     auto data() -> std::byte* { return dynamicData(); }
 
     template<typename DataType>
-    auto view(size_t offset, size_t count, size_t stride = sizeof(DataType)) -> BufferView<DataType>;
+    auto view(size_t offset, size_t count, size_t stride = sizeof(DataType)) -> buffers::BufferView<DataType>;
 
     void load(std::istream& stream) override;
 
@@ -35,9 +35,9 @@ public:
 };
 
 template<typename DataType>
-auto Buffer::view(size_t offset, size_t count, size_t stride /* = sizeof(DataType)*/) -> BufferView<DataType>
+auto Buffer::view(size_t offset, size_t count, size_t stride /* = sizeof(DataType)*/) -> buffers::BufferView<DataType>
 {
-    return BufferView<DataType>{ data(), offset, count, stride };
+    return buffers::BufferView<DataType>{ data(), offset, count, stride };
 }
 }
 

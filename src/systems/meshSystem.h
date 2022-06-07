@@ -7,12 +7,12 @@
 
 #include "components/mesh.h"
 #include "components/transform.h"
+#include "resources/staging.h"
 #include "transformSystem.h"
 #include "vulkan/buffer.h"
 #include "vulkan/commandBufferSet.h"
 #include "vulkan/commandPool.h"
 #include "vulkan/device.h"
-#include "vulkan/staging.h"
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -82,18 +82,18 @@ private:
     VkQueue vkGraphicQueue_;
 
     std::vector<VkDrawIndexedIndirectCommand> commands_;
-    std::unique_ptr<vulkan::Staging> commandBuffer_;
+    std::unique_ptr<resources::Staging> commandBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuCommandBuffer_;
     std::vector<size_t> commandDump_;
     uint32_t commandCount_;
 
-    std::unique_ptr<vulkan::Staging> instancedDataBuffer_;
+    std::unique_ptr<resources::Staging> instancedDataBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuInstancedDataBuffer_;
 
-    std::unique_ptr<vulkan::Staging> indexBuffer_;
+    std::unique_ptr<resources::Staging> indexBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuIndexBuffer_;
 
-    std::unique_ptr<vulkan::Staging> vertexBuffer_;
+    std::unique_ptr<resources::Staging> vertexBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuVertexBuffer_;
 
     std::vector<vulkan::Handle<VkSemaphore>> transferSemaphores_;

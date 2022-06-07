@@ -23,15 +23,19 @@ class Resource
     friend class ResourceManager;
 
 protected:
-    Resource() noexcept;
+    explicit Resource(ResourceManager* resourceManager) noexcept;
 
-    explicit Resource(size_t dynamicSize) noexcept;
+    Resource(ResourceManager* resourceManager, size_t dynamicSize) noexcept;
+
+    [[nodiscard]] auto resourceManager() const -> ResourceManager* { return resourceManager_; }
 
     [[nodiscard]] auto dynamicDataSize() const -> size_t { return dynamicSize_; }
 
     [[nodiscard]] auto dynamicDataOffset() const -> size_t { return dynamicOffset_; }
 
     auto dynamicData() -> std::byte*;
+
+    virtual void handleDynamicBufferRealloc();
 
 public:
     class Id

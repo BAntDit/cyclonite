@@ -26,7 +26,7 @@ void MeshSystem::init(Root& root,
 
     commands_.reserve(initialCommandCapacity);
 
-    commandBuffer_ = std::make_unique<vulkan::Staging>(
+    commandBuffer_ = std::make_unique<resources::Staging>(
       device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(VkDrawIndexedIndirectCommand) * initialCommandCapacity);
 
     gpuCommandBuffer_ = std::make_shared<vulkan::Buffer>(
@@ -36,13 +36,13 @@ void MeshSystem::init(Root& root,
       sizeof(VkDrawIndexedIndirectCommand) * initialCommandCapacity,
       std::array{ device.hostTransferQueueFamilyIndex(), device.graphicsQueueFamilyIndex() });
 
-    instancedDataBuffer_ = std::make_unique<vulkan::Staging>(
+    instancedDataBuffer_ = std::make_unique<resources::Staging>(
       device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(instanced_data_t) * initialInstanceCapacity);
 
-    indexBuffer_ = std::make_unique<vulkan::Staging>(
+    indexBuffer_ = std::make_unique<resources::Staging>(
       device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(index_type_t) * initialIndexCapacity);
 
-    vertexBuffer_ = std::make_unique<vulkan::Staging>(
+    vertexBuffer_ = std::make_unique<resources::Staging>(
       device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(vertex_t) * initialVertexCapacity);
 
     gpuInstancedDataBuffer_ = std::make_shared<vulkan::Buffer>(

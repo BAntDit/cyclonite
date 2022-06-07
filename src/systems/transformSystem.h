@@ -6,7 +6,7 @@
 #define CYCLONITE_TRANSFORMSYSTEM_H
 
 #include "../components/transform.h"
-#include "../vulkan/staging.h"
+#include "resources/staging.h"
 #include "updateStages.h"
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>

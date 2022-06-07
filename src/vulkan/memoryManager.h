@@ -17,7 +17,7 @@ public:
     MemoryManager(multithreading::TaskManager const& taskManager, Device const& device);
 
     [[nodiscard]] auto alloc(VkMemoryRequirements const& memoryRequirements, VkMemoryPropertyFlags memoryPropertyFlags)
-      -> Arena<MemoryPage>::AllocatedMemory;
+      -> buffers::Arena<MemoryPage>::AllocatedMemory;
 
 private:
     struct MemoryType

@@ -5,20 +5,21 @@
 #ifndef CYCLONITE_GEOMETRY_H
 #define CYCLONITE_GEOMETRY_H
 
-#include "bufferView.h"
+#include "buffers/bufferView.h"
 #include "resource.h"
+#include "staging.h"
 #include "typedefs.h"
-#include "vulkan/staging.h"
 #include <cstdint>
 
 namespace cyclonite::resources {
 class Geometry : public Resource
 {
 public:
-    Geometry(uint32_t vertexCount,
+    Geometry(ResourceManager* resourceManager,
+             uint32_t vertexCount,
              uint32_t indexCount,
-             vulkan::Staging::AllocatedMemory&& vertices,
-             vulkan::Staging::AllocatedMemory&& indices) noexcept;
+             resources::Staging::AllocatedMemory&& vertices,
+             resources::Staging::AllocatedMemory&& indices) noexcept;
 
     [[nodiscard]] auto instance_tag() const -> ResourceTag const& override { return tag; }
 
@@ -26,9 +27,9 @@ public:
 
     [[nodiscard]] auto indexCount() const -> uint32_t { return indexCount_; }
 
-    [[nodiscard]] auto vertices() const -> BufferView<vertex_t>;
+    [[nodiscard]] auto vertices() const -> buffers::BufferView<vertex_t>;
 
-    [[nodiscard]] auto indices() const -> BufferView<index_type_t>;
+    [[nodiscard]] auto indices() const -> buffers::BufferView<index_type_t>;
 
     [[nodiscard]] auto firstIndex() const -> uint32_t;
 
@@ -37,9 +38,8 @@ public:
 private:
     uint32_t vertexCount_;
     uint32_t indexCount_;
-    // TODO:: refactor gpu staging to resource
-    vulkan::Staging::AllocatedMemory vertices_;
-    vulkan::Staging::AllocatedMemory indices_;
+    resources::Staging::AllocatedMemory vertices_;
+    resources::Staging::AllocatedMemory indices_;
 
 private:
     static ResourceTag tag;

@@ -7,24 +7,26 @@
 namespace cyclonite::resources {
 Resource::ResourceTag Geometry::tag{};
 
-Geometry::Geometry(uint32_t vertexCount,
+Geometry::Geometry(ResourceManager* resourceManager,
+                   uint32_t vertexCount,
                    uint32_t indexCount,
-                   vulkan::Staging::AllocatedMemory&& vertices,
-                   vulkan::Staging::AllocatedMemory&& indices) noexcept
-  : vertexCount_{ vertexCount }
+                   resources::Staging::AllocatedMemory&& vertices,
+                   resources::Staging::AllocatedMemory&& indices) noexcept
+  : Resource{ resourceManager }
+  , vertexCount_{ vertexCount }
   , indexCount_{ indexCount }
   , vertices_{ std::move(vertices) }
   , indices_{ std::move(indices) }
 {}
 
-auto Geometry::vertices() const -> BufferView<vertex_t>
+auto Geometry::vertices() const -> buffers::BufferView<vertex_t>
 {
-    return BufferView<vertex_t>{ vertices_.ptr(), 0, vertexCount_ };
+    return buffers::BufferView<vertex_t>{ vertices_.ptr(), 0, vertexCount_ };
 }
 
-auto Geometry::indices() const -> BufferView<index_type_t>
+auto Geometry::indices() const -> buffers::BufferView<index_type_t>
 {
-    return BufferView<index_type_t>{ indices_.ptr(), 0, indexCount_ };
+    return buffers::BufferView<index_type_t>{ indices_.ptr(), 0, indexCount_ };
 }
 
 auto Geometry::firstIndex() const -> uint32_t

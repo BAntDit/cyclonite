@@ -5,10 +5,10 @@
 #ifndef CYCLONITE_MEMORYPAGE_H
 #define CYCLONITE_MEMORYPAGE_H
 
-#include "../arena.h"
-#include "../error.h"
-#include "../multithreading/taskManager.h"
+#include "buffers/arena.h"
+#include "error.h"
 #include "handle.h"
+#include "multithreading/taskManager.h"
 #include <deque>
 
 namespace cyclonite::vulkan {
@@ -25,7 +25,7 @@ class Device;
 
 class MemoryManager;
 
-class MemoryPage : public Arena<MemoryPage>
+class MemoryPage : public buffers::Arena<MemoryPage>
 {
 private:
     struct private_tag

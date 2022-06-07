@@ -15,16 +15,17 @@ set(PUBLIC_HEADERS
     src/app.h
     src/root.h
     src/surface.h
-    src/arena.h
     src/error.h
     src/typedefs.h
     src/animationClip.h
+    src/buffers/arena.h
+    src/buffers/bufferView.h
+    src/resources/staging.h
     src/resources/geometry.h
     src/resources/resourceState.h
     src/resources/resource.h
     src/resources/resourceManager.h
     src/resources/buffer.h
-    src/resources/bufferView.h
     src/compositor/nodeInterface.h
     src/compositor/passType.h
     src/compositor/links.h
@@ -73,7 +74,6 @@ set(PUBLIC_HEADERS
     src/vulkan/imageView.h
     src/vulkan/frameBuffer.h
     src/vulkan/buffer.h
-    src/vulkan/staging.h
     src/vulkan/shaderModule.h
     src/multithreading/taskManager.h
     src/shaders/shaderDefinitions.h
@@ -100,6 +100,7 @@ set(SOURCES
     src/resources/resource.cpp
     src/resources/buffer.cpp
     src/resources/geometry.cpp
+    src/resources/staging.cpp
     src/resources/resourceManager.cpp
     src/compositor/nodeBuilder.cpp
     src/compositor/nodeInterface.cpp
@@ -136,7 +137,6 @@ set(SOURCES
     src/vulkan/image.cpp
     src/vulkan/imageView.cpp
     src/vulkan/buffer.cpp
-    src/vulkan/staging.cpp
     src/vulkan/frameBuffer.cpp
     src/multithreading/taskManager.cpp
     src/shaders/shaderDefinitions.cpp

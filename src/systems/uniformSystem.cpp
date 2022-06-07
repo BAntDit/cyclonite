@@ -12,7 +12,7 @@ void UniformSystem::init(vulkan::Device& device, size_t swapChainLength)
     devicePtr_ = &device;
     vkTransferQueue_ = device.hostTransferQueue();
 
-    uniforms_ = std::make_unique<vulkan::Staging>(device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(mat4) * 3);
+    uniforms_ = std::make_unique<resources::Staging>(device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(mat4) * 3);
 
     gpuUniforms_ = std::make_shared<vulkan::Buffer>(
       device,

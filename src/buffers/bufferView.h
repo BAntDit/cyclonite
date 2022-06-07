@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <iterator>
 
-namespace cyclonite::resources {
+namespace cyclonite::buffers {
 template<typename DataType>
 class BufferView
 {
