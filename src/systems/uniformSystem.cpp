@@ -7,12 +7,14 @@
 #include <glm/gtc/type_ptr.hpp>
 
 namespace cyclonite::systems {
-void UniformSystem::init(vulkan::Device& device, size_t swapChainLength)
+void UniformSystem::init(resources::ResourceManager& resourceManager, vulkan::Device& device, size_t swapChainLength)
 {
     devicePtr_ = &device;
+    resourceManager_ = &resourceManager;
     vkTransferQueue_ = device.hostTransferQueue();
 
-    uniforms_ = std::make_unique<resources::Staging>(device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(mat4) * 3);
+    uniforms_ =
+      resourceManager_->template create<resources::Staging>(device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(mat4) * 3);
 
     gpuUniforms_ = std::make_shared<vulkan::Buffer>(
       device,
@@ -54,12 +56,13 @@ void UniformSystem::init(vulkan::Device& device, size_t swapChainLength)
             }
 
             {
+                auto& staging = resourceManager_->get(uniforms_).template as<resources::Staging>();
                 VkBufferCopy region = {};
                 region.srcOffset = 0;
                 region.dstOffset = 0;
-                region.size = uniforms_->size();
+                region.size = staging.size();
 
-                vkCmdCopyBuffer(transferCommandBuffer, uniforms_->handle(), gpuUniforms_->handle(), 1, &region);
+                vkCmdCopyBuffer(transferCommandBuffer, staging.handle(), gpuUniforms_->handle(), 1, &region);
             }
 
             if (auto result = vkEndCommandBuffer(transferCommandBuffer); result != VK_SUCCESS) {
@@ -70,19 +73,33 @@ void UniformSystem::init(vulkan::Device& device, size_t swapChainLength)
 
 void UniformSystem::setViewMatrix(mat4& viewMatrix)
 {
-    auto* ptr = reinterpret_cast<real*>(uniforms_->ptr());
+    auto& staging = resourceManager_->get(uniforms_).template as<resources::Staging>();
+    auto* ptr = reinterpret_cast<real*>(staging.ptr());
     std::copy_n(glm::value_ptr(viewMatrix), 16, ptr);
 }
 
 void UniformSystem::setProjectionMatrix(mat4& projectionMatrix)
 {
-    auto* ptr = reinterpret_cast<real*>(uniforms_->ptr());
+    auto& staging = resourceManager_->get(uniforms_).template as<resources::Staging>();
+    auto* ptr = reinterpret_cast<real*>(staging.ptr());
     std::copy_n(glm::value_ptr(projectionMatrix), 16, ptr + 16);
 }
 
 void UniformSystem::setViewProjectionMatrix(mat4& viewProjMatrix)
 {
-    auto* ptr = reinterpret_cast<real*>(uniforms_->ptr());
+    auto& staging = resourceManager_->get(uniforms_).template as<resources::Staging>();
+    auto* ptr = reinterpret_cast<real*>(staging.ptr());
     std::copy_n(glm::value_ptr(viewProjMatrix), 16, ptr + 32);
 }
+
+auto UniformSystem::uniforms() const -> resources::Staging const&
+{
+    return resourceManager_->get(uniforms_).template as<resources::Staging>();
+}
+
+auto UniformSystem::uniforms() -> resources::Staging&
+{
+    return resourceManager_->get(uniforms_).template as<resources::Staging>();
+}
+
 }

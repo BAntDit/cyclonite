@@ -14,7 +14,7 @@ std::atomic_uint16_t Resource::ResourceTag::_lastTagIndex{ std::numeric_limits<u
 Resource::ResourceTag Resource::tag{};
 
 Resource::Id::Id() noexcept
-  : id_{ 0 }
+  : id_{ std::numeric_limits<uint64_t>::max() }
 {}
 
 Resource::Id::Id(uint64_t id) noexcept

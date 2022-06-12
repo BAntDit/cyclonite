@@ -26,7 +26,7 @@ void MeshSystem::init(Root& root,
 
     commands_.reserve(initialCommandCapacity);
 
-    commandBuffer_ = std::make_unique<resources::Staging>(
+    commandBuffer_ = resourceManager_->template create<resources::Staging>(
       device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(VkDrawIndexedIndirectCommand) * initialCommandCapacity);
 
     gpuCommandBuffer_ = std::make_shared<vulkan::Buffer>(
@@ -36,13 +36,13 @@ void MeshSystem::init(Root& root,
       sizeof(VkDrawIndexedIndirectCommand) * initialCommandCapacity,
       std::array{ device.hostTransferQueueFamilyIndex(), device.graphicsQueueFamilyIndex() });
 
-    instancedDataBuffer_ = std::make_unique<resources::Staging>(
+    instancedDataBuffer_ = resourceManager_->template create<resources::Staging>(
       device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(instanced_data_t) * initialInstanceCapacity);
 
-    indexBuffer_ = std::make_unique<resources::Staging>(
+    indexBuffer_ = resourceManager_->template create<resources::Staging>(
       device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(index_type_t) * initialIndexCapacity);
 
-    vertexBuffer_ = std::make_unique<resources::Staging>(
+    vertexBuffer_ = resourceManager_->template create<resources::Staging>(
       device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(vertex_t) * initialVertexCapacity);
 
     gpuInstancedDataBuffer_ = std::make_shared<vulkan::Buffer>(
@@ -100,13 +100,16 @@ void MeshSystem::init(Root& root,
                 }
 
                 {
+                    auto& instanceDataBuffer =
+                      resourceManager_->get(instancedDataBuffer_).template as<resources::Staging>();
+
                     VkBufferCopy region = {};
                     region.srcOffset = 0;
                     region.dstOffset = 0;
-                    region.size = instancedDataBuffer_->size();
+                    region.size = instanceDataBuffer.size();
 
                     vkCmdCopyBuffer(
-                      transferCommands, instancedDataBuffer_->handle(), gpuInstancedDataBuffer_->handle(), 1, &region);
+                      transferCommands, instanceDataBuffer.handle(), gpuInstancedDataBuffer_->handle(), 1, &region);
                 }
 
                 if (auto result = vkEndCommandBuffer(transferCommands); result != VK_SUCCESS) {
@@ -122,13 +125,14 @@ void MeshSystem::init(Root& root,
                 }
 
                 {
+                    auto& commandBuffer = resourceManager_->get(commandBuffer_).template as<resources::Staging>();
+
                     VkBufferCopy region = {};
                     region.srcOffset = 0;
                     region.dstOffset = 0;
-                    region.size = commandBuffer_->size();
+                    region.size = commandBuffer.size();
 
-                    vkCmdCopyBuffer(
-                      transferCommands, commandBuffer_->handle(), gpuCommandBuffer_->handle(), 1, &region);
+                    vkCmdCopyBuffer(transferCommands, commandBuffer.handle(), gpuCommandBuffer_->handle(), 1, &region);
                 }
 
                 if (auto result = vkEndCommandBuffer(transferCommands); result != VK_SUCCESS) {
@@ -144,21 +148,24 @@ void MeshSystem::init(Root& root,
                 }
 
                 {
+                    auto& vertexBuffer = resourceManager_->get(vertexBuffer_).template as<resources::Staging>();
+
                     VkBufferCopy region = {};
                     region.srcOffset = 0;
                     region.dstOffset = 0;
-                    region.size = vertexBuffer_->size();
+                    region.size = vertexBuffer.size();
 
-                    vkCmdCopyBuffer(transferCommands, vertexBuffer_->handle(), gpuVertexBuffer_->handle(), 1, &region);
+                    vkCmdCopyBuffer(transferCommands, vertexBuffer.handle(), gpuVertexBuffer_->handle(), 1, &region);
                 }
 
                 {
+                    auto& indexBuffer = resourceManager_->get(indexBuffer_).template as<resources::Staging>();
                     VkBufferCopy region = {};
                     region.srcOffset = 0;
                     region.dstOffset = 0;
-                    region.size = indexBuffer_->size();
+                    region.size = indexBuffer.size();
 
-                    vkCmdCopyBuffer(transferCommands, indexBuffer_->handle(), gpuIndexBuffer_->handle(), 1, &region);
+                    vkCmdCopyBuffer(transferCommands, indexBuffer.handle(), gpuIndexBuffer_->handle(), 1, &region);
                 }
 
                 if (auto result = vkEndCommandBuffer(transferCommands); result != VK_SUCCESS) {
@@ -177,12 +184,13 @@ void MeshSystem::requestVertexDeviceBufferUpdate()
 
 auto MeshSystem::createGeometry(uint32_t vertexCount, uint32_t indexCount) -> uint64_t
 {
-    // TODO:: move outside after stagings
-    auto id =
-      resourceManager_->template create<resources::Geometry>(vertexCount,
-                                                             indexCount,
-                                                             vertexBuffer_->alloc(vertexCount * sizeof(vertex_t)),
-                                                             indexBuffer_->alloc(indexCount * sizeof(index_type_t)));
+    auto& vertices = resourceManager_->get(vertexBuffer_).template as<resources::Staging>();
+    auto& indices = resourceManager_->get(indexBuffer_).template as<resources::Staging>();
+
+    auto id = resourceManager_->template create<resources::Geometry>(vertexCount,
+                                                                     indexCount,
+                                                                     vertices.alloc(vertexCount * sizeof(vertex_t)),
+                                                                     indices.alloc(indexCount * sizeof(index_type_t)));
 
     return static_cast<uint64_t>(id);
 }
@@ -219,7 +227,7 @@ void MeshSystem::_addSubMesh(components::SubMesh& subMesh, uint64_t geometryId)
         command.instanceCount = 0;
         command.firstIndex = firstIndex;
         command.firstInstance = 0;
-        command.vertexOffset = baseVertex;
+        command.vertexOffset = static_cast<int32_t>(baseVertex);
     }
 
     // TODO:: realloc buffers and transfer commands if commands_ size > commandBuffer_->size()

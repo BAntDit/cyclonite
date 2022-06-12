@@ -35,6 +35,8 @@ public:
 
     [[nodiscard]] auto handle() const -> VkBuffer { return buffer_.handle(); }
 
+    [[nodiscard]] auto instance_tag() const -> ResourceTag const& override { return tag; }
+
     void handleDynamicBufferRealloc() override;
 
 private:

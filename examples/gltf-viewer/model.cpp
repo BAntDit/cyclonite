@@ -25,8 +25,6 @@ void Model::init(cyclonite::Root& root,
 
     auto& node = workspace_->get(node_type_register_t::node_key_t<MainNodeConfig>{});
 
-    node.systems().get<systems::UniformSystem>().init(device, 1);
-
     // maps
     std::unordered_map<size_t, cyclonite::resources::Resource::Id> gltfBufferIndexToResourceId{};
     std::unordered_map<size_t, enttx::Entity> nodeIdxToEntity{};
@@ -41,15 +39,21 @@ void Model::init(cyclonite::Root& root,
         if constexpr (gltf::reader_data_test<gltf::ReaderDataType::RESOURCE_COUNT, decltype(dataType)>()) {
             auto [bufferCount, geometryCount] = t;
 
+            constexpr auto expectedStagingCount = uint32_t{ 4 };
             constexpr auto expectedBufferCount = size_t{ 1 };
             constexpr auto expectedGeometryCount = size_t{ 32 };
             constexpr auto initialBufferMemory = size_t{ 64 * 1024 * 1024 };
+            constexpr auto initialStagingMemory = size_t{ 64 * 1024 * 1024 };
 
             root.declareResources(
-              bufferCount + geometryCount,
+              bufferCount + geometryCount + expectedStagingCount,
               cyclonite::resources::
                 resource_reg_info_t<cyclonite::resources::Buffer, expectedBufferCount, initialBufferMemory>{},
-              cyclonite::resources::resource_reg_info_t<cyclonite::resources::Geometry, expectedGeometryCount, 0>{});
+              cyclonite::resources::resource_reg_info_t<cyclonite::resources::Geometry, expectedGeometryCount, 0>{},
+              cyclonite::resources::
+                resource_reg_info_t<cyclonite::resources::Staging, expectedStagingCount, initialStagingMemory>{});
+
+            node.systems().get<systems::UniformSystem>().init(root.resourceManager(), device, 1);
         }
 
         if constexpr (gltf::reader_data_test<gltf::ReaderDataType::BUFFER_STREAM, decltype(dataType)>()) {

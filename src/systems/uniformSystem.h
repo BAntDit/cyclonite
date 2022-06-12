@@ -31,11 +31,11 @@ public:
 
     auto operator=(UniformSystem &&) -> UniformSystem& = default;
 
-    void init(vulkan::Device& device, size_t swapChainLength);
+    void init(resources::ResourceManager& resourceManager, vulkan::Device& device, size_t swapChainLength);
 
-    [[nodiscard]] auto uniforms() const -> resources::Staging const& { return *uniforms_; }
+    [[nodiscard]] auto uniforms() const -> resources::Staging const&;
 
-    [[nodiscard]] auto uniforms() -> resources::Staging& { return *uniforms_; }
+    auto uniforms() -> resources::Staging&;
 
     template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
     void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
@@ -49,8 +49,9 @@ public:
 
 private:
     vulkan::Device* devicePtr_;
+    resources::ResourceManager* resourceManager_;
     VkQueue vkTransferQueue_;
-    std::unique_ptr<resources::Staging> uniforms_;
+    resources::Resource::Id uniforms_;
     std::shared_ptr<vulkan::Buffer> gpuUniforms_;
     std::vector<vulkan::Handle<VkSemaphore>> transferSemaphores_;
     std::unique_ptr<transfer_commands_t> transferCommands_;

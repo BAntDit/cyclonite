@@ -82,18 +82,18 @@ private:
     VkQueue vkGraphicQueue_;
 
     std::vector<VkDrawIndexedIndirectCommand> commands_;
-    std::unique_ptr<resources::Staging> commandBuffer_;
+    resources::Resource::Id commandBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuCommandBuffer_;
     std::vector<size_t> commandDump_;
     uint32_t commandCount_;
 
-    std::unique_ptr<resources::Staging> instancedDataBuffer_;
+    resources::Resource::Id instancedDataBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuInstancedDataBuffer_;
 
-    std::unique_ptr<resources::Staging> indexBuffer_;
+    resources::Resource::Id indexBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuIndexBuffer_;
 
-    std::unique_ptr<resources::Staging> vertexBuffer_;
+    resources::Resource::Id vertexBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuVertexBuffer_;
 
     std::vector<vulkan::Handle<VkSemaphore>> transferSemaphores_;
@@ -147,7 +147,8 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
         }
 
         {
-            auto* commands = reinterpret_cast<VkDrawIndexedIndirectCommand*>(commandBuffer_->ptr());
+            auto& commandBuffer = resourceManager_->get(commandBuffer_).template as<resources::Staging>();
+            auto* commands = reinterpret_cast<VkDrawIndexedIndirectCommand*>(commandBuffer.ptr());
 
             auto commandCount = size_t{ 0 };
 
@@ -175,7 +176,8 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
         }
 
         {
-            auto* instanceData = reinterpret_cast<instanced_data_t*>(instancedDataBuffer_->ptr());
+            auto& instanceDataBuffer = resourceManager_->get(instancedDataBuffer_).template as<resources::Staging>();
+            auto* instanceData = reinterpret_cast<instanced_data_t*>(instanceDataBuffer.ptr());
 
             auto view = entityManager.template getView<components::Transform, components::Mesh>();
 

@@ -34,7 +34,7 @@ public:
 
         auto operator=(AllocatedMemory&& rhs) noexcept -> AllocatedMemory&;
 
-        explicit operator std::byte *() { return reinterpret_cast<std::byte*>(ptr_); }
+        explicit operator std::byte*() { return reinterpret_cast<std::byte*>(ptr_); }
 
         [[nodiscard]] auto ptr() const -> void* { return ptr_; }
 
