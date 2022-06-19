@@ -55,8 +55,8 @@ public:
         auto operator*() -> reference { return *(base_ + index_); }
         [[nodiscard]] auto operator*() const -> reference { return *(base_ + index_); }
 
-        auto operator-> () -> pointer { return base_ + index_; }
-        [[nodiscard]] auto operator-> () const -> pointer { return base_ + index_; }
+        auto operator->() -> pointer { return base_ + index_; }
+        [[nodiscard]] auto operator->() const -> pointer { return base_ + index_; }
 
         auto operator[](difference_type index) -> reference { return *(base_ + index); }
         [[nodiscard]] auto operator[](difference_type index) const -> reference { return *(base_ + index); }
@@ -111,7 +111,7 @@ public:
 
         [[nodiscard]] auto operator*() const -> reference { return *(base_ + index_); }
 
-        [[nodiscard]] auto operator-> () const -> pointer { return base_ + index_; }
+        [[nodiscard]] auto operator->() const -> pointer { return base_ + index_; }
 
         [[nodiscard]] auto operator[](difference_type index) const -> reference { return *(base_ + index); }
 

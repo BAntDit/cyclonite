@@ -19,12 +19,12 @@ Geometry::Geometry(ResourceManager* resourceManager,
   , indices_{ std::move(indices) }
 {}
 
-auto Geometry::vertices() const -> buffers::BufferView<vertex_t>
+auto Geometry::vertices() -> buffers::BufferView<vertex_t>
 {
     return buffers::BufferView<vertex_t>{ vertices_.ptr(), 0, vertexCount_ };
 }
 
-auto Geometry::indices() const -> buffers::BufferView<index_type_t>
+auto Geometry::indices() -> buffers::BufferView<index_type_t>
 {
     return buffers::BufferView<index_type_t>{ indices_.ptr(), 0, indexCount_ };
 }

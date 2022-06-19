@@ -27,13 +27,13 @@ public:
 
     [[nodiscard]] auto indexCount() const -> uint32_t { return indexCount_; }
 
-    [[nodiscard]] auto vertices() const -> buffers::BufferView<vertex_t>;
-
-    [[nodiscard]] auto indices() const -> buffers::BufferView<index_type_t>;
-
     [[nodiscard]] auto firstIndex() const -> uint32_t;
 
     [[nodiscard]] auto baseVertex() const -> uint32_t;
+
+    auto vertices() -> buffers::BufferView<vertex_t>;
+
+    auto indices() -> buffers::BufferView<index_type_t>;
 
 private:
     uint32_t vertexCount_;

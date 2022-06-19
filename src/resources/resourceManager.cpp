@@ -68,7 +68,7 @@ void ResourceManager::resizeDynamicBuffer(Resource::ResourceTag tag, size_t addi
     auto& buffer = buffers_[bufferIndex];
     auto& ranges = freeRanges_[bufferIndex];
 
-    auto prevSize = buffers_.size();
+    auto prevSize = buffer.size();
     auto newRangeOffset = prevSize;
     auto addSize = std::max(prevSize, additionalSize);
     auto newRangeSize = addSize;
@@ -120,8 +120,10 @@ auto ResourceManager::allocDynamicBuffer(Resource::ResourceTag tag, size_t size,
 
     auto [allocOffset, allocSize] = *it;
 
-    if (allocOffset > size) {
-        auto newRangeOffset = allocOffset + allocSize;
+    ranges.erase(it);
+
+    if (allocSize > size) {
+        auto newRangeOffset = allocOffset + size;
         auto newRangeSize = allocSize - size;
 
         ranges.insert(std::pair{ static_cast<size_t>(newRangeOffset), static_cast<size_t>(newRangeSize) });
@@ -175,7 +177,12 @@ void ResourceManager::freeDynamicBuffer(uint16_t dynamicIndex, size_t offset, si
 void ResourceManager::handleDynamicBufferBadAlloc(Resource::ResourceTag tag, size_t requiredSize) noexcept
 {
     auto& storage = storages_[tag.staticDataIndex];
+
+    [[maybe_unused]] auto* old = buffers_[tag.dynamicDataIndex].data();
     auto tmpBuffer = std::move(buffers_[tag.dynamicDataIndex]);
+    assert(tmpBuffer.data() == old);
+
+    buffers_[tag.dynamicDataIndex].resize(tmpBuffer.size(), std::byte{ 0 });
 
     resizeDynamicBuffer(tag, requiredSize);
 
@@ -183,7 +190,7 @@ void ResourceManager::handleDynamicBufferBadAlloc(Resource::ResourceTag tag, siz
     freeRanges_[tag.dynamicDataIndex].insert(
       std::pair{ size_t{ 0 }, static_cast<size_t>(buffers_[tag.dynamicDataIndex].size()) });
 
-    for (auto&& [size, version, itemIndex, staticIndex, _] : resources_) {
+    for (auto&& [size, version, itemIndex, staticIndex, _, realloc_func] : resources_) {
         (void)version;
         (void)_;
 
@@ -191,10 +198,9 @@ void ResourceManager::handleDynamicBufferBadAlloc(Resource::ResourceTag tag, siz
             continue;
 
         assert(size > 0);
+        assert(realloc_func);
 
-        auto& resource = *reinterpret_cast<Resource*>(storage.data() + itemIndex * size);
-
-        resource.handleDynamicBufferRealloc();
+        realloc_func(storage.data() + itemIndex * size);
     }
 }
 
@@ -216,7 +222,7 @@ void ResourceManager::erase(Resource::Id id)
 
     resource.~Resource();
 
-    auto& [size, version, itemIndex, staticIndex, dynamicIndex] = resources_[id.index()];
+    auto& [size, version, itemIndex, staticIndex, dynamicIndex, reallocFunc] = resources_[id.index()];
 
     auto& freeItems = freeItems_[staticIndex];
     auto& storage = storages_[staticIndex];
@@ -233,6 +239,7 @@ void ResourceManager::erase(Resource::Id id)
     itemIndex = std::numeric_limits<uint32_t>::max();
     staticIndex = std::numeric_limits<uint16_t>::max();
     dynamicIndex = std::numeric_limits<uint16_t>::max();
+    reallocFunc = nullptr;
 }
 
 auto ResourceManager::isValid(Resource::Id id) const -> bool
@@ -268,16 +275,31 @@ auto ResourceManager::getDynamicData(Resource::Id id) -> std::byte*
 ResourceManager::~ResourceManager()
 {
     for (auto index = size_t{ 0 }, count = resources_.size(); index < count; index++) {
-        auto&& [size, version, _1, _2, _3] = resources_[index];
+        auto&& r = resources_[index];
 
-        (void)_1;
-        (void)_2;
-        (void)_3;
-
-        if (size == 0)
+        if (r.size == 0)
             continue;
 
-        erase(Resource::Id{ static_cast<uint32_t>(index), version });
+        erase(Resource::Id{ static_cast<uint32_t>(index), r.version });
     }
+}
+
+auto ResourceManager::getResourceDynamicBufferSize(Resource::ResourceTag resourceTag) const -> size_t
+{
+    auto& buffer = buffers_[resourceTag.dynamicDataIndex];
+    return buffer.size();
+}
+
+auto ResourceManager::getResourceDynamicBufferFreeSize(Resource::ResourceTag resourceTag) const -> size_t
+{
+    auto& ranges = freeRanges_[resourceTag.dynamicDataIndex];
+
+    auto freeSize = size_t{ 0 };
+    for (auto&& [_, size] : ranges) {
+        (void)_;
+        freeSize += size;
+    }
+
+    return freeSize;
 }
 }

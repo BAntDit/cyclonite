@@ -34,9 +34,11 @@ public:
 
         auto operator=(AllocatedMemory&& rhs) noexcept -> AllocatedMemory&;
 
-        explicit operator std::byte*() { return reinterpret_cast<std::byte*>(ptr_); }
+        explicit operator std::byte *() { return reinterpret_cast<std::byte*>(ptr_); }
 
-        [[nodiscard]] auto ptr() const -> void* { return ptr_; }
+        [[nodiscard]] auto ptr() const -> void const* { return ptr_; }
+
+        [[nodiscard]] auto ptr() -> void* { return ptr_; }
 
         [[nodiscard]] auto size() const -> size_t { return size_; }
 
@@ -68,7 +70,9 @@ public:
 
     [[nodiscard]] auto size() const -> size_t { return size_; }
 
-    [[nodiscard]] auto ptr() const -> void*;
+    [[nodiscard]] auto ptr() const -> void const*;
+
+    [[nodiscard]] auto ptr() -> void*;
 
     [[nodiscard]] auto maxAvailableRange() const -> size_t;
 
@@ -185,7 +189,13 @@ void Arena<MemoryPage, FreeRangeAllocator>::free(
 }
 
 template<typename MemoryPage, typename FreeRangeAllocator>
-auto Arena<MemoryPage, FreeRangeAllocator>::ptr() const -> void*
+auto Arena<MemoryPage, FreeRangeAllocator>::ptr() const -> void const*
+{
+    return static_cast<MemoryPage const*>(this)->ptr();
+}
+
+template<typename MemoryPage, typename FreeRangeAllocator>
+auto Arena<MemoryPage, FreeRangeAllocator>::ptr() -> void*
 {
     return static_cast<MemoryPage const*>(this)->ptr();
 }

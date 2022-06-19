@@ -35,7 +35,7 @@ protected:
 
     auto dynamicData() -> std::byte*;
 
-    virtual void handleDynamicBufferRealloc();
+    void handleDynamicBufferRealloc();
 
 public:
     class Id

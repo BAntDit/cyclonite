@@ -22,7 +22,12 @@ Staging::Staging(ResourceManager* resourceManager,
              std::array<uint32_t, 1>{ device.hostTransferQueueFamilyIndex() } }
 {}
 
-auto Staging::ptr() const -> void*
+auto Staging::ptr() const -> void const*
+{
+    return buffer_.allocatedMemory().ptr();
+}
+
+auto Staging::ptr() -> void*
 {
     return buffer_.allocatedMemory().ptr();
 }

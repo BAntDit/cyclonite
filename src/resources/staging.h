@@ -21,23 +21,17 @@ public:
 public:
     Staging(ResourceManager* resourceManager, vulkan::Device& device, VkBufferUsageFlags usageFlags, VkDeviceSize size);
 
-    Staging(Staging const&) = delete;
-
-    Staging(Staging&&) = default;
-
     ~Staging() = default;
 
-    auto operator=(Staging const&) -> Staging& = delete;
+    [[nodiscard]] auto ptr() const -> void const*;
 
-    auto operator=(Staging &&) -> Staging& = default;
-
-    [[nodiscard]] auto ptr() const -> void*;
+    [[nodiscard]] auto ptr() -> void*;
 
     [[nodiscard]] auto handle() const -> VkBuffer { return buffer_.handle(); }
 
     [[nodiscard]] auto instance_tag() const -> ResourceTag const& override { return tag; }
 
-    void handleDynamicBufferRealloc() override;
+    void handleDynamicBufferRealloc();
 
 private:
     vulkan::Buffer buffer_;

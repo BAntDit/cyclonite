@@ -261,3 +261,13 @@ SUBDIRLIST(EXANPLEDIRS "${CMAKE_CURRENT_SOURCE_DIR}/examples")
 foreach(example ${EXANPLEDIRS})
     add_subdirectory("examples/${example}")
 endforeach()
+
+option(TESTS "whether needs to build tests" ON)
+
+if (TESTS)
+    find_package(GTest REQUIRED)
+
+    enable_testing()
+
+    add_subdirectory("tests")
+endif()

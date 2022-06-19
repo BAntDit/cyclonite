@@ -86,6 +86,10 @@ public:
         return get(id).as<R>();
     }
 
+    [[nodiscard]] auto getResourceDynamicBufferSize(Resource::ResourceTag resourceTag) const -> size_t;
+
+    [[nodiscard]] auto getResourceDynamicBufferFreeSize(Resource::ResourceTag resourceTag) const -> size_t;
+
 private:
     template<typename R, size_t N, size_t M>
     void registerResource(resource_reg_info_t<R, N, M>);
@@ -117,20 +121,29 @@ private:
 
     struct resource_t
     {
+        using dynamic_buffer_realloc_func_t = void (*)(void*);
+
         resource_t() noexcept
           : size{ 0 }
           , version{ 0 }
           , item{ std::numeric_limits<uint32_t>::max() }
           , static_index{ std::numeric_limits<uint16_t>::max() }
           , dynamic_index{ std::numeric_limits<uint16_t>::max() }
+          , dynamic_buffer_realloc_func{ nullptr }
         {}
 
-        resource_t(size_t s, uint32_t v, uint32_t i, uint16_t si, uint16_t di) noexcept
+        resource_t(size_t s,
+                   uint32_t v,
+                   uint32_t i,
+                   uint16_t si,
+                   uint16_t di,
+                   dynamic_buffer_realloc_func_t realloc_func) noexcept
           : size{ s }
           , version{ v }
           , item{ i }
           , static_index{ si }
           , dynamic_index{ di }
+          , dynamic_buffer_realloc_func{ realloc_func }
         {}
 
         size_t size;
@@ -138,6 +151,7 @@ private:
         uint32_t item;
         uint16_t static_index;
         uint16_t dynamic_index;
+        dynamic_buffer_realloc_func_t dynamic_buffer_realloc_func;
     };
 
     std::vector<resource_t> resources_;
@@ -242,7 +256,7 @@ void ResourceManager::registerResources(ResourceRegInfoSpecialization auto&&... 
     storages_.reserve(sizeof...(regInfo));
     freeItems_.reserve(sizeof...(regInfo));
 
-    auto counter = []<typename R, size_t N, size_t M>(resource_reg_info_t<R, N, M>)->uint16_t { return M > 0; };
+    auto counter = []<typename R, size_t N, size_t M>(resource_reg_info_t<R, N, M>) -> uint16_t { return M > 0; };
     auto bufferCount = (... + counter(regInfo));
 
     buffers_.reserve(bufferCount);
@@ -256,9 +270,13 @@ auto ResourceManager::create(Args&&... args) -> Resource::Id
 {
     auto id = allocResource(R::type_tag_const(), sizeof(R));
 
-    auto const [size, version, itemIndex, staticIndex, _] = resources_[id.index()];
+    auto& [size, version, itemIndex, staticIndex, _, realloc_func] = resources_[id.index()];
     (void)version;
     (void)_;
+
+    realloc_func = [](void* r) -> void {
+        reinterpret_cast<R*>(r)->handleDynamicBufferRealloc();
+    };
 
     Resource* resource = new (storages_[staticIndex].data() + size * itemIndex) R(this, std::forward<Args>(args)...);
 
@@ -278,20 +296,23 @@ auto ResourceManager::DynamicMemoryAllocator<T>::allocate(size_t n) -> T*
     assert(resourceTag_ != nullptr);
 
     auto size = sizeof(T) * n;
+    auto& buffer = resourceManager_->buffers_[resourceTag_->dynamicDataIndex];
+    auto offset = std::numeric_limits<size_t>::max();
 
     try {
-        auto& buffer = resourceManager_->buffers_[resourceTag_->dynamicDataIndex];
-        auto offset = resourceManager_->allocDynamicBuffer(*resourceTag_, size, false);
+        offset = resourceManager_->allocDynamicBuffer(*resourceTag_, size, false);
         assert((offset % sizeof(T)) == 0);
-
-        return reinterpret_cast<T*>(buffer.data() + offset);
-    } catch (std::bad_alloc&) { // TODO:: adds own exception class to avoid collisions with real bad alloc
+    } catch (std::bad_alloc const&) { // TODO:: adds own exception class to avoid collisions with real bad alloc
         resourceManager_->handleDynamicBufferBadAlloc(*resourceTag_, size);
+
+        offset = resourceManager_->allocDynamicBuffer(*resourceTag_, size, false);
+        assert((offset % sizeof(T)) == 0);
     } catch (...) {
         throw;
     }
 
-    std::terminate();
+    assert(offset < buffer.size());
+    return reinterpret_cast<T*>(buffer.data() + offset);
 }
 
 template<typename T>
