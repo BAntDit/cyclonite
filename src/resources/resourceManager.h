@@ -86,10 +86,6 @@ public:
         return get(id).as<R>();
     }
 
-    [[nodiscard]] auto getResourceDynamicBufferSize(Resource::ResourceTag resourceTag) const -> size_t;
-
-    [[nodiscard]] auto getResourceDynamicBufferFreeSize(Resource::ResourceTag resourceTag) const -> size_t;
-
 private:
     template<typename R, size_t N, size_t M>
     void registerResource(resource_reg_info_t<R, N, M>);

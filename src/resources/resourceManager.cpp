@@ -252,23 +252,4 @@ ResourceManager::~ResourceManager()
         erase(Resource::Id{ static_cast<uint32_t>(index), r.version });
     }
 }
-
-auto ResourceManager::getResourceDynamicBufferSize(Resource::ResourceTag resourceTag) const -> size_t
-{
-    auto& buffer = buffers_[resourceTag.dynamicDataIndex];
-    return buffer.size();
-}
-
-auto ResourceManager::getResourceDynamicBufferFreeSize(Resource::ResourceTag resourceTag) const -> size_t
-{
-    auto& ranges = freeRanges_[resourceTag.dynamicDataIndex];
-
-    auto freeSize = size_t{ 0 };
-    for (auto&& [_, size] : ranges) {
-        (void)_;
-        freeSize += size;
-    }
-
-    return freeSize;
-}
 }

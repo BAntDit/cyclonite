@@ -44,13 +44,6 @@ void ResourceManagementTestFixture::TearDown()
 {}
 
 void resourceManagerTest(cyclonite::resources::ResourceManager& resourceManager) {
-    {
-        auto fullSize = resourceManager.getResourceDynamicBufferSize(TestResource::type_tag());
-        auto freeSize = resourceManager.getResourceDynamicBufferFreeSize(TestResource::type_tag());
-
-        ASSERT_EQ(fullSize, freeSize);
-    }
-
     // TODO::
 }
 
