@@ -57,6 +57,8 @@ public:
 
         auto ptr() const -> DataType*;
 
+        auto operator[](int index) const -> reference;
+
     private:
         difference_type index_;
         BufferView<DataType> const& view_;
@@ -186,6 +188,13 @@ template<typename DataType>
 auto BufferView<DataType>::Iterator::ptr() const -> DataType*
 {
     return this->operator->();
+}
+
+template<typename DataType>
+auto BufferView<DataType>::Iterator::operator[](int index) const -> reference
+{
+    void* p = reinterpret_cast<std::byte*>(view_.ptr_) + view_.stride_ * index;
+    return *(reinterpret_cast<DataType*>(p));
 }
 }
 
