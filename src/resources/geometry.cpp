@@ -7,12 +7,11 @@
 namespace cyclonite::resources {
 Resource::ResourceTag Geometry::tag{};
 
-Geometry::Geometry(ResourceManager* resourceManager,
-                   uint32_t vertexCount,
+Geometry::Geometry(uint32_t vertexCount,
                    uint32_t indexCount,
                    resources::Staging::AllocatedMemory&& vertices,
                    resources::Staging::AllocatedMemory&& indices) noexcept
-  : Resource{ resourceManager }
+  : Resource{}
   , vertexCount_{ vertexCount }
   , indexCount_{ indexCount }
   , vertices_{ std::move(vertices) }

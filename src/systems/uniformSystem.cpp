@@ -3,8 +3,9 @@
 //
 
 #include "uniformSystem.h"
-#include "../vulkan/device.h"
+#include "vulkan/device.h"
 #include <glm/gtc/type_ptr.hpp>
+#include "resources/resourceManager.h"
 
 namespace cyclonite::systems {
 void UniformSystem::init(resources::ResourceManager& resourceManager, vulkan::Device& device, size_t swapChainLength)

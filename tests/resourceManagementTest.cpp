@@ -8,14 +8,10 @@
 
 class TestResource:
   public cyclonite::resources::Resource
-  , public cyclonite::buffers::Arena<
-      TestResource, cyclonite::resources::ResourceManager::DynamicMemoryAllocator<std::pair<size_t, size_t>>>
+  , public cyclonite::buffers::Arena<TestResource>
 {
 public:
-    using allocator_t = cyclonite::resources::ResourceManager::DynamicMemoryAllocator<std::pair<size_t, size_t>>;
-
-public:
-    explicit TestResource(cyclonite::resources::ResourceManager* resourceManager);
+    TestResource() = default;
 
     ~TestResource() = default;
 
@@ -24,8 +20,6 @@ public:
     auto ptr() -> void* { return testBuffer_.data(); }
 
     [[nodiscard]] auto instance_tag() const -> ResourceTag const& override { return tag; }
-
-    void handleDynamicBufferRealloc();
 
 private:
     std::array<std::byte, 2048> testBuffer_;
@@ -39,26 +33,6 @@ public:
 };
 
 cyclonite::resources::Resource::ResourceTag TestResource::tag{};
-
-TestResource::TestResource(cyclonite::resources::ResourceManager* resourceManager) :
-  cyclonite::resources::Resource(resourceManager)
-  , cyclonite::buffers::Arena<TestResource, allocator_t>(
-      2048, allocator_t{ resourceManager, &TestResource::type_tag() })
-  , testBuffer_{}
-{}
-
-void TestResource::handleDynamicBufferRealloc()
-{
-    freeRanges_ = std::deque(std::move(freeRanges_), freeRanges_.get_allocator());
-
-    /*freeRanges_ =
-      std::deque<std::pair<size_t, size_t>, allocator_t>{
-          allocator_t{ resourceManager(), &TestResource::type_tag() } };
-
-    for (auto& fr : queue) {
-        freeRanges_.push_back(fr);
-    }*/
-}
 
 void ResourceManagementTestFixture::SetUp()
 {
@@ -77,13 +51,7 @@ void resourceManagerTest(cyclonite::resources::ResourceManager& resourceManager)
         ASSERT_EQ(fullSize, freeSize);
     }
 
-    auto id = resourceManager.template create<TestResource>();
-
-    {
-        auto freeSize = resourceManager.getResourceDynamicBufferFreeSize(TestResource::type_tag());
-
-        ASSERT_EQ(freeSize, 512 - 8);
-    }
+    // TODO::
 }
 
 TEST_F(ResourceManagementTestFixture, ResourceManagerTest)

@@ -8,6 +8,7 @@
 #include "components/mesh.h"
 #include "components/transform.h"
 #include "resources/staging.h"
+#include "resources/resourceManager.h"
 #include "transformSystem.h"
 #include "vulkan/buffer.h"
 #include "vulkan/commandBufferSet.h"

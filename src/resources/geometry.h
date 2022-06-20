@@ -15,8 +15,7 @@ namespace cyclonite::resources {
 class Geometry : public Resource
 {
 public:
-    Geometry(ResourceManager* resourceManager,
-             uint32_t vertexCount,
+    Geometry(uint32_t vertexCount,
              uint32_t indexCount,
              resources::Staging::AllocatedMemory&& vertices,
              resources::Staging::AllocatedMemory&& indices) noexcept;

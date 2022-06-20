@@ -174,36 +174,6 @@ void ResourceManager::freeDynamicBuffer(uint16_t dynamicIndex, size_t offset, si
     std::fill_n(buffer.data() + offset, size, std::byte{ 0 });
 }
 
-void ResourceManager::handleDynamicBufferBadAlloc(Resource::ResourceTag tag, size_t requiredSize) noexcept
-{
-    auto& storage = storages_[tag.staticDataIndex];
-
-    [[maybe_unused]] auto* old = buffers_[tag.dynamicDataIndex].data();
-    auto tmpBuffer = std::move(buffers_[tag.dynamicDataIndex]);
-    assert(tmpBuffer.data() == old);
-
-    buffers_[tag.dynamicDataIndex].resize(tmpBuffer.size(), std::byte{ 0 });
-
-    resizeDynamicBuffer(tag, requiredSize);
-
-    freeRanges_[tag.dynamicDataIndex].clear();
-    freeRanges_[tag.dynamicDataIndex].insert(
-      std::pair{ size_t{ 0 }, static_cast<size_t>(buffers_[tag.dynamicDataIndex].size()) });
-
-    for (auto&& [size, version, itemIndex, staticIndex, _, realloc_func] : resources_) {
-        (void)version;
-        (void)_;
-
-        if (staticIndex != tag.staticDataIndex)
-            continue;
-
-        assert(size > 0);
-        assert(realloc_func);
-
-        realloc_func(storage.data() + itemIndex * size);
-    }
-}
-
 void ResourceManager::erase(Resource::Id id)
 {
     auto& resource = get(id);
@@ -222,7 +192,7 @@ void ResourceManager::erase(Resource::Id id)
 
     resource.~Resource();
 
-    auto& [size, version, itemIndex, staticIndex, dynamicIndex, reallocFunc] = resources_[id.index()];
+    auto& [size, version, itemIndex, staticIndex, dynamicIndex] = resources_[id.index()];
 
     auto& freeItems = freeItems_[staticIndex];
     auto& storage = storages_[staticIndex];
@@ -239,7 +209,6 @@ void ResourceManager::erase(Resource::Id id)
     itemIndex = std::numeric_limits<uint32_t>::max();
     staticIndex = std::numeric_limits<uint16_t>::max();
     dynamicIndex = std::numeric_limits<uint16_t>::max();
-    reallocFunc = nullptr;
 }
 
 auto ResourceManager::isValid(Resource::Id id) const -> bool

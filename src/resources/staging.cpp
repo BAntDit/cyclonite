@@ -8,13 +8,9 @@
 namespace cyclonite::resources {
 Resource::ResourceTag Staging::tag{};
 
-Staging::Staging(ResourceManager* resourceManager,
-                 vulkan::Device& device,
-                 VkBufferUsageFlags usageFlags,
-                 VkDeviceSize size)
-  : Resource{ resourceManager }
-  , buffers::Arena<Staging, allocator_t>{ static_cast<size_t>(size),
-                                          allocator_t{ resourceManager, &Staging::type_tag() } }
+Staging::Staging(vulkan::Device& device, VkBufferUsageFlags usageFlags, VkDeviceSize size)
+  : Resource{}
+  , buffers::Arena<Staging>{ static_cast<size_t>(size) }
   , buffer_{ device,
              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
              usageFlags,
@@ -30,16 +26,5 @@ auto Staging::ptr() const -> void const*
 auto Staging::ptr() -> void*
 {
     return buffer_.allocatedMemory().ptr();
-}
-
-void Staging::handleDynamicBufferRealloc() /* override*/
-{
-    auto queue = std::move(freeRanges_);
-    freeRanges_ =
-      std::deque<std::pair<size_t, size_t>, allocator_t>{ allocator_t{ resourceManager(), &Staging::type_tag() } };
-
-    for (auto& i : queue) {
-        freeRanges_.push_back(i);
-    }
 }
 }

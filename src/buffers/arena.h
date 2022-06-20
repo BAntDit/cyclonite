@@ -11,7 +11,7 @@
 #include <deque>
 
 namespace cyclonite::buffers {
-template<typename MemoryPage, typename FreeRangeAllocator = std::allocator<std::pair<size_t, size_t>>>
+template<typename MemoryPage>
 class Arena
 {
 public:
@@ -56,8 +56,6 @@ public:
 public:
     explicit Arena(size_t size);
 
-    Arena(size_t size, FreeRangeAllocator const& allocator);
-
     Arena(Arena const&) = delete;
 
     Arena(Arena&&) = default;
@@ -82,26 +80,20 @@ public:
 
 protected:
     size_t size_;
-    std::deque<std::pair<size_t, size_t>, FreeRangeAllocator> freeRanges_;
+    std::deque<std::pair<size_t, size_t>> freeRanges_;
 };
 
-template<typename MemoryPage, typename FreeRangeAllocator>
-Arena<MemoryPage, FreeRangeAllocator>::Arena(size_t size)
+template<typename MemoryPage>
+Arena<MemoryPage>::Arena(size_t size)
   : size_{ size }
   , freeRanges_{}
 {
-    freeRanges_.push_back(std::pair{ size_t{ 0 }, size });
+    freeRanges_.template emplace_back(std::pair{ size_t{ 0 }, size });
 }
 
-template<typename MemoryPage, typename FreeRangeAllocator>
-Arena<MemoryPage, FreeRangeAllocator>::Arena(size_t size, FreeRangeAllocator const& allocator)
-  : size_{ size }
-  , freeRanges_{ 1, std::pair{ 0, size }, allocator }
-{}
-
 // calls in strand always
-template<typename MemoryPage, typename FreeRangeAllocator>
-auto Arena<MemoryPage, FreeRangeAllocator>::alloc(size_t size) -> Arena<MemoryPage, FreeRangeAllocator>::AllocatedMemory
+template<typename MemoryPage>
+auto Arena<MemoryPage>::alloc(size_t size) -> Arena<MemoryPage>::AllocatedMemory
 {
 
     auto it = std::lower_bound(freeRanges_.begin(), freeRanges_.end(), size, [](auto const& lhs, size_t rhs) -> bool {
@@ -129,14 +121,11 @@ auto Arena<MemoryPage, FreeRangeAllocator>::alloc(size_t size) -> Arena<MemoryPa
         }
     }
 
-    return Arena<MemoryPage, FreeRangeAllocator>::AllocatedMemory{ *(static_cast<MemoryPage*>(this)),
-                                                                   rangeOffset,
-                                                                   rangeSize };
+    return Arena<MemoryPage>::AllocatedMemory{ *(static_cast<MemoryPage*>(this)), rangeOffset, rangeSize };
 }
 
-template<typename MemoryPage, typename FreeRangeAllocator>
-void Arena<MemoryPage, FreeRangeAllocator>::free(
-  Arena<MemoryPage, FreeRangeAllocator>::AllocatedMemory const& allocatedMemory)
+template<typename MemoryPage>
+void Arena<MemoryPage>::free(Arena<MemoryPage>::AllocatedMemory const& allocatedMemory)
 {
     auto offset = allocatedMemory.offset();
     auto size = allocatedMemory.size();
@@ -188,45 +177,42 @@ void Arena<MemoryPage, FreeRangeAllocator>::free(
     }
 }
 
-template<typename MemoryPage, typename FreeRangeAllocator>
-auto Arena<MemoryPage, FreeRangeAllocator>::ptr() const -> void const*
+template<typename MemoryPage>
+auto Arena<MemoryPage>::ptr() const -> void const*
 {
     return static_cast<MemoryPage const*>(this)->ptr();
 }
 
-template<typename MemoryPage, typename FreeRangeAllocator>
-auto Arena<MemoryPage, FreeRangeAllocator>::ptr() -> void*
+template<typename MemoryPage>
+auto Arena<MemoryPage>::ptr() -> void*
 {
     return static_cast<MemoryPage const*>(this)->ptr();
 }
 
-template<typename MemoryPage, typename FreeRangeAllocator>
-auto Arena<MemoryPage, FreeRangeAllocator>::maxAvailableRange() const -> size_t
+template<typename MemoryPage>
+auto Arena<MemoryPage>::maxAvailableRange() const -> size_t
 {
     return freeRanges_.empty() ? 0 : static_cast<size_t>(freeRanges_.back().second);
 }
 
-template<typename MemoryPage, typename FreeRangeAllocator>
-Arena<MemoryPage, FreeRangeAllocator>::AllocatedMemory::AllocatedMemory()
+template<typename MemoryPage>
+Arena<MemoryPage>::AllocatedMemory::AllocatedMemory()
   : memoryPage_{ nullptr }
   , ptr_{ nullptr }
   , offset_{ 0 }
   , size_{ 0 }
 {}
 
-template<typename MemoryPage, typename FreeRangeAllocator>
-Arena<MemoryPage, FreeRangeAllocator>::AllocatedMemory::AllocatedMemory(MemoryPage& memoryPage,
-                                                                        size_t offset,
-                                                                        size_t size)
+template<typename MemoryPage>
+Arena<MemoryPage>::AllocatedMemory::AllocatedMemory(MemoryPage& memoryPage, size_t offset, size_t size)
   : memoryPage_{ &memoryPage }
   , ptr_{ memoryPage_->ptr() == nullptr ? nullptr : reinterpret_cast<std::byte*>(memoryPage_->ptr()) + offset }
   , offset_{ offset }
   , size_{ size }
 {}
 
-template<typename MemoryPage, typename FreeRangeAllocator>
-Arena<MemoryPage, FreeRangeAllocator>::AllocatedMemory::AllocatedMemory(
-  Arena<MemoryPage, FreeRangeAllocator>::AllocatedMemory&& allocatedMemory) noexcept
+template<typename MemoryPage>
+Arena<MemoryPage>::AllocatedMemory::AllocatedMemory(Arena<MemoryPage>::AllocatedMemory&& allocatedMemory) noexcept
   : memoryPage_{ allocatedMemory.memoryPage_ }
   , ptr_{ allocatedMemory.ptr_ }
   , offset_{ allocatedMemory.offset_ }
@@ -238,18 +224,17 @@ Arena<MemoryPage, FreeRangeAllocator>::AllocatedMemory::AllocatedMemory(
     allocatedMemory.size_ = 0;
 }
 
-template<typename MemoryPage, typename FreeRangeAllocator>
-Arena<MemoryPage, FreeRangeAllocator>::AllocatedMemory::~AllocatedMemory()
+template<typename MemoryPage>
+Arena<MemoryPage>::AllocatedMemory::~AllocatedMemory()
 {
     if (memoryPage_ != nullptr) {
         memoryPage_->free(*this);
     }
 }
 
-template<typename MemoryPage, typename FreeRangeAllocator>
-auto Arena<MemoryPage, FreeRangeAllocator>::AllocatedMemory::operator=(
-  Arena<MemoryPage, FreeRangeAllocator>::AllocatedMemory&& rhs) noexcept
-  -> Arena<MemoryPage, FreeRangeAllocator>::AllocatedMemory&
+template<typename MemoryPage>
+auto Arena<MemoryPage>::AllocatedMemory::operator=(Arena<MemoryPage>::AllocatedMemory&& rhs) noexcept
+  -> Arena<MemoryPage>::AllocatedMemory&
 {
     memoryPage_ = rhs.memoryPage_;
     ptr_ = rhs.ptr_;

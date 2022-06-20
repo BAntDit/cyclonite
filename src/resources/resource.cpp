@@ -30,17 +30,15 @@ Resource::ResourceTag::ResourceTag() noexcept
   , dynamicDataIndex{ std::numeric_limits<uint16_t>::max() }
 {}
 
-Resource::Resource(ResourceManager* resourceManager) noexcept
+Resource::Resource() noexcept
   : id_{}
-  , resourceManager_{ resourceManager }
   , dynamicOffset_{ std::numeric_limits<size_t>::max() }
   , dynamicSize_{ 0 }
   , state_{ ResourceState::UNLOADED }
 {}
 
-Resource::Resource(ResourceManager* resourceManager, size_t dynamicSize) noexcept
+Resource::Resource(size_t dynamicSize) noexcept
   : id_{}
-  , resourceManager_{ resourceManager }
   , dynamicOffset_{ std::numeric_limits<size_t>::max() }
   , dynamicSize_{ dynamicSize }
   , state_{ ResourceState::UNLOADED }
@@ -74,6 +72,4 @@ void Resource::load(std::istream& stream)
     (void)stream;
     state_ = ResourceState::COMPLETE;
 }
-
-void Resource::handleDynamicBufferRealloc() {}
 }

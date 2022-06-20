@@ -7,8 +7,8 @@
 namespace cyclonite::resources {
 Resource::ResourceTag Buffer::tag{};
 
-Buffer::Buffer(ResourceManager* resourceManager, size_t size) noexcept
-  : Resource(resourceManager, size)
+Buffer::Buffer(size_t size) noexcept
+  : Resource(size)
 {}
 
 void Buffer::load(std::istream& stream)
