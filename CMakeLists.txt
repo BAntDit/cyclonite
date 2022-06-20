@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(cyclonite VERSION 0.0.1.0)
+project(cyclonite VERSION 0.0.2.0)
 
 set(PUBLIC_HEADERS
     src/hash.h
