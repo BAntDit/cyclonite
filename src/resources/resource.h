@@ -84,6 +84,8 @@ public:
 
     virtual void load(std::istream& stream);
 
+    [[nodiscard]] virtual auto dependsOn(Resource::Id) const -> bool { return false; }
+
 protected:
     struct ResourceTag
     {
