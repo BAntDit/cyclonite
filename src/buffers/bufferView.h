@@ -25,7 +25,7 @@ public:
 
         Iterator(BufferView<DataType> const& view, difference_type index);
 
-        explicit operator bool() const { return index_ < view_.count_; }
+        explicit operator bool() const { return index_ < view_->count_; }
 
         auto operator==(Iterator const& rhs) const -> bool { return &view_ == &rhs.view_ && index_ == rhs.index_; }
 
@@ -61,7 +61,7 @@ public:
 
     private:
         difference_type index_;
-        BufferView<DataType> const& view_;
+        BufferView<DataType> const* view_;
     };
 
 public:
@@ -91,16 +91,16 @@ BufferView<DataType>::BufferView(void* dataPtr, size_t offset, size_t count, siz
 template<typename DataType>
 BufferView<DataType>::Iterator::Iterator(BufferView<DataType> const& view, difference_type index)
   : index_{ index }
-  , view_{ view }
+  , view_{ &view }
 {
-    assert(index_ <= static_cast<difference_type>(view_.count_));
+    assert(index_ <= static_cast<difference_type>(view_->count_));
 }
 
 template<typename DataType>
 auto BufferView<DataType>::Iterator::operator+=(difference_type diff) -> Iterator&
 {
     index_ += diff;
-    assert(index_ <= static_cast<difference_type>(view_.count_));
+    assert(index_ <= static_cast<difference_type>(view_->count_));
     return *this;
 }
 
@@ -115,7 +115,7 @@ auto BufferView<DataType>::Iterator::operator-=(difference_type diff) -> Iterato
 template<typename DataType>
 auto BufferView<DataType>::Iterator::operator++() -> Iterator&
 {
-    assert(index_ <= static_cast<difference_type>(view_.count_));
+    assert(index_ <= static_cast<difference_type>(view_->count_));
     index_++;
     return *this;
 }
@@ -131,8 +131,8 @@ auto BufferView<DataType>::Iterator::operator--() -> Iterator&
 template<typename DataType>
 auto BufferView<DataType>::Iterator::operator++(int) -> Iterator
 {
-    assert(index_ <= static_cast<difference_type>(view_.count_));
-    auto prev = Iterator{ view_, index_ };
+    assert(index_ <= static_cast<difference_type>(view_->count_));
+    auto prev = Iterator{ *view_, index_ };
     index_++;
     return prev;
 }
@@ -141,7 +141,7 @@ template<typename DataType>
 auto BufferView<DataType>::Iterator::operator--(int) -> Iterator
 {
     assert(index_ > 0l);
-    auto prev = Iterator{ view_, index_ };
+    auto prev = Iterator{ *view_, index_ };
     index_--;
     return prev;
 }
@@ -149,14 +149,14 @@ auto BufferView<DataType>::Iterator::operator--(int) -> Iterator
 template<typename DataType>
 auto BufferView<DataType>::Iterator::operator+(difference_type diff) -> Iterator
 {
-    return Iterator{ view_, index_ + diff };
+    return Iterator{ *view_, index_ + diff };
 }
 
 template<typename DataType>
 auto BufferView<DataType>::Iterator::operator-(difference_type diff) -> Iterator
 {
     assert(index_ >= diff);
-    return Iterator{ view_, index_ - diff };
+    return Iterator{ *view_, index_ - diff };
 }
 
 template<typename DataType>
@@ -168,7 +168,7 @@ auto BufferView<DataType>::Iterator::operator-(Iterator const& rhs) -> differenc
 template<typename DataType>
 auto BufferView<DataType>::Iterator::operator->() const -> DataType*
 {
-    void* p = reinterpret_cast<std::byte*>(view_.ptr_) + view_.stride_ * index_;
+    void* p = reinterpret_cast<std::byte*>(view_->ptr_) + view_->stride_ * index_;
     return reinterpret_cast<DataType*>(p);
 }
 
@@ -193,7 +193,7 @@ auto BufferView<DataType>::Iterator::ptr() const -> DataType*
 template<typename DataType>
 auto BufferView<DataType>::Iterator::operator[](int index) const -> reference
 {
-    void* p = reinterpret_cast<std::byte*>(view_.ptr_) + view_.stride_ * index;
+    void* p = reinterpret_cast<std::byte*>(view_->ptr_) + view_->stride_ * index;
     return *(reinterpret_cast<DataType*>(p));
 }
 }
