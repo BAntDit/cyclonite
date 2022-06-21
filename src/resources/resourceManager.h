@@ -98,6 +98,8 @@ private:
 
     auto getDynamicData(Resource::Id id) -> std::byte*;
 
+    [[nodiscard]] auto getDynamicData(Resource::Id id) const -> std::byte const*;
+
     void resizeDynamicBuffer(Resource::ResourceTag tag, size_t additionalSize);
 
 private:
@@ -125,11 +127,7 @@ private:
           , dynamic_index{ std::numeric_limits<uint16_t>::max() }
         {}
 
-        resource_t(size_t s,
-                   uint32_t v,
-                   uint32_t i,
-                   uint16_t si,
-                   uint16_t di) noexcept
+        resource_t(size_t s, uint32_t v, uint32_t i, uint16_t si, uint16_t di) noexcept
           : size{ s }
           , version{ v }
           , item{ i }
@@ -218,6 +216,7 @@ auto ResourceManager::create(Args&&... args) -> Resource::Id
 
     if (resource->dynamicDataSize() > 0) {
         resource->dynamicOffset_ = allocDynamicBuffer(R::type_tag_const(), resource->dynamicDataSize());
+        resource->handleDynamicDataAllocation();
     }
 
     return id;

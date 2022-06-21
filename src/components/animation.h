@@ -17,7 +17,6 @@ struct AnimationChannel
 
     uint64_t animationId;
     size_t samplerIndex;
-    enttx::Entity target;
     target_updater_t updater;
 };
 

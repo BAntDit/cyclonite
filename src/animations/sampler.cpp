@@ -1,0 +1,95 @@
+//
+// Created by anton on 6/21/22.
+//
+
+#include "sampler.h"
+#include "resources/buffer.h"
+#include "resources/resourceManager.h"
+
+namespace cyclonite::animations {
+Sampler::Sampler() noexcept
+  : interpolate_{}
+  , inputBufferId_{}
+  , outputBufferId_{}
+  , input_{ nullptr, std::numeric_limits<size_t>::max(), 0 }
+  , output_{ nullptr, std::numeric_limits<size_t>::max(), 0 }
+  , rawValue_{}
+{}
+
+Sampler::Sampler(resources::ResourceManager& resourceManager,
+                 interpolator_func_t interpolator,
+                 resources::Resource::Id inBufferId,
+                 resources::Resource::Id outBufferId,
+                 size_t inOffset,
+                 size_t inStride,
+                 size_t outOffset,
+                 size_t outStride,
+                 size_t valueCount,
+                 size_t componentCount,
+                 InterpolationType interpolationType) noexcept
+  : interpolate_{ interpolator }
+  , inputBufferId_{ inBufferId }
+  , outputBufferId_{ outBufferId }
+  , input_{ resourceManager.get(inBufferId)
+              .template as<resources::Buffer>()
+              .view<real>(inOffset, valueCount, inStride) }
+  , output_{ resourceManager.get(outBufferId)
+               .template as<resources::Buffer>()
+               .view<real>(outOffset, valueCount * componentCount, outStride) }
+  , rawValue_{}
+  , interpolationType_{ interpolationType }
+{}
+
+void Sampler::update(real playtime)
+{
+    assert(input_.count() > 0);
+
+    auto min = *input_.begin();
+    auto max = *(input_.begin() + (input_.count() - 1));
+
+    playtime = std::max(playtime, min);
+    playtime = std::min(playtime, max);
+
+    auto key1 = real{ 0.f };
+    auto key2 = real{ 0.f };
+    auto key_index1 = size_t{ 0 };
+    auto key_index2 = size_t{ 0 };
+
+    auto it = std::upper_bound(input_.begin(), input_.end(), playtime);
+
+    assert(it != input_.begin());
+
+    key_index2 = (it == input_.end()) ? input_.count() - 1 : std::distance(input_.begin(), it);
+    key_index1 = key_index1 - 1;
+
+    key2 = (it == input_.end()) ? max : *it;
+    key1 = *std::prev(it);
+
+    assert(key2 > key1);
+    assert(!(playtime < key1));
+
+    auto alpha = (playtime - key1) / (key2 - key1);
+
+    real const* a = nullptr;
+    real const* b = nullptr;
+
+    switch (interpolationType_) {
+        case InterpolationType::STEP:
+        case InterpolationType::LINEAR: {
+            a = (output_.begin() + key_index1).ptr();
+            b = (output_.begin() + key_index2).ptr();
+        } break;
+        case InterpolationType::CUBIC:
+        case InterpolationType::CATMULL_ROM: {
+            auto const layoutElementCount = size_t{ 3 }; // 3 == [in-tangent, vertex, out-tangent]
+
+            a = (output_.begin() + key_index1 * layoutElementCount).ptr();
+            b = (output_.begin() + key_index2 * layoutElementCount).ptr();
+        } break;
+        default:
+            assert(false);
+    }
+
+    interpolate_(alpha, a, b, rawValue_.data());
+}
+}

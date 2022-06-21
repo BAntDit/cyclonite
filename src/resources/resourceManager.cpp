@@ -241,6 +241,14 @@ auto ResourceManager::getDynamicData(Resource::Id id) -> std::byte*
     return buffers_[tag.dynamicDataIndex].data() + resource.dynamicDataOffset();
 }
 
+auto ResourceManager::getDynamicData(Resource::Id id) const -> std::byte const*
+{
+    auto& resource = get(id);
+    auto const& tag = resource.instance_tag();
+
+    return buffers_[tag.dynamicDataIndex].data() + resource.dynamicDataOffset();
+}
+
 ResourceManager::~ResourceManager()
 {
     for (auto index = size_t{ 0 }, count = resources_.size(); index < count; index++) {

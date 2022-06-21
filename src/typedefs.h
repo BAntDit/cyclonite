@@ -13,6 +13,18 @@
 #include <glm/gtx/transform.hpp>
 
 namespace cyclonite {
+enum class InterpolationType : uint8_t
+{
+    STEP = 0,
+    LINEAR = 1,
+    SPHERICAL = 2,
+    CUBIC = 3,
+    CATMULL_ROM = 4,
+    MIN_VALUE = STEP,
+    MAX_VALUE = CATMULL_ROM,
+    COUNT = MAX_VALUE + 1
+};
+
 using real = boost::float32_t;
 
 using uint = std::uint32_t;

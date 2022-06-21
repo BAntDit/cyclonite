@@ -13,7 +13,7 @@ namespace cyclonite::resources {
 class Buffer : public Resource
 {
 public:
-    Buffer(size_t size) noexcept;
+    explicit Buffer(size_t size) noexcept;
 
     [[nodiscard]] auto instance_tag() const -> ResourceTag const& override { return tag; }
 

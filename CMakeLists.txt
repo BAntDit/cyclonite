@@ -18,6 +18,8 @@ set(PUBLIC_HEADERS
     src/error.h
     src/typedefs.h
     src/animationClip.h
+    src/animations/animation.h
+    src/animations/sampler.h
     src/buffers/arena.h
     src/buffers/bufferView.h
     src/resources/staging.h
@@ -97,6 +99,8 @@ set(SOURCES
     src/baseRenderTarget.cpp
     src/frameBufferRenderTarget.cpp
     src/surfaceRenderTarget.cpp
+    src/animations/animation.cpp
+    src/animations/sampler.cpp
     src/resources/resource.cpp
     src/resources/buffer.cpp
     src/resources/geometry.cpp

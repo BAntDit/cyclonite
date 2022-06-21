@@ -49,6 +49,11 @@ auto Resource::dynamicData() -> std::byte*
     return resourceManager_->getDynamicData(id_);
 }
 
+auto Resource::dynamicData() const -> std::byte const*
+{
+    return resourceManager_->getDynamicData(id_);
+}
+
 void Resource::load(std::filesystem::path const& path)
 {
     std::ifstream file{};
@@ -72,4 +77,6 @@ void Resource::load(std::istream& stream)
     (void)stream;
     state_ = ResourceState::COMPLETE;
 }
+
+void Resource::handleDynamicDataAllocation() {}
 }

@@ -33,6 +33,8 @@ protected:
 
     [[nodiscard]] auto dynamicDataOffset() const -> size_t { return dynamicOffset_; }
 
+    [[nodiscard]] auto dynamicData() const -> std::byte const*;
+
     auto dynamicData() -> std::byte*;
 
 public:
@@ -85,6 +87,9 @@ public:
     virtual void load(std::istream& stream);
 
     [[nodiscard]] virtual auto dependsOn(Resource::Id) const -> bool { return false; }
+
+protected:
+    virtual void handleDynamicDataAllocation();
 
 protected:
     struct ResourceTag
