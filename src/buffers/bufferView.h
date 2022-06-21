@@ -132,7 +132,7 @@ template<typename DataType>
 auto BufferView<DataType>::Iterator::operator++(int) -> Iterator
 {
     assert(index_ <= static_cast<difference_type>(view_.count_));
-    auto prev = Iterator{ *this, index_ };
+    auto prev = Iterator{ view_, index_ };
     index_++;
     return prev;
 }
@@ -141,7 +141,7 @@ template<typename DataType>
 auto BufferView<DataType>::Iterator::operator--(int) -> Iterator
 {
     assert(index_ > 0l);
-    auto prev = Iterator{ *this, index_ };
+    auto prev = Iterator{ view_, index_ };
     index_--;
     return prev;
 }
@@ -149,14 +149,14 @@ auto BufferView<DataType>::Iterator::operator--(int) -> Iterator
 template<typename DataType>
 auto BufferView<DataType>::Iterator::operator+(difference_type diff) -> Iterator
 {
-    return Iterator{ *this, index_ + diff };
+    return Iterator{ view_, index_ + diff };
 }
 
 template<typename DataType>
 auto BufferView<DataType>::Iterator::operator-(difference_type diff) -> Iterator
 {
     assert(index_ >= diff);
-    return Iterator{ *this, index_ - diff };
+    return Iterator{ view_, index_ - diff };
 }
 
 template<typename DataType>
