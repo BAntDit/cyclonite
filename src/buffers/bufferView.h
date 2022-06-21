@@ -27,9 +27,9 @@ public:
 
         explicit operator bool() const { return index_ < view_->count_; }
 
-        auto operator==(Iterator const& rhs) const -> bool { return &view_ == &rhs.view_ && index_ == rhs.index_; }
+        auto operator==(Iterator const& rhs) const -> bool { return view_ == rhs.view_ && index_ == rhs.index_; }
 
-        auto operator!=(Iterator const& rhs) const -> bool { return &view_ != &rhs.view_ || index_ != rhs.index_; }
+        auto operator!=(Iterator const& rhs) const -> bool { return view_ != rhs.view_ || index_ != rhs.index_; }
 
         auto operator+=(difference_type diff) -> Iterator&;
 
