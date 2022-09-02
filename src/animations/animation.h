@@ -5,88 +5,99 @@
 #ifndef CYCLONITE_ANIMTAIONS_ANIMATION_H
 #define CYCLONITE_ANIMATIONS_ANIMATION_H
 
-#include "resources/resource.h"
+#include "resources/contiguousData.h"
 #include "sampler.h"
+#include <bitset>
+#include <easy-mp/enum.h>
+#include <future>
+#include <glm/gtc/type_ptr.hpp>
+
+using namespace easy_mp;
+
+namespace cyclonite::multithreading {
+class TaskManager;
+}
 
 namespace cyclonite::animations {
-class Animation : public resources::Resource
+using SamplerArray = resources::ContiguousData<Sampler>;
+
+class AnimationInterpolationTaskArray : public resources::ContiguousData<std::future<void>>
 {
 public:
-    class Iterator
+    AnimationInterpolationTaskArray(uint16_t taskCount, uint16_t itemsPerTask);
+
+    [[nodiscard]] auto itemsPerTask() const -> uint16_t { return itemsPerTask_; }
+
+    void resolve();
+
+private:
+    uint16_t itemsPerTask_;
+};
+
+class Animation : public resources::Resource
+{
+    enum class AnimationBits
     {
-    public:
-        using iterator_category = std::random_access_iterator_tag;
-        using value_type = Sampler;
-        using difference_type = std::ptrdiff_t;
-        using pointer = value_type*;
-        using reference = value_type&;
-
-        Iterator(Sampler* baseSampler, uint32_t samplerCount, difference_type index) noexcept;
-
-        explicit operator bool() const { return index_ < count_; }
-
-        auto operator==(Iterator const& rhs) const -> bool
-        {
-            return baseSampler_ == rhs.baseSampler_ && index_ == rhs.index_;
-        }
-
-        auto operator!=(Iterator const& rhs) const -> bool
-        {
-            return baseSampler_ != rhs.baseSampler_ || index_ != rhs.index_;
-        }
-
-        auto operator+=(difference_type diff) -> Iterator&;
-
-        auto operator-=(difference_type diff) -> Iterator&;
-
-        auto operator++() -> Iterator&;
-
-        auto operator--() -> Iterator&;
-
-        auto operator++(int) -> Iterator;
-
-        auto operator--(int) -> Iterator;
-
-        auto operator+(difference_type diff) -> Iterator;
-
-        auto operator-(difference_type diff) -> Iterator;
-
-        auto operator-(Iterator const& rhs) const -> difference_type;
-
-        auto operator*() -> Sampler&;
-
-        auto operator*() const -> Sampler const&;
-
-        auto operator->() const -> Sampler*;
-
-        auto ptr() const -> Sampler*;
-
-        auto operator[](int index) const -> reference;
-
-    private:
-        Sampler* baseSampler_;
-        difference_type index_;
-        uint32_t count_;
+        LOOPED_BIT = 0,
+        ACTIVE_BIT = 1,
+        LAST_FRAME_BIT = 2,
+        MIN_VALUE = LOOPED_BIT,
+        MAX_VALUE = LAST_FRAME_BIT,
+        COUNT = MAX_VALUE + 1
     };
 
 public:
-    explicit Animation(uint32_t samplerCount) noexcept;
+    Animation(multithreading::TaskManager& taskManager, uint32_t samplerCount, bool autoplay = false) noexcept;
+
+    Animation(multithreading::TaskManager& taskManager,
+              uint32_t samplerCount,
+              real duration,
+              bool autoplay = false) noexcept;
 
     [[nodiscard]] auto instance_tag() const -> ResourceTag const& override { return tag; }
 
-    [[nodiscard]] auto begin() const -> Iterator { return Iterator{ baseSampler_, samplerCount_, 0l }; }
+    [[nodiscard]] auto playtime() const -> real { return playtime_; }
 
-    [[nodiscard]] auto end() const -> Iterator
-    {
-        return Iterator{ baseSampler_, samplerCount_, static_cast<typename Iterator::difference_type>(samplerCount_) };
-    }
+    [[nodiscard]] auto duration() const -> real { return duration_; }
+
+    [[nodiscard]] auto timescale() const -> real { return timescale_; }
+
+    [[nodiscard]] auto looped() const -> bool { return flags_.test(value_cast(AnimationBits::LOOPED_BIT)); }
+
+    [[nodiscard]] auto active() const -> bool { return flags_.test(value_cast(AnimationBits::ACTIVE_BIT)); }
+
+    auto timescale() -> real& { return timescale_; }
+
+    void beginUpdate(real dt);
+
+    bool endUpdate(); // returns true, if animation is over
+
+    void play();
+
+    void pause();
+
+    void stop();
+
+    template<typename T>
+    auto sample(size_t i, T&& t) const -> T;
 
 protected:
     void handleDynamicDataAllocation() override;
 
 private:
-    Sampler* baseSampler_;
-    uint32_t samplerCount_;
+    void _update();
+
+    [[nodiscard]] auto _samplers() const -> SamplerArray const&;
+
+    auto _samplers() -> SamplerArray&;
+
+    multithreading::TaskManager* taskManager_;
+    resources::Resource::Id interpolationTaskArrayId_;
+    resources::Resource::Id samplerArrayId_;
+    real playtime_;
+    real duration_;
+    real timescale_;
+    std::bitset<value_cast(AnimationBits::COUNT)> flags_;
 
 private:
     static ResourceTag tag;
@@ -95,6 +106,45 @@ public:
     static auto type_tag_const() -> ResourceTag const& { return Animation::tag; }
     static auto type_tag() -> ResourceTag& { return Animation::tag; }
 };
+
+template<typename T>
+auto Animation::sample(size_t i, T&& t) const -> T
+{
+    using make_func_t = T (*)(real const*);
+    constexpr make_func_t makeFunc = nullptr;
+
+    auto& samplers = _samplers();
+
+    if constexpr (std::is_same_v<std::decay_t<T>, real>) {
+        makeFunc = [](real const* src) -> real { return *src; };
+    } else if constexpr (std::is_same_v<std::decay_t<T>, vec2>) {
+        makeFunc = glm::make_vec2;
+    } else if constexpr (std::is_same_v<std::decay_t<T>, vec3>) {
+        makeFunc = glm::make_vec3;
+    } else if constexpr (std::is_same_v<std::decay_t<T>, vec4>) {
+        makeFunc = glm::make_vec4;
+    } else if constexpr (std::is_same_v<std::decay_t<T>, quat>) {
+        makeFunc = glm::make_quat;
+    } else if constexpr (std::is_same_v<std::decay_t<T>, glm::tmat2x2<boost::float32_t, glm::highp>>) {
+        makeFunc = glm::make_mat2x2;
+    } else if constexpr (std::is_same_v<std::decay_t<T>, mat3>) {
+        makeFunc = glm::make_mat3;
+    } else if constexpr (std::is_same_v<std::decay_t<T>, mat3x4>) {
+        makeFunc = glm::make_mat3x4;
+    } else if constexpr (std::is_same_v<std::decay_t<T>, glm::tmat4x3<boost::float32_t, glm::highp>>) {
+        makeFunc = glm::make_mat4x3;
+    } else if constexpr (std::is_same_v<std::decay_t<T>, mat4>) {
+        makeFunc = glm::make_mat4;
+    } else if constexpr (std::is_constructible_v<T, real const*>) {
+        makeFunc = [](real const* src) -> T { return T(src); };
+    }
+
+    static_assert(makeFunc != nullptr);
+
+    t = samplers[i].template value(makeFunc);
+
+    return t;
+}
 }
 
 #endif // CYCLONITE_ANIMATIONS_ANIMATION_H

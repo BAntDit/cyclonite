@@ -101,15 +101,15 @@ auto TransformSystem::create(EntityManager& entityManager,
 
     auto depth = parentTransform == nullptr ? 0 : parentTransform->depth + 1;
 
-    // to be able to update parent transforms first
+    // to be able to beginUpdate parent transforms first
     // all transforms must be in the right order
     auto it = std::upper_bound(transforms.begin(),
                                transforms.end(),
                                std::make_pair(depth, static_cast<uint64_t>(parentEntity)),
                                [](auto&& lhs, auto const& rhs) -> bool {
-                                   auto&& [depth, parent] = lhs;
-                                   return (depth < rhs.depth) ||
-                                          (depth == rhs.depth && parent < static_cast<uint64_t>(rhs.parent));
+                                   auto&& [ldepth, parent] = lhs;
+                                   return (ldepth < rhs.depth) ||
+                                          (ldepth == rhs.depth && parent < static_cast<uint64_t>(rhs.parent));
                                });
 
     auto order = static_cast<size_t>(std::distance(transforms.begin(), it));

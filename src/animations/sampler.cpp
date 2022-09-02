@@ -14,6 +14,8 @@ Sampler::Sampler() noexcept
   , input_{ nullptr, std::numeric_limits<size_t>::max(), 0 }
   , output_{ nullptr, std::numeric_limits<size_t>::max(), 0 }
   , rawValue_{}
+  , interpolationType_{ InterpolationType::STEP }
+  , componentCount_{ 0 }
 {}
 
 Sampler::Sampler(resources::ResourceManager& resourceManager,
@@ -38,6 +40,7 @@ Sampler::Sampler(resources::ResourceManager& resourceManager,
                .view<real>(outOffset, valueCount * componentCount, outStride) }
   , rawValue_{}
   , interpolationType_{ interpolationType }
+  , componentCount_{ static_cast<uint8_t>(componentCount) }
 {}
 
 void Sampler::update(real playtime)
@@ -60,7 +63,7 @@ void Sampler::update(real playtime)
     assert(it != input_.begin());
 
     key_index2 = (it == input_.end()) ? input_.count() - 1 : std::distance(input_.begin(), it);
-    key_index1 = key_index1 - 1;
+    key_index1 = key_index2 - 1;
 
     key2 = (it == input_.end()) ? max : *it;
     key1 = *std::prev(it);
@@ -68,28 +71,28 @@ void Sampler::update(real playtime)
     assert(key2 > key1);
     assert(!(playtime < key1));
 
+    auto delta = key2 - key1;
+
     auto alpha = (playtime - key1) / (key2 - key1);
 
-    real const* a = nullptr;
-    real const* b = nullptr;
+    real const* src = nullptr;
 
+    // key index steps over stride
     switch (interpolationType_) {
         case InterpolationType::STEP:
         case InterpolationType::LINEAR: {
-            a = (output_.begin() + key_index1).ptr();
-            b = (output_.begin() + key_index2).ptr();
+            src = (output_.begin() + key_index1).ptr();
         } break;
         case InterpolationType::CUBIC:
         case InterpolationType::CATMULL_ROM: {
-            auto const layoutElementCount = size_t{ 3 }; // 3 == [in-tangent, vertex, out-tangent]
+            auto const layoutElementCount = size_t{ 2 }; // 2 == [vertex, tangent]
 
-            a = (output_.begin() + key_index1 * layoutElementCount).ptr();
-            b = (output_.begin() + key_index2 * layoutElementCount).ptr();
+            src = (output_.begin() + key_index1 * layoutElementCount).ptr();
         } break;
         default:
             assert(false);
     }
 
-    interpolate_(alpha, a, b, rawValue_.data());
+    interpolate_(alpha, delta, componentCount_, src, rawValue_.data());
 }
 }

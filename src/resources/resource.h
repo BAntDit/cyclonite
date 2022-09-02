@@ -27,7 +27,7 @@ protected:
 
     explicit Resource(size_t dynamicSize) noexcept;
 
-    [[nodiscard]] auto resourceManager() const -> ResourceManager* { return resourceManager_; }
+    [[nodiscard]] auto resourceManager() const -> ResourceManager&;
 
     [[nodiscard]] auto dynamicDataSize() const -> size_t { return dynamicSize_; }
 

@@ -3,6 +3,7 @@
 //
 
 #include "model.h"
+#include "animations/animation.h"
 #include "appConfig.h"
 #include "gltf/reader.h"
 #include "resources/buffer.h"
@@ -37,21 +38,33 @@ void Model::init(cyclonite::Root& root,
         auto&& t = std::forward_as_tuple(args...);
 
         if constexpr (gltf::reader_data_test<gltf::ReaderDataType::RESOURCE_COUNT, decltype(dataType)>()) {
-            auto [bufferCount, geometryCount] = t;
+            auto [bufferCount, geometryCount, animationCount] = t;
 
             constexpr auto expectedStagingCount = uint32_t{ 4 };
             constexpr auto expectedBufferCount = size_t{ 1 };
+            constexpr auto expectedAnimationCount = size_t{ 1 };
             constexpr auto expectedGeometryCount = size_t{ 32 };
             constexpr auto initialBufferMemory = size_t{ 64 * 1024 * 1024 };
             constexpr auto initialStagingMemory = size_t{ 64 * 1024 * 1024 };
+            constexpr auto initialSamplersCount = size_t{ 1024 };
+            constexpr auto initialInterpolationTaskCount = size_t{ 256 };
 
             root.declareResources(
-              bufferCount + geometryCount + expectedStagingCount,
+              bufferCount + geometryCount + animationCount + expectedStagingCount,
               cyclonite::resources::
                 resource_reg_info_t<cyclonite::resources::Buffer, expectedBufferCount, initialBufferMemory>{},
               cyclonite::resources::resource_reg_info_t<cyclonite::resources::Geometry, expectedGeometryCount, 0>{},
               cyclonite::resources::
-                resource_reg_info_t<cyclonite::resources::Staging, expectedStagingCount, initialStagingMemory>{});
+                resource_reg_info_t<cyclonite::resources::Staging, expectedStagingCount, initialStagingMemory>{},
+              cyclonite::resources::resource_reg_info_t<cyclonite::animations::SamplerArray,
+                                                        expectedAnimationCount,
+                                                        initialSamplersCount *
+                                                          sizeof(cyclonite::animations::Sampler)>{},
+              cyclonite::resources::resource_reg_info_t<
+                cyclonite::animations::AnimationInterpolationTaskArray,
+                expectedAnimationCount,
+                initialInterpolationTaskCount * sizeof(cyclonite::animations::AnimationInterpolationTaskArray)>{},
+              cyclonite::resources::resource_reg_info_t<cyclonite::animations::Animation, expectedAnimationCount, 0>{});
 
             node.systems().get<systems::UniformSystem>().init(root.resourceManager(), device, 1);
         }
@@ -266,6 +279,18 @@ void Model::init(cyclonite::Root& root,
                 meshSystem.createMesh(node.entities(), entity, geometries);
             }
         }
+
+        // animation
+        std::unordered_map<size_t, resources::Resource::Id> indexToAnimationId{};
+
+        if constexpr (gltf::reader_data_test<gltf::ReaderDataType::ANIMATION, decltype(dataType)>()) {
+            auto [sampleCount, duration, animationIndex] = t;
+            auto animationId = root.resourceManager().template create(root.taskManager(), sampleCount, duration);
+
+            indexToAnimationId.insert(animationIndex, animationId);
+        }
+
+        // samplers
     });
 
     {

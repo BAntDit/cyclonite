@@ -159,9 +159,25 @@ enum class ReaderDataType : uint8_t
     NODE,
     GEOMETRY,
     MESH,
+    ANIMATION,
+    ANIMATION_SAMPLER,
     MIN_VALUE = NODE_COUNT,
     MAX_VALUE = MESH,
     COUNT = MAX_VALUE + 1
+};
+
+enum class ComponentType : int32_t
+{
+    BYTE = 5120,
+    UNSIGNED_BYTE = 5121,
+    SHORT = 5122,
+    UNSIGNED_SHORT = 5123,
+    INT = 5124,
+    UNSIGNED_INT = 5125,
+    FLOAT = 5126,
+    MIN_VALUE = BYTE,
+    MAX_VALUE = FLOAT,
+    COUNT = (FLOAT - BYTE) + 1
 };
 
 template<ReaderDataType DataTypeValue>
@@ -363,7 +379,10 @@ void Reader::read(std::istream& stream, F&& f)
 
         auto geometryCount = uniqueGeometry.size();
 
-        f(reader_data_type_t<ReaderDataType::RESOURCE_COUNT>{}, bufferCount, geometryCount);
+        auto const& animations = _getJsonProperty(input, reinterpret_cast<char const*>(u8"animations"));
+        auto animationCount = animations.size();
+
+        f(reader_data_type_t<ReaderDataType::RESOURCE_COUNT>{}, bufferCount, geometryCount, animationCount);
     }
 
     // buffers:
@@ -518,6 +537,115 @@ void Reader::read(std::istream& stream, F&& f)
 
             _readNode(
               nodes, meshes, accessors, instanceCommands, std::numeric_limits<size_t>::max(), idx, std::forward<F>(f));
+        }
+    }
+
+    // animations
+    {
+        auto const& animations = _getJsonProperty(input, reinterpret_cast<char const*>(u8"animations"));
+        auto animationCount = animations.size();
+
+        for (auto animationIndex = size_t{ 0 }; animationIndex < animationCount; animationIndex++) {
+            auto const& animation = animations.at(animationIndex);
+            auto const& samplers = _getJsonProperty(animation, reinterpret_cast<char const*>(u8"samplers"));
+            auto sampleCount = samplers.size();
+            auto duration = real{ 0.f };
+
+            for (auto samplerIndex = size_t{ 0 }; samplerIndex < sampleCount; samplerIndex++) {
+                auto const& sample = samplers.at(samplerIndex);
+                auto idxInput =
+                  _getOptional(sample, reinterpret_cast<char const*>(u8"input"), std::numeric_limits<size_t>::max());
+
+                assert(idxInput != std::numeric_limits<size_t>::max());
+
+                auto const& accessor = accessors.at(idxInput);
+
+                duration = std::max(duration, _getOptional(accessor, reinterpret_cast<char const*>(u8"max"), 0.f));
+            }
+
+            f(reader_data_type_t<ReaderDataType::ANIMATION>{}, sampleCount, duration, animationIndex);
+
+            for (auto samplerIndex = size_t{ 0 }; samplerIndex < sampleCount; samplerIndex++) {
+                auto const& sample = samplers.at(samplerIndex);
+
+                auto idxInput =
+                  _getOptional(sample, reinterpret_cast<char const*>(u8"input"), std::numeric_limits<size_t>::max());
+
+                assert(idxInput != std::numeric_limits<size_t>::max());
+
+                auto const& inputAccessor = accessors_[idxInput];
+                auto const& inputBufferView = bufferViews_[inputAccessor.bufferViewIdx];
+
+                auto inputBufferIndex = inputBufferView.bufferIdx;
+                auto inputOffset = inputBufferView.byteOffset + inputAccessor.byteOffset;
+
+                assert(!inputAccessor.normalized);
+                assert(inputAccessor.componentType == easy_mp::value_cast(ComponentType::FLOAT));
+                assert(inputAccessor.type == "SCALAR");
+
+                auto inputStride =
+                  inputBufferView.byteStride > 0 ? inputBufferView.byteStride : sizeof(boost::float32_t);
+
+                auto idxOutput =
+                  _getOptional(sample, reinterpret_cast<char const*>(u8"output"), std::numeric_limits<size_t>::max());
+
+                auto const& outputAccessor = accessors_[idxOutput];
+                auto const& outputBufferView = bufferViews_[outputAccessor.bufferViewIdx];
+
+                auto outputBufferIndex = outputBufferView.bufferIdx;
+                auto outputOffset = outputBufferView.byteOffset + outputAccessor.byteOffset;
+
+                auto valueCount = outputAccessor.count;
+                auto componentCount = size_t{ 0 };
+
+                if (outputAccessor.type == "SCALAR")
+                    componentCount = 1;
+                else if (outputAccessor.type == "VEC2")
+                    componentCount = 2;
+                else if (outputAccessor.type == "VEC3")
+                    componentCount = 3;
+                else if (outputAccessor.type == "VEC4" || outputAccessor.type == "MAT2")
+                    componentCount = 4;
+                else if (outputAccessor.type == "MAT3")
+                    componentCount = 9;
+                else if (outputAccessor.type == "MAT4")
+                    componentCount = 16;
+
+                assert(componentCount > 0);
+
+                auto outputStride = inputBufferView.byteStride > 0 ? inputBufferView.byteStride
+                                                                   : componentCount * sizeof(boost::float32_t);
+
+                auto interpolationType = InterpolationType::COUNT;
+                auto interpolation =
+                  _getOptional(sample, reinterpret_cast<char const*>(u8"interpolation"), std::string{});
+
+                if (interpolation == reinterpret_cast<char const*>(u8"STEP")) {
+                    interpolationType = InterpolationType::STEP;
+                } else if (interpolation == reinterpret_cast<char const*>(u8"LINEAR")) {
+                    interpolationType = InterpolationType::LINEAR;
+                } else if (interpolation == reinterpret_cast<char const*>(u8"CUBICSPLINE")) {
+                    interpolationType = InterpolationType::CUBIC;
+                }
+
+                assert(interpolationType < InterpolationType::COUNT);
+
+                // TODO:: interolation func
+
+                using interpolator_func_t = void (*)(real alpha, real const* a, real const* b, real* out);
+                interpolator_func_t interpolator_func = nullptr;
+
+                f(reader_data_type_t<ReaderDataType::ANIMATION_SAMPLER>{},
+                  inputBufferIndex,
+                  inputOffset,
+                  inputStride,
+                  outputBufferIndex,
+                  outputOffset,
+                  outputStride,
+                  componentCount,
+                  valueCount,
+                  interpolationType);
+            }
         }
     }
 }

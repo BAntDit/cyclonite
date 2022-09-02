@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.10)
 
 project(cyclonite VERSION 0.0.2.0)
 
+option(ENABLE_SIMD_AVX2 "enable SIMD AVX2" OFF)
+option(ENABLE_SIMD_AVX "enable SIMD AVX" OFF)
+option(DISABLE_SIMD "force disable SIMD" OFF)
+
 set(PUBLIC_HEADERS
     src/hash.h
     src/platform.h
@@ -22,6 +26,7 @@ set(PUBLIC_HEADERS
     src/animations/sampler.h
     src/buffers/arena.h
     src/buffers/bufferView.h
+    src/resources/contiguousData.h
     src/resources/staging.h
     src/resources/geometry.h
     src/resources/resourceState.h
@@ -87,6 +92,7 @@ set(PRIVATE_HEADERS
     src/vulkan/internal/fillBufferCreationInfo.h
     src/vulkan/internal/fillImageCreationInfo.h
     src/vulkan/internal/imageHelpers.h
+    src/animations/internal/interpolation.h
 )
 
 set(SOURCES
@@ -201,10 +207,27 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         -Wextra
         -Wfatal-errors
     )
+
+    if (ENABLE_SIMD_AVX2)
+        target_compile_options(${PROJECT_NAME} PRIVATE -mavx2)
+        target_compile_definitions(${PROJECT_NAME} PUBLIC ENABLED_SIMD_AVX2)
+        message("-- enable SIMD AVX2")
+    elseif(ENABLE_SIMD_AVX)
+        target_compile_options(${PROJECT_NAME} PRIVATE -mavx)
+        target_compile_definitions(${PROJECT_NAME} PUBLIC ENABLED_SIMD_AVX)
+    endif()
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${PROJECT_NAME} PRIVATE
         /Wall
     )
+
+    if (ENABLE_SIMD_AVX2)
+        target_compile_options(${PROJECT_NAME} PRIVATE /arch:AVX2)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLED_SIMD_AVX2)
+    elseif(ENABLE_SIMD_AVX)
+        target_compile_options(${PROJECT_NAME} PRIVATE /arch:AVX)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLED_SIMD_AVX)
+    endif()
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
@@ -222,7 +245,15 @@ find_package(glm REQUIRED)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_ENABLE_EXPERIMENTAL)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_FORCE_RADIANS)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_FORCE_DEPTH_ZERO_TO_ONE)
+
 target_link_libraries(${PROJECT_NAME} glm)
+if (ENABLE_SIMD_AVX2)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC GLM_FORCE_AVX2)
+elseif(ENABLE_SIMD_AVX)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC GLM_FORCE_AVX)
+elseif(DISABLE_SIMD)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC GLM_FORCE_PURE)
+endif()
 
 target_link_libraries(${PROJECT_NAME} SDL2)
 

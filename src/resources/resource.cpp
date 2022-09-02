@@ -32,6 +32,7 @@ Resource::ResourceTag::ResourceTag() noexcept
 
 Resource::Resource() noexcept
   : id_{}
+  , resourceManager_{ nullptr }
   , dynamicOffset_{ std::numeric_limits<size_t>::max() }
   , dynamicSize_{ 0 }
   , state_{ ResourceState::UNLOADED }
@@ -39,6 +40,7 @@ Resource::Resource() noexcept
 
 Resource::Resource(size_t dynamicSize) noexcept
   : id_{}
+  , resourceManager_{ nullptr }
   , dynamicOffset_{ std::numeric_limits<size_t>::max() }
   , dynamicSize_{ dynamicSize }
   , state_{ ResourceState::UNLOADED }
@@ -79,4 +81,10 @@ void Resource::load(std::istream& stream)
 }
 
 void Resource::handleDynamicDataAllocation() {}
+
+auto Resource::resourceManager() const -> ResourceManager&
+{
+    assert(resourceManager_ != nullptr);
+    return *resourceManager_;
+}
 }

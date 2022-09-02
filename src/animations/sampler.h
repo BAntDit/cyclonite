@@ -16,7 +16,7 @@ class ResourceManager;
 namespace cyclonite::animations {
 class Sampler
 {
-    using interpolator_func_t = void (*)(real alpha, real const* a, real const* b, real* out);
+    using interpolator_func_t = void (*)(real alpha, real delta, uint8_t count, real const* src, real* dst);
 
     template<typename T>
     using make_func_t = T (*)(real const*);
@@ -52,6 +52,8 @@ private:
     std::array<real, 64> rawValue_;
 
     InterpolationType interpolationType_;
+
+    uint8_t componentCount_;
 };
 
 template<typename ValueType>
