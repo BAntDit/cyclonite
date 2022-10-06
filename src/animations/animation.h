@@ -34,6 +34,14 @@ private:
     uint16_t itemsPerTask_;
 };
 
+struct AnimationChannel
+{
+    using target_updater_t = void (*)(void* target, Sampler const& sampler);
+
+    size_t samplerIndex;
+    target_updater_t updater;
+};
+
 class Animation : public resources::Resource
 {
     enum class AnimationBits
@@ -94,6 +102,7 @@ private:
     multithreading::TaskManager* taskManager_;
     resources::Resource::Id interpolationTaskArrayId_;
     resources::Resource::Id samplerArrayId_;
+    // TODO:: add channels
     real playtime_;
     real duration_;
     real timescale_;

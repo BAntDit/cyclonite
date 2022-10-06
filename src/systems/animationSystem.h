@@ -9,6 +9,7 @@
 #include "updateStages.h"
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
+#include <animations/animation.h>
 
 namespace cyclonite::systems {
 using namespace easy_mp;
@@ -53,6 +54,12 @@ template<typename SystemManager, typename EntityManager, size_t STAGE, typename.
 void AnimationSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
     if constexpr (STAGE == value_cast(UpdateStage::EARLY_UPDATE)) {
+        auto& animations = entityManager.template getStorage<animations::Animation>();
+
+        for (auto&& animation : animations)
+        {
+        }
+        // TDOO:: begin update
     }
 
     (void)systemManager;
