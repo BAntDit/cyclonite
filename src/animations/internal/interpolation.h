@@ -90,6 +90,16 @@ inline void step_mat4_interpolation(real alpha, real delta, uint8_t count, real 
     scalar_interpolation_N<InterpolationType::STEP>(alpha, delta, count, src, dst, std::make_index_sequence<16>{});
 }
 
+inline void step_mat2x3_interpolation(real alpha, real delta, uint8_t count, real const* src, real* dst)
+{
+    scalar_interpolation_N<InterpolationType::STEP>(alpha, delta, count, src, dst, std::make_index_sequence<6>{});
+}
+
+inline void step_mat3x2_interpolation(real alpha, real delta, uint8_t count, real const* src, real* dst)
+{
+    scalar_interpolation_N<InterpolationType::STEP>(alpha, delta, count, src, dst, std::make_index_sequence<6>{});
+}
+
 inline void step_mat4x3_interpolation(real alpha, real delta, uint8_t count, real const* src, real* dst)
 {
     scalar_interpolation_N<InterpolationType::STEP>(alpha, delta, count, src, dst, std::make_index_sequence<12>{});
@@ -112,7 +122,7 @@ inline void step_vec3_interpolation(real alpha, real delta, uint8_t count, real 
 
 inline void step_vec4_interpolation(real alpha, real delta, uint8_t count, real const* src, real* dst)
 {
-    scalar_interpolation_N<InterpolationType::STEP>(alpha, delta, count, src, dst,  std::make_index_sequence<4>{});
+    scalar_interpolation_N<InterpolationType::STEP>(alpha, delta, count, src, dst, std::make_index_sequence<4>{});
 }
 
 inline void step_quat_interpolation(real alpha, real delta, uint8_t count, real const* src, real* dst)
@@ -150,6 +160,16 @@ inline void linear_mat4_interpolation(real alpha, real delta, uint8_t count, rea
     scalar_interpolation_N<InterpolationType::LINEAR>(alpha, delta, count, src, dst, std::make_index_sequence<16>{});
 }
 
+inline void linear_mat3x2_interpolation(real alpha, real delta, uint8_t count, real const* src, real* dst)
+{
+    scalar_interpolation_N<InterpolationType::LINEAR>(alpha, delta, count, src, dst, std::make_index_sequence<6>{});
+}
+
+inline void linear_mat2x3_interpolation(real alpha, real delta, uint8_t count, real const* src, real* dst)
+{
+    scalar_interpolation_N<InterpolationType::LINEAR>(alpha, delta, count, src, dst, std::make_index_sequence<6>{});
+}
+
 inline void linear_mat3x4_interpolation(real alpha, real delta, uint8_t count, real const* src, real* dst)
 {
     scalar_interpolation_N<InterpolationType::LINEAR>(alpha, delta, count, src, dst, std::make_index_sequence<12>{});
@@ -175,29 +195,173 @@ inline void cubic_spline_vec4_interpolation(real alpha, real delta, uint8_t coun
     scalar_interpolation_N<InterpolationType::CUBIC>(alpha, delta, count, src, dst, std::make_index_sequence<4>{});
 }
 
-inline void cubic_spline_mat2_interpolation(real alpha, real delta, uint8_t count, real const* src, real* dst)
+inline auto get_step_interpolator(InterpolationElementType interpolationElementType)
 {
-    scalar_interpolation_N<InterpolationType::CUBIC>(alpha, delta, count, src, dst, std::make_index_sequence<4>{});
+    using interpolator_func_t = void (*)(real alpha, real delta, uint8_t count, real const* src, real* dst);
+    interpolator_func_t interpolator_func = nullptr;
+
+    switch (interpolationElementType) {
+        case InterpolationElementType::ARRAY:
+            throw std::runtime_error("not implemented yet");
+            break;
+        case InterpolationElementType::SCALAR:
+            interpolator_func = step_scalar_interpolation;
+            break;
+        case InterpolationElementType::VEC2:
+            interpolator_func = step_vec2_interpolation;
+            break;
+        case InterpolationElementType::VEC3:
+            interpolator_func = step_vec3_interpolation;
+            break;
+        case InterpolationElementType::VEC4:
+            interpolator_func = step_vec4_interpolation;
+            break;
+        case InterpolationElementType::MAT2:
+            interpolator_func = step_mat2_interpolation;
+            break;
+        case InterpolationElementType::MAT3:
+            interpolator_func = step_mat3_interpolation;
+            break;
+        case InterpolationElementType::MAT4:
+            interpolator_func = step_mat4_interpolation;
+            break;
+        case InterpolationElementType::MAT2x3:
+            interpolator_func = step_mat2x3_interpolation;
+            break;
+        case InterpolationElementType::MAT3x2:
+            interpolator_func = step_mat3x2_interpolation;
+            break;
+        case InterpolationElementType::MAT3x4:
+            interpolator_func = step_mat3x4_interpolation;
+            break;
+        case InterpolationElementType::MAT4x3:
+            interpolator_func = step_mat4x3_interpolation;
+            break;
+        case InterpolationElementType::QUAT:
+            interpolator_func = step_quat_interpolation;
+            break;
+        default:
+            assert(false);
+    }
+
+    return interpolator_func;
 }
 
-inline void cubic_spline_mat3_interpolation(real alpha, real delta, uint8_t count, real const* src, real* dst)
+inline auto get_linear_interpolator(InterpolationElementType interpolationElementType)
 {
-    scalar_interpolation_N<InterpolationType::CUBIC>(alpha, delta, count, src, dst, std::make_index_sequence<9>{});
+    using interpolator_func_t = void (*)(real alpha, real delta, uint8_t count, real const* src, real* dst);
+    interpolator_func_t interpolator_func = nullptr;
+
+    switch (interpolationElementType) {
+        case InterpolationElementType::ARRAY:
+            throw std::runtime_error("not implemented yet");
+            break;
+        case InterpolationElementType::SCALAR:
+            interpolator_func = linear_scalar_interpolation;
+            break;
+        case InterpolationElementType::VEC2:
+            interpolator_func = linear_vec2_interpolation;
+            break;
+        case InterpolationElementType::VEC3:
+            interpolator_func = linear_vec3_interpolation;
+            break;
+        case InterpolationElementType::VEC4:
+            interpolator_func = linear_vec4_interpolation;
+            break;
+        case InterpolationElementType::MAT2:
+            interpolator_func = linear_mat2_interpolation;
+            break;
+        case InterpolationElementType::MAT3:
+            interpolator_func = linear_mat3_interpolation;
+            break;
+        case InterpolationElementType::MAT4:
+            interpolator_func = linear_mat4_interpolation;
+            break;
+        case InterpolationElementType::MAT2x3:
+            interpolator_func = linear_mat2x3_interpolation;
+            break;
+        case InterpolationElementType::MAT3x2:
+            interpolator_func = linear_mat3x2_interpolation;
+            break;
+        case InterpolationElementType::MAT3x4:
+            interpolator_func = linear_mat3x4_interpolation;
+            break;
+        case InterpolationElementType::MAT4x3:
+            interpolator_func = linear_mat4x3_interpolation;
+            break;
+        case InterpolationElementType::QUAT:
+            // must be slerp instead
+        default:
+            assert(false);
+    }
+
+    return interpolator_func;
 }
 
-inline void cubic_spline_mat4_interpolation(real alpha, real delta, uint8_t count, real const* src, real* dst)
+inline auto get_cubic_interpolator(InterpolationElementType interpolationElementType)
 {
-    scalar_interpolation_N<InterpolationType::CUBIC>(alpha, delta, count, src, dst, std::make_index_sequence<16>{});
+    using interpolator_func_t = void (*)(real alpha, real delta, uint8_t count, real const* src, real* dst);
+    interpolator_func_t interpolator_func = nullptr;
+
+    switch (interpolationElementType) {
+        case InterpolationElementType::ARRAY:
+            throw std::runtime_error("not implemented yet");
+            break;
+        case InterpolationElementType::SCALAR:
+            interpolator_func = cubic_spline_scalar_interpolation;
+            break;
+        case InterpolationElementType::VEC2:
+            interpolator_func = cubic_spline_vec2_interpolation;
+            break;
+        case InterpolationElementType::VEC3:
+            interpolator_func = cubic_spline_vec3_interpolation;
+            break;
+        case InterpolationElementType::VEC4:
+            interpolator_func = cubic_spline_vec4_interpolation;
+            break;
+        case InterpolationElementType::MAT2:
+        case InterpolationElementType::MAT3:
+        case InterpolationElementType::MAT4:
+        case InterpolationElementType::MAT2x3:
+        case InterpolationElementType::MAT3x2:
+        case InterpolationElementType::MAT3x4:
+        case InterpolationElementType::MAT4x3:
+        case InterpolationElementType::QUAT:
+            // cubic spline interpolation has no sense for matrices
+        default:
+            assert(false);
+    }
+
+    return interpolator_func;
 }
 
-inline void cubic_spline_mat3x4_interpolation(real alpha, real delta, uint8_t count, real const* src, real* dst)
+inline auto get_interpolator(InterpolationType interpolationType, InterpolationElementType interpolationElementType)
 {
-    scalar_interpolation_N<InterpolationType::CUBIC>(alpha, delta, count, src, dst, std::make_index_sequence<12>{});
-}
+    using interpolator_func_t = void (*)(real alpha, real delta, uint8_t count, real const* src, real* dst);
+    interpolator_func_t interpolator_func = nullptr;
 
-inline void cubic_spline_mat4x3_interpolation(real alpha, real delta, uint8_t count, real const* src, real* dst)
-{
-    scalar_interpolation_N<InterpolationType::CUBIC>(alpha, delta, count, src, dst, std::make_index_sequence<12>{});
+    switch (interpolationType) {
+        case InterpolationType::STEP:
+            interpolator_func = get_step_interpolator(interpolationElementType);
+            break;
+        case InterpolationType::LINEAR:
+            interpolator_func = get_linear_interpolator(interpolationElementType);
+            break;
+        case InterpolationType::SPHERICAL:
+            assert(interpolationElementType == InterpolationElementType::QUAT);
+            interpolator_func = slerp_interpolation;
+            break;
+        case InterpolationType::CUBIC:
+            interpolator_func = get_cubic_interpolator(interpolationElementType);
+            break;
+        case InterpolationType::CATMULL_ROM:
+            throw std::runtime_error("not implemented yet");
+            break;
+        default:
+            assert(false);
+    }
+
+    return interpolator_func;
 }
 }
 

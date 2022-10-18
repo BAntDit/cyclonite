@@ -3,6 +3,7 @@
 //
 
 #include "animation.h"
+#include "animations/internal/interpolation.h"
 #include "multithreading/taskManager.h"
 #include "resources/resourceManager.h"
 
@@ -10,13 +11,14 @@ namespace cyclonite::animations {
 resources::Resource::ResourceTag Animation::tag{};
 
 Animation::Animation(multithreading::TaskManager& taskManager,
-                     uint32_t samplerCount,
+                     uint32_t sampleCount,
                      real duration,
                      bool autoplay) noexcept
-  : resources::Resource{ samplerCount * sizeof(Sampler) }
+  : resources::Resource{}
   , taskManager_{ &taskManager }
   , interpolationTaskArrayId_{}
   , samplerArrayId_{}
+  , sampleCount_{ sampleCount }
   , playtime_{ 0.f }
   , duration_{ duration }
   , timescale_{ 1.f }
@@ -28,19 +30,15 @@ Animation::Animation(multithreading::TaskManager& taskManager,
         flags_.set(value_cast(AnimationBits::ACTIVE_BIT), true);
 }
 
-Animation::Animation(multithreading::TaskManager& taskManager, uint32_t samplerCount, bool autoplay) noexcept
-  : Animation{ taskManager, samplerCount, 0.f, autoplay }
+Animation::Animation(multithreading::TaskManager& taskManager, uint32_t sampleCount, bool autoplay) noexcept
+  : Animation{ taskManager, sampleCount, 0.f, autoplay }
 {}
 
-void Animation::handleDynamicDataAllocation()
+void Animation::handlePostAllocation()
 {
-    assert(0 == (dynamicDataSize() % sizeof(Sampler)));
+    samplerArrayId_ = resourceManager().template create<SamplerArray>(sampleCount_);
 
-    auto samplerCount = dynamicDataSize() / sizeof(Sampler);
-
-    samplerArrayId_ = resourceManager().template create<SamplerArray>(samplerCount);
-
-    auto [taskCount, itemsPerTask] = taskManager_->getTaskCount(samplerCount);
+    auto [taskCount, itemsPerTask] = taskManager_->getTaskCount(sampleCount_);
 
     assert(taskCount < std::numeric_limits<uint16_t>::max());
     assert(itemsPerTask < std::numeric_limits<uint16_t>::max());
@@ -135,6 +133,29 @@ auto Animation::_samplers() const -> SamplerArray const&
 auto Animation::_samplers() -> SamplerArray&
 {
     return resourceManager().get(samplerArrayId_).template as<SamplerArray>();
+}
+
+void Animation::setupSampler(size_t samplerIndex,
+                             resources::Resource::Id inBufferId,
+                             resources::Resource::Id outBufferId,
+                             size_t inOffset,
+                             size_t inStride,
+                             size_t outOffset,
+                             size_t outStride,
+                             size_t elementCount,
+                             size_t componentCount,
+                             InterpolationType interpolationType,
+                             InterpolationElementType interpolationElementType)
+{
+    auto& samplerArray = resourceManager().get(samplerArrayId_).template as<SamplerArray>();
+    auto& sampler = samplerArray[samplerIndex];
+
+    using interpolator_func_t = void (*)(real alpha, real delta, uint8_t count, real const* src, real* dst);
+    interpolator_func_t interpolator_func = internal::get_interpolator(interpolationType, interpolationElementType);
+    assert(interpolator_func);
+
+    sampler = Sampler{ resourceManager(), interpolator_func, inBufferId,   outBufferId,    inOffset,         inStride,
+                       outOffset,         outStride,         elementCount, componentCount, interpolationType };
 }
 
 AnimationInterpolationTaskArray::AnimationInterpolationTaskArray(uint16_t taskCount, uint16_t itemsPerTask)

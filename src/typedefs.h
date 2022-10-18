@@ -25,6 +25,26 @@ enum class InterpolationType : uint8_t
     COUNT = MAX_VALUE + 1
 };
 
+enum class InterpolationElementType
+{
+    ARRAY = 0,
+    SCALAR = 1,
+    VEC2 = 2,
+    VEC3 = 3,
+    VEC4 = 4,
+    MAT2 = 5,
+    MAT3 = 6,
+    MAT4 = 7,
+    MAT3x2 = 8,
+    MAT2x3 = 9,
+    MAT3x4 = 10,
+    MAT4x3 = 11,
+    QUAT = 12,
+    MIN_VALUE = ARRAY,
+    MAX_VALUE = QUAT,
+    COUNT = MAX_VALUE + 1
+};
+
 using real = boost::float32_t;
 
 using uint = std::uint32_t;

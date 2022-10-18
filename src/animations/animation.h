@@ -55,10 +55,10 @@ class Animation : public resources::Resource
     };
 
 public:
-    Animation(multithreading::TaskManager& taskManager, uint32_t samplerCount, bool autoplay = false) noexcept;
+    Animation(multithreading::TaskManager& taskManager, uint32_t sampleCount, bool autoplay = false) noexcept;
 
     Animation(multithreading::TaskManager& taskManager,
-              uint32_t samplerCount,
+              uint32_t sampleCount,
               real duration,
               bool autoplay = false) noexcept;
 
@@ -89,8 +89,20 @@ public:
     template<typename T>
     auto sample(size_t i, T&& t) const -> T;
 
+    void setupSampler(size_t samplerIndex,
+                      resources::Resource::Id inBufferId,
+                      resources::Resource::Id outBufferId,
+                      size_t inOffset,
+                      size_t inStride,
+                      size_t outOffset,
+                      size_t outStride,
+                      size_t elementCount,
+                      size_t componentCount,
+                      InterpolationType interpolationType,
+                      InterpolationElementType interpolationElementType);
+
 protected:
-    void handleDynamicDataAllocation() override;
+    void handlePostAllocation() override;
 
 private:
     void _update();
@@ -102,7 +114,8 @@ private:
     multithreading::TaskManager* taskManager_;
     resources::Resource::Id interpolationTaskArrayId_;
     resources::Resource::Id samplerArrayId_;
-    // TODO:: add channels
+
+    uint32_t sampleCount_;
     real playtime_;
     real duration_;
     real timescale_;

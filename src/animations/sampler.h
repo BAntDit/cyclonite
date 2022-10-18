@@ -49,7 +49,7 @@ private:
     buffers::BufferView<real> input_;
     buffers::BufferView<real> output_;
 
-    std::array<real, 64> rawValue_;
+    std::array<real, 16> rawValue_;
 
     InterpolationType interpolationType_;
 
