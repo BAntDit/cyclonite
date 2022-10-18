@@ -8,7 +8,6 @@
 #include "resource.h"
 
 namespace cyclonite::resources {
-// TODO:: use for result and animation futures and samplers
 template<typename DataType>
 class ContiguousData : public resources::Resource
 {
@@ -52,11 +51,11 @@ public:
 
         auto operator*() const -> DataType const&;
 
-        auto operator->() const -> pointer;
+        auto operator-> () const -> pointer;
 
         [[nodiscard]] auto ptr() const -> pointer;
 
-        auto operator[](int index) const -> reference;
+        auto operator[](size_t index) const -> reference;
 
     private:
         DataType* data_;
@@ -73,7 +72,7 @@ public:
 
     [[nodiscard]] auto data() const -> DataType* { return data_; }
 
-    [[nodiscard]] auto operator[](int index) const -> DataType&;
+    [[nodiscard]] auto operator[](size_t index) const -> DataType&;
 
     [[nodiscard]] auto begin() const -> Iterator;
 
@@ -116,11 +115,11 @@ ContiguousData<DataType>::Iterator::Iterator(DataType* data, size_t count, diffe
   , count_{ count }
   , index_{ index }
 {
-    assert(index_ <= count_);
+    assert(index_ <= static_cast<difference_type>(count_));
 }
 
 template<typename DataType>
-auto ContiguousData<DataType>::operator[](int index) const -> DataType&
+auto ContiguousData<DataType>::operator[](size_t index) const -> DataType&
 {
     assert(index < count_);
     return *(data_ + index);
@@ -220,7 +219,7 @@ auto ContiguousData<DataType>::Iterator::operator*() const -> DataType const&
 }
 
 template<typename DataType>
-auto ContiguousData<DataType>::Iterator::operator->() const -> DataType*
+auto ContiguousData<DataType>::Iterator::operator-> () const -> DataType*
 {
     return data_ + index_;
 }
@@ -232,7 +231,7 @@ auto ContiguousData<DataType>::Iterator::ptr() const -> DataType*
 }
 
 template<typename DataType>
-auto ContiguousData<DataType>::Iterator::operator[](int index) const -> reference
+auto ContiguousData<DataType>::Iterator::operator[](size_t index) const -> reference
 {
     return *(data_ + index);
 }
