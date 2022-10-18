@@ -284,13 +284,50 @@ void Model::init(cyclonite::Root& root,
         std::unordered_map<size_t, resources::Resource::Id> indexToAnimationId{};
 
         if constexpr (gltf::reader_data_test<gltf::ReaderDataType::ANIMATION, decltype(dataType)>()) {
-            auto [sampleCount, duration, animationIndex] = t;
-            auto animationId = root.resourceManager().template create(root.taskManager(), sampleCount, duration);
+            auto&& [sampleCount, duration, animationIndex] = t;
+            auto animationId = root.resourceManager().template create<cyclonite::animations::Animation>(
+              root.taskManager(), sampleCount, duration);
 
-            indexToAnimationId.insert(animationIndex, animationId);
+            indexToAnimationId.insert(std::pair{ animationIndex, animationId });
         }
 
         // samplers
+        if constexpr (gltf::reader_data_test<gltf::ReaderDataType::ANIMATION_SAMPLER, decltype(dataType)>()) {
+            auto [animationIndex,
+                  samplerIndex,
+                  inputBufferIndex,
+                  inputOffset,
+                  inputStride,
+                  outputBufferIndex,
+                  outputOffset,
+                  outputStride,
+                  componentCount,
+                  elementCount,
+                  interpolationType,
+                  interpolationElementType] = t;
+
+            assert(gltfBufferIndexToResourceId.count(inputBufferIndex));
+            auto inputBufferId = gltfBufferIndexToResourceId.at(inputBufferIndex);
+
+            assert(gltfBufferIndexToResourceId.count(outputBufferIndex));
+            auto outputBufferId = gltfBufferIndexToResourceId.at(outputBufferIndex);
+
+            assert(indexToAnimationId.contains(animationIndex));
+            auto animationId = indexToAnimationId.at(animationIndex);
+            auto& animation = root.resourceManager().get(animationId).template as<cyclonite::animations::Animation>();
+
+            animation.setupSampler(samplerIndex,
+                                   inputBufferId,
+                                   outputBufferId,
+                                   inputOffset,
+                                   inputStride,
+                                   outputOffset,
+                                   outputStride,
+                                   elementCount,
+                                   componentCount,
+                                   interpolationType,
+                                   interpolationElementType);
+        }
     });
 
     {

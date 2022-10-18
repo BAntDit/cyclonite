@@ -14,6 +14,7 @@
 #include <nlohmann/json.hpp>
 #include <regex>
 #include <unordered_map>
+#include <unordered_set>
 
 // dummy gltf reader implementation
 namespace examples::viewer::gltf {
@@ -548,8 +549,25 @@ void Reader::read(std::istream& stream, F&& f)
         for (auto animationIndex = size_t{ 0 }; animationIndex < animationCount; animationIndex++) {
             auto const& animation = animations.at(animationIndex);
             auto const& samplers = _getJsonProperty(animation, reinterpret_cast<char const*>(u8"samplers"));
+            auto const& channels = _getJsonProperty(animation, reinterpret_cast<char const*>(u8"channels"));
             auto sampleCount = samplers.size();
             auto duration = real{ 0.f };
+
+            auto rotationSamplerIndices = std::unordered_set<size_t>{};
+            auto channelCount = channels.size();
+            for (auto channelIndex = size_t{ 0 }; channelIndex < channelCount; channelIndex++) {
+                auto const& channel = channels.at(channelIndex);
+                auto idxSampler =
+                  _getOptional(channel, reinterpret_cast<char const*>(u8"sampler"), std::numeric_limits<size_t>::max());
+                assert(idxSampler != std::numeric_limits<size_t>::max());
+
+                auto const& target = _getJsonProperty(channel, reinterpret_cast<char const*>(u8"target"));
+                auto targetPath = _getOptional<std::string>(target, reinterpret_cast<char const*>(u8"path"), "");
+
+                if (targetPath == "rotation") {
+                    rotationSamplerIndices.insert(idxSampler);
+                }
+            }
 
             for (auto samplerIndex = size_t{ 0 }; samplerIndex < sampleCount; samplerIndex++) {
                 auto const& sample = samplers.at(samplerIndex);
@@ -580,7 +598,7 @@ void Reader::read(std::istream& stream, F&& f)
                 auto inputOffset = inputBufferView.byteOffset + inputAccessor.byteOffset;
 
                 assert(!inputAccessor.normalized);
-                assert(inputAccessor.componentType == easy_mp::value_cast(ComponentType::FLOAT));
+                assert(static_cast<int32_t>(inputAccessor.componentType) == easy_mp::value_cast(ComponentType::FLOAT));
                 assert(inputAccessor.type == "SCALAR");
 
                 auto inputStride =
@@ -598,19 +616,27 @@ void Reader::read(std::istream& stream, F&& f)
                 auto valueCount = outputAccessor.count;
                 auto componentCount = size_t{ 0 };
 
-                if (outputAccessor.type == "SCALAR")
+                auto interpolationElementType = InterpolationElementType::COUNT;
+                if (outputAccessor.type == "SCALAR") {
                     componentCount = 1;
-                else if (outputAccessor.type == "VEC2")
+                    interpolationElementType = InterpolationElementType::SCALAR;
+                } else if (outputAccessor.type == "VEC2") {
                     componentCount = 2;
-                else if (outputAccessor.type == "VEC3")
+                    interpolationElementType = InterpolationElementType::VEC2;
+                } else if (outputAccessor.type == "VEC3") {
                     componentCount = 3;
-                else if (outputAccessor.type == "VEC4" || outputAccessor.type == "MAT2")
+                    interpolationElementType = InterpolationElementType::VEC3;
+                } else if (outputAccessor.type == "VEC4" || outputAccessor.type == "MAT2") {
                     componentCount = 4;
-                else if (outputAccessor.type == "MAT3")
+                    interpolationElementType =
+                      (outputAccessor.type == "VEC4") ? InterpolationElementType::VEC4 : InterpolationElementType::MAT2;
+                } else if (outputAccessor.type == "MAT3") {
                     componentCount = 9;
-                else if (outputAccessor.type == "MAT4")
+                    interpolationElementType = InterpolationElementType::MAT3;
+                } else if (outputAccessor.type == "MAT4") {
                     componentCount = 16;
-
+                    interpolationElementType = InterpolationElementType::MAT4;
+                }
                 assert(componentCount > 0);
 
                 auto outputStride = inputBufferView.byteStride > 0 ? inputBufferView.byteStride
@@ -630,12 +656,15 @@ void Reader::read(std::istream& stream, F&& f)
 
                 assert(interpolationType < InterpolationType::COUNT);
 
-                // TODO:: interolation func
-
-                using interpolator_func_t = void (*)(real alpha, real const* a, real const* b, real* out);
-                interpolator_func_t interpolator_func = nullptr;
+                if (interpolationElementType == InterpolationElementType::VEC4 &&
+                    interpolationType == InterpolationType::LINEAR && rotationSamplerIndices.contains(samplerIndex)) {
+                    interpolationType = InterpolationType::SPHERICAL;
+                    interpolationElementType = InterpolationElementType::QUAT;
+                }
 
                 f(reader_data_type_t<ReaderDataType::ANIMATION_SAMPLER>{},
+                  animationIndex,
+                  samplerIndex,
                   inputBufferIndex,
                   inputOffset,
                   inputStride,
@@ -644,7 +673,8 @@ void Reader::read(std::istream& stream, F&& f)
                   outputStride,
                   componentCount,
                   valueCount,
-                  interpolationType);
+                  interpolationType,
+                  interpolationElementType);
             }
         }
     }
