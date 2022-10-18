@@ -82,6 +82,8 @@ void Resource::load(std::istream& stream)
 
 void Resource::handleDynamicDataAllocation() {}
 
+void Resource::handlePostAllocation() {}
+
 auto Resource::resourceManager() const -> ResourceManager&
 {
     assert(resourceManager_ != nullptr);

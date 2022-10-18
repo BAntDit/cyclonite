@@ -91,6 +91,8 @@ public:
 protected:
     virtual void handleDynamicDataAllocation();
 
+    virtual void handlePostAllocation();
+
 protected:
     struct ResourceTag
     {
