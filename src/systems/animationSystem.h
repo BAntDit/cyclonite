@@ -7,24 +7,12 @@
 
 #include "multithreading/taskManager.h"
 #include "updateStages.h"
+#include <animations/animation.h>
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
-#include <animations/animation.h>
 
 namespace cyclonite::systems {
 using namespace easy_mp;
-
-enum class InterpolationType
-{
-    STEP = 0,
-    LINEAR = 1,
-    SPHERICAL = 2,
-    CUBIC = 3,
-    CATMULL_ROM = 4,
-    MIN_VALUE = STEP,
-    MAX_VALUE = CATMULL_ROM,
-    COUNT = MAX_VALUE
-};
 
 class AnimationSystem : public enttx::BaseSystem<AnimationSystem>
 {
@@ -56,8 +44,7 @@ void AnimationSystem::update(SystemManager& systemManager, EntityManager& entity
     if constexpr (STAGE == value_cast(UpdateStage::EARLY_UPDATE)) {
         auto& animations = entityManager.template getStorage<animations::Animation>();
 
-        for (auto&& animation : animations)
-        {
+        for (auto&& animation : animations) {
         }
         // TDOO:: begin update
     }
