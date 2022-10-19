@@ -86,6 +86,69 @@ public:
         return get(id).as<R>();
     }
 
+    template<ResourceTypeConcept R>
+    [[nodiscard]] auto count() const -> size_t;
+
+    template<bool isConst, ResourceTypeConcept R>
+    class ResourceList
+    {
+    private:
+        using resource_manager_t = typename std::conditional_t<isConst, ResourceManager const&, ResourceManager&>;
+
+    public:
+        class Iterator
+        {
+        public:
+            using iterator_category = std::input_iterator_tag;
+            using value_type = R;
+            using difference_type = uint32_t;
+            using pointer = value_type*;
+            using reference = value_type&;
+
+            auto operator++() -> Iterator&;
+
+            auto operator==(Iterator const& rhs) const -> bool { return cursor_ == rhs.cursor_; }
+            auto operator!=(Iterator const& rhs) const -> bool { return cursor_ != rhs.cursor_; }
+
+            [[nodiscard]] auto operator*() const -> std::conditional_t<isConst, value_type const&, value_type&>;
+
+        private:
+            friend class ResourceList<isConst, R>;
+
+            Iterator(resource_manager_t resourceManager, size_t cursor)
+              : resourceManager_{ resourceManager }
+              , cursor_{ cursor }
+              , count_{ resourceManager.template count<R>() }
+            {}
+
+            void next();
+
+            resource_manager_t resourceManager_;
+
+            size_t cursor_;
+            size_t count_;
+        };
+
+        [[nodiscard]] auto begin() const -> Iterator;
+
+        [[nodiscard]] auto end() const -> Iterator;
+
+    private:
+        friend class ResourceManager;
+
+        explicit ResourceList(resource_manager_t resourceManager)
+          : resourceManager_{ resourceManager }
+        {}
+
+        resource_manager_t resourceManager_;
+    };
+
+    template<ResourceTypeConcept R>
+    auto resourceList() -> ResourceList<false, R>;
+
+    template<ResourceTypeConcept R>
+    [[nodiscard]] auto resourceList() const -> ResourceList<true, R>;
+
 private:
     template<typename R, size_t N, size_t M>
     void registerResource(resource_reg_info_t<R, N, M>);
@@ -222,6 +285,79 @@ auto ResourceManager::create(Args&&... args) -> Resource::Id
     resource->handlePostAllocation();
 
     return id;
+}
+
+template<ResourceTypeConcept R>
+auto ResourceManager::count() const -> size_t
+{
+    auto tag = R::type_tag_cont();
+
+    auto& storage = storages_[tag.staticDataIndex];
+    auto& items = freeItems_[tag.staticDataIndex];
+
+    assert((storage.size() % sizeof(R)) == 0);
+    assert(items.size() > 1);
+
+    return storage.size() / sizeof(R) - (items.size() - 1);
+}
+
+template<bool isConst, ResourceTypeConcept R>
+void ResourceManager::ResourceList<isConst, R>::Iterator::next()
+{
+    auto tag = R::type_tag_cont();
+    auto& resources = resourceManager_.resources_;
+
+    while (cursor_ < count_ && resources[cursor_].static_index != tag.staticDataIndex) {
+        cursor_++;
+    }
+}
+
+template<bool isConst, ResourceTypeConcept R>
+auto ResourceManager::ResourceList<isConst, R>::Iterator::operator++() -> Iterator&
+{
+    cursor_++;
+    next();
+    return *this;
+}
+
+template<bool isConst, ResourceTypeConcept R>
+auto ResourceManager::ResourceList<isConst, R>::Iterator::operator*() const
+  -> std::conditional_t<isConst, value_type const&, value_type&>
+{
+    assert(cursor_ < count_);
+
+    auto& resource = resourceManager_.resources_[cursor_];
+    auto id = Resource::Id{ cursor_, resource.version };
+
+    return resourceManager_.template getAs<R>(id);
+}
+
+template<bool isConst, ResourceTypeConcept R>
+auto ResourceManager::ResourceList<isConst, R>::begin() const -> Iterator
+{
+    auto iterator = Iterator{ resourceManager_, 0 };
+
+    iterator.next();
+
+    return iterator;
+}
+
+template<bool isConst, ResourceTypeConcept R>
+auto ResourceManager::ResourceList<isConst, R>::end() const -> Iterator
+{
+    return Iterator{ resourceManager_, resourceManager_.template count<R>() };
+}
+
+template<ResourceTypeConcept R>
+auto ResourceManager::resourceList() -> ResourceManager::ResourceList<false, R>
+{
+    return ResourceList<false, R>{ *this };
+}
+
+template<ResourceTypeConcept R>
+auto ResourceManager::resourceList() const -> ResourceManager::ResourceList<true, R>
+{
+    return ResourceList<true, R>{ *this };
 }
 }
 
