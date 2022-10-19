@@ -29,13 +29,20 @@ TaskManager::~TaskManager()
 
 auto TaskManager::getTaskCount(size_t countItems) const -> std::pair<size_t, size_t>
 {
-    auto itemsPerTask = countItems / pool_.size();
+    assert(countItems > 0);
 
-    assert(itemsPerTask > 0);
+    auto itemsPerTask = size_t{ 0 };
+    auto taskCount = size_t{ 0 };
 
-    auto tail = countItems % pool_.size();
-    auto count = tail > 0 ? countItems / itemsPerTask + 1 : countItems / itemsPerTask;
+    if (countItems < pool_.size()) {
+        itemsPerTask = countItems;
+        taskCount = 1;
+    } else {
+        auto tail = countItems % pool_.size();
+        itemsPerTask = countItems / pool_.size();
+        taskCount = (tail > 0) ? countItems / itemsPerTask + 1 : countItems / itemsPerTask;
+    }
 
-    return { count, itemsPerTask };
+    return { taskCount, itemsPerTask };
 }
 }
