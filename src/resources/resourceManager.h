@@ -290,7 +290,7 @@ auto ResourceManager::create(Args&&... args) -> Resource::Id
 template<ResourceTypeConcept R>
 auto ResourceManager::count() const -> size_t
 {
-    auto tag = R::type_tag_cont();
+    auto tag = R::type_tag_const();
 
     auto& storage = storages_[tag.staticDataIndex];
     auto& items = freeItems_[tag.staticDataIndex];
@@ -304,7 +304,7 @@ auto ResourceManager::count() const -> size_t
 template<bool isConst, ResourceTypeConcept R>
 void ResourceManager::ResourceList<isConst, R>::Iterator::next()
 {
-    auto tag = R::type_tag_cont();
+    auto tag = R::type_tag_const();
     auto& resources = resourceManager_.resources_;
 
     while (cursor_ < count_ && resources[cursor_].static_index != tag.staticDataIndex) {
@@ -327,7 +327,7 @@ auto ResourceManager::ResourceList<isConst, R>::Iterator::operator*() const
     assert(cursor_ < count_);
 
     auto& resource = resourceManager_.resources_[cursor_];
-    auto id = Resource::Id{ cursor_, resource.version };
+    auto id = Resource::Id{ static_cast<uint32_t>(cursor_), resource.version };
 
     return resourceManager_.template getAs<R>(id);
 }

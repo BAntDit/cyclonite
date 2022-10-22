@@ -161,9 +161,22 @@ enum class ReaderDataType : uint8_t
     GEOMETRY,
     MESH,
     ANIMATION,
+    ANIMATOR,
     ANIMATION_SAMPLER,
+    ANIMATION_CHANNEL,
     MIN_VALUE = NODE_COUNT,
-    MAX_VALUE = MESH,
+    MAX_VALUE = ANIMATION_CHANNEL,
+    COUNT = MAX_VALUE + 1
+};
+
+enum class AnimationTarget : uint8_t
+{
+    WEIGHTS,
+    ROTATION,
+    TRANSLATION,
+    SCALE,
+    MIN_VALUE = WEIGHTS,
+    MAX_VALUE = SCALE,
     COUNT = MAX_VALUE + 1
 };
 
@@ -543,6 +556,8 @@ void Reader::read(std::istream& stream, F&& f)
 
     // animations
     {
+        auto animatorChannelCount = std::unordered_map<size_t, size_t>{};
+
         auto const& animations = _getJsonProperty(input, reinterpret_cast<char const*>(u8"animations"));
         auto animationCount = animations.size();
 
@@ -555,17 +570,30 @@ void Reader::read(std::istream& stream, F&& f)
 
             auto rotationSamplerIndices = std::unordered_set<size_t>{};
             auto channelCount = channels.size();
+
             for (auto channelIndex = size_t{ 0 }; channelIndex < channelCount; channelIndex++) {
                 auto const& channel = channels.at(channelIndex);
+                auto const& target = _getJsonProperty(channel, reinterpret_cast<char const*>(u8"target"));
+                auto targetPath = _getOptional<std::string>(target, reinterpret_cast<char const*>(u8"path"), "");
+
                 auto idxSampler =
                   _getOptional(channel, reinterpret_cast<char const*>(u8"sampler"), std::numeric_limits<size_t>::max());
                 assert(idxSampler != std::numeric_limits<size_t>::max());
 
-                auto const& target = _getJsonProperty(channel, reinterpret_cast<char const*>(u8"target"));
-                auto targetPath = _getOptional<std::string>(target, reinterpret_cast<char const*>(u8"path"), "");
+                auto idxNode =
+                  _getOptional(target, reinterpret_cast<char const*>(u8"node"), std::numeric_limits<size_t>::max());
+
+                if (idxNode == std::numeric_limits<size_t>::max()) // may be some extension
+                    continue;
 
                 if (targetPath == "rotation") {
                     rotationSamplerIndices.insert(idxSampler);
+                }
+
+                if (animatorChannelCount.contains(idxNode)) {
+                    animatorChannelCount.at(idxNode)++;
+                } else {
+                    animatorChannelCount.insert(std::pair{ idxNode, size_t{ 1 } });
                 }
             }
 
@@ -606,6 +634,7 @@ void Reader::read(std::istream& stream, F&& f)
 
                 auto idxOutput =
                   _getOptional(sample, reinterpret_cast<char const*>(u8"output"), std::numeric_limits<size_t>::max());
+                assert(idxOutput != std::numeric_limits<size_t>::max());
 
                 auto const& outputAccessor = accessors_[idxOutput];
                 auto const& outputBufferView = bufferViews_[outputAccessor.bufferViewIdx];
@@ -657,8 +686,10 @@ void Reader::read(std::istream& stream, F&& f)
                 assert(interpolationType < InterpolationType::COUNT);
 
                 if (interpolationElementType == InterpolationElementType::VEC4 &&
-                    interpolationType == InterpolationType::LINEAR && rotationSamplerIndices.contains(samplerIndex)) {
-                    interpolationType = InterpolationType::SPHERICAL;
+                    rotationSamplerIndices.contains(samplerIndex)) {
+                    if (interpolationType == InterpolationType::LINEAR)
+                        interpolationType = InterpolationType::SPHERICAL;
+
                     interpolationElementType = InterpolationElementType::QUAT;
                 }
 
@@ -675,6 +706,52 @@ void Reader::read(std::istream& stream, F&& f)
                   valueCount,
                   interpolationType,
                   interpolationElementType);
+            }
+        }
+
+        for (auto [idxNode, chCount] : animatorChannelCount) {
+            f(reader_data_type_t<ReaderDataType::ANIMATOR>{}, idxNode, chCount);
+        }
+
+        for (auto animationIndex = size_t{ 0 }; animationIndex < animationCount; animationIndex++) {
+            auto const& animation = animations.at(animationIndex);
+            auto const& channels = _getJsonProperty(animation, reinterpret_cast<char const*>(u8"channels"));
+
+            auto channelCount = channels.size();
+
+            for (auto channelIndex = size_t{ 0 }; channelIndex < channelCount; channelIndex++) {
+                auto const& channel = channels.at(channelIndex);
+                auto idxSampler =
+                  _getOptional(channel, reinterpret_cast<char const*>(u8"sampler"), std::numeric_limits<size_t>::max());
+                assert(idxSampler != std::numeric_limits<size_t>::max());
+
+                auto const& target = _getJsonProperty(channel, reinterpret_cast<char const*>(u8"target"));
+
+                auto idxNode =
+                  _getOptional(target, reinterpret_cast<char const*>(u8"node"), std::numeric_limits<size_t>::max());
+
+                if (idxNode == std::numeric_limits<size_t>::max()) // may be some extension
+                    continue;
+
+                auto targetPath = _getOptional<std::string>(target, reinterpret_cast<char const*>(u8"path"), "");
+
+                auto animationTarget = AnimationTarget::COUNT;
+                if (targetPath == "rotation") {
+                    animationTarget = AnimationTarget::ROTATION;
+                } else if (targetPath == "translation") {
+                    animationTarget = AnimationTarget::TRANSLATION;
+                } else if (targetPath == "scale") {
+                    animationTarget = AnimationTarget::SCALE;
+                } else if (targetPath == "weights") {
+                    animationTarget = AnimationTarget::WEIGHTS;
+                }
+
+                f(reader_data_type_t<ReaderDataType::ANIMATION_CHANNEL>{},
+                  idxNode,
+                  animationIndex,
+                  idxSampler,
+                  channelIndex,
+                  animationTarget);
             }
         }
     }

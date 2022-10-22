@@ -34,14 +34,6 @@ private:
     uint16_t itemsPerTask_;
 };
 
-struct AnimationChannel
-{
-    using target_updater_t = void (*)(void* target, Sampler const& sampler);
-
-    size_t samplerIndex;
-    target_updater_t updater;
-};
-
 class Animation : public resources::Resource
 {
     enum class AnimationBits
@@ -87,7 +79,9 @@ public:
     void stop();
 
     template<typename T>
-    auto sample(size_t i, T&& t) const -> T;
+    [[nodiscard]] auto sample(size_t i, T&& t) const -> T;
+
+    [[nodiscard]] auto sample(size_t i) const -> real const*;
 
     void setupSampler(size_t samplerIndex,
                       resources::Resource::Id inBufferId,

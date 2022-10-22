@@ -41,6 +41,8 @@ public:
     template<typename ValueType>
     [[nodiscard]] auto value(make_func_t<ValueType> makeFunc) const -> ValueType;
 
+    [[nodiscard]] auto rawValue() const -> real const* { return rawValue_.data(); }
+
 private:
     interpolator_func_t interpolate_;
     resources::Resource::Id inputBufferId_;

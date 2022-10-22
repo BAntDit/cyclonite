@@ -3,7 +3,6 @@
 //
 
 #include "model.h"
-#include "animations/animation.h"
 #include "appConfig.h"
 #include "gltf/reader.h"
 #include "resources/buffer.h"
@@ -281,6 +280,9 @@ void Model::init(cyclonite::Root& root,
         }
 
         // animation
+        auto& animationSystem = node.systems().get<systems::AnimationSystem>();
+        animationSystem.init(root.resourceManager(), root.taskManager());
+
         std::unordered_map<size_t, resources::Resource::Id> indexToAnimationId{};
 
         if constexpr (gltf::reader_data_test<gltf::ReaderDataType::ANIMATION, decltype(dataType)>()) {
@@ -327,6 +329,71 @@ void Model::init(cyclonite::Root& root,
                                    componentCount,
                                    interpolationType,
                                    interpolationElementType);
+        }
+
+        // animators
+        if constexpr (gltf::reader_data_test<gltf::ReaderDataType::ANIMATOR, decltype(dataType)>()) {
+            auto&& [nodeIdx, channelCount] = t;
+
+            assert(nodeIdxToEntity.count(nodeIdx) != 0);
+            auto entity = nodeIdxToEntity[nodeIdx];
+
+            auto& animator = node.entities().template assign<components::Animator>(entity, channelCount);
+            (void)animator;
+        }
+
+        // animation channels
+        if constexpr (gltf::reader_data_test<gltf::ReaderDataType::ANIMATION_CHANNEL, decltype(dataType)>()) {
+            auto&& [nodeIdx, animationIndex, idxSampler, channelIndex, animationTarget] = t;
+
+            assert(nodeIdxToEntity.count(nodeIdx) != 0);
+            auto entity = nodeIdxToEntity[nodeIdx];
+
+            assert(node.entities().template hasComponent<components::Animator>(entity));
+
+            auto* animator = node.entities().template getComponent<components::Animator>(entity);
+
+            auto& channel = animator->getChannel(channelIndex);
+
+            assert(indexToAnimationId.contains(animationIndex));
+            auto animationId = indexToAnimationId.at(animationIndex);
+
+            channel.animationId = static_cast<uint64_t>(animationId);
+            channel.samplerIndex = idxSampler;
+
+            if (animationTarget == gltf::AnimationTarget::TRANSLATION) {
+                channel.update_func = [](void* context, enttx::Entity entity, real const* value) -> void {
+                    using entity_manager_t = typename ecs_config_t::entity_manager_t;
+                    auto* entities = reinterpret_cast<entity_manager_t*>(context);
+                    auto* transform = entities->template getComponent<components::Transform>(entity);
+
+                    transform->position = glm::make_vec3(value);
+                    transform->state = components::Transform::State::UPDATE_LOCAL;
+                };
+            }
+            else if (animationTarget == gltf::AnimationTarget::SCALE) {
+                channel.update_func = [](void* context, enttx::Entity entity, real const* value) -> void {
+                    using entity_manager_t = typename ecs_config_t::entity_manager_t;
+                    auto* entities = reinterpret_cast<entity_manager_t*>(context);
+                    auto* transform = entities->template getComponent<components::Transform>(entity);
+
+                    transform->scale = glm::make_vec3(value);
+                    transform->state = components::Transform::State::UPDATE_LOCAL;
+                };
+            }
+            else if (animationTarget == gltf::AnimationTarget::ROTATION) {
+                channel.update_func = [](void* context, enttx::Entity entity, real const* value) -> void {
+                    using entity_manager_t = typename ecs_config_t::entity_manager_t;
+                    auto* entities = reinterpret_cast<entity_manager_t*>(context);
+                    auto* transform = entities->template getComponent<components::Transform>(entity);
+
+                    transform->orientation = glm::make_quat(value);
+                    transform->state = components::Transform::State::UPDATE_LOCAL;
+                };
+            }
+            else if (animationTarget == gltf::AnimationTarget::WEIGHTS) {
+                throw std::runtime_error("not implemented yet");
+            }
         }
     });
 

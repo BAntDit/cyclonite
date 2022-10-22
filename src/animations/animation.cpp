@@ -135,6 +135,12 @@ auto Animation::_samplers() -> SamplerArray&
     return resourceManager().get(samplerArrayId_).template as<SamplerArray>();
 }
 
+auto Animation::sample(size_t i) const -> real const*
+{
+    auto& samplers = _samplers();
+    return samplers[i].rawValue();
+}
+
 void Animation::setupSampler(size_t samplerIndex,
                              resources::Resource::Id inBufferId,
                              resources::Resource::Id outBufferId,

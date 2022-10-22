@@ -5,8 +5,10 @@
 #include "animationSystem.h"
 
 namespace cyclonite::systems {
-void AnimationSystem::init(multithreading::TaskManager& taskManager)
+void AnimationSystem::init(resources::ResourceManager& resourceManager, multithreading::TaskManager& taskManager)
 {
+    resourceManager_ = &resourceManager;
     taskManager_ = &taskManager;
+    start_ = std::chrono::high_resolution_clock::now();
 }
 }

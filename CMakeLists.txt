@@ -47,8 +47,8 @@ set(PUBLIC_HEADERS
     src/components/mesh.h
     src/components/meshStorage.h
     src/components/camera.h
-    src/components/animation.h
-    src/components/animationStorage.h
+    src/components/animator.h
+    src/components/animatorStorage.h
     src/systems/updateStages.h
     src/systems/transformSystem.h
     src/systems/meshSystem.h
@@ -124,8 +124,8 @@ set(SOURCES
     src/components/transform.cpp
     src/components/camera.cpp
     src/components/mesh.cpp
-    src/components/animation.cpp
-    src/components/animationStorage.cpp
+    src/components/animator.cpp
+    src/components/animatorStorage.cpp
     src/systems/transformSystem.cpp
     src/systems/cameraSystem.cpp
     src/systems/meshSystem.cpp

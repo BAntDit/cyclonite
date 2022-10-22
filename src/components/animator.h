@@ -2,31 +2,33 @@
 // Created by anton on 5/21/22.
 //
 
-#ifndef CYCLONITE_ANIMATION_H
-#define CYCLONITE_ANIMATION_H
+#ifndef CYCLONITE_ANIMATOR_H
+#define CYCLONITE_ANIMATOR_H
 
+#include "typedefs.h"
 #include <enttx/entity.h>
 #include <utility>
 
 namespace cyclonite::components {
-class AnimationStorage;
+class AnimatorStorage;
 
 struct AnimationChannel
 {
-    using target_updater_t = void (*)(enttx::Entity);
+    using target_updater_t = void (*)(void*, enttx::Entity, real const*);
 
     uint64_t animationId;
     size_t samplerIndex;
-    target_updater_t updater;
+    target_updater_t update_func;
 };
 
-struct Animation
+// Animator makes entity animated
+struct Animator
 {
-    friend class AnimationStorage;
+    friend class AnimatorStorage;
 
-    Animation() = default;
+    Animator() = default;
 
-    Animation(AnimationChannel& baseChannel, size_t channelCount);
+    Animator(AnimationChannel& baseChannel, size_t channelCount);
 
     [[nodiscard]] auto getChannelCount() const -> size_t { return channelCount_; }
 
@@ -35,12 +37,9 @@ struct Animation
     auto getChannel(size_t channelIndex) -> AnimationChannel&;
 
 private:
-    [[nodiscard]] auto getAnimationChannelSetMemory() const -> std::pair<AnimationChannel*, size_t>;
-
-private:
     AnimationChannel* baseChannel_;
     size_t channelCount_;
 };
 }
 
-#endif // CYCLONITE_ANIMATION_H
+#endif // CYCLONITE_ANIMATOR_H

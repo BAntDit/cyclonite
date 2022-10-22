@@ -2,40 +2,40 @@
 // Created by anton on 5/21/22.
 //
 
-#include "animationStorage.h"
+#include "animatorStorage.h"
 #include <bit>
 
 namespace cyclonite::components {
-AnimationStorage::AnimationStorage()
+AnimatorStorage::AnimatorStorage()
   : store_(4096, AnimationChannel{}) // TODO:: make possible to set initial capacity
-  , animations_{}
+  , animators_{}
   , freeRanges_{}
   , freeIndices_{}
   , indices_{}
 {
-    animations_.reserve(1024);
+    animators_.reserve(1024);
     freeRanges_.insert(std::make_pair(size_t{ 0 }, size_t{ 4096 }));
 }
 
-auto AnimationStorage::get(uint32_t index) const -> Animation const&
+auto AnimatorStorage::get(uint32_t index) const -> Animator const&
 {
     assert(index < indices_.size());
     auto idx = indices_[index];
 
-    assert(idx < animations_.size());
-    return animations_[idx];
+    assert(idx < animators_.size());
+    return animators_[idx];
 }
 
-auto AnimationStorage::get(uint32_t index) -> Animation&
+auto AnimatorStorage::get(uint32_t index) -> Animator&
 {
     assert(index < indices_.size());
     auto idx = indices_[index];
 
-    assert(idx < animations_.size());
-    return animations_[idx];
+    assert(idx < animators_.size());
+    return animators_[idx];
 }
 
-auto AnimationStorage::allocChannelRange(uint16_t channelCount) -> std::pair<size_t, size_t>
+auto AnimatorStorage::allocChannelRange(uint16_t channelCount) -> std::pair<size_t, size_t>
 {
     auto r = std::make_pair(size_t{ 0 }, size_t{ 0 });
 
@@ -69,7 +69,7 @@ auto AnimationStorage::allocChannelRange(uint16_t channelCount) -> std::pair<siz
     return r;
 }
 
-auto AnimationStorage::create(uint32_t index, uint16_t channelCount) -> Animation&
+auto AnimatorStorage::create(uint32_t index, uint16_t channelCount) -> Animator&
 {
     auto rangeOffset = size_t{ 0 };
     auto rangeSize = size_t{ 0 };
@@ -87,7 +87,7 @@ auto AnimationStorage::create(uint32_t index, uint16_t channelCount) -> Animatio
                 if (idx == std::numeric_limits<uint32_t>::max())
                     continue;
 
-                auto& anim = animations_[idx];
+                auto& anim = animators_[idx];
 
                 auto ofs = anim.baseChannel_ - store_.data();
                 assert(ofs >= 0);
@@ -103,7 +103,7 @@ auto AnimationStorage::create(uint32_t index, uint16_t channelCount) -> Animatio
                 if (idx == std::numeric_limits<uint32_t>::max())
                     continue;
 
-                auto& anim = animations_[idx];
+                auto& anim = animators_[idx];
 
                 static_assert(sizeof(intptr_t) == sizeof(AnimationChannel*));
                 auto ofs = std::bit_cast<intptr_t>(anim.baseChannel_);
@@ -143,8 +143,8 @@ auto AnimationStorage::create(uint32_t index, uint16_t channelCount) -> Animatio
     auto animationIndex = std::numeric_limits<uint32_t>::max();
 
     if (freeIndices_.empty()) {
-        animationIndex = animations_.size();
-        animations_.emplace_back();
+        animationIndex = animators_.size();
+        animators_.emplace_back();
     } else {
         animationIndex = freeIndices_.back();
         freeIndices_.pop_back();
@@ -160,18 +160,18 @@ auto AnimationStorage::create(uint32_t index, uint16_t channelCount) -> Animatio
 
     assert(indices_[index] == std::numeric_limits<uint32_t>::max());
 
-    animations_[animationIndex] = Animation{ *(store_.data() + rangeOffset), channelCount };
+    animators_[animationIndex] = Animator{ *(store_.data() + rangeOffset), channelCount };
     indices_[index] = animationIndex;
 
-    return animations_[animationIndex];
+    return animators_[animationIndex];
 }
 
-void AnimationStorage::destroy(uint32_t index)
+void AnimatorStorage::destroy(uint32_t index)
 {
     assert(indices_[index] != std::numeric_limits<uint32_t>::max());
 
     auto animationIndex = indices_[index];
-    auto& animation = animations_[animationIndex];
+    auto& animation = animators_[animationIndex];
 
     auto ptr = animation.baseChannel_;
     auto count = animation.channelCount_;
