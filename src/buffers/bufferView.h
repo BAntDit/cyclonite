@@ -162,7 +162,7 @@ auto BufferView<DataType>::Iterator::operator-(difference_type diff) -> Iterator
 template<typename DataType>
 auto BufferView<DataType>::Iterator::operator-(Iterator const& rhs) -> difference_type
 {
-    return rhs.index_ - index_;
+    return index_ - rhs.index_;
 }
 
 template<typename DataType>
