@@ -418,6 +418,13 @@ void Model::init(cyclonite::Root& root,
           entities, cameraEntity, components::Camera::PerspectiveProjection{ 1.f, 45.f, .1f, 100.f });
     }
 
+    {
+        auto animationId = indexToAnimationId.at(0);
+        auto& animation = root.resourceManager().get(animationId).template as<cyclonite::animations::Animation>();
+
+        animation.play();
+    }
+
     // screen systems initialization
     /*{
         auto& node = workspace_->get(node_type_register_t::node_key_t<SurfaceNodeConfig>{});

@@ -80,7 +80,8 @@ void Sampler::update(real playtime)
     // key index steps over stride
     switch (interpolationType_) {
         case InterpolationType::STEP:
-        case InterpolationType::LINEAR: {
+        case InterpolationType::LINEAR:
+        case InterpolationType::SPHERICAL: {
             src = (output_.begin() + key_index1).ptr();
         } break;
         case InterpolationType::CUBIC:

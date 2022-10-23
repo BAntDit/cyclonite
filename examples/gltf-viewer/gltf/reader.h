@@ -605,8 +605,10 @@ void Reader::read(std::istream& stream, F&& f)
                 assert(idxInput != std::numeric_limits<size_t>::max());
 
                 auto const& accessor = accessors.at(idxInput);
+                auto const& max = _getJsonProperty(accessor, reinterpret_cast<char const*>(u8"max"));
+                auto maxv = _readArray<real, 1>(max)[0];
 
-                duration = std::max(duration, _getOptional(accessor, reinterpret_cast<char const*>(u8"max"), 0.f));
+                duration = std::max(duration, maxv);
             }
 
             f(reader_data_type_t<ReaderDataType::ANIMATION>{}, sampleCount, duration, animationIndex);
