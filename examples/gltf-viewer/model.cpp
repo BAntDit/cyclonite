@@ -32,6 +32,7 @@ void Model::init(cyclonite::Root& root,
     gltf::Reader reader{};
     std::vector<enttx::Entity> pool{};
     std::unordered_map<std::tuple<size_t, size_t, size_t>, uint64_t, hash> geometryIdentifiers_{};
+    std::unordered_map<size_t, resources::Resource::Id> indexToAnimationId{};
 
     reader.read(path, [&](auto dataType, auto&&... args) -> void {
         auto&& t = std::forward_as_tuple(args...);
@@ -66,6 +67,9 @@ void Model::init(cyclonite::Root& root,
               cyclonite::resources::resource_reg_info_t<cyclonite::animations::Animation, expectedAnimationCount, 0>{});
 
             node.systems().get<systems::UniformSystem>().init(root.resourceManager(), device, 1);
+
+            auto& animationSystem = node.systems().get<systems::AnimationSystem>();
+            animationSystem.init(root.resourceManager(), root.taskManager());
         }
 
         if constexpr (gltf::reader_data_test<gltf::ReaderDataType::BUFFER_STREAM, decltype(dataType)>()) {
@@ -278,12 +282,6 @@ void Model::init(cyclonite::Root& root,
                 meshSystem.createMesh(node.entities(), entity, geometries);
             }
         }
-
-        // animation
-        auto& animationSystem = node.systems().get<systems::AnimationSystem>();
-        animationSystem.init(root.resourceManager(), root.taskManager());
-
-        std::unordered_map<size_t, resources::Resource::Id> indexToAnimationId{};
 
         if constexpr (gltf::reader_data_test<gltf::ReaderDataType::ANIMATION, decltype(dataType)>()) {
             auto&& [sampleCount, duration, animationIndex] = t;

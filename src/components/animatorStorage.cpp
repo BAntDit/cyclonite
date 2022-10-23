@@ -152,7 +152,7 @@ auto AnimatorStorage::create(uint32_t index, uint16_t channelCount) -> Animator&
 
     if (index >= indices_.size()) {
         auto old = indices_.size();
-        auto diff = index - old;
+        auto diff = (index + 1) - old;
         auto add = diff > old ? diff : old;
 
         indices_.resize(old + add, std::numeric_limits<uint32_t>::max());

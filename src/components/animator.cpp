@@ -13,13 +13,13 @@ Animator::Animator(AnimationChannel& baseChannel, size_t channelCount)
 
 auto Animator::getChannel(size_t channelIndex) const -> AnimationChannel const&
 {
-    assert(channelIndex < channelIndex);
-    return *(baseChannel_ + channelCount_);
+    assert(channelIndex < channelCount_);
+    return *(baseChannel_ + channelIndex);
 }
 
 auto Animator::getChannel(size_t channelIndex) -> AnimationChannel&
 {
-    assert(channelIndex < channelIndex);
-    return *(baseChannel_ + channelCount_);
+    assert(channelIndex < channelCount_);
+    return *(baseChannel_ + channelIndex);
 }
 }

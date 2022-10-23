@@ -296,7 +296,7 @@ auto ResourceManager::count() const -> size_t
     auto& items = freeItems_[tag.staticDataIndex];
 
     assert((storage.size() % sizeof(R)) == 0);
-    assert(items.size() > 1);
+    assert(items.size() > 0); 
 
     return storage.size() / sizeof(R) - (items.size() - 1);
 }

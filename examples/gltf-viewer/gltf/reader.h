@@ -713,6 +713,8 @@ void Reader::read(std::istream& stream, F&& f)
             f(reader_data_type_t<ReaderDataType::ANIMATOR>{}, idxNode, chCount);
         }
 
+        auto channelPerNodeCount = std::unordered_map<size_t, size_t>{};
+
         for (auto animationIndex = size_t{ 0 }; animationIndex < animationCount; animationIndex++) {
             auto const& animation = animations.at(animationIndex);
             auto const& channels = _getJsonProperty(animation, reinterpret_cast<char const*>(u8"channels"));
@@ -746,11 +748,20 @@ void Reader::read(std::istream& stream, F&& f)
                     animationTarget = AnimationTarget::WEIGHTS;
                 }
 
+                auto channelIdx = std::numeric_limits<size_t>::max();
+
+                if (channelPerNodeCount.contains(idxNode)) {
+                    channelIdx = channelPerNodeCount.at(idxNode)++;
+                } else {
+                    channelPerNodeCount.insert(std::pair{ idxNode, size_t{ 1 } });
+                    channelIdx = 0;
+                }
+
                 f(reader_data_type_t<ReaderDataType::ANIMATION_CHANNEL>{},
                   idxNode,
                   animationIndex,
                   idxSampler,
-                  channelIndex,
+                  channelIdx,
                   animationTarget);
             }
         }
