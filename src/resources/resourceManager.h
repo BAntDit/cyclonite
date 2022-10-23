@@ -107,8 +107,8 @@ public:
 
             auto operator++() -> Iterator&;
 
-            auto operator==(Iterator const& rhs) const -> bool { return cursor_ == rhs.cursor_; }
-            auto operator!=(Iterator const& rhs) const -> bool { return cursor_ != rhs.cursor_; }
+            auto operator==(Iterator const& rhs) const -> bool { return resource_index_ == rhs.resource_index_; }
+            auto operator!=(Iterator const& rhs) const -> bool { return resource_index_ != rhs.resource_index_; }
 
             [[nodiscard]] auto operator*() const -> std::conditional_t<isConst, value_type const&, value_type&>;
 
@@ -118,6 +118,7 @@ public:
             Iterator(resource_manager_t resourceManager, size_t cursor)
               : resourceManager_{ resourceManager }
               , cursor_{ cursor }
+              , resource_index_{ cursor }
               , count_{ resourceManager.template count<R>() }
             {}
 
@@ -126,6 +127,7 @@ public:
             resource_manager_t resourceManager_;
 
             size_t cursor_;
+            size_t resource_index_;
             size_t count_;
         };
 
@@ -306,9 +308,12 @@ void ResourceManager::ResourceList<isConst, R>::Iterator::next()
 {
     auto tag = R::type_tag_const();
     auto& resources = resourceManager_.resources_;
+    auto size = resources.size();
 
-    while (cursor_ < count_ && resources[cursor_].static_index != tag.staticDataIndex) {
-        cursor_++;
+    if (resource_index_ < count_) {
+        while (cursor_ < size && resources[cursor_].static_index != tag.staticDataIndex) {
+            cursor_++;
+        }
     }
 }
 
@@ -317,6 +322,7 @@ auto ResourceManager::ResourceList<isConst, R>::Iterator::operator++() -> Iterat
 {
     cursor_++;
     next();
+    resource_index_++;
     return *this;
 }
 
@@ -324,7 +330,8 @@ template<bool isConst, ResourceTypeConcept R>
 auto ResourceManager::ResourceList<isConst, R>::Iterator::operator*() const
   -> std::conditional_t<isConst, value_type const&, value_type&>
 {
-    assert(cursor_ < count_);
+    assert(resource_index_ < count_);
+    assert(cursor_ < resourceManager_.resources_.size());
 
     auto& resource = resourceManager_.resources_[cursor_];
     auto id = Resource::Id{ static_cast<uint32_t>(cursor_), resource.version };
