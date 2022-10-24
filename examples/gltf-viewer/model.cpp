@@ -368,8 +368,7 @@ void Model::init(cyclonite::Root& root,
                     transform->position = glm::make_vec3(value);
                     transform->state = components::Transform::State::UPDATE_LOCAL;
                 };
-            }
-            else if (animationTarget == gltf::AnimationTarget::SCALE) {
+            } else if (animationTarget == gltf::AnimationTarget::SCALE) {
                 channel.update_func = [](void* context, enttx::Entity entity, real const* value) -> void {
                     using entity_manager_t = typename ecs_config_t::entity_manager_t;
                     auto* entities = reinterpret_cast<entity_manager_t*>(context);
@@ -378,8 +377,7 @@ void Model::init(cyclonite::Root& root,
                     transform->scale = glm::make_vec3(value);
                     transform->state = components::Transform::State::UPDATE_LOCAL;
                 };
-            }
-            else if (animationTarget == gltf::AnimationTarget::ROTATION) {
+            } else if (animationTarget == gltf::AnimationTarget::ROTATION) {
                 channel.update_func = [](void* context, enttx::Entity entity, real const* value) -> void {
                     using entity_manager_t = typename ecs_config_t::entity_manager_t;
                     auto* entities = reinterpret_cast<entity_manager_t*>(context);
@@ -388,8 +386,7 @@ void Model::init(cyclonite::Root& root,
                     transform->orientation = glm::make_quat(value);
                     transform->state = components::Transform::State::UPDATE_LOCAL;
                 };
-            }
-            else if (animationTarget == gltf::AnimationTarget::WEIGHTS) {
+            } else if (animationTarget == gltf::AnimationTarget::WEIGHTS) {
                 throw std::runtime_error("not implemented yet");
             }
         }
@@ -422,6 +419,7 @@ void Model::init(cyclonite::Root& root,
         auto animationId = indexToAnimationId.at(0);
         auto& animation = root.resourceManager().get(animationId).template as<cyclonite::animations::Animation>();
 
+        animation.loop(true);
         animation.play();
     }
 

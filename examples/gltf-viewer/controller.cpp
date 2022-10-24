@@ -31,6 +31,8 @@ Controller::Controller() noexcept
 
 void Controller::init(cyclonite::Input& input, uint32_t width, uint32_t height)
 {
+    distance_ = 3.5f;
+
     input_ = &input;
 
     width_ = width;
