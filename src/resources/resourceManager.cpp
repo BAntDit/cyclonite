@@ -182,7 +182,7 @@ void ResourceManager::erase(Resource::Id id)
 
         auto const& tag = resource.instance_tag();
 
-        if (tag.dynamicDataIndex < buffers_.size()) {
+        if (tag.dynamicDataIndex < buffers_.size() && resource.dynamicDataSize() > 0) {
             freeDynamicBuffer(tag.dynamicDataIndex, resource.dynamicDataOffset(), resource.dynamicDataSize());
         }
 
