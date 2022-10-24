@@ -48,7 +48,7 @@ void Sampler::update(real playtime)
     assert(input_.count() > 0);
 
     auto min = *input_.begin();
-    auto max = *(input_.begin() + (input_.count() - 1));
+    auto max = *(input_.begin() + (static_cast<int32_t>(input_.count()) - 1));
 
     playtime = std::max(playtime, min);
     playtime = std::min(playtime, max);
@@ -68,12 +68,11 @@ void Sampler::update(real playtime)
     key2 = (it == input_.end()) ? max : *it;
     key1 = *std::prev(it);
 
-    assert(key2 > key1);
     assert(!(playtime < key1));
 
     auto delta = key2 - key1;
 
-    auto alpha = (playtime - key1) / (key2 - key1);
+    auto alpha = (key2 > key1) ? (playtime - key1) / (key2 - key1) : 1.f;
 
     real const* src = nullptr;
 

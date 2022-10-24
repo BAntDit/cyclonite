@@ -77,6 +77,8 @@ bool Animation::endUpdate()
         flags_.set(value_cast(AnimationBits::LAST_FRAME_BIT), false);
         flags_.set(value_cast(AnimationBits::ACTIVE_BIT), looped);
 
+        playtime_ = looped ? (playtime_ > 0.f) ? 0.f : duration_ : duration_;
+
         isOver = true;
     }
 
@@ -123,6 +125,11 @@ void Animation::stop()
     playtime_ = 0.f;
 
     _update();
+}
+
+void Animation::loop(bool value)
+{
+    flags_.set(value_cast(AnimationBits::LOOPED_BIT), value);
 }
 
 auto Animation::_samplers() const -> SamplerArray const&

@@ -78,6 +78,8 @@ public:
 
     void stop();
 
+    void loop(bool value);
+
     template<typename T>
     [[nodiscard]] auto sample(size_t i, T&& t) const -> T;
 
