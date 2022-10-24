@@ -10,7 +10,6 @@
 #include "updateStages.h"
 #include <easy-mp/enum.h>
 #include <enttx/enttx.h>
-#include <iostream>
 
 namespace cyclonite::systems {
 class TransformSystem : public enttx::BaseSystem<TransformSystem>
@@ -62,6 +61,8 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
             (void)depth;
 
             auto const& parentMatrix = parentTransform != nullptr ? parentTransform->worldMatrix : mat4{ 1.0f };
+            auto parentState =
+              parentTransform != nullptr ? parentTransform->state : components::Transform::State::UPDATE_NOTHING;
 
             if (state == components::Transform::State::UPDATE_LOCAL) {
                 matrix = glm::translate(position) * glm::mat4_cast(orientation) * glm::scale(scale);
@@ -71,7 +72,8 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
                 state = components::Transform::State::UPDATE_WORLD;
             }
 
-            if (state == components::Transform::State::UPDATE_WORLD) {
+            if (state == components::Transform::State::UPDATE_WORLD ||
+                parentState == components::Transform::State::UPDATE_WORLD) {
                 worldMatrix = parentMatrix * matrix;
             }
         }
