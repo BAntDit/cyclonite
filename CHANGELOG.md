@@ -1,3 +1,20 @@
+## 0.2.0 (2022-10-25)
+
+### Feat
+
+- **animations**: adds node based animation support.
+- **resources**: resource now can have own post allocation handler
+
+### Fix
+
+- **systems**: fixes an issue with missed transform update
+- **resources**: fixes an issue with ResourceList::Iterator
+- **buffers**: fixes an issue with BufferView::Interator::operator-
+- **buffers**: fixes BufferView<T>::Iterator comparison operators
+- **buffers**: BufferView<T>::Iterator now is copyable
+- **buffers**: fixes BufferView<T>::Iterator issues
+- **buffers**: adds missed index operator for the BufferView<T>::Iterator
+
 ## 0.1.0 (2022-06-20)
 
 ### Feat
