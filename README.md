@@ -10,7 +10,7 @@ Cyclonite is a graphics engine I mostly use for my own experiments.
 Adds node based animation support.
 [changelog](CHANGELOG.md)
 
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/ZHRfJT3G68c/0.jpg)](https://www.youtube.com/watch?v=ZHRfJT3G68c)
+[![animation scene](https://img.youtube.com/vi/ZHRfJT3G68c/0.jpg)](https://www.youtube.com/watch?v=ZHRfJT3G68c)
 
 ## work in progress
 
