@@ -3,6 +3,8 @@
 
 Cyclonite is a graphics engine I mostly use for my own experiments.
 
+![s1.png](./examples/gltf-viewer/screenshots/s1.png)
+
 [changelog](CHANGELOG.md)
 
 ## Last update
@@ -13,4 +15,4 @@ Adds node based animation support.
 
 ## work in progress
 
-![s1.png](./examples/gltf-viewer/screenshots/s1.png) 
+Working on task manager enhancements
