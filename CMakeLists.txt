@@ -82,6 +82,7 @@ set(PUBLIC_HEADERS
     src/vulkan/frameBuffer.h
     src/vulkan/buffer.h
     src/vulkan/shaderModule.h
+    src/multithreading/lockFreeQueue.h
     src/multithreading/taskManager.h
     src/shaders/shaderDefinitions.h
     src/uuids.h
