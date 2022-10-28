@@ -84,6 +84,7 @@ set(PUBLIC_HEADERS
     src/vulkan/shaderModule.h
     src/multithreading/lockFreeQueue.h
     src/multithreading/taskManager.h
+    src/multithreading/task.h
     src/shaders/shaderDefinitions.h
     src/uuids.h
 )
@@ -149,6 +150,7 @@ set(SOURCES
     src/vulkan/imageView.cpp
     src/vulkan/buffer.cpp
     src/vulkan/frameBuffer.cpp
+    src/multithreading/task.cpp
     src/multithreading/taskManager.cpp
     src/shaders/shaderDefinitions.cpp
 )

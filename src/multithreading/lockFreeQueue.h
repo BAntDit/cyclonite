@@ -5,27 +5,18 @@
 #ifndef CYCLONITE_LOCKFREEQUEUE_H
 #define CYCLONITE_LOCKFREEQUEUE_H
 
+#include "typedefs.h"
 #include <atomic>
 #include <bit>
+#include <boost/lockfree/queue.hpp>
 #include <cassert>
 #include <cstddef>
 #include <memory>
 #include <new>
 #include <optional>
 #include <vector>
-#include <boost/lockfree/queue.hpp>
 
 namespace cyclonite::multithreading {
-#ifdef __cpp_lib_hardware_interference_size
-using std::hardware_constructive_interference_size;
-using std::hardware_destructive_interference_size;
-#else
-// https://en.cppreference.com/w/cpp/thread/hardware_destructive_interference_size
-// 64 bytes on x86-64 │ L1_CACHE_BYTES │ L1_CACHE_SHIFT │ __cacheline_aligned │ ...
-constexpr size_t hardware_constructive_interference_size = 64;
-constexpr size_t hardware_destructive_interference_size = 64;
-#endif
-
 // Dynamic Circular Work-Stealing Deque
 // https://www.dre.vanderbilt.edu/~schmidt/PDF/work-stealing-dequeue.pdf
 template<typename T>
@@ -226,7 +217,7 @@ template<typename T>
 using lock_free_spmc_queue_t = LockFreeSPMCQueue<T>;
 
 template<typename T>
-using lock_free_mpmc_t = boost::lockfree::queue<T>;
+using lock_free_mpmc_queue_t = boost::lockfree::queue<T>;
 }
 
 #endif // CYCLONITE_LOCKFREEQUEUE_H

@@ -90,6 +90,16 @@ using vertex_t = Vertex;
 using instanced_data_t = InstancedData;
 
 using index_type_t = uint32_t;
+
+#ifdef __cpp_lib_hardware_interference_size
+using std::hardware_constructive_interference_size;
+using std::hardware_destructive_interference_size;
+#else
+// https://en.cppreference.com/w/cpp/thread/hardware_destructive_interference_size
+// 64 bytes on x86-64 │ L1_CACHE_BYTES │ L1_CACHE_SHIFT │ __cacheline_aligned │ ...
+inline constexpr size_t hardware_constructive_interference_size = 64;
+inline constexpr size_t hardware_destructive_interference_size = 64;
+#endif
 }
 
 #endif // CYCLONITE_TYPEDEFS_H
