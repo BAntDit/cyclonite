@@ -5,6 +5,8 @@
 #ifndef CYCLONITE_TASKMANAGER_H
 #define CYCLONITE_TASKMANAGER_H
 
+#include "render.h"
+#include "worker.h"
 #include <boost/asio.hpp>
 #include <thread>
 #include <type_traits>
@@ -14,8 +16,10 @@ namespace cyclonite::multithreading {
 
 class TaskManager
 {
+    friend class Worker;
+
 public:
-    explicit TaskManager(size_t countThreads = std::max(std::thread::hardware_concurrency(), 2u) - 1u);
+    explicit TaskManager(size_t workerCount = std::max(std::thread::hardware_concurrency(), 2u) - 1u);
 
     TaskManager(TaskManager const&) = delete;
 
@@ -27,46 +31,49 @@ public:
 
     auto operator=(TaskManager &&) -> TaskManager& = delete;
 
-    template<typename Task>
-    auto submit(Task&& task) -> std::future<std::result_of_t<Task()>>;
+    [[nodiscard]] auto keepAlive() const -> bool { return alive_.load(std::memory_order_relaxed); }
 
-    template<typename Task>
-    auto strand(Task&& task) const -> std::future<std::result_of_t<Task()>>;
+    [[nodiscard]] auto workerCount() const -> uint32_t { return workerCount_; }
 
-    auto threadCount() const -> size_t { return pool_.size(); }
+    template<TaskFunctor F>
+    auto start(F&& f) -> std::future<std::result_of_t<F()>>;
 
-    auto getTaskCount(size_t countItems) const -> std::pair<size_t, size_t>;
-
-    auto pool() const -> std::vector<std::thread> const& { return pool_; }
+    template<TaskFunctor F>
+    auto submitRenderTask(F&& f) -> std::future<std::result_of_t<F()>>;
 
 private:
-    boost::asio::io_context ioContext_;
 
-    boost::asio::io_context::strand strand_;
+    [[nodiscard]] auto workers() const -> std::unique_ptr<Worker[]> const& { return workers_; }
 
-    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_;
+    auto workers() -> std::unique_ptr<Worker[]>& { return workers_; }
 
-    std::vector<std::thread> pool_;
+private:
+    std::vector<std::thread> threadPool_;
+    std::unique_ptr<Worker[]> workers_;
+    size_t workerCount_;
+    Render render_;
+    std::atomic<bool> alive_;
 };
 
-template<typename Task>
-auto TaskManager::submit(Task&& task) -> std::future<std::result_of_t<Task()>>
+template<TaskFunctor F>
+auto TaskManager::submitRenderTask(F&& f) -> std::future<std::result_of_t<F()>>
 {
-    using result_type = std::result_of_t<Task()>;
-
-    std::packaged_task<result_type()> packagedTask(std::forward<Task>(task));
-
-    return boost::asio::post(ioContext_, std::move(packagedTask));
+    return render_.submitTask(std::forward<F>(f));
 }
 
-template<typename Task>
-auto TaskManager::strand(Task&& task) const -> std::future<std::result_of_t<Task()>>
+template<TaskFunctor F>
+auto TaskManager::start(F&& f) -> std::future<std::result_of_t<F()>>
 {
-    using result_type = std::result_of_t<Task()>;
+    threadPool_.reserve(workerCount_);
 
-    std::packaged_task<result_type()> packagedTask(std::forward<Task>(task));
+    threadPool_.emplace_back(render_);
 
-    return boost::asio::post(strand_, std::move(packagedTask));
+    auto const firstWorkerThread = size_t{ 1 };
+
+    for (auto i = firstWorkerThread; i < workerCount_; i++)
+        threadPool_.emplace_back(workers_[i]);
+
+    return workers_[0](std::forward<F>(f));
 }
 }
 

@@ -6,14 +6,13 @@
 #include "device.h"
 
 namespace cyclonite::vulkan {
-CommandPool::CommandPool(multithreading::TaskManager const& taskManager, vulkan::Device const& device)
+CommandPool::CommandPool(vulkan::Device const& device)
   : vkDevice_{ device.handle() }
-  , taskManager_{ &taskManager }
   , commandPools_{}
 {
-    auto createPool = [&, this](std::thread::id id, uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags) -> void {
+    auto createPool = [&, this](uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags) -> void {
         auto [it, success] =
-          commandPools_.emplace(std::make_tuple(id, queueFamilyIndex, flags),
+          commandPools_.emplace(std::make_tuple(queueFamilyIndex, flags),
                                 std::make_tuple(Handle<VkCommandPool>{ device.handle(), vkDestroyCommandPool },
                                                 std::vector<VkCommandBuffer>{}));
 
@@ -36,35 +35,18 @@ CommandPool::CommandPool(multithreading::TaskManager const& taskManager, vulkan:
         }
     };
 
-    // pool for main thread:
     for (auto& queueFamilyIndex : device.queueFamilyIndices()) {
-        createPool(std::this_thread::get_id(), queueFamilyIndex, 0);
+        createPool(queueFamilyIndex, 0);
 
-        createPool(std::this_thread::get_id(),
-                   queueFamilyIndex,
+        createPool(queueFamilyIndex,
                    VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
-        createPool(std::this_thread::get_id(), queueFamilyIndex, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-    }
-
-    // pool for each thread of thread pool:
-    for (auto& thread : taskManager.pool()) {
-        for (auto& queueFamilyIndex : device.queueFamilyIndices()) {
-            createPool(thread.get_id(), queueFamilyIndex, 0); // for persistent buffers
-
-            createPool(thread.get_id(),
-                       queueFamilyIndex,
-                       VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-
-            createPool(thread.get_id(), queueFamilyIndex, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-        }
+        createPool(queueFamilyIndex, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
     }
 }
 
 CommandPool::~CommandPool() noexcept
 {
-    // if we're here, it's over and we don't care if something write into pool in some other threads
-
     for (auto& [k, v] : commandPools_) {
         (void)k;
 

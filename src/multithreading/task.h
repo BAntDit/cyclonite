@@ -6,8 +6,18 @@
 #define CYCLONITE_TASK_H
 
 #include "typedefs.h"
+#include <atomic>
 
 namespace cyclonite::multithreading {
+class Task;
+
+template<typename F>
+concept TaskFunctor = requires(F&& f)
+{
+    // !std::is_same_v<std::decay_t<F>, Task> &&
+      std::invoke(std::forward<F>(f));
+};
+
 class alignas(hardware_constructive_interference_size) Task
 {
     static constexpr size_t storage_size_v = 64;
@@ -21,7 +31,6 @@ class alignas(hardware_constructive_interference_size) Task
         virtual ~functor_base_t() = default;
 
         virtual void invoke() = 0;
-        virtual auto clone(storage_t& storage) -> functor_base_t* = 0;
         virtual auto move_to(storage_t& storage) -> functor_base_t* = 0;
     };
 
@@ -38,8 +47,6 @@ class alignas(hardware_constructive_interference_size) Task
 
         void invoke() override { f_(); };
 
-        auto clone(storage_t& storage) -> functor_base_t* override;
-
         auto move_to(storage_t& storage) -> functor_base_t* override;
 
     private:
@@ -47,18 +54,22 @@ class alignas(hardware_constructive_interference_size) Task
     };
 
 public:
-    template<typename F>
-    Task(F&& f);
+    Task();
 
-    Task(Task const& task);
+    template<TaskFunctor F>
+    explicit Task(F&& f);
+
+    Task(Task const&) = delete;
 
     Task(Task&& task) noexcept;
 
-    auto operator=(Task const& rhs) -> Task&;
+    auto operator=(Task const&) -> Task& = delete;
 
     auto operator=(Task&& rhs) noexcept -> Task&;
 
-    int operator()();
+    void operator()();
+
+    [[nodiscard]] auto pending() const -> bool { return pending_.load(std::memory_order_relaxed); }
 
     ~Task();
 
@@ -70,32 +81,22 @@ private:
 private:
     storage_t storage_;
     functor_base_t* functor_;
+    std::atomic<bool> pending_;
 };
 
-template<typename F>
+template<TaskFunctor F>
 Task::Task(F&& f)
   : storage_{}
   , functor_{ nullptr }
+  , pending_{ false }
 {
     if constexpr (sizeof(functor_t<F>) <= sizeof(storage_t)) {
         functor_ = new (storage()) functor_t<F>{ std::forward<F>(f) };
     } else {
         functor_ = new functor_t<F>{ std::forward<F>(f) };
     }
-}
 
-template<typename F>
-auto Task::functor_t<F>::clone(storage_t& storage) -> functor_base_t*
-{
-    functor_base_t* r = nullptr;
-
-    if constexpr (sizeof(f_) <= sizeof(storage_t)) {
-        r = new (std::addressof(storage)) functor_t<std::decay_t<decltype(f_)>>{ f_ };
-    } else {
-        r = new functor_t<std::decay_t<decltype(f_)>>{ f_ };
-    }
-
-    return r;
+    pending_.store(functor_ != nullptr, std::memory_order_relaxed);
 }
 
 template<typename F>

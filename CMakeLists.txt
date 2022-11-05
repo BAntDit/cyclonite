@@ -85,6 +85,9 @@ set(PUBLIC_HEADERS
     src/multithreading/lockFreeQueue.h
     src/multithreading/taskManager.h
     src/multithreading/task.h
+    src/multithreading/taskPool.h
+    src/multithreading/worker.h
+    src/multithreading/render.h
     src/shaders/shaderDefinitions.h
     src/uuids.h
 )
@@ -151,6 +154,9 @@ set(SOURCES
     src/vulkan/buffer.cpp
     src/vulkan/frameBuffer.cpp
     src/multithreading/task.cpp
+    src/multithreading/taskPool.cpp
+    src/multithreading/render.cpp
+    src/multithreading/worker.cpp
     src/multithreading/taskManager.cpp
     src/shaders/shaderDefinitions.cpp
 )

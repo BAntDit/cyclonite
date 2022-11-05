@@ -34,8 +34,6 @@ public:
 
     auto operator=(CommandBufferSet &&) -> CommandBufferSet& = default;
 
-    [[nodiscard]] auto threadId() const -> std::thread::id { return threadId_; }
-
     [[nodiscard]] auto queueFamilyIndex() const -> uint32_t { return queueFamilyIndex_; }
 
     [[nodiscard]] auto flags() const -> VkCommandPoolCreateFlags { return flags_; }
@@ -51,7 +49,6 @@ public:
 
 private:
     std::weak_ptr<CommandPool> commandPoolPtr_;
-    std::thread::id threadId_;
     uint32_t queueFamilyIndex_;
     VkCommandPoolCreateFlags flags_;
     Container commandBuffers_;
@@ -60,7 +57,6 @@ private:
 template<typename CommandPool, typename Container>
 CommandBufferSet<CommandPool, Container>::CommandBufferSet() noexcept
   : commandPoolPtr_{}
-  , threadId_{ std::this_thread::get_id() }
   , queueFamilyIndex_{ 0 }
   , flags_{ 0 }
   , commandBuffers_{}
@@ -71,7 +67,6 @@ CommandBufferSet<CommandPool, Container>::CommandBufferSet(uint32_t queueFamilyI
                                                            VkCommandPoolCreateFlags flags,
                                                            Container&& buffers) noexcept
   : commandPoolPtr_{}
-  , threadId_{ std::this_thread::get_id() }
   , queueFamilyIndex_{ queueFamilyIndex }
   , flags_{ flags }
   , commandBuffers_(std::move(buffers))
@@ -81,7 +76,7 @@ template<typename CommandPool, typename Container>
 CommandBufferSet<CommandPool, Container>::~CommandBufferSet() noexcept
 {
     if (auto commandPool = commandPoolPtr_.lock()) {
-        commandPool->releaseCommandBuffers(*this).get();
+        commandPool->releaseCommandBuffers(*this);
     }
 }
 }

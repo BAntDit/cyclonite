@@ -4,43 +4,46 @@
 
 #include "task.h"
 
-namespace cyclonite::multithreading
-{
-Task::Task(Task const& task)
+namespace cyclonite::multithreading {
+Task::Task()
   : storage_{}
-  , functor_{ task.functor_ ? task.functor_->clone(storage_) : nullptr }
+  , functor_{ nullptr }
+  , pending_{ false }
 {}
 
 Task::Task(Task&& task) noexcept
   : storage_{}
   , functor_{ nullptr }
+  , pending_{ false }
 {
+    assert(task.functor_);
+
     if (task.functor_ == task.storage()) {
         functor_ = task.functor_->move_to(storage_);
         std::exchange(task.functor_, nullptr)->~functor_base_t();
     } else {
         functor_ = std::exchange(task.functor_, nullptr);
     }
-}
 
-auto Task::operator=(Task const& rhs) -> Task&
-{
-    _reset();
-
-    functor_ = rhs.functor_->clone(storage_);
-    return *this;
+    pending_.store(functor_ != nullptr, std::memory_order_relaxed);
+    task.pending_.store(false, std::memory_order_relaxed);
 }
 
 auto Task::operator=(Task&& rhs) noexcept -> Task&
 {
+    assert(rhs.functor_);
+
     _reset();
 
     if (rhs.functor_ == rhs.storage()) {
-        functor_ = rhs.functor_->clone(storage_);
+        functor_ = rhs.functor_->move_to(storage_);
         rhs.functor_ = nullptr;
     } else {
         functor_ = std::exchange(rhs.functor_, nullptr);
     }
+
+    pending_.store(functor_ != nullptr, std::memory_order_relaxed);
+    rhs.pending_.store(false, std::memory_order_relaxed);
 
     return *this;
 }
@@ -56,7 +59,7 @@ void Task::_reset()
     functor_ = nullptr;
 }
 
-int Task::operator()()
+void Task::operator()()
 {
     assert(functor_);
     functor_->invoke();

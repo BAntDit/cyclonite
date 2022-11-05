@@ -38,13 +38,14 @@ void Animation::handlePostAllocation()
 {
     samplerArrayId_ = resourceManager().template create<SamplerArray>(sampleCount_);
 
-    auto [taskCount, itemsPerTask] = taskManager_->getTaskCount(sampleCount_);
+    auto samplesPerTask = std::max(1u, sampleCount_ / taskManager_->workerCount());
+    auto taskCount = (sampleCount_ / samplesPerTask) + static_cast<uint32_t>((sampleCount_ % samplesPerTask) > 0);
 
     assert(taskCount < std::numeric_limits<uint16_t>::max());
-    assert(itemsPerTask < std::numeric_limits<uint16_t>::max());
+    assert(samplesPerTask < std::numeric_limits<uint16_t>::max());
 
     interpolationTaskArrayId_ = resourceManager().template create<AnimationInterpolationTaskArray>(
-      static_cast<uint16_t>(taskCount), static_cast<uint16_t>(itemsPerTask));
+      static_cast<uint16_t>(taskCount), static_cast<uint16_t>(samplesPerTask));
 }
 
 void Animation::beginUpdate(real dt)
@@ -99,11 +100,14 @@ void Animation::_update()
                             ? static_cast<ptrdiff_t>(itemsPerTask)
                             : static_cast<ptrdiff_t>(samplers.count() - i * itemsPerTask));
 
-        interpolationTasks[i] = taskManager_->submit([from, to, playtime = playtime_]() -> void {
-            for (auto it = from; it != to; it++) {
-                (*it).update(playtime);
-            }
-        });
+        assert(multithreading::Worker::isInWorkerThread());
+
+        interpolationTasks[i] =
+          multithreading::Worker::threadWorker().submitTask([from, to, playtime = playtime_]() -> void {
+              for (auto it = from; it != to; it++) {
+                  (*it).update(playtime);
+              }
+          });
     }
 
     interpolationTasks.resolve();

@@ -33,7 +33,7 @@ class LockFreeSPMCQueue
 
         auto load(size_t index) noexcept -> T requires std::is_nothrow_move_constructible_v<T>;
 
-        [[nodiscard]] auto resize(int64_t bottom, int64_t top) const -> CircularArray*;
+        [[nodiscard]] auto resize(int64_t bottom, int64_t top) -> CircularArray*;
 
     private:
         int64_t capacity_;
@@ -92,9 +92,9 @@ auto LockFreeSPMCQueue<T>::CircularArray::load(size_t index) noexcept -> T
 }
 
 template<typename T>
-auto LockFreeSPMCQueue<T>::CircularArray::resize(int64_t bottom, int64_t top) const -> CircularArray*
+auto LockFreeSPMCQueue<T>::CircularArray::resize(int64_t bottom, int64_t top) -> CircularArray*
 {
-    auto* ptr = new CircularArray{ capacity_ * 2 };
+    auto* ptr = new CircularArray{ static_cast<size_t>(capacity_ * 2u) };
 
     for (auto i = top; i != bottom; i++) {
         ptr->store(static_cast<size_t>(i), load(static_cast<size_t>(i)));
@@ -139,7 +139,7 @@ void LockFreeSPMCQueue<T>::emplaceBottom(Args&&... args)
 
     auto* buffer = buffer_.load(std::memory_order_relaxed);
 
-    if (buffer->capacity() < (bottom - top) + 1) {
+    if (buffer->capacity() < static_cast<size_t>((bottom - top) + 1)) {
         garbage_.emplace_back(std::exchange(buffer, buffer->resize(bottom, top)));
         buffer_.store(buffer, std::memory_order_relaxed);
     }
@@ -163,7 +163,7 @@ auto LockFreeSPMCQueue<T>::popBottom() -> std::optional<T>
 
     auto top = top_.load(std::memory_order_relaxed);
 
-    auto result = std::optional<T>{};
+    auto result = std::optional<T>{ std::nullopt };
 
     if (top <= bottom) {
         result = buffer->load(static_cast<size_t>(bottom));
@@ -192,7 +192,7 @@ auto LockFreeSPMCQueue<T>::steal() -> std::optional<T>
 
     auto bottom = bottom_.load(std::memory_order_acquire);
 
-    auto result = std::optional<T>{};
+    auto result = std::optional<T>{ std::nullopt };
 
     if (top < bottom) {
         result = buffer_.load(std::memory_order_consume)->load(static_cast<size_t>(top));

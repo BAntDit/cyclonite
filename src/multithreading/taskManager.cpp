@@ -5,44 +5,26 @@
 #include "taskManager.h"
 
 namespace cyclonite::multithreading {
-TaskManager::TaskManager(size_t countThreads)
-  : ioContext_{}
-  , strand_{ ioContext_ }
-  , work_{ boost::asio::make_work_guard(ioContext_) }
-  , pool_{}
+static constexpr auto _taskPoolSize = size_t{ 1024 };
+
+TaskManager::TaskManager(size_t workerCount)
+  : threadPool_{}
+  , workers_{ std::make_unique_for_overwrite<Worker[]>(workerCount) }
+  , workerCount_{ workerCount }
+  , render_{ *this, _taskPoolSize }
+  , alive_{ false }
 {
-    while (countThreads-- > 0) {
-        pool_.emplace_back([&]() -> void { ioContext_.run(); });
+    for (auto i = size_t{ 0 }; i < workerCount_; i++) {
+        new (&workers_[i]) Worker{ *this, _taskPoolSize };
     }
 }
 
 TaskManager::~TaskManager()
 {
-    work_.reset();
+    alive_.store(false);
 
-    for (auto& thread : pool_) {
+    for (auto&& thread : threadPool_) {
         thread.join();
     }
-
-    pool_.clear();
-}
-
-auto TaskManager::getTaskCount(size_t countItems) const -> std::pair<size_t, size_t>
-{
-    assert(countItems > 0);
-
-    auto itemsPerTask = size_t{ 0 };
-    auto taskCount = size_t{ 0 };
-
-    if (countItems < pool_.size()) {
-        itemsPerTask = countItems;
-        taskCount = 1;
-    } else {
-        auto tail = countItems % pool_.size();
-        itemsPerTask = countItems / pool_.size();
-        taskCount = (tail > 0) ? countItems / itemsPerTask + 1 : countItems / itemsPerTask;
-    }
-
-    return { taskCount, itemsPerTask };
 }
 }

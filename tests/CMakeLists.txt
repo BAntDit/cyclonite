@@ -4,7 +4,9 @@ project("cyclonite.test")
 
 set(SOURCES
     resourceManagementTest.cpp
-    resourceManagementTests.h)
+    resourceManagementTests.h
+    taskManagerTest.cpp
+    taskManagerTest.h)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
