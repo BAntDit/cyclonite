@@ -63,6 +63,10 @@ private:
 
     auto pendingTask() -> std::optional<Task>;
 
+    void _setThreadWorkerPtr();
+
+    void _resetThreadWorkerPtr();
+
     static auto randomWorkerIndex(size_t count) -> size_t;
 
 private:
@@ -96,6 +100,10 @@ auto Worker::submitTask(F&& f) -> std::future<std::result_of_t<F()>>
 template<TaskFunctor F>
 auto Worker::operator()(F&& f) -> std::future<std::result_of_t<F()>>
 {
+    _setThreadWorkerPtr();
+
+    threadId_ = std::this_thread::get_id();
+
     using result_type_t = std::result_of_t<F()>;
 
     auto&& task = std::packaged_task<result_type_t()>{ std::forward<F>(f) };
@@ -103,7 +111,7 @@ auto Worker::operator()(F&& f) -> std::future<std::result_of_t<F()>>
 
     task();
 
-    this->operator()();
+    // this->operator()(); // TODO:: steal task in the task above
 
     return future;
 }

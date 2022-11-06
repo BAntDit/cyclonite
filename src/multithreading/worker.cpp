@@ -50,8 +50,7 @@ auto Worker::pendingTask() -> std::optional<Task>
 
 void Worker::operator()()
 {
-    assert(_threadWorker == nullptr);
-    _threadWorker = this;
+    _setThreadWorkerPtr();
 
     threadId_ = std::this_thread::get_id();
 
@@ -79,5 +78,16 @@ auto Worker::randomWorkerIndex(size_t count) -> size_t
 auto Worker::canSubmit() const -> bool
 {
     return _threadWorker && threadId_ == std::this_thread::get_id();
+}
+
+void Worker::_setThreadWorkerPtr()
+{
+    assert(_threadWorker == nullptr);
+    _threadWorker = this;
+}
+
+void Worker::_resetThreadWorkerPtr()
+{
+    _threadWorker = nullptr;
 }
 }

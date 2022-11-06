@@ -66,7 +66,13 @@ void Model::init(cyclonite::Root& root,
                 initialInterpolationTaskCount * sizeof(cyclonite::animations::AnimationInterpolationTaskArray)>{},
               cyclonite::resources::resource_reg_info_t<cyclonite::animations::Animation, expectedAnimationCount, 0>{});
 
-            node.systems().get<systems::UniformSystem>().init(root.resourceManager(), device, 1);
+            auto& uniformSystem = node.systems().get<systems::UniformSystem>();
+
+            auto uniformInitializationFuture = root.taskManager().submitRenderTask(
+              [&uniformSystem, &device, &resourceManager = root.resourceManager()]() -> void {
+                  uniformSystem.init(resourceManager, device, 1);
+              });
+            uniformInitializationFuture.get();
 
             auto& animationSystem = node.systems().get<systems::AnimationSystem>();
             animationSystem.init(root.resourceManager(), root.taskManager());
@@ -97,7 +103,11 @@ void Model::init(cyclonite::Root& root,
 
             auto& meshSystem = node.systems().get<systems::MeshSystem>();
 
-            meshSystem.init(root, 1, commandCount, instanceCount, indexCount, vertexCount);
+            auto meshSystemInitializationFuture =
+              root.taskManager().submitRenderTask([=, &meshSystem, &root]() -> void {
+                  meshSystem.init(root, 1, commandCount, instanceCount, indexCount, vertexCount);
+              });
+            meshSystemInitializationFuture.get();
         }
 
         // node

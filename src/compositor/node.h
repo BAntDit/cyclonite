@@ -138,7 +138,24 @@ void Node<Config>::writeFrameCommands(vulkan::Device& device)
                              descriptorSets_.data(),
                              expirationBits_.data() };
 
-    frameCommand.update(device, getRenderTargetBase(), static_cast<VkRenderPass>(vkRenderPass_), inputs_, begin, end);
+    auto frameUpdateTask = [&frameCommand,
+                            &device,
+                            &renderTarget = getRenderTargetBase(),
+                            renderPass = static_cast<VkRenderPass>(vkRenderPass_),
+                            &inputs = inputs_,
+                            &begin,
+                            &end]() -> void {
+        frameCommand.update(device, renderTarget, renderPass, inputs, begin, end);
+    };
+
+    if (multithreading::Render::isInRenderThread()) {
+        frameUpdateTask();
+    }
+    else {
+        assert(multithreading::Worker::isInWorkerThread());
+        auto future = multithreading::Worker::threadWorker().taskManager().submitRenderTask(frameUpdateTask);
+        future.get();
+    }
 }
 
 template<typename Config>

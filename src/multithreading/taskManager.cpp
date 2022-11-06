@@ -13,7 +13,7 @@ TaskManager::TaskManager(size_t workerCount)
   , workers_{ std::make_unique_for_overwrite<Worker[]>(workerCount) }
   , workerCount_{ workerCount }
   , render_{ *this, _taskPoolSize }
-  , alive_{ false }
+  , alive_{ true }
 {
     for (auto i = size_t{ 0 }; i < workerCount_; i++) {
         new (&workers_[i]) Worker{ *this, _taskPoolSize };
