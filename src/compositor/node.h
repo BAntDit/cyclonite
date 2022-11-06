@@ -150,8 +150,7 @@ void Node<Config>::writeFrameCommands(vulkan::Device& device)
 
     if (multithreading::Render::isInRenderThread()) {
         frameUpdateTask();
-    }
-    else {
+    } else {
         assert(multithreading::Worker::isInWorkerThread());
         auto future = multithreading::Worker::threadWorker().taskManager().submitRenderTask(frameUpdateTask);
         future.get();

@@ -147,7 +147,7 @@ void Viewer::done()
         node.systems().get<systems::RenderSystem>().finish();
     }
 
-    root_->taskManager().stop();
+    root_->dispose();
 }
 }
 

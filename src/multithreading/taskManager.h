@@ -43,6 +43,9 @@ public:
     template<TaskFunctor F>
     auto submitRenderTask(F&& f) -> std::future<std::result_of_t<F()>>;
 
+    template<TaskFunctor F>
+    auto submitTask(F&& f) -> std::future<std::result_of_t<F()>>;
+
 private:
     [[nodiscard]] auto workers() const -> std::unique_ptr<Worker[]> const& { return workers_; }
 
@@ -71,6 +74,12 @@ auto TaskManager::start(F&& f) -> std::future<std::result_of_t<F()>>
         threadPool_.emplace_back([](Worker& worker) -> void { worker(); }, std::ref(workers_[i]));
 
     return workers_[0](std::forward<F>(f));
+}
+
+template<TaskFunctor F>
+auto TaskManager::submitTask(F&& f) -> std::future<std::result_of_t<F()>>
+{
+    return workers_[0].submitTask(std::forward<F>(f));
 }
 }
 

@@ -61,6 +61,8 @@ void Worker::operator()()
             std::this_thread::yield();
         }
     }
+
+    _resetThreadWorkerPtr();
 }
 
 auto Worker::randomWorkerIndex(size_t count) -> size_t

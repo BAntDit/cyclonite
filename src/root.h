@@ -74,6 +74,8 @@ public:
     template<typename WorkspaceFactory>
     auto createWorkspace(WorkspaceFactory&& workspaceFactory) -> std::shared_ptr<compositor::Workspace> const&;
 
+    void dispose();
+
 private:
     Capabilities capabilities_;
     std::unique_ptr<resources::ResourceManager> resourceManager_;

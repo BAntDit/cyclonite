@@ -161,7 +161,7 @@ auto Root::getDeviceId(std::string const& deviceName) const -> uint32_t
 
 auto Root::resourceManager() -> resources::ResourceManager&
 {
-    assert(resourceManager_); // decalre resources first
+    assert(resourceManager_); // declare resources first
     return *resourceManager_;
 }
 
@@ -169,5 +169,19 @@ auto Root::resourceManager() const -> resources::ResourceManager const&
 {
     assert(resourceManager_); // declare resources first
     return *resourceManager_;
+}
+
+void Root::dispose()
+{
+    auto disposeTask = [this]() -> void {
+        workspaces_.clear();
+        resourceManager_.reset();
+        vulkanDevice_.reset();
+        vulkanInstance_.reset();
+    };
+
+    taskManager_.submitTask(disposeTask).get();
+
+    taskManager_.stop();
 }
 }

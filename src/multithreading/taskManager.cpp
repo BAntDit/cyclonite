@@ -26,15 +26,15 @@ TaskManager::TaskManager(size_t workerCount)
 TaskManager::~TaskManager()
 {
     stop();
-
-    for (auto&& thread : threadPool_) {
-        if (thread.joinable())
-            thread.join();
-    }
 }
 
 void TaskManager::stop()
 {
     alive_.store(false);
+
+    for (auto&& thread : threadPool_) {
+        if (thread.joinable())
+            thread.join();
+    }
 }
 }
