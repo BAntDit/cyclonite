@@ -32,14 +32,16 @@ auto Worker::pendingTask() -> std::optional<Task>
 {
     auto task = std::optional<Task>{ std::nullopt };
 
-    if (auto task_pointer = queue().popBottom()) {
-        task = std::move(*task_pointer.value());
+    if (auto taskPointer = queue().popBottom()) {
+        task = std::move(*taskPointer.value());
     } else {
+        auto workerCount = taskManager().workerCount();
+        auto workerIndex = randomWorkerIndex(workerCount);
         auto& workers = taskManager().workers();
-        auto& worker = workers[randomWorkerIndex(workers.size())];
+        auto& worker = workers[workerIndex];
 
-        if (auto stolen_task_ptr = worker.queue().steal()) {
-            task = std::move(*stolen_task_ptr.value());
+        if (auto stolenTaskPtr = worker.queue().steal()) {
+            task = std::move(*stolenTaskPtr.value());
         }
     }
 

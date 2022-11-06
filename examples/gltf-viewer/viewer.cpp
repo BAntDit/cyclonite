@@ -109,19 +109,24 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
 
 auto Viewer::run() -> Viewer&
 {
-    auto start = std::chrono::high_resolution_clock::now();
+    auto mainTask = [this]() -> void {
+        auto start = std::chrono::high_resolution_clock::now();
 
-    while (controller_->alive()) {
-        auto end = std::chrono::high_resolution_clock::now();
+        while (controller_->alive()) {
+            auto end = std::chrono::high_resolution_clock::now();
 
-        auto dt = std::chrono::duration<real, std::ratio<1>>{ end - start }.count();
+            auto dt = std::chrono::duration<real, std::ratio<1>>{ end - start }.count();
 
-        start = end;
+            start = end;
 
-        controller_->update(*model_, dt);
+            controller_->update(*model_, dt);
 
-        view_->draw(root_->device());
-    }
+            view_->draw(root_->device());
+        }
+    };
+
+    auto future = root_->taskManager().start(mainTask);
+    future.get();
 
     return *this;
 }
@@ -141,6 +146,8 @@ void Viewer::done()
         auto& node = workspace->get(node_type_register_t::node_key_t<SurfaceNodeConfig>{});
         node.systems().get<systems::RenderSystem>().finish();
     }
+
+    root_->taskManager().stop();
 }
 }
 

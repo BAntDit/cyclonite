@@ -26,7 +26,7 @@ void RenderSystem::finish()
     assert(taskManager_ != nullptr);
     assert(device_ != nullptr);
 
-    auto gfxStop = taskManager_->submit([queue = device_->graphicsQueue()]() -> void {
+    auto gfxStop = taskManager_->submitRenderTask([queue = device_->graphicsQueue()]() -> void {
         if (auto result = vkQueueWaitIdle(queue); result != VK_SUCCESS) {
             if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
                 throw std::runtime_error("could not wait until graphics queue gets idle, out of host memory");
@@ -42,7 +42,7 @@ void RenderSystem::finish()
         }
     });
 
-    auto transferStop = taskManager_->submit([queue = device_->hostTransferQueue()]() -> void {
+    auto transferStop = taskManager_->submitRenderTask([queue = device_->hostTransferQueue()]() -> void {
         if (auto result = vkQueueWaitIdle(queue); result != VK_SUCCESS) {
             if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
                 throw std::runtime_error("could not wait until transfer queue gets idle, out of host memory");

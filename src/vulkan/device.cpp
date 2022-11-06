@@ -7,7 +7,7 @@
 #include <boost/cstdfloat.hpp>
 
 namespace cyclonite::vulkan {
-Device::Device(multithreading::TaskManager const& taskManager,
+Device::Device(multithreading::TaskManager& taskManager,
                VkInstance vkInstance,
                VkPhysicalDevice const& vkPhysicalDevice,
                VkPhysicalDeviceProperties const& physicalDeviceProperties,
@@ -125,7 +125,7 @@ Device::Device(multithreading::TaskManager const& taskManager,
 
     memoryManager_ = std::make_unique<MemoryManager>(taskManager, *this);
 
-    commandPool_ = std::make_shared<CommandPool>(taskManager, *this);
+    commandPool_ = std::make_shared<CommandPool>(*this);
 }
 
 auto Device::graphicsQueue() const -> VkQueue

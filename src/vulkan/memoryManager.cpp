@@ -6,8 +6,7 @@
 #include "device.h"
 
 namespace cyclonite::vulkan {
-MemoryManager::MemoryManager(cyclonite::multithreading::TaskManager const& taskManager,
-                             cyclonite::vulkan::Device const& device)
+MemoryManager::MemoryManager(multithreading::TaskManager& taskManager, vulkan::Device const& device)
   : taskManager_{ &taskManager }
   , device_{ &device }
   , pages_{}
@@ -59,7 +58,7 @@ auto MemoryManager::alloc(VkMemoryRequirements const& memoryRequirements, VkMemo
         throw std::runtime_error("failed to get correct memory type");
     }
 
-    auto future = taskManager_->strand([&, this]() -> MemoryPage::AllocatedMemory {
+    auto allocationTask = [&, this]() -> MemoryPage::AllocatedMemory {
         auto& pages = pages_[{ memoryTypeIndex, align }];
 
         if (auto it = std::find_if(
@@ -79,8 +78,17 @@ auto MemoryManager::alloc(VkMemoryRequirements const& memoryRequirements, VkMemo
                             MemoryPage::private_tag{})
               .alloc(size);
         }
-    });
+    };
 
-    return future.get();
+    auto allocatedMemory = MemoryPage::AllocatedMemory{};
+
+    if (multithreading::Render::isInRenderThread()) {
+        allocatedMemory = allocationTask();
+    } else {
+        auto future = taskManager_->submitRenderTask(allocationTask);
+        allocatedMemory = future.get();
+    }
+
+    return allocatedMemory;
 }
 }

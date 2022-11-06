@@ -8,7 +8,7 @@
 
 namespace cyclonite::vulkan {
 // memory manager always creates new memory page in strand
-MemoryPage::MemoryPage(multithreading::TaskManager const& taskManager,
+MemoryPage::MemoryPage(multithreading::TaskManager& taskManager,
                        Device const& device,
                        VkDeviceSize pageSize,
                        uint32_t memoryTypeIndex,
@@ -77,13 +77,18 @@ MemoryPage::MemoryPage(MemoryPage&& memoryPage) noexcept
 
 MemoryPage::~MemoryPage()
 {
-    auto future = taskManager_->strand([this]() -> void {
+    auto unmapMemoryTask = [this]() -> void {
         if (hostVisible_ && vkDevice_ != VK_NULL_HANDLE && ptr_ != nullptr) {
             vkUnmapMemory(vkDevice_, handle());
         }
-    });
+    };
 
-    future.get();
+    if (multithreading::Render::isInRenderThread()) {
+        unmapMemoryTask();
+    } else {
+        auto future = taskManager_->submitRenderTask(unmapMemoryTask);
+        future.get();
+    }
 }
 
 auto MemoryPage::operator=(MemoryPage&& rhs) noexcept -> MemoryPage&

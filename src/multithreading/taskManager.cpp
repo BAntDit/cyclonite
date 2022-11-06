@@ -3,6 +3,7 @@
 //
 
 #include "taskManager.h"
+#include "render.h"
 
 namespace cyclonite::multithreading {
 static constexpr auto _taskPoolSize = size_t{ 1024 };
@@ -17,14 +18,23 @@ TaskManager::TaskManager(size_t workerCount)
     for (auto i = size_t{ 0 }; i < workerCount_; i++) {
         new (&workers_[i]) Worker{ *this, _taskPoolSize };
     }
+
+    threadPool_.reserve(workerCount_);
+    threadPool_.emplace_back([](Render& render) -> void { render(); }, std::ref(render_));
 }
 
 TaskManager::~TaskManager()
 {
-    alive_.store(false);
+    stop();
 
     for (auto&& thread : threadPool_) {
-        thread.join();
+        if (thread.joinable())
+            thread.join();
     }
+}
+
+void TaskManager::stop()
+{
+    alive_.store(false);
 }
 }

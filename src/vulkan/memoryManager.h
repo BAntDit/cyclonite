@@ -14,7 +14,7 @@ namespace cyclonite::vulkan {
 class MemoryManager
 {
 public:
-    MemoryManager(multithreading::TaskManager const& taskManager, Device const& device);
+    MemoryManager(multithreading::TaskManager& taskManager, Device const& device);
 
     [[nodiscard]] auto alloc(VkMemoryRequirements const& memoryRequirements, VkMemoryPropertyFlags memoryPropertyFlags)
       -> buffers::Arena<MemoryPage>::AllocatedMemory;
@@ -48,7 +48,7 @@ private:
 
     using page_key_t = std::pair<uint32_t, VkDeviceSize>; // memory type / align
 
-    multithreading::TaskManager const* taskManager_;
+    multithreading::TaskManager* taskManager_;
     Device const* device_;
     std::unordered_map<page_key_t, std::vector<MemoryPage>, boost::hash<page_key_t>> pages_;
     std::unordered_map<uint32_t, MemoryType> memoryTypes_;

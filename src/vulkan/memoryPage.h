@@ -34,7 +34,7 @@ private:
 public:
     friend class MemoryManager;
 
-    MemoryPage(multithreading::TaskManager const& taskManager,
+    MemoryPage(multithreading::TaskManager& taskManager,
                Device const& device,
                VkDeviceSize pageSize,
                uint32_t memoryTypeIndex,
@@ -56,7 +56,7 @@ public:
     [[nodiscard]] auto ptr() const -> void* { return ptr_; }
 
 private:
-    multithreading::TaskManager const* taskManager_;
+    multithreading::TaskManager* taskManager_;
     VkDevice vkDevice_;
     bool hostVisible_;
     Handle<VkDeviceMemory> vkDeviceMemory_;

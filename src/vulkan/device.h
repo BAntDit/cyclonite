@@ -29,7 +29,7 @@ public:
     };
 
 public:
-    Device(multithreading::TaskManager const& taskManager,
+    Device(multithreading::TaskManager& taskManager,
            VkInstance vkInstance,
            VkPhysicalDevice const& vkPhysicalDevice,
            VkPhysicalDeviceProperties const& physicalDeviceProperties,

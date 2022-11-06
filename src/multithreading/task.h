@@ -15,7 +15,7 @@ template<typename F>
 concept TaskFunctor = requires(F&& f)
 {
     // !std::is_same_v<std::decay_t<F>, Task> &&
-      std::invoke(std::forward<F>(f));
+    std::invoke(std::forward<F>(f));
 };
 
 class alignas(hardware_constructive_interference_size) Task
