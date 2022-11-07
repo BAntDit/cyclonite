@@ -1,3 +1,15 @@
+## 0.3.0 (2022-11-07)
+
+### Feat
+
+- **multithreading**: new task manager based on WSD instead of boost::asio.
+
+### Fix
+
+- **vulkan**: fixes validation error on attempt to free empty command buffers.
+- **resources**: fixes a crash on attempt to destroy resource manager.
+- **resources**: fixes a crash on attempt to free dynamic buffer.
+
 ## 0.2.0 (2022-10-25)
 
 ### Feat
