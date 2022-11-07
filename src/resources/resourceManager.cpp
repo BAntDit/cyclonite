@@ -165,7 +165,7 @@ void ResourceManager::freeDynamicBuffer(uint16_t dynamicIndex, size_t offset, si
         (void)nextOffset;
         freeSize = freeSize + nextSize;
 
-        ranges.erase(prevRange);
+        ranges.erase(nextRange);
     }
 
     ranges.insert(std::pair{ static_cast<size_t>(freeOffset), static_cast<size_t>(freeSize) });
