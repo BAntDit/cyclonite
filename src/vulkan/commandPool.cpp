@@ -52,6 +52,9 @@ CommandPool::~CommandPool() noexcept
 
         auto& [pool, buffers] = v;
 
+        if (buffers.empty())
+            continue;
+
         vkFreeCommandBuffers(vkDevice_, static_cast<VkCommandPool>(pool), buffers.size(), buffers.data());
 
         buffers.clear();
