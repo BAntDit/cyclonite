@@ -251,7 +251,10 @@ auto ResourceManager::getDynamicData(Resource::Id id) const -> std::byte const*
 
 ResourceManager::~ResourceManager()
 {
-    for (auto index = size_t{ 0 }, count = resources_.size(); index < count; index++) {
+    if (resources_.empty())
+        return;
+
+    for (auto index = static_cast<int32_t>(resources_.size() - 1); index >= 0; index--) {
         auto&& r = resources_[index];
 
         if (r.size == 0)
