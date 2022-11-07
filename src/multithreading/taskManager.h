@@ -7,7 +7,6 @@
 
 #include "render.h"
 #include "worker.h"
-#include <boost/asio.hpp>
 #include <thread>
 #include <type_traits>
 #include <vector>
