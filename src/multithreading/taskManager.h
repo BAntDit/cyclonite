@@ -14,6 +14,9 @@
 
 namespace cyclonite::multithreading {
 
+/**
+ * Task manager class
+ */
 class TaskManager
 {
     friend class Worker;
