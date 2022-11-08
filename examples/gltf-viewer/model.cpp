@@ -449,4 +449,9 @@ void Model::setCameraTransform(mat4 const& transform)
     transformComponent->matrix = transform;
     transformComponent->state = cyclonite::components::Transform::State::UPDATE_COMPONENTS;
 }
+
+void Model::dispose()
+{
+    workspace_.reset();
+}
 }

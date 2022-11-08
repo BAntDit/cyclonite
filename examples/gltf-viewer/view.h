@@ -28,6 +28,8 @@ public:
 
     [[nodiscard]] auto workspace() -> std::shared_ptr<cyclonite::compositor::Workspace>& { return workspace_; }
 
+    void dispose();
+
 private:
     std::shared_ptr<cyclonite::compositor::Workspace> workspace_;
 };

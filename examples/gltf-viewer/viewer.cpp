@@ -147,6 +147,8 @@ void Viewer::done()
         node.systems().get<systems::RenderSystem>().finish();
     }
 
+    view_->dispose();
+    model_->dispose();
     root_->dispose();
 }
 }

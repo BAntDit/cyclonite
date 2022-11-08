@@ -24,6 +24,8 @@ public:
 
     void setCameraTransform(cyclonite::mat4 const& transform);
 
+    void dispose();
+
 private:
     std::shared_ptr<cyclonite::compositor::Workspace> workspace_;
 };

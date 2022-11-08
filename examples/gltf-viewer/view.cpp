@@ -35,4 +35,9 @@ void View::draw(cyclonite::vulkan::Device& device)
 {
     workspace_->render(device);
 }
+
+void View::dispose()
+{
+    workspace_.reset();
+}
 }
