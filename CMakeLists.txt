@@ -152,6 +152,7 @@ set(SOURCES
     src/vulkan/imageView.cpp
     src/vulkan/buffer.cpp
     src/vulkan/frameBuffer.cpp
+    src/vulkan/shaderModule.cpp
     src/multithreading/task.cpp
     src/multithreading/taskPool.cpp
     src/multithreading/render.cpp

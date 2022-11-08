@@ -4,7 +4,6 @@
 
 #include "node.h"
 #include "shaders/shaderDefinitions.h"
-#include "vulkan/shaderModule.h"
 
 namespace cyclonite::compositor {
 void createPass(vulkan::Device& device,
@@ -17,6 +16,10 @@ void createPass(vulkan::Device& device,
                 uint32_t attachmentCount,
                 PassType inPassType,
                 PassType& outPassType,
+                std::unique_ptr<vulkan::ShaderModule>& vertexSceneShader,
+                std::unique_ptr<vulkan::ShaderModule>& fragmentSceneShader,
+                std::unique_ptr<vulkan::ShaderModule>& vertexScreenShader,
+                std::unique_ptr<vulkan::ShaderModule>& fragmentScreenShader,
                 vulkan::Handle<VkDescriptorPool>& outDescriptorPool,
                 vulkan::Handle<VkDescriptorSetLayout>& outDescriptorSetLayout,
                 vulkan::Handle<VkPipelineLayout>& outPipelineLayout,
@@ -76,29 +79,44 @@ void createPass(vulkan::Device& device,
 
     // DUMMY PIPELINE, just for now
     {
-        vulkan::ShaderModule vertexShaderModule{
-            device,
-            shaders::getShader(inPassType == PassType::SCENE ? shaders::ShaderType::DEFAULT_VERTEX_TRANSFORM_SHADER
-                                                             : shaders::ShaderType::SCREEN_TRIANGLE_VERTEX_SHADER),
-            VK_SHADER_STAGE_VERTEX_BIT
-        };
-        vulkan::ShaderModule fragmentShaderModule{
-            device,
-            getShader(inPassType == PassType::SCENE ? shaders::ShaderType::DEFAULT_G_BUFFER_FRAGMENT_SHADER
-                                                    : shaders::ShaderType::SCREEN_G_BUFFER_DEBUG_FRAGMENT_SHADER),
-            VK_SHADER_STAGE_FRAGMENT_BIT
-        };
+        if (inPassType == PassType::SCENE) {
+            if (!vertexSceneShader)
+                vertexSceneShader = std::make_unique<vulkan::ShaderModule>(
+                  device,
+                  shaders::getShader(shaders::ShaderType::DEFAULT_VERTEX_TRANSFORM_SHADER),
+                  VK_SHADER_STAGE_VERTEX_BIT);
+
+            if (!fragmentSceneShader)
+                fragmentSceneShader = std::make_unique<vulkan::ShaderModule>(
+                  device,
+                  shaders::getShader(shaders::ShaderType::DEFAULT_G_BUFFER_FRAGMENT_SHADER),
+                  VK_SHADER_STAGE_FRAGMENT_BIT);
+        } else if (inPassType == PassType::SCREEN) {
+            if (!vertexScreenShader)
+                vertexScreenShader = std::make_unique<vulkan::ShaderModule>(
+                  device,
+                  shaders::getShader(shaders::ShaderType::SCREEN_TRIANGLE_VERTEX_SHADER),
+                  VK_SHADER_STAGE_VERTEX_BIT);
+
+            if (!fragmentScreenShader)
+                fragmentScreenShader = std::make_unique<vulkan::ShaderModule>(
+                  device,
+                  shaders::getShader(shaders::ShaderType::SCREEN_G_BUFFER_DEBUG_FRAGMENT_SHADER),
+                  VK_SHADER_STAGE_FRAGMENT_BIT);
+        }
 
         VkPipelineShaderStageCreateInfo vertexShaderStageInfo = {};
         vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-        vertexShaderStageInfo.module = vertexShaderModule.handle();
+        vertexShaderStageInfo.module =
+          (inPassType == PassType::SCENE) ? vertexSceneShader->handle() : vertexScreenShader->handle();
         vertexShaderStageInfo.pName = "main";
 
         VkPipelineShaderStageCreateInfo fragmentShaderStageInfo = {};
         fragmentShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         fragmentShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        fragmentShaderStageInfo.module = fragmentShaderModule.handle();
+        fragmentShaderStageInfo.module =
+          (inPassType == PassType::SCENE) ? fragmentSceneShader->handle() : fragmentScreenShader->handle();
         fragmentShaderStageInfo.pName = "main";
 
         std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = { vertexShaderStageInfo,
@@ -117,16 +135,16 @@ void createPass(vulkan::Device& device,
         auto&& [x, y, width, height] = viewport;
 
         VkViewport vkViewport = {};
-        vkViewport.x = x;
-        vkViewport.y = y;
-        vkViewport.width = width;
-        vkViewport.height = height;
+        vkViewport.x = static_cast<real>(x);
+        vkViewport.y = static_cast<real>(y);
+        vkViewport.width = static_cast<real>(width);
+        vkViewport.height = static_cast<real>(height);
         vkViewport.minDepth = 0.0;
         vkViewport.maxDepth = 1.0;
 
         VkRect2D vkScissor = {};
-        vkScissor.offset.x = x;
-        vkScissor.offset.y = y;
+        vkScissor.offset.x = static_cast<int32_t>(x);
+        vkScissor.offset.y = static_cast<int32_t>(y);
         vkScissor.extent.width = width;
         vkScissor.extent.height = height;
 

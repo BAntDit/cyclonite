@@ -6,8 +6,10 @@
 #define CYCLONITE_NODE_H
 
 #include "baseNode.h"
+#include "vulkan/shaderModule.h"
 
 namespace cyclonite::compositor {
+
 extern void createPass(vulkan::Device& device,
                        uint32_t subPassIndex,
                        bool depthStencilRequired,
@@ -18,6 +20,10 @@ extern void createPass(vulkan::Device& device,
                        uint32_t attachmentCount,
                        PassType inPassType,
                        PassType& outPassType,
+                       std::unique_ptr<vulkan::ShaderModule>& vertexSceneShader,
+                       std::unique_ptr<vulkan::ShaderModule>& fragmentSceneShader,
+                       std::unique_ptr<vulkan::ShaderModule>& vertexScreenShader,
+                       std::unique_ptr<vulkan::ShaderModule>& fragmentScreenShader,
                        vulkan::Handle<VkDescriptorPool>& outDescriptorPool,
                        vulkan::Handle<VkDescriptorSetLayout>& outDescriptorSetLayout,
                        vulkan::Handle<VkPipelineLayout>& outPipelineLayout,
@@ -88,6 +94,12 @@ private:
     entity_manager_t entities_;
     system_manager_t systems_;
 
+    // dummy, tmp solution:
+    std::unique_ptr<vulkan::ShaderModule> vertexSceneShader_;
+    std::unique_ptr<vulkan::ShaderModule> fragmentSceneShader_;
+    std::unique_ptr<vulkan::ShaderModule> vertexScreenShader_;
+    std::unique_ptr<vulkan::ShaderModule> fragmentScreenShader_;
+
     std::array<PassType, pass_count_v> passTypes_;
     std::array<vulkan::Handle<VkDescriptorPool>, pass_count_v> passDescriptorPool_;
     std::array<vulkan::Handle<VkDescriptorSetLayout>, pass_count_v> passDescriptorSetLayout_;
@@ -102,6 +114,16 @@ Node<Config>::Node(size_t bufferCount)
   : BaseNode{ bufferCount }
   , entities_{}
   , systems_{ &entities_ }
+  , vertexSceneShader_{}
+  , fragmentSceneShader_{}
+  , vertexScreenShader_{}
+  , fragmentScreenShader_{}
+  , passTypes_{}
+  , passDescriptorPool_{}
+  , passDescriptorSetLayout_{}
+  , passPipelineLayout_{}
+  , passPipeline_{}
+  , expirationBits_{}
 {}
 
 template<typename Config>
@@ -270,6 +292,10 @@ void Node<Config>::_createPass(uint32_t subPassIndex,
                getRenderTargetBase().colorAttachmentCount(),
                passType,
                passTypes_[subPassIndex],
+               vertexSceneShader_,
+               fragmentSceneShader_,
+               vertexScreenShader_,
+               fragmentScreenShader_,
                passDescriptorPool_[subPassIndex],
                passDescriptorSetLayout_[subPassIndex],
                passPipelineLayout_[subPassIndex],
