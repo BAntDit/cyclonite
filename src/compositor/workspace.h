@@ -5,11 +5,16 @@
 #ifndef CYCLONITE_WORKSPACE_H
 #define CYCLONITE_WORKSPACE_H
 
-#include "node.h"
-#include "nodeBuilder.h"
-#include "nodeInterface.h"
+#include "baseGraphicsNode.h" // TODO:: graphics node
+#include "logicNode.h"
+#include "logicNodeBuilder.h"
+#include "logicNodeInterface.h"
 
 namespace cyclonite::compositor {
+template<NodeConfig Config>
+using node_t =
+  typename std::conditional_t<config_traits::is_logic_node_v<Config>, LogicNode<Config>, LogicNode<Config>>;
+
 class Workspace
 {
 public:
@@ -21,38 +26,75 @@ public:
 
     void render(vulkan::Device& device);
 
-    template<typename NodeConfig, typename NodeTypeId>
-    auto get(type_pair<Node<NodeConfig>, NodeTypeId>) -> Node<NodeConfig>&;
+    template<NodeConfig Config, uint64_t NodeTypeId>
+    auto get(type_pair<node_t<Config>, std::integral_constant<uint64_t, NodeTypeId>>) -> node_t<Config>&;
 
-    template<typename NodeConfig, typename NodeTypeId>
-    [[nodiscard]] auto get(type_pair<Node<NodeConfig>, NodeTypeId>) const -> Node<NodeConfig> const&;
+    template<NodeConfig Config, uint64_t NodeTypeId>
+    [[nodiscard]] auto get(type_pair<node_t<Config>, std::integral_constant<uint64_t, NodeTypeId>>) const
+      -> node_t<Config> const&;
 
 public:
     class Builder
     {
     public:
-        explicit Builder(vulkan::Device& device, uint8_t maxNodeCount = 10, size_t maxBytesPerNode = 64 * 1024);
+        explicit Builder(vulkan::Device& device,
+                         size_t maxBytesPerNode = 64 * 1024,
+                         uint8_t maxLogicNodeCount = 10,
+                         uint8_t maxGraphicNodeCount = 10);
 
-        template<typename NodeConfig, typename NodeTypeId, typename NodeFactory>
-        auto createNode(type_pair<Node<NodeConfig>, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if_t<
-          std::is_same_v<Node<NodeConfig>, std::decay_t<std::result_of_t<NodeFactory(vulkan::Device&)>>>,
-          Builder&>;
+        // TODO:: createNode generic
 
         auto build() -> Workspace;
 
     private:
-        auto allocateNode(size_t size) -> void*;
+        template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
+        auto createLogicNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if_t<
+          config_traits::is_logic_node_v<Config> &&
+            std::is_same_v<LogicNode<Config>,
+                           std::decay_t<std::result_of_t<NodeFactory(BaseLogicNode::Builder<Config>&&)>>>,
+          Builder&>;
+
+        // template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
+        // auto createGraphicsNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) ->
+        // std::enable_if<config_traits::is_logic_node<Config>
+        //  && std::is_same_v<
+        //
+        //                                                                                                           >,
+        //                                                                                                           Builder&>;
+
+        [[nodiscard]] auto nodeCount(bool isLogic) const -> uint8_t;
+        [[nodiscard]] auto nodeOffset(bool isLogic, size_t index) const -> size_t;
+        [[nodiscard]] auto nodeSize(bool isLogic, size_t index) const -> size_t;
+        [[nodiscard]] auto nodeStorage(bool isLogic) const -> std::byte const*;
+
+        auto nodeCount(bool isLogic) -> uint8_t&;
+        auto nodeOffset(bool isLogic, size_t index) -> size_t&;
+        auto nodeSize(bool isLogic, size_t index) -> size_t&;
+        auto nodeStorage(bool isLogic) -> std::byte*;
+
+        void emplaceNodeTypeId(uint64_t value);
+
+        template<NodeConfig Config>
+        auto allocateNodeMemory()
+          -> std::enable_if_t<(sizeof(node_t<Config>) % hardware_constructive_interference_size) == 0, void*>;
 
         vulkan::Device* device_;
+        std::vector<size_t> logicNodeOffsets_;
+        std::vector<size_t> graphicNodeOffsets_;
+        std::vector<size_t> logicNodeSizes_;
+        std::vector<size_t> graphicNodeSizes_;
+        std::vector<std::byte> logicNodeStorage_; // TODO:: change to the aligned storage
+        std::vector<std::byte> graphicNodeStorage_;
+
+        std::unordered_map<uint64_t, LogicNodeInterface> logicNodes_;
+        std::unordered_map<uint64_t, GraphicsNode> graphicNodes_;
+
+        uint8_t logicNodeCount_;
+        uint8_t graphicNodeCount_;
+
         std::vector<uint8_t> waitSemaphoresPerNodeCount_;
         std::vector<vulkan::Handle<VkSemaphore>> nodeSignalSemaphores_;
         std::vector<VkSemaphore> nodeWaitSemaphores_;
-        uint8_t nodeCount_;
-        std::vector<std::byte> nodeStorage_;
-        std::vector<size_t> nodeSizes_;
-        std::vector<size_t> nodeOffsets_;
-        std::vector<NodeInterface> nodes_;
-        std::vector<uint64_t> nodeTypeIds_;
     };
 
 private:
@@ -81,10 +123,46 @@ private:
     uint8_t presentationNodeIndex_;
 };
 
+template<NodeConfig Config>
+auto Workspace::Builder::allocateNodeMemory()
+  -> std::enable_if_t<(sizeof(node_t<Config>) % hardware_constructive_interference_size) == 0, void*>
+{
+    auto isLogic = config_traits::is_logic_node_v<Config>;
+
+    auto offset = (nodeCount(isLogic) > 0)
+                    ? (nodeOffset(isLogic, nodeCount(isLogic) - 1) + nodeSize(isLogic, nodeCount(isLogic) - 1))
+                    : size_t{ 0 };
+
+    nodeSize(isLogic, nodeCount(isLogic)) = sizeof(node_t<Config>);
+    nodeOffset(isLogic, nodeCount(isLogic)) = offset;
+
+    nodeCount(isLogic)++;
+
+    return nodeStorage(isLogic) + offset;
+}
+
+template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
+auto Workspace::Builder::createLogicNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if_t<
+  config_traits::is_logic_node_v<Config> &&
+    std::is_same_v<LogicNode<Config>, std::decay_t<std::result_of_t<NodeFactory(BaseLogicNode::Builder<Config>&&)>>>,
+  Builder&>
+{
+    logicNodes_.emplace(std::pair{
+      NodeTypeId::value,
+      LogicNodeInterface{ new (allocateNodeMemory<Config>()) LogicNode<Config>{},
+                          [](void* node, uint32_t frameIndex, real deltaTime) -> void {
+                              (reinterpret_cast<LogicNode<Config>*>(node))->update(frameIndex, deltaTime);
+                          },
+                          [](void* node) -> void { (reinterpret_cast<LogicNode<Config>*>(node))->dispose(); } } });
+
+    return *this;
+}
+
 template<typename NodeConfig, typename NodeTypeId, typename NodeFactory>
 auto Workspace::Builder::createNode(type_pair<Node<NodeConfig>, NodeTypeId>, NodeFactory&& nodeFactory)
-  -> std::enable_if_t<std::is_same_v<Node<NodeConfig>, std::decay_t<std::result_of_t<NodeFactory(vulkan::Device&)>>>,
-                      Builder&>
+  -> std::enable_if_t<
+    std::is_same_v<Node<NodeConfig>, std::decay_t<std::result_of_t<NodeFactory(BaseNode::Builder<NodeConfig>&&)>>>,
+    Builder&>
 {
     nodes_.emplace_back(
       new (allocateNode(sizeof(Node<NodeConfig>)))

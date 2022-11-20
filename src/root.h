@@ -5,8 +5,8 @@
 #ifndef CYCLONITE_ROOT_H
 #define CYCLONITE_ROOT_H
 
+#include "compositor/config.h"
 #include "compositor/workspace.h"
-#include "config.h"
 #include "input.h"
 #include "multithreading/taskManager.h"
 #include "platform.h"

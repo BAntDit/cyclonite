@@ -308,7 +308,29 @@ auto Node<Config>::isSurfaceNode() -> bool
     return is_surface_node;
 }
 
+// TODO:: move to config
 namespace details {
+template<typename... Ts>
+struct get_max_node_size;
+
+template<typename T>
+struct get_max_node_size<T>
+{
+    static constexpr size_t value = sizeof(T);
+};
+
+template<typename T, typename... Ts>
+struct get_max_node_size<T, Ts...>
+{
+    static constexpr size_t value = std::max(sizeof(T), get_max_node_size<Ts...>::value);
+};
+
+template<>
+struct get_max_node_size<>
+{
+    static constexpr size_t value = 0;
+};
+
 template<uint64_t Id, typename T, typename... Ts>
 struct get_type_id;
 
@@ -370,6 +392,8 @@ struct node_type_register
     template<typename NodeConfig>
     using node_type_t = typename details::get_node_type<details::get_type_id<0, Node<NodeConfig>, NodeTypes...>::id_v,
                                                         NodeTypes...>::type_t;
+
+    static constexpr size_t max_node_size_v = details::get_max_node_size<NodeTypes...>::value;
 };
 }
 

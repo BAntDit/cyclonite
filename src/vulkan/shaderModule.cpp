@@ -4,8 +4,7 @@
 
 #include "shaderModule.h"
 
-namespace cyclonite::vulkan
-{
+namespace cyclonite::vulkan {
 ShaderModule::ShaderModule(Device const& device,
                            std::vector<uint32_t> const& code,
                            VkShaderStageFlags stageFlags,

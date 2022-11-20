@@ -6,35 +6,72 @@
 
 namespace cyclonite::compositor {
 Workspace::Builder::Builder(vulkan::Device& device,
-                            uint8_t maxNodeCount /* = 10*/,
-                            size_t maxBytesPerNode /* = 64 * 1024*/)
+                            size_t maxBytesPerNode /* = 64 * 1024*/,
+                            uint8_t maxLogicNodeCount /* = 10*/,
+                            uint8_t maxGraphicNodeCount /* = 10*/)
   : device_{ &device }
+  , logicNodeOffsets_(maxLogicNodeCount, size_t{ 0 })
+  , graphicNodeOffsets_(maxGraphicNodeCount, size_t{ 0 })
+  , logicNodeSizes_(maxLogicNodeCount, std::size_t{ 0 })
+  , graphicNodeSizes_(maxGraphicNodeCount, std::size_t{ 0 })
+  , logicNodeStorage_(maxLogicNodeCount * maxBytesPerNode, std::byte{ 0 })
+  , graphicNodeStorage_(maxGraphicNodeCount * maxBytesPerNode, std::byte{ 0 })
+  , logicNodes_{}
+  , graphicNodes_{}
+  , logicNodeCount_{ 0 }
+  , graphicNodeCount_{ 0 }
   , waitSemaphoresPerNodeCount_{}
   , nodeSignalSemaphores_{}
   , nodeWaitSemaphores_{}
-  , nodeCount_{ 0 }
-  , nodeStorage_{ maxNodeCount * maxBytesPerNode, std::byte{ 0 } }
-  , nodeSizes_{ maxNodeCount, size_t{ 0 } }
-  , nodeOffsets_{ maxNodeCount, size_t{ 0 } }
-  , nodes_{}
+{}
+
+auto Workspace::Builder::nodeCount(bool isLogic) const -> uint8_t
 {
-    nodes_.reserve(maxNodeCount);
-    nodeTypeIds_.reserve(maxNodeCount);
+    return isLogic ? logicNodeCount_ : graphicNodeCount_;
 }
 
-auto Workspace::Builder::allocateNode(size_t size) -> void*
+auto Workspace::Builder::nodeOffset(bool isLogic, size_t index) const -> size_t
 {
-    auto offset = (nodeCount_ > 0) ? (nodeOffsets_[nodeCount_ - 1] + nodeSizes_[nodeCount_ - 1]) : size_t{ 0 };
+    assert((isLogic && index < logicNodeOffsets_.size()) || (!isLogic && index < graphicNodeOffsets_.size()));
+    return isLogic ? logicNodeOffsets_[index] : graphicNodeOffsets_[index];
+}
 
-    auto align = size_t{ 64 };
-    auto alignedSize = size + (((size % align) > 0) ? (align - (size % align)) : size_t{ 0 });
+auto Workspace::Builder::nodeSize(bool isLogic, size_t index) const -> size_t
+{
+    assert((isLogic && index < logicNodeSizes_.size()) || (!isLogic && index < graphicNodeSizes_.size()));
+    return isLogic ? logicNodeSizes_[index] : graphicNodeSizes_[index];
+}
 
-    nodeSizes_[nodeCount_] = alignedSize;
-    nodeOffsets_[nodeCount_] = offset;
+auto Workspace::Builder::nodeStorage(bool isLogic) const -> std::byte const*
+{
+    return isLogic ? logicNodeStorage_.data() : graphicNodeStorage_.data();
+}
 
-    nodeCount_++;
+auto Workspace::Builder::nodeCount(bool isLogic) -> uint8_t&
+{
+    return isLogic ? logicNodeCount_ : graphicNodeCount_;
+}
 
-    return nodeStorage_.data() + offset;
+auto Workspace::Builder::nodeOffset(bool isLogic, size_t index) -> size_t&
+{
+    assert((isLogic && index < logicNodeOffsets_.size()) || (!isLogic && index < graphicNodeOffsets_.size()));
+    return isLogic ? logicNodeOffsets_[index] : graphicNodeOffsets_[index];
+}
+
+auto Workspace::Builder::nodeSize(bool isLogic, size_t index) -> size_t&
+{
+    assert((isLogic && index < logicNodeSizes_.size()) || (!isLogic && index < graphicNodeSizes_.size()));
+    return isLogic ? logicNodeSizes_[index] : graphicNodeSizes_[index];
+}
+
+auto Workspace::Builder::nodeStorage(bool isLogic) -> std::byte*
+{
+    return isLogic ? logicNodeStorage_.data() : graphicNodeStorage_.data();
+}
+
+void Workspace::Builder::emplaceNodeTypeId(uint64_t value)
+{
+    nodeTypeIds_.emplace_back(value);
 }
 
 auto Workspace::Builder::build() -> Workspace
