@@ -5,9 +5,7 @@
 #ifndef CYCLONITE_APP_H
 #define CYCLONITE_APP_H
 
-#include "defaultConfigs.h"
 #include "options.h"
-#include "systems/updateStages.h"
 #include <exception>
 #include <iostream>
 
@@ -16,10 +14,6 @@ template<class Application>
 class BaseApp
 {
 public:
-    using ecs_config_t = typename DefaultConfigs::ecs_config_t;
-
-    using config_t = Config<ecs_config_t>;
-
     auto init(Options options) -> Application&;
 
     auto run() -> Application&;

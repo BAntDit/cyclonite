@@ -9,8 +9,6 @@ option(DISABLE_SIMD "force disable SIMD" OFF)
 set(PUBLIC_HEADERS
     src/hash.h
     src/platform.h
-    src/config.h
-    src/defaultConfigs.h
     src/windowProperties.h
     src/options.h
     src/event.h
@@ -32,10 +30,16 @@ set(PUBLIC_HEADERS
     src/resources/resource.h
     src/resources/resourceManager.h
     src/resources/buffer.h
+    src/compositor/config.h
     src/compositor/nodeInterface.h
     src/compositor/passType.h
     src/compositor/links.h
     src/compositor/workspace.h
+    src/compositor/baseLogicNode.h
+    src/compositor/baseGraphicsNode.h
+    src/compositor/logicNode.h
+    src/compositor/logicNodeBuilder.h
+    src/compositor/logicNodeInterface.h
     src/compositor/baseNode.h
     src/compositor/node.h
     src/compositor/frameCommands.h
@@ -124,6 +128,7 @@ set(SOURCES
     src/compositor/links.cpp
     src/compositor/baseNode.cpp
     src/compositor/node.cpp
+    src/compositor/logicNodeInterface.cpp
     src/compositor/workspace.cpp
     src/components/transform.cpp
     src/components/camera.cpp
