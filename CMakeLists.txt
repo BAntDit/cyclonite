@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(cyclonite VERSION 0.0.2.0)
+project(cyclonite VERSION 0.3.0.0)
 
 option(ENABLE_SIMD_AVX2 "enable SIMD AVX2" OFF)
 option(ENABLE_SIMD_AVX "enable SIMD AVX" OFF)
@@ -19,6 +19,7 @@ set(PUBLIC_HEADERS
     src/surface.h
     src/error.h
     src/typedefs.h
+    src/scene.h
     src/animations/animation.h
     src/animations/sampler.h
     src/buffers/arena.h
@@ -31,6 +32,8 @@ set(PUBLIC_HEADERS
     src/resources/resourceManager.h
     src/resources/buffer.h
     src/compositor/config.h
+    src/compositor/nodeIdentifier.h
+    src/compositor/nodeTypeRegister.h
     src/compositor/nodeInterface.h
     src/compositor/passType.h
     src/compositor/links.h
@@ -38,6 +41,7 @@ set(PUBLIC_HEADERS
     src/compositor/baseLogicNode.h
     src/compositor/baseGraphicsNode.h
     src/compositor/logicNode.h
+    src/compositor/graphicsNode.h
     src/compositor/logicNodeBuilder.h
     src/compositor/logicNodeInterface.h
     src/compositor/baseNode.h
@@ -120,6 +124,7 @@ set(SOURCES
     src/resources/geometry.cpp
     src/resources/staging.cpp
     src/resources/resourceManager.cpp
+    src/compositor/nodeIdentifier.cpp
     src/compositor/nodeBuilder.cpp
     src/compositor/nodeInterface.cpp
     src/compositor/frameCommands.cpp
@@ -127,7 +132,7 @@ set(SOURCES
     src/compositor/workspaceBuilder.cpp
     src/compositor/links.cpp
     src/compositor/baseNode.cpp
-    src/compositor/node.cpp
+    src/compositor/graphicsNode.cpp
     src/compositor/logicNodeInterface.cpp
     src/compositor/workspace.cpp
     src/components/transform.cpp
