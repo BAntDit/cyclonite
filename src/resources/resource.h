@@ -16,6 +16,12 @@
 namespace cyclonite::resources {
 class ResourceManager;
 
+template<typename Loader, typename... Args>
+concept ResourceCustomLoader = requires(Loader&& l, ResourceManager& rm, Args&&... args)
+{
+    std::invoke(std::forward<Loader>(l), rm, std::forward<Args>(args)...);
+};
+
 // non-copyable and non-movable
 // can be accessed only by Id through the resource manager;
 class Resource
@@ -86,6 +92,9 @@ public:
 
     virtual void load(std::istream& stream);
 
+    template<ResourceCustomLoader CustomLoader, typename... Args>
+    void load(CustomLoader&& loader, Args&&... args);
+
     [[nodiscard]] virtual auto dependsOn(Resource::Id) const -> bool { return false; }
 
 protected:
@@ -141,6 +150,13 @@ template<typename T>
 auto Resource::is() const -> bool requires std::derived_from<T, Resource>
 {
     return instance_tag().staticDataIndex == T::type_tag_const().staticDataIndex;
+}
+
+template<ResourceCustomLoader CustomLoader, typename... Args>
+void Resource::load(CustomLoader&& loader, Args&&... args)
+{
+    assert(resourceManager_);
+    loader(*resourceManager_, std::forward<Args>(args)...);
 }
 }
 
