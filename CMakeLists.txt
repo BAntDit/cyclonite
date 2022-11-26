@@ -7,6 +7,7 @@ option(ENABLE_SIMD_AVX "enable SIMD AVX" OFF)
 option(DISABLE_SIMD "force disable SIMD" OFF)
 
 set(PUBLIC_HEADERS
+    src/config.h
     src/hash.h
     src/platform.h
     src/windowProperties.h
@@ -31,7 +32,6 @@ set(PUBLIC_HEADERS
     src/resources/resource.h
     src/resources/resourceManager.h
     src/resources/buffer.h
-    src/compositor/config.h
     src/compositor/nodeIdentifier.h
     src/compositor/nodeTypeRegister.h
     src/compositor/nodeInterface.h
