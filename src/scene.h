@@ -15,10 +15,10 @@ namespace internal {
 template<ComponentConfig ComponentCfg>
 struct get_entity_manager_config;
 
-template<typename... C, template<typename> typename... S>
-struct get_entity_manager_config<component_config_t<type_list<C...>, type_list<S<C>...>>>
+template<typename... C, typename... S>
+struct get_entity_manager_config<component_config_t<type_list<C...>, type_list<S...>>>
 {
-    using type = enttx::EntityManagerConfig<C..., S<C>...>;
+    using type = enttx::EntityManagerConfig<C..., S...>;
 };
 
 template<ComponentConfig ComponentCfg>

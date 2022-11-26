@@ -37,8 +37,8 @@ template<typename T, template<typename, typename> typename Spec>
 struct is_component_config_specialization : std::false_type
 {};
 
-template<typename... C, template<typename> typename... S, template<typename, typename> typename Spec>
-struct is_component_config_specialization<Spec<type_list<C...>, type_list<S<C>...>>, Spec> : std::true_type
+template<typename... C, typename... S, template<typename, typename> typename Spec>
+struct is_component_config_specialization<Spec<type_list<C...>, type_list<S...>>, Spec> : std::true_type
 {};
 
 template<typename T, template<typename, typename> typename Spec>
@@ -165,11 +165,11 @@ inline constexpr auto pass_count_v = get_pass_count<T>::value();
 template<ComponentConfig CompConfig, SystemsConfig SysConfig>
 struct Config;
 
-template<typename... Components, template<typename> typename... Storages, typename... Systems, size_t updateStageCount>
-struct Config<component_config_t<type_list<Components...>, type_list<Storages<Components>...>>,
+template<typename... Components, typename... Storages, typename... Systems, size_t updateStageCount>
+struct Config<component_config_t<type_list<Components...>, type_list<Storages...>>,
               systems_config_t<updateStageCount, type_list<Systems...>>>
 {
-    using component_config_t = component_config_t<type_list<Components...>, type_list<Storages<Components>...>>;
+    using component_config_t = component_config_t<type_list<Components...>, type_list<Storages...>>;
     using systems_config_t = systems_config_t<updateStageCount, type_list<Systems...>>;
 };
 
