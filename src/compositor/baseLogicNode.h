@@ -15,7 +15,7 @@ namespace cyclonite::compositor {
 class BaseLogicNode : public NodeIdentifier
 {
 public:
-    explicit BaseLogicNode(resources::ResourceManager& resourceManager) noexcept;
+    BaseLogicNode(resources::ResourceManager& resourceManager, std::string_view name) noexcept;
 
     [[nodiscard]] auto scene() const -> resources::Resource::Id { return scene_; }
     auto scene() -> resources::Resource::Id& { return scene_; }
