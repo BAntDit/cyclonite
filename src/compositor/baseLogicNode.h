@@ -6,25 +6,31 @@
 #define CYCLONITE_BASELOGICNODE_H
 
 #include "config.h"
+#include "nodeIdentifier.h"
+#include "resources/resource.h"
 #include <cstdint>
+#include <unordered_map>
 
 namespace cyclonite::compositor {
-class BaseLogicNode
+class BaseLogicNode : public NodeIdentifier
 {
 public:
-    BaseLogicNode() = default;
+    explicit BaseLogicNode(resources::ResourceManager& resourceManager) noexcept;
 
-    [[nodiscard]] auto camera() const -> uint64_t { return camera_; }
+    [[nodiscard]] auto scene() const -> resources::Resource::Id { return scene_; }
+    auto scene() -> resources::Resource::Id& { return scene_; }
+
+    [[nodiscard]] auto resourceManager() const -> resources::ResourceManager const& { return *resourceManager_; }
+    auto resourceManager() -> resources::ResourceManager& { return *resourceManager_; }
 
 public:
     template<NodeConfig Config>
     class Builder;
 
-protected:
-    auto camera() -> uint64_t& { return camera_; }
-
 private:
-    uint64_t camera_;
+    std::unordered_map<uint64_t, std::optional<std::shared_future<void>>> dependencies_;
+    resources::ResourceManager* resourceManager_;
+    resources::Resource::Id scene_;
 };
 }
 

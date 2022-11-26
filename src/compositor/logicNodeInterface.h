@@ -19,6 +19,16 @@ public:
 
     LogicNodeInterface(void* node, update_func_t updateFunc, dispose_func_t disposeFunc);
 
+    LogicNodeInterface(LogicNodeInterface const&) = default;
+
+    LogicNodeInterface(LogicNodeInterface&&) = default;
+
+    ~LogicNodeInterface() = default;
+
+    auto operator=(LogicNodeInterface const&) -> LogicNodeInterface& = default;
+
+    auto operator=(LogicNodeInterface &&) -> LogicNodeInterface& = default;
+
     auto get() -> BaseLogicNode&;
 
     [[nodiscard]] auto get() const -> BaseLogicNode const&;

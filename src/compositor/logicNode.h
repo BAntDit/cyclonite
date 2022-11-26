@@ -6,6 +6,7 @@
 #define CYCLONITE_LOGICNODE_H
 
 #include "baseLogicNode.h"
+#include "scene.h"
 #include "typedefs.h"
 
 namespace cyclonite::compositor {
@@ -13,13 +14,11 @@ template<NodeConfig Config>
 class alignas(hardware_constructive_interference_size) LogicNode : public BaseLogicNode
 {
 public:
-    using ecs_config_t = typename config_traits::get_ecs_config_t<Config>;
-    using node_component_list_t = typename ecs_config_t::component_list_t;
-    using node_storage_list_t = typename ecs_config_t::storage_list_t;
-    using node_system_list_t = typename ecs_config_t::system_list_t;
-
-    using entity_manager_t = typename ecs_config_t::entity_manager_t;
-    using system_manager_t = typename ecs_config_t::system_manager_t;
+    using component_config_t = typename Config::component_config_t;
+    using systems_config_t = typename Config::systems_config_t;
+    using entity_manager_t = enttx::EntityManager<component_config_t>;
+    using system_manager_t = enttx::SystemManager<systems_config_t>;
+    using scene_t = Scene<component_config_t>;
 
     LogicNode() = default;
 
@@ -33,13 +32,11 @@ public:
 
     auto operator=(LogicNode &&) -> LogicNode& = default;
 
+    [[nodiscard]] auto systems() const -> system_manager_t const& { return systems_; }
     auto systems() -> system_manager_t& { return systems_; }
 
-    [[nodiscard]] auto systems() const -> system_manager_t const& { return systems_; }
-
-    auto entities() -> entity_manager_t& { return entities_; }
-
-    [[nodiscard]] auto entities() const -> entity_manager_t const& { return entities_; }
+    [[nodiscard]] auto entities() const -> entity_manager_t const&;
+    auto entities() -> entity_manager_t&;
 
     void update(uint32_t frameIndex, real deltaTime);
 
@@ -49,15 +46,27 @@ public:
     }
 
 private:
-    entity_manager_t entities_;
     system_manager_t systems_;
-    uint64_t camera_;
 };
 
 template<NodeConfig Config>
 void LogicNode<Config>::update(uint32_t frameIndex, real deltaTime)
 {
-    systems_.update(this, frameIndex, deltaTime);
+    auto& s = resourceManager().get(scene()).template as<scene_t>();
+    systems_.update(s.entities(), this, frameIndex, deltaTime);
+}
+
+template<NodeConfig Config>
+auto LogicNode<Config>::entities() const -> entity_manager_t const&
+{
+    auto& s = resourceManager().get(scene()).template as<scene_t>();
+    return s.entities();
+}
+
+template<NodeConfig Config>
+auto LogicNode<Config>::entities() -> entity_manager_t&
+{
+    return const_cast<resources::ResourceManager&>(std::as_const(this)->entities());
 }
 }
 

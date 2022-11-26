@@ -133,6 +133,7 @@ set(SOURCES
     src/compositor/links.cpp
     src/compositor/baseNode.cpp
     src/compositor/graphicsNode.cpp
+    src/compositor/baseLogicNode.cpp
     src/compositor/logicNodeInterface.cpp
     src/compositor/workspace.cpp
     src/components/transform.cpp
