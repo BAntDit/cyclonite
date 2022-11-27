@@ -11,4 +11,20 @@ BaseLogicNode::BaseLogicNode(resources::ResourceManager& resourceManager, std::s
   , resourceManager_{ &resourceManager }
   , scene_{}
 {}
+
+void BaseLogicNode::waitForDependencies()
+{
+    for (auto&& [_, dep] : dependencies_) {
+        (void)_;
+        assert(dep);
+
+        dep->get();
+    }
+}
+
+void BaseLogicNode::updateDependency(uint64_t id, std::shared_future<void> const& dependency)
+{
+    assert(dependencies_.contains(id));
+    dependencies_[id] = dependency;
+}
 }

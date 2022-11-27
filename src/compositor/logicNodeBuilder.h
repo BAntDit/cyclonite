@@ -14,35 +14,35 @@ class BaseLogicNode::Builder
 {
 public:
     template<typename T, typename M>
-    Builder(resources::ResourceManager& resourceManager, T* wsBuilder, uint64_t (M::*indexToId)(size_t));
+    Builder(resources::ResourceManager& resourceManager, T* wsBuilder, uint64_t (M::*nameToId)(std::string_view));
 
     void setName(std::string_view name) { name_ = name; }
 
-    auto setDependencies(std::initializer_list<size_t> const& indices) -> Builder&;
+    auto addDependency(std::string_view name) -> Builder&;
 
     auto build() -> LogicNode<Config>;
 
 private:
     resources::ResourceManager* resourceManager_;
     std::string name_;
-    std::function<uint64_t(size_t)> indexToNodeId_;
-    std::vector<size_t> dependencies_;
+    std::function<uint64_t(std::string_view)> nameToNodeId_;
+    std::vector<std::string> dependencies_;
 };
 
 template<NodeConfig Config>
 template<typename T, typename M>
 BaseLogicNode::Builder<Config>::Builder(resources::ResourceManager& resourceManager,
                                         T* wsBuilder,
-                                        uint64_t (M::*indexToId)(size_t))
+                                        uint64_t (M::*nameToId)(std::string_view))
   : resourceManager_{ &resourceManager }
-  , indexToNodeId_{ [wsBuilder, indexToId](size_t i) -> uint64_t { return wsBuilder->*indexToId(i); } }
+  , nameToNodeId_{ [wsBuilder, nameToId](std::string_view n) -> uint64_t { return wsBuilder->*nameToId(n); } }
   , dependencies_{}
 {}
 
 template<NodeConfig Config>
-auto BaseLogicNode::Builder<Config>::setDependencies(std::initializer_list<size_t> const& indices) -> Builder<Config>&
+auto BaseLogicNode::Builder<Config>::addDependency(std::string_view name) -> Builder&
 {
-    dependencies_ = std::vector<size_t>{ indices };
+    dependencies_.emplace_back(name);
 }
 
 template<NodeConfig Config>
@@ -51,7 +51,7 @@ auto BaseLogicNode::Builder<Config>::build() -> LogicNode<Config>
     auto&& node = LogicNode<Config>{ *resourceManager_, std::string_view{ name_.data(), name_.size() } };
 
     for (auto&& dep : dependencies_) {
-        node.dependencies_.insert(std::pair{ indexToNodeId_(dep), std::nullopt });
+        node.dependencies_.insert(std::pair{ nameToNodeId_(dep), std::nullopt });
     }
 
     return node;

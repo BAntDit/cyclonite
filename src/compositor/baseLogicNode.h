@@ -23,6 +23,12 @@ public:
     [[nodiscard]] auto resourceManager() const -> resources::ResourceManager const& { return *resourceManager_; }
     auto resourceManager() -> resources::ResourceManager& { return *resourceManager_; }
 
+    void waitForDependencies();
+
+    auto dependsOn(uint64_t id) const -> bool { return dependencies_.contains(id); }
+
+    void updateDependency(uint64_t id, std::shared_future<void> const& dependency);
+
 public:
     template<NodeConfig Config>
     class Builder;
