@@ -12,7 +12,7 @@ BaseLogicNode::BaseLogicNode(resources::ResourceManager& resourceManager, std::s
   , scene_{}
 {}
 
-void BaseLogicNode::waitForDependencies()
+void BaseLogicNode::resolveDependencies()
 {
     for (auto&& [_, dep] : dependencies_) {
         (void)_;
