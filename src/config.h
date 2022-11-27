@@ -29,8 +29,8 @@ namespace cyclonite {
 template<typename ComponentList, typename StorageList>
 using component_config_t = enttx::EntityManagerConfig<ComponentList, StorageList>;
 
-template<size_t updateStageCount, typename SystemList>
-using systems_config_t = enttx::SystemManagerConfig<updateStageCount, SystemList>;
+template<size_t updateStageCount, typename... System>
+using systems_config_t = enttx::SystemManagerConfig<updateStageCount, type_list<System...>>;
 
 namespace internal {
 template<typename T, template<typename, typename> typename Spec>
