@@ -5,38 +5,18 @@
 #ifndef CYCLONITE_BASELOGICNODE_H
 #define CYCLONITE_BASELOGICNODE_H
 
-#include "config.h"
-#include "nodeIdentifier.h"
-#include "resources/resource.h"
+#include "node.h"
 #include <cstdint>
-#include <unordered_map>
 
 namespace cyclonite::compositor {
-class BaseLogicNode : public NodeIdentifier
+class BaseLogicNode : public Node
 {
 public:
-    BaseLogicNode(resources::ResourceManager& resourceManager, std::string_view name) noexcept;
-
-    [[nodiscard]] auto scene() const -> resources::Resource::Id { return scene_; }
-    auto scene() -> resources::Resource::Id& { return scene_; }
-
-    [[nodiscard]] auto resourceManager() const -> resources::ResourceManager const& { return *resourceManager_; }
-    auto resourceManager() -> resources::ResourceManager& { return *resourceManager_; }
-
-    auto dependsOn(uint64_t id) const -> bool { return dependencies_.contains(id); }
-
-    void updateDependency(uint64_t id, std::shared_future<void> const& dependency);
-
-    void resolveDependencies();
+    BaseLogicNode(resources::ResourceManager& resourceManager, std::string_view name, uint64_t typeId) noexcept;
 
 public:
     template<NodeConfig Config>
     class Builder;
-
-private:
-    std::unordered_map<uint64_t, std::optional<std::shared_future<void>>> dependencies_;
-    resources::ResourceManager* resourceManager_;
-    resources::Resource::Id scene_;
 };
 }
 

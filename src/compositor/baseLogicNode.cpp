@@ -5,26 +5,9 @@
 #include "baseLogicNode.h"
 
 namespace cyclonite::compositor {
-BaseLogicNode::BaseLogicNode(resources::ResourceManager& resourceManager, std::string_view name) noexcept
-  : NodeIdentifier{ name }
-  , dependencies_{}
-  , resourceManager_{ &resourceManager }
-  , scene_{}
+BaseLogicNode::BaseLogicNode(resources::ResourceManager& resourceManager,
+                             std::string_view name,
+                             uint64_t typeId) noexcept
+  : Node{ resourceManager, name, typeId }
 {}
-
-void BaseLogicNode::resolveDependencies()
-{
-    for (auto&& [_, dep] : dependencies_) {
-        (void)_;
-        assert(dep);
-
-        dep->get();
-    }
-}
-
-void BaseLogicNode::updateDependency(uint64_t id, std::shared_future<void> const& dependency)
-{
-    assert(dependencies_.contains(id));
-    dependencies_[id] = dependency;
-}
 }

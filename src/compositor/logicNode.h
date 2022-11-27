@@ -20,7 +20,7 @@ public:
     using system_manager_t = enttx::SystemManager<systems_config_t>;
     using scene_t = Scene<component_config_t>;
 
-    LogicNode(resources::ResourceManager& resourceManager, std::string_view name);
+    LogicNode(resources::ResourceManager& resourceManager, std::string_view name, uint64_t typeId);
 
     LogicNode(LogicNode const&) = delete;
 
@@ -50,8 +50,8 @@ private:
 };
 
 template<NodeConfig Config>
-LogicNode<Config>::LogicNode(resources::ResourceManager& resourceManager, std::string_view name)
-  : BaseLogicNode{ resourceManager, name }
+LogicNode<Config>::LogicNode(resources::ResourceManager& resourceManager, std::string_view name, uint64_t typeId)
+  : BaseLogicNode{ resourceManager, name, typeId }
   , systems_{}
 {}
 

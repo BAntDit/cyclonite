@@ -14,7 +14,10 @@ class BaseLogicNode::Builder
 {
 public:
     template<typename T, typename M>
-    Builder(resources::ResourceManager& resourceManager, T* wsBuilder, uint64_t (M::*nameToId)(std::string_view));
+    Builder(resources::ResourceManager& resourceManager,
+            T* wsBuilder,
+            uint64_t (M::*nameToId)(std::string_view),
+            uint64_t typeId);
 
     void setName(std::string_view name) { name_ = name; }
 
@@ -27,16 +30,19 @@ private:
     std::string name_;
     std::function<uint64_t(std::string_view)> nameToNodeId_;
     std::vector<std::string> dependencies_;
+    uint64_t nodeTypeId_;
 };
 
 template<NodeConfig Config>
 template<typename T, typename M>
 BaseLogicNode::Builder<Config>::Builder(resources::ResourceManager& resourceManager,
                                         T* wsBuilder,
-                                        uint64_t (M::*nameToId)(std::string_view))
+                                        uint64_t (M::*nameToId)(std::string_view),
+                                        uint64_t typeId)
   : resourceManager_{ &resourceManager }
   , nameToNodeId_{ [wsBuilder, nameToId](std::string_view n) -> uint64_t { return wsBuilder->*nameToId(n); } }
   , dependencies_{}
+  , nodeTypeId_{ typeId }
 {}
 
 template<NodeConfig Config>
@@ -48,7 +54,7 @@ auto BaseLogicNode::Builder<Config>::addDependency(std::string_view name) -> Bui
 template<NodeConfig Config>
 auto BaseLogicNode::Builder<Config>::build() -> LogicNode<Config>
 {
-    auto&& node = LogicNode<Config>{ *resourceManager_, std::string_view{ name_.data(), name_.size() } };
+    auto node = LogicNode<Config>{ *resourceManager_, std::string_view{ name_.data(), name_.size() }, nodeTypeId_ };
 
     for (auto&& dep : dependencies_) {
         node.dependencies_.insert(std::pair{ nameToNodeId_(dep), std::nullopt });
