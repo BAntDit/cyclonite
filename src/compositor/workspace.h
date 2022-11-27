@@ -5,15 +5,17 @@
 #ifndef CYCLONITE_WORKSPACE_H
 #define CYCLONITE_WORKSPACE_H
 
-#include "baseGraphicsNode.h" // TODO:: graphics node
+#include "graphicsNode.h"
+#include "graphicsNodeInterface.h"
 #include "logicNode.h"
-#include "logicNodeBuilder.h"
 #include "logicNodeInterface.h"
+#include "nodeTypeRegister.h"
 
 namespace cyclonite::compositor {
 template<NodeConfig Config>
-using node_t =
-  typename std::conditional_t<config_traits::is_logic_node_v<Config>, LogicNode<Config>, LogicNode<Config>>;
+using node_builder_t = typename std::conditional<config_traits::is_logic_node_v<Config>,
+                                                 BaseLogicNode::Builder<Config>,
+                                                 BaseGraphicsNode::Builder<Config>>;
 
 class Workspace
 {
@@ -26,25 +28,31 @@ public:
 
     void render(vulkan::Device& device);
 
-    template<NodeConfig Config, uint64_t NodeTypeId>
-    auto get(type_pair<node_t<Config>, std::integral_constant<uint64_t, NodeTypeId>>) -> node_t<Config>&;
+    [[nodiscard]] auto get(std::string_view name) const -> Node const&;
+    auto get(std::string_view name) -> Node&;
 
-    template<NodeConfig Config, uint64_t NodeTypeId>
-    [[nodiscard]] auto get(type_pair<node_t<Config>, std::integral_constant<uint64_t, NodeTypeId>>) const
-      -> node_t<Config> const&;
+    [[nodiscard]] auto get(uint64_t id) const -> Node const&;
+    auto get(uint64_t id) -> Node&;
 
 public:
+    // TODO::
     class Builder
     {
     public:
-        explicit Builder(vulkan::Device& device,
+        explicit Builder(resources::ResourceManager& resourceManager,
+                         vulkan::Device& device,
                          size_t maxBytesPerNode = 64 * 1024,
                          uint8_t maxLogicNodeCount = 10,
                          uint8_t maxGraphicNodeCount = 10);
 
-        // TODO:: createNode generic
+        template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
+        auto createNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if<
+          std::is_same_v<node_t<Config>, std::decay_t<std::result_of<NodeFactory(node_builder_t<Config>&&)>>>,
+          Builder&>;
 
         auto build() -> Workspace;
+
+        auto logicNodeNameToId(std::string_view name) -> uint64_t;
 
     private:
         template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
@@ -54,13 +62,12 @@ public:
                            std::decay_t<std::result_of_t<NodeFactory(BaseLogicNode::Builder<Config>&&)>>>,
           Builder&>;
 
-        // template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
-        // auto createGraphicsNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) ->
-        // std::enable_if<config_traits::is_logic_node<Config>
-        //  && std::is_same_v<
-        //
-        //                                                                                                           >,
-        //                                                                                                           Builder&>;
+        template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
+        auto createGraphicsNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if<
+          config_traits::is_graphics_node_v<Config> &&
+            std::is_same_v<GraphicsNode<Config>,
+                           std::decay_t<std::result_of<NodeFactory(BaseGraphicsNode::Builder<Config>&&)>>>,
+          Builder&>;
 
         [[nodiscard]] auto nodeCount(bool isLogic) const -> uint8_t;
         [[nodiscard]] auto nodeOffset(bool isLogic, size_t index) const -> size_t;
@@ -78,6 +85,7 @@ public:
         auto allocateNodeMemory()
           -> std::enable_if_t<(sizeof(node_t<Config>) % hardware_constructive_interference_size) == 0, void*>;
 
+        resources::ResourceManager* resourceManager_;
         vulkan::Device* device_;
         std::vector<size_t> logicNodeOffsets_;
         std::vector<size_t> graphicNodeOffsets_;
@@ -86,8 +94,8 @@ public:
         std::vector<std::byte> logicNodeStorage_; // TODO:: change to the aligned storage
         std::vector<std::byte> graphicNodeStorage_;
 
-        std::unordered_map<uint64_t, LogicNodeInterface> logicNodes_;
-        std::unordered_map<uint64_t, GraphicsNode> graphicNodes_;
+        std::vector<LogicNodeInterface> logicNodes_;
+        std::vector<GraphicsNodeInterface> graphicNodes_;
 
         uint8_t logicNodeCount_;
         uint8_t graphicNodeCount_;
@@ -105,14 +113,21 @@ private:
     void endFrame(vulkan::Device& device);
 
 private:
+    uint8_t logicNodeCount_;
+    std::vector<std::byte> logicNodeStorage_;
+    std::vector<LogicNodeInterface> logicNodes_;
+    std::unordered_map<uint64_t, size_t> idToLogicNodeIndex_;
+    std::unordered_map<std::string, size_t> nameToLogicNodeIndex_;
+
+    uint8_t graphicsNodeCount_;
+    std::vector<std::byte> graphicsNodeStorage_;
+    std::vector<GraphicsNodeInterface> graphicsNodes_;
+    std::unordered_map<uint64_t, size_t> idToGraphicsNodeIndex_;
+    std::unordered_map<std::string, size_t> nameToGraphicsNodeIndex_;
+
     uint32_t frameNumber_;
     uint32_t frameIndex_;
     uint32_t swapChainLength_;
-
-    uint8_t nodeCount_;
-    std::vector<std::byte> nodeStorage_;
-    std::vector<NodeInterface> nodes_;
-    std::vector<uint64_t> nodeTypeIds_;
 
     std::vector<VkPipelineStageFlags> nodeDstStageMasks_;
     std::vector<VkSemaphore> nodeWaitSemaphores_;
@@ -121,6 +136,8 @@ private:
 
     uint32_t submitCount_;
     uint8_t presentationNodeIndex_;
+
+    std::chrono::time_point<std::chrono::high_resolution_clock> lastTimeUpdate_;
 };
 
 template<NodeConfig Config>
@@ -147,13 +164,13 @@ auto Workspace::Builder::createLogicNode(type_pair<Config, NodeTypeId>, NodeFact
     std::is_same_v<LogicNode<Config>, std::decay_t<std::result_of_t<NodeFactory(BaseLogicNode::Builder<Config>&&)>>>,
   Builder&>
 {
-    logicNodes_.emplace(std::pair{
-      NodeTypeId::value,
-      LogicNodeInterface{ new (allocateNodeMemory<Config>()) LogicNode<Config>{},
-                          [](void* node, uint32_t frameIndex, real deltaTime) -> void {
-                              (reinterpret_cast<LogicNode<Config>*>(node))->update(frameIndex, deltaTime);
-                          },
-                          [](void* node) -> void { (reinterpret_cast<LogicNode<Config>*>(node))->dispose(); } } });
+    logicNodes_.emplace_back(LogicNodeInterface{
+      new (allocateNodeMemory<Config>()) LogicNode<Config>{ nodeFactory(BaseLogicNode::Builder<Config>{
+        *resourceManager_, this, &Workspace::Builder::logicNodeNameToId, NodeTypeId::value }) },
+      [](void* node, uint32_t frameIndex, real deltaTime) -> void {
+          (reinterpret_cast<LogicNode<Config>*>(node))->update(frameIndex, deltaTime);
+      },
+      [](void* node) -> void { (reinterpret_cast<LogicNode<Config>*>(node))->dispose(); } });
 
     return *this;
 }
@@ -192,44 +209,6 @@ auto Workspace::Builder::createNode(type_pair<Node<NodeConfig>, NodeTypeId>, Nod
     nodeTypeIds_.emplace_back(NodeTypeId::value);
 
     return *this;
-}
-
-template<typename NodeConfig, typename NodeTypeId>
-auto Workspace::get(type_pair<Node<NodeConfig>, NodeTypeId>) -> Node<NodeConfig>&
-{
-    void* node = nullptr;
-
-    for (auto i = size_t{ 0 }, count = nodeTypeIds_.size(); i < count; i++) {
-        auto id = nodeTypeIds_[i];
-
-        if (id == NodeTypeId::value) {
-            node = nodes_[i].getRawPtr();
-            break;
-        }
-    }
-
-    assert(node != nullptr);
-
-    return *(reinterpret_cast<Node<NodeConfig>*>(node));
-}
-
-template<typename NodeConfig, typename NodeTypeId>
-auto Workspace::get(type_pair<Node<NodeConfig>, NodeTypeId>) const -> Node<NodeConfig> const&
-{
-    void const* node = nullptr;
-
-    for (auto i = size_t{ 0 }, count = nodeTypeIds_.size(); i < count; i++) {
-        auto id = nodeTypeIds_[i];
-
-        if (id == NodeTypeId::value) {
-            node = nodes_[i].getRawPtr();
-            break;
-        }
-    }
-
-    assert(node != nullptr);
-
-    return *(reinterpret_cast<Node<NodeConfig> const*>(node));
 }
 }
 

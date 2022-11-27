@@ -19,12 +19,50 @@ Workspace::Workspace() noexcept
   , submits_{}
   , submitCount_{ 0 }
   , presentationNodeIndex_{ std::numeric_limits<uint8_t>::max() }
+  , lastTimeUpdate_{ std::chrono::high_resolution_clock::now() }
 {}
 
 void Workspace::render(vulkan::Device& device)
 {
     beginFrame();
 
+    auto updateTime = std::chrono::high_resolution_clock::now();
+    auto dt = std::min(std::chrono::duration<real, std::ratio<1>>{ updateTime - lastTimeUpdate_ }.count(), 0.1f);
+
+    lastTimeUpdate_ = updateTime;
+
+    // logic nodes update
+    for (auto lni = uint8_t{ 0 }; lni < logicNodeCount_; lni++) {
+        auto& node = logicNodes_[lni];
+
+        auto future = std::shared_future<void>{ multithreading::Worker::threadWorker().submitTask(
+          [frameNumber = frameNumber_, node = node, dt]() mutable -> void {
+              node.get().resolveDependencies();
+              node.update(frameNumber, dt);
+          }) };
+
+        // further nodes
+        for (auto j = lni; j < logicNodeCount_; j++) {
+            auto& n = logicNodes_[j];
+            auto id = node.get().id();
+
+            if (n.get().dependsOn(id)) {
+                n.get().updateDependency(id, future);
+            }
+        }
+
+        for (auto k = uint8_t{ 0 }; k < graphicsNodeCount_; k++) {
+            auto& gn = graphicsNodes_[k];
+            auto id = node.get().id();
+
+            // if (gn.get().dependsOn(id))
+        }
+    }
+
+    for (auto index = uint8_t{ 0 }; index < graphicsNodeCount_; index++) {
+    }
+
+    // TODO:: links refactoring
     auto semaphoreOffset = size_t{ 0 };
 
     for (auto index = uint8_t{ 0 }, count = nodeCount_; index < count; index++) {
@@ -91,6 +129,8 @@ void Workspace::render(vulkan::Device& device)
         assert(submitCount_ < submits_.size());
         submits_[submitCount_++] = node.end(baseSemaphore, baseDstStageMask, semaphoreCount);
     }
+
+    // TODO:: clear dependencies
 
     endFrame(device);
 }
