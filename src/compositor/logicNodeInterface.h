@@ -37,7 +37,7 @@ public:
 
     [[nodiscard]] auto operator*() const -> BaseLogicNode const&;
 
-    void update(uint32_t frameIndex, real deltaTime);
+    void update(uint32_t frameNumber, real deltaTime);
 
     void dispose();
 
