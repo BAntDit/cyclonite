@@ -38,7 +38,7 @@ public:
     [[nodiscard]] auto entities() const -> entity_manager_t const&;
     auto entities() -> entity_manager_t&;
 
-    void update(uint32_t frameNumber, real deltaTime);
+    void update(uint64_t frameNumber, real deltaTime);
 
     void dispose()
     {
@@ -56,7 +56,7 @@ LogicNode<Config>::LogicNode(resources::ResourceManager& resourceManager, std::s
 {}
 
 template<NodeConfig Config>
-void LogicNode<Config>::update(uint32_t frameNumber, real deltaTime)
+void LogicNode<Config>::update(uint64_t frameNumber, real deltaTime)
 {
     auto& s = resourceManager().get(scene()).template as<scene_t>();
     systems_.update(s.entities(), this, frameNumber, deltaTime);

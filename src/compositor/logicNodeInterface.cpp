@@ -32,7 +32,7 @@ auto LogicNodeInterface::operator*() const -> BaseLogicNode const&
     return *reinterpret_cast<BaseLogicNode const*>(node_);
 }
 
-void LogicNodeInterface::update(uint32_t frameNumber, real deltaTime)
+void LogicNodeInterface::update(uint64_t frameNumber, real deltaTime)
 {
     update_(node_, frameNumber, deltaTime);
 }

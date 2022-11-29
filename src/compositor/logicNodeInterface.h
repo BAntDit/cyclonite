@@ -14,7 +14,7 @@ class BaseLogicNode;
 class LogicNodeInterface
 {
 public:
-    using update_func_t = void (*)(void*, uint32_t, real);
+    using update_func_t = void (*)(void*, uint64_t, real);
     using dispose_func_t = void (*)(void*);
 
     LogicNodeInterface(void* node, update_func_t updateFunc, dispose_func_t disposeFunc);
@@ -29,15 +29,13 @@ public:
 
     auto operator=(LogicNodeInterface &&) -> LogicNodeInterface& = default;
 
+    [[nodiscard]] auto get() const -> BaseLogicNode const&;
     auto get() -> BaseLogicNode&;
 
-    [[nodiscard]] auto get() const -> BaseLogicNode const&;
-
+    [[nodiscard]] auto operator*() const -> BaseLogicNode const&;
     auto operator*() -> BaseLogicNode&;
 
-    [[nodiscard]] auto operator*() const -> BaseLogicNode const&;
-
-    void update(uint32_t frameNumber, real deltaTime);
+    void update(uint64_t frameNumber, real deltaTime);
 
     void dispose();
 
