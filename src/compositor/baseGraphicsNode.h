@@ -5,8 +5,12 @@
 #ifndef CYCLONITE_BASEGRAPHICSNODE_H
 #define CYCLONITE_BASEGRAPHICSNODE_H
 
+#include "config.h"
 #include "frameBufferRenderTarget.h"
 #include "frameCommands.h"
+#include "links.h"
+#include "node.h"
+#include "passType.h"
 #include "surfaceRenderTarget.h"
 #include <easy-mp/type_list.h>
 #include <vector>
@@ -59,14 +63,22 @@ struct surface_parameters<type_list<color_space_candidate_t<colorSpace>...>,
     };
 };
 
-class BaseGraphicsNode
+class BaseGraphicsNode : public Node
 {
     friend class FrameCommands;
 
 public:
     using render_target_t = std::variant<std::monostate, SurfaceRenderTarget, FrameBufferRenderTarget>;
 
+    explicit BaseGraphicsNode(uint8_t bufferCount) noexcept;
+
+public:
+    template<NodeConfig Config>
+    class Builder;
+
 private:
+    Links inputs_;
+    std::bitset<value_cast(RenderTargetOutputSemantic::COUNT)> publicSemanticBits_;
     std::vector<vulkan::Handle<VkSemaphore>> signalSemaphores_;
     std::vector<FrameCommands> frameCommands_;
     vulkan::Handle<VkRenderPass> vkRenderPass_;

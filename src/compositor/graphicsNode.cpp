@@ -2,7 +2,7 @@
 // Created by anton on 3/21/21.
 //
 
-#include "node.h"
+#include "graphicsNode.h"
 #include "shaders/shaderDefinitions.h"
 
 namespace cyclonite::compositor {
