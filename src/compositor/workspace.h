@@ -125,12 +125,13 @@ private:
     std::unordered_map<uint64_t, size_t> idToGraphicsNodeIndex_;
     std::unordered_map<std::string, size_t> nameToGraphicsNodeIndex_;
 
-    uint32_t frameNumber_;
+    std::vector<VkPipelineStageFlags> nodeDstStageMasks_;
+    std::vector<VkSemaphore> nodeWaitSemaphores_;
+
+    uint64_t frameNumber_;
     uint32_t frameIndex_;
     uint32_t swapChainLength_;
 
-    std::vector<VkPipelineStageFlags> nodeDstStageMasks_;
-    std::vector<VkSemaphore> nodeWaitSemaphores_;
     std::vector<VkSemaphore> nodeSignalSemaphores_;
     std::vector<VkSubmitInfo> submits_;
 
@@ -167,7 +168,7 @@ auto Workspace::Builder::createLogicNode(type_pair<Config, NodeTypeId>, NodeFact
     logicNodes_.emplace_back(LogicNodeInterface{
       new (allocateNodeMemory<Config>()) LogicNode<Config>{ nodeFactory(BaseLogicNode::Builder<Config>{
         *resourceManager_, this, &Workspace::Builder::logicNodeNameToId, NodeTypeId::value }) },
-      [](void* node, uint32_t frameIndex, real deltaTime) -> void {
+      [](void* node, uint64_t frameIndex, real deltaTime) -> void {
           (reinterpret_cast<LogicNode<Config>*>(node))->update(frameIndex, deltaTime);
       },
       [](void* node) -> void { (reinterpret_cast<LogicNode<Config>*>(node))->dispose(); } });

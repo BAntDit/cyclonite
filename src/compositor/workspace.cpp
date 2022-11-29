@@ -7,12 +7,6 @@
 namespace cyclonite::compositor {
 Workspace::Workspace() noexcept
   : frameNumber_{ 0 }
-  , frameIndex_{ 0 }
-  , swapChainLength_{ 0 }
-  , nodeCount_{ 0 }
-  , nodeStorage_{}
-  , nodes_{}
-  , nodeTypeIds_{}
   , nodeDstStageMasks_{}
   , nodeWaitSemaphores_{}
   , nodeSignalSemaphores_{}
@@ -55,15 +49,41 @@ void Workspace::render(vulkan::Device& device)
             auto& gn = graphicsNodes_[k];
             auto id = node.get().id();
 
-            // if (gn.get().dependsOn(id))
+            if (gn.get().dependsOn(id)) {
+                gn.get().updateDependency(id, future);
+            }
         }
     }
 
-    for (auto index = uint8_t{ 0 }; index < graphicsNodeCount_; index++) {
+    auto semaphoreOffset = size_t{ 0 };
+    for (auto gni = uint8_t{ 0 }; gni < graphicsNodeCount_; gni++) {
+        assert(semaphoreOffset < nodeWaitSemaphores_.size() && semaphoreOffset < nodeDstStageMasks_.size());
+
+        auto& node = graphicsNodes_[gni];
+
+        auto future = std::shared_future<void>{ multithreading::Worker::threadWorker().submitTask(
+          [frameNumber = frameNumber_, node = node, dt, &device, &semaphoreOffset]() mutable -> void {
+              node.get().resolveDependencies();
+
+              auto [swapChainSemaphore, commandIndex] = node.begin(device, frameNumber);
+
+              auto semaphoreCount = uint32_t{ 0 };
+
+              // TODO::
+          }) };
+
+        // further nodes
+        for (auto j = gni; j < graphicsNodeCount_; j++) {
+            auto& n = graphicsNodes_[j];
+            auto id = node.get().id();
+
+            if (n.get().dependsOn(id)) {
+                n.get().updateDependency(id, future);
+            }
+        }
     }
 
     // TODO:: links refactoring
-    auto semaphoreOffset = size_t{ 0 };
 
     for (auto index = uint8_t{ 0 }, count = nodeCount_; index < count; index++) {
         assert(semaphoreOffset < nodeWaitSemaphores_.size() && semaphoreOffset < nodeDstStageMasks_.size());
