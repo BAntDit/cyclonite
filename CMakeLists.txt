@@ -44,7 +44,7 @@ set(PUBLIC_HEADERS
     src/compositor/graphicsNode.h
     src/compositor/logicNodeBuilder.h
     src/compositor/logicNodeInterface.h
-    src/compositor/baseNode.h
+    src/compositor/graphicsNodeInterface.h
     src/compositor/node.h
     src/compositor/frameCommands.h
     src/compositor/nodeBuilder.h
@@ -124,6 +124,7 @@ set(SOURCES
     src/resources/geometry.cpp
     src/resources/staging.cpp
     src/resources/resourceManager.cpp
+    src/compositor/node.cpp
     src/compositor/nodeIdentifier.cpp
     src/compositor/nodeBuilder.cpp
     src/compositor/nodeInterface.cpp
@@ -131,10 +132,10 @@ set(SOURCES
     src/compositor/passIterator.cpp
     src/compositor/workspaceBuilder.cpp
     src/compositor/links.cpp
-    src/compositor/baseNode.cpp
     src/compositor/graphicsNode.cpp
     src/compositor/baseLogicNode.cpp
     src/compositor/logicNodeInterface.cpp
+    src/compositor/graphicsNodeInterface.cpp
     src/compositor/workspace.cpp
     src/components/transform.cpp
     src/components/camera.cpp
