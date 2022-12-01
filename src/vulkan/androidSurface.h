@@ -26,7 +26,7 @@ public:
     ~AndroidSurface() = default;
 };
 
-using platform_surface_t = Win32Surface;
+using platform_surface_t = AndroidSurface;
 
 using platform_surface_argument_type_list_t = easy_mp::type_list<ANativeWindow*>;
 }
