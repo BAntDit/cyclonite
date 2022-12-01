@@ -133,6 +133,9 @@ public:
 };
 
 template<typename T>
+inline constexpr auto is_surface_node_v = is_surface_node<T>::value();
+
+template<typename T>
 struct get_pass_count
 {
 private:
