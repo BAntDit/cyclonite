@@ -8,6 +8,17 @@
 #include <cstddef>
 
 namespace cyclonite {
+enum class AnimationStage : size_t
+{
+    FRAME_START = 0,
+    EARLY_UPDATE = 1,
+    LATE_UPDATE = 2,
+    FRAME_END = 3,
+    MIN_VALUE = FRAME_START,
+    MAX_VALUE = FRAME_END,
+    COUNT = MAX_VALUE + 1
+};
+
 enum class UpdateStage : size_t
 {
     FRAME_START = 0,
