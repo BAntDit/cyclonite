@@ -132,6 +132,7 @@ set(SOURCES
     src/compositor/passIterator.cpp
     src/compositor/workspaceBuilder.cpp
     src/compositor/links.cpp
+    src/compositor/baseGraphicsNode.cpp
     src/compositor/graphicsNode.cpp
     src/compositor/baseLogicNode.cpp
     src/compositor/logicNodeInterface.cpp
