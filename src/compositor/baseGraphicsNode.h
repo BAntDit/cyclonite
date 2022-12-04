@@ -85,6 +85,8 @@ public:
 
     [[nodiscard]] auto swapChainLength() const -> uint32_t { return swapChainLength_; }
 
+    [[nodiscard]] auto frameBufferIndex() const -> uint32_t { return bufferIndex_; }
+
     [[nodiscard]] auto passFinishedSemaphore() const -> VkSemaphore;
 
 public:
@@ -94,10 +96,11 @@ public:
 protected:
     render_target_t renderTarget_;
     uint32_t frameIndex_;
+    uint32_t bufferIndex_;
 
 private:
     Links inputs_;
-    uint32_t swapChainLength_;
+    uint32_t swapChainLength_; // TODO:: gets from RT
 
     std::vector<vulkan::Handle<VkSemaphore>> semaphores_;
     std::bitset<value_cast(RenderTargetOutputSemantic::COUNT)> publicSemanticBits_;

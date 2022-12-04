@@ -10,11 +10,13 @@ namespace cyclonite::compositor {
 GraphicsNodeInterface::GraphicsNodeInterface(void* node,
                                              dispose_func_t disposeFunc,
                                              begin_func_t beginFunc,
-                                             wait_stages_func_t waitStagesFunc) noexcept
+                                             wait_stages_func_t waitStagesFunc,
+                                             is_surface_node_func_t surfaceNodeFunc) noexcept
   : node_{ node }
   , dispose_{ disposeFunc }
   , begin_{ beginFunc }
   , waitStages_{ waitStagesFunc }
+  , isSurfaceNode_{ surfaceNodeFunc }
 {}
 
 auto GraphicsNodeInterface::get() const -> BaseGraphicsNode const&

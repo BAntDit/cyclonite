@@ -21,12 +21,14 @@ class GraphicsNodeInterface
     using dispose_func_t = void (*)(void*);
     using begin_func_t = std::pair<VkSemaphore, size_t> (*)(void*, vulkan::Device&, uint64_t);
     using wait_stages_func_t = std::pair<VkSemaphore*, VkPipelineStageFlags*> (*)(void*);
+    using is_surface_node_func_t = bool (*)();
 
 public:
     GraphicsNodeInterface(void* node,
                           dispose_func_t disposeFunc,
                           begin_func_t beginFunc,
-                          wait_stages_func_t waitStagesFunc) noexcept;
+                          wait_stages_func_t waitStagesFunc,
+                          is_surface_node_func_t surfaceNodeFunc) noexcept;
 
     GraphicsNodeInterface(GraphicsNodeInterface const&) = default;
 
@@ -44,6 +46,8 @@ public:
     [[nodiscard]] auto operator*() const -> BaseGraphicsNode const&;
     auto operator*() -> BaseGraphicsNode&;
 
+    [[nodiscard]] auto isSurfaceNode() const -> bool { return isSurfaceNode_(); }
+
     auto begin(vulkan::Device& device, uint64_t frameNumber) -> std::pair<VkSemaphore, size_t>;
 
     auto waitStages() -> std::pair<VkSemaphore*, VkPipelineStageFlags*>;
@@ -55,6 +59,7 @@ private:
     dispose_func_t dispose_;
     begin_func_t begin_;
     wait_stages_func_t waitStages_;
+    is_surface_node_func_t isSurfaceNode_;
 };
 }
 

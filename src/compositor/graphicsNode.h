@@ -91,6 +91,8 @@ auto GraphicsNode<Config>::begin([[maybe_unused]] vulkan::Device& device, uint64
         waitSemaphore = rt.wait();
     }
 
+    bufferIndex_ = commandIndex;
+
     return std::make_pair(waitSemaphore, commandIndex);
 }
 }

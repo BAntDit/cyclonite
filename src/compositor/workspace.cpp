@@ -30,7 +30,7 @@ void Workspace::render(vulkan::Device& device)
         auto& node = logicNodes_[lni];
 
         auto future = std::shared_future<void>{ multithreading::Worker::threadWorker().submitTask(
-          [frameNumber = frameNumber_, node = node, dt]() mutable -> void {
+          [frameNumber = frameNumber_, node = node /* just copy interface */, dt]() mutable -> void {
               node.get().resolveDependencies();
               node.update(frameNumber, dt);
           }) };
@@ -62,7 +62,7 @@ void Workspace::render(vulkan::Device& device)
           [& graphicsNodes = graphicsNodes_,
            &idToGraphicsNodeIndex = idToGraphicsNodeIndex_,
            frameNumber = frameNumber_,
-           node = node,
+           node = node, // just copy interface
            dt,
            &device]() mutable -> void {
               node.get().resolveDependencies();
@@ -90,17 +90,35 @@ void Workspace::render(vulkan::Device& device)
                   auto& inputNode = graphicsNodes[idToGraphicsNodeIndex[inputNodeId]];
 
                   auto signal = inputNode.get().passFinishedSemaphore();
-
                   if (signal != VK_NULL_HANDLE) { // wait all nodes this node depends on
                       *(baseSemaphore + semaphoreCount) = signal;
                       *(baseDstStageMask + semaphoreCount) = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
                       semaphoreCount++;
                   }
 
+                  auto const inputFrameBufferIndex = inputNode.get().frameBufferIndex();
                   for (auto i = size_t{ 0 }; i < value_cast(RenderTargetOutputSemantic::COUNT); i++) {
-                      // TODO::
-                  }
-              }
+                      auto const& rt =
+                        inputNode.isSurfaceNode()
+                          ? static_cast<BaseRenderTarget const&>((*inputNode).getRenderTarget<SurfaceRenderTarget>())
+                          : static_cast<BaseRenderTarget const&>(
+                              (*inputNode).getRenderTarget<FrameBufferRenderTarget>());
+
+                      auto semantic = semantics[i];
+
+                      if (semantic != RenderTargetOutputSemantic::INVALID) {
+                          auto& view = views[i];
+                          auto const& attachment = rt.getColorAttachment(inputFrameBufferIndex, semantic);
+
+                          if (view != attachment.handle()) {
+                              view = attachment.handle();
+                              // TODO:: make expired
+                          }
+                      }
+                  } // all input views
+              } // all inputs
+
+              // TODO:: update
           }) };
 
         // further nodes
@@ -198,6 +216,7 @@ void Workspace::endFrame(vulkan::Device& device)
         throw std::runtime_error{ "submit commands failed" };
     }
 
+    // TODO swap buffer in all graphics nodes
     if (presentationNodeIndex_ != std::numeric_limits<uint8_t>::max()) {
         auto& presentationNode = nodes_[presentationNodeIndex_];
 
