@@ -55,21 +55,52 @@ void Workspace::render(vulkan::Device& device)
         }
     }
 
-    auto semaphoreOffset = size_t{ 0 };
     for (auto gni = uint8_t{ 0 }; gni < graphicsNodeCount_; gni++) {
-        assert(semaphoreOffset < nodeWaitSemaphores_.size() && semaphoreOffset < nodeDstStageMasks_.size());
-
         auto& node = graphicsNodes_[gni];
 
         auto future = std::shared_future<void>{ multithreading::Worker::threadWorker().submitTask(
-          [frameNumber = frameNumber_, node = node, dt, &device, &semaphoreOffset]() mutable -> void {
+          [& graphicsNodes = graphicsNodes_,
+           &idToGraphicsNodeIndex = idToGraphicsNodeIndex_,
+           frameNumber = frameNumber_,
+           node = node,
+           dt,
+           &device]() mutable -> void {
               node.get().resolveDependencies();
 
-              auto [swapChainSemaphore, commandIndex] = node.begin(device, frameNumber);
-
               auto semaphoreCount = uint32_t{ 0 };
+              auto [baseSemaphore, baseDstStageMask] = node.waitStages();
 
-              // TODO::
+              auto [renderTargetReadySemaphore, commandIndex] = node.begin(device, frameNumber);
+
+              if (renderTargetReadySemaphore != VK_NULL_HANDLE) { // waiting for acquired image or frame buffer
+                  *(baseSemaphore + semaphoreCount) = renderTargetReadySemaphore;
+                  *(baseDstStageMask + semaphoreCount) = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                  semaphoreCount++;
+              }
+
+              auto& inputs = node.get().inputs();
+              for (size_t linkIdx = 0, linkCount = inputs.size(); linkIdx < linkCount; linkIdx++) {
+                  auto& [inputNodeId, sampler, views, semantics] = inputs.get(linkIdx);
+                  (void)sampler;
+
+                  if (inputNodeId == std::numeric_limits<size_t>::max())
+                      continue;
+
+                  assert(idToGraphicsNodeIndex.contains(inputNodeId));
+                  auto& inputNode = graphicsNodes[idToGraphicsNodeIndex[inputNodeId]];
+
+                  auto signal = inputNode.get().passFinishedSemaphore();
+
+                  if (signal != VK_NULL_HANDLE) { // wait all nodes this node depends on
+                      *(baseSemaphore + semaphoreCount) = signal;
+                      *(baseDstStageMask + semaphoreCount) = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                      semaphoreCount++;
+                  }
+
+                  for (auto i = size_t{ 0 }; i < value_cast(RenderTargetOutputSemantic::COUNT); i++) {
+                      // TODO::
+                  }
+              }
           }) };
 
         // further nodes

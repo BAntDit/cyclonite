@@ -6,8 +6,8 @@
 #define CYCLONITE_GRAPHICSNODE_H
 
 #include "baseGraphicsNode.h"
-#include "typedefs.h"
 #include "scene.h"
+#include "typedefs.h"
 #include "vulkan/shaderModule.h"
 
 namespace cyclonite::compositor {
@@ -42,9 +42,18 @@ public:
 
     explicit GraphicsNode(uint8_t bufferCount);
 
-    auto begin(vulkan::Device& device, uint64_t frameNumber) -> std::pair<VkSemaphore, size_t>;
+    auto begin([[maybe_unused]] vulkan::Device& device, uint64_t frameNumber) -> std::pair<VkSemaphore, size_t>;
+
+    [[nodiscard]] auto waitSemaphores() const -> VkSemaphore const* { return nodeWaitSemaphores_.data(); }
+    auto waitSemaphores() -> VkSemaphore* { return nodeWaitSemaphores_.data(); }
+
+    [[nodiscard]] auto waitStages() const -> VkPipelineStageFlags const* { return nodeDstStageMasks_.data(); }
+    auto waitStages() -> VkPipelineStageFlags* { return nodeDstStageMasks_.data(); }
 
 private:
+    std::array<VkPipelineStageFlags, config_traits::max_wait_semaphore_count_v<Config>> nodeDstStageMasks_;
+    std::array<VkSemaphore, config_traits::max_wait_semaphore_count_v<Config>> nodeWaitSemaphores_;
+
     // dummy, tmp solution:
     std::unique_ptr<vulkan::ShaderModule> vertexSceneShader_;
     std::unique_ptr<vulkan::ShaderModule> fragmentSceneShader_;
@@ -62,6 +71,28 @@ private:
 
     std::array<std::byte, 4> expirationBits_; // 32 / 8 - put there max possible swap chain length somehow
 };
+
+template<NodeConfig Config>
+auto GraphicsNode<Config>::begin([[maybe_unused]] vulkan::Device& device, uint64_t frameNumber)
+  -> std::pair<VkSemaphore, size_t>
+{
+    auto waitSemaphore = VkSemaphore{ VK_NULL_HANDLE };
+    auto commandIndex = size_t{ 0 };
+
+    frameIndex_ = static_cast<uint32_t>(frameNumber % swapChainLength());
+
+    if constexpr (config_traits::is_surface_node_v<Config>) {
+        auto&& rt = getRenderTarget<SurfaceRenderTarget>();
+        auto [imgIndex, wait] = rt.acquireBackBufferIndex(device, frameIndex_);
+        commandIndex = static_cast<size_t>(imgIndex);
+        waitSemaphore = wait;
+    } else {
+        auto&& rt = getRenderTarget<FrameBufferRenderTarget>();
+        waitSemaphore = rt.wait();
+    }
+
+    return std::make_pair(waitSemaphore, commandIndex);
+}
 }
 
 #endif // CYCLONITE_GRAPHICSNODE_H

@@ -7,10 +7,14 @@
 #include "vulkan/device.h"
 
 namespace cyclonite::compositor {
-GraphicsNodeInterface::GraphicsNodeInterface(void* node, dispose_func_t disposeFunc, begin_func_t beginFunc) noexcept
+GraphicsNodeInterface::GraphicsNodeInterface(void* node,
+                                             dispose_func_t disposeFunc,
+                                             begin_func_t beginFunc,
+                                             wait_stages_func_t waitStagesFunc) noexcept
   : node_{ node }
   , dispose_{ disposeFunc }
   , begin_{ beginFunc }
+  , waitStages_{ waitStagesFunc }
 {}
 
 auto GraphicsNodeInterface::get() const -> BaseGraphicsNode const&
@@ -36,6 +40,11 @@ auto GraphicsNodeInterface::operator*() -> BaseGraphicsNode&
 auto GraphicsNodeInterface::begin(vulkan::Device& device, uint64_t frameNumber) -> std::pair<VkSemaphore, size_t>
 {
     return begin_(node_, device, frameNumber);
+}
+
+auto GraphicsNodeInterface::waitStages() -> std::pair<VkSemaphore*, VkPipelineStageFlags*>
+{
+    return waitStages_(node_);
 }
 
 void GraphicsNodeInterface::dispose()

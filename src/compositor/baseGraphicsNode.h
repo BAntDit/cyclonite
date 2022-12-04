@@ -72,19 +72,50 @@ public:
 
     explicit BaseGraphicsNode(uint8_t bufferCount) noexcept;
 
+    template<typename RenderTargetType>
+    [[nodiscard]] auto getRenderTarget() const -> RenderTargetType const&;
+    template<typename RenderTargetType>
+    auto getRenderTarget() -> RenderTargetType&;
+
+    [[nodiscard]] auto getRenderTargetBase() const -> BaseRenderTarget const&;
+    auto getRenderTargetBase() -> BaseRenderTarget&;
+
+    [[nodiscard]] auto inputs() const -> Links const& { return inputs_; }
+    auto inputs() -> Links& { return inputs_; }
+
+    [[nodiscard]] auto swapChainLength() const -> uint32_t { return swapChainLength_; }
+
+    [[nodiscard]] auto passFinishedSemaphore() const -> VkSemaphore;
+
 public:
     template<NodeConfig Config>
     class Builder;
 
-private:
-    Links inputs_;
-    std::bitset<value_cast(RenderTargetOutputSemantic::COUNT)> publicSemanticBits_;
-    std::vector<vulkan::Handle<VkSemaphore>> signalSemaphores_;
-    std::vector<FrameCommands> frameCommands_;
-    vulkan::Handle<VkRenderPass> vkRenderPass_;
+protected:
     render_target_t renderTarget_;
     uint32_t frameIndex_;
+
+private:
+    Links inputs_;
+    uint32_t swapChainLength_;
+
+    std::vector<vulkan::Handle<VkSemaphore>> semaphores_;
+    std::bitset<value_cast(RenderTargetOutputSemantic::COUNT)> publicSemanticBits_;
+    std::vector<FrameCommands> frameCommands_;
+    vulkan::Handle<VkRenderPass> vkRenderPass_;
 };
+
+template<typename RenderTargetType>
+auto BaseGraphicsNode::getRenderTarget() const -> RenderTargetType const&
+{
+    return std::get<RenderTargetType>(renderTarget_);
+}
+
+template<typename RenderTargetType>
+auto BaseGraphicsNode::getRenderTarget() -> RenderTargetType&
+{
+    return std::get<RenderTargetType>(renderTarget_);
+}
 }
 
 #endif // CYCLONITE_BASEGRAPHICSNODE_H

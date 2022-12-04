@@ -9,8 +9,7 @@
 #include <cstdint>
 #include <vulkan/vulkan.h>
 
-namespace cyclonite::vulkan
-{
+namespace cyclonite::vulkan {
 class Device;
 }
 
@@ -20,10 +19,14 @@ class BaseGraphicsNode;
 class GraphicsNodeInterface
 {
     using dispose_func_t = void (*)(void*);
-    using begin_func_t = std::pair<VkSemaphore, size_t>(*)(void*, vulkan::Device&, uint64_t);
+    using begin_func_t = std::pair<VkSemaphore, size_t> (*)(void*, vulkan::Device&, uint64_t);
+    using wait_stages_func_t = std::pair<VkSemaphore*, VkPipelineStageFlags*> (*)(void*);
 
 public:
-    GraphicsNodeInterface(void* node, dispose_func_t disposeFunc, begin_func_t beginFunc) noexcept;
+    GraphicsNodeInterface(void* node,
+                          dispose_func_t disposeFunc,
+                          begin_func_t beginFunc,
+                          wait_stages_func_t waitStagesFunc) noexcept;
 
     GraphicsNodeInterface(GraphicsNodeInterface const&) = default;
 
@@ -43,12 +46,15 @@ public:
 
     auto begin(vulkan::Device& device, uint64_t frameNumber) -> std::pair<VkSemaphore, size_t>;
 
+    auto waitStages() -> std::pair<VkSemaphore*, VkPipelineStageFlags*>;
+
     void dispose();
 
 private:
     void* node_;
     dispose_func_t dispose_;
     begin_func_t begin_;
+    wait_stages_func_t waitStages_;
 };
 }
 

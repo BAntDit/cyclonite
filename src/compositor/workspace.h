@@ -125,14 +125,8 @@ private:
     std::unordered_map<uint64_t, size_t> idToGraphicsNodeIndex_;
     std::unordered_map<std::string, size_t> nameToGraphicsNodeIndex_;
 
-    std::vector<VkPipelineStageFlags> nodeDstStageMasks_;
-    std::vector<VkSemaphore> nodeWaitSemaphores_;
-
     uint64_t frameNumber_;
-    uint32_t frameIndex_;
-    uint32_t swapChainLength_;
 
-    std::vector<VkSemaphore> nodeSignalSemaphores_;
     std::vector<VkSubmitInfo> submits_;
 
     uint32_t submitCount_;
