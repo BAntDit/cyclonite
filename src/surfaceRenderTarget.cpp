@@ -75,6 +75,7 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
   , surface_{ std::move(surface) }
   , vkSwapChain_{ std::move(vkSwapChain) }
   , imageAvailableSemaphores_{}
+  , imageReadyToBePresentedSemaphore_{}
   , currentImageIndex_{ std::numeric_limits<uint32_t>::max() }
 {
     outputSemantics_[outputSemantic] = 0;
@@ -89,6 +90,7 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
     frameBuffers_.reserve(bufferCount);
 
     imageAvailableSemaphores_.reserve(bufferCount);
+    imageReadyToBePresentedSemaphore_.reserve(bufferCount);
 
     VkSemaphoreCreateInfo semaphoreCreateInfo = {};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -109,6 +111,15 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
                                 &imageAvailableSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
             result != VK_SUCCESS) {
             throw std::runtime_error("could not create image available semaphore.");
+        }
+
+        if (auto result =
+              vkCreateSemaphore(device.handle(),
+                                &semaphoreCreateInfo,
+                                nullptr,
+                                &imageReadyToBePresentedSemaphore_.emplace_back(device.handle(), vkDestroySemaphore));
+            result != VK_SUCCESS) {
+            throw std::runtime_error("could not create image ready semaphore.");
         }
     }
 }
@@ -133,7 +144,7 @@ void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device, vulkan::Hand
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = &signal;
+    presentInfo.pWaitSemaphores = &imageReadyToBePresentedSemaphore_[currentImageIndex_];
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &std::as_const(vkSwapChain_);
 
@@ -141,5 +152,9 @@ void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device, vulkan::Hand
     presentInfo.pImageIndices = &currentImageIndex_;
 
     vkQueuePresentKHR(device.graphicsQueue(), &presentInfo);
+}
+auto SurfaceRenderTarget::signal() const -> VkSemaphore
+{
+    return static_cast<VkSemaphore>(imageReadyToBePresentedSemaphore_[currentImageIndex_]);
 }
 }

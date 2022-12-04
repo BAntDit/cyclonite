@@ -41,10 +41,13 @@ public:
 
     void swapBuffers(vulkan::Device const& device, vulkan::Handle<VkSemaphore> const& signal);
 
+    [[nodiscard]] auto signal() const -> VkSemaphore;
+
 private:
     std::optional<Surface> surface_;
     vulkan::Handle<VkSwapchainKHR> vkSwapChain_;
     std::vector<vulkan::Handle<VkSemaphore>> imageAvailableSemaphores_;
+    std::vector<vulkan::Handle<VkSemaphore>> imageReadyToBePresentedSemaphore_;
     uint32_t currentImageIndex_;
 };
 }

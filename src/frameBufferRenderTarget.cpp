@@ -26,7 +26,7 @@ FrameBufferRenderTarget::FrameBufferRenderTarget(vulkan::Device& device,
                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
                    VK_IMAGE_ASPECT_DEPTH_BIT));
 
-    for (auto i = size_t{0}, count = accessSemaphores_.size(); i < count; i++) {
+    for (auto i = size_t{ 0 }, count = accessSemaphores_.size(); i < count; i++) {
         accessSemaphores_[i] = vulkan::Handle<VkSemaphore>{ device.handle(), vkDestroySemaphore };
     }
 }
