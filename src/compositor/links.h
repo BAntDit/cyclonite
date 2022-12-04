@@ -18,7 +18,7 @@ using namespace easy_mp;
 
 struct Link
 {
-    size_t nodeIndex;
+    uint64_t nodeId;
     VkSampler sampler;
     std::array<VkImageView, value_cast(RenderTargetOutputSemantic::COUNT)> views;
     std::array<RenderTargetOutputSemantic, value_cast(RenderTargetOutputSemantic::COUNT)> semantics;
