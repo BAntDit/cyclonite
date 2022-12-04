@@ -75,6 +75,35 @@ using default_systems_config_t = systems_config_t<
 
 namespace config_traits {
 template<typename T>
+struct get_max_wait_semaphore_count
+{
+private:
+    using yes_t = uint8_t;
+    using no_t = uint16_t;
+
+    template<typename C>
+    static constexpr auto test_field(std::integral_constant<size_t, C::max_wait_semaphore_count_v>*) -> yes_t;
+
+    template<typename C>
+    static constexpr auto test_filed(...) -> no_t;
+
+    static constexpr auto has_max_wait_semaphore_count_field = sizeof(test_field<T>(0)) == sizeof(yes_t);
+
+public:
+    static constexpr auto value() -> size_t
+    {
+        if constexpr (has_max_wait_semaphore_count_field) {
+            return T::max_wait_semaphore_count_v;
+        } else {
+            return size_t{ 16 };
+        }
+    }
+};
+
+template<typename T>
+inline constexpr auto max_wait_semaphore_count_v = get_max_wait_semaphore_count<T>::value();
+
+template<typename T>
 struct is_logic_node
 {
 private:
