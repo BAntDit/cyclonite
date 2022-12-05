@@ -39,4 +39,16 @@ auto BaseGraphicsNode::passFinishedSemaphore() const -> VkSemaphore
       },
       renderTarget_);
 }
+
+void BaseGraphicsNode::swapBuffers(vulkan::Device& device)
+{
+    std::visit(
+      [&device](auto&& rt) -> void {
+          if constexpr (std::is_same_v<FrameBufferRenderTarget, std::decay_t<decltype(rt)>> ||
+                        std::is_same_v<SurfaceRenderTarget, std::decay_t<decltype(rt)>>) {
+              rt.swapBuffers(device);
+          }
+      },
+      renderTarget_);
+}
 }

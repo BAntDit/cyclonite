@@ -23,7 +23,8 @@ class GraphicsNodeInterface
     using wait_stages_func_t = std::pair<VkSemaphore*, VkPipelineStageFlags*> (*)(void*);
     using is_surface_node_func_t = bool (*)();
     using make_expired_func_t = void (*)(void*, size_t);
-    using update_func_t = void(*)(void*, uint32_t&, uint64_t, real);
+    using update_func_t = void (*)(void*, uint32_t&, uint64_t, real);
+    using end_func_t = void (*)(void*, uint32_t);
 
 public:
     GraphicsNodeInterface(void* node,
@@ -32,7 +33,8 @@ public:
                           wait_stages_func_t waitStagesFunc,
                           is_surface_node_func_t surfaceNodeFunc,
                           make_expired_func_t makeExpiredFunc,
-                          update_func_t updateFunc) noexcept;
+                          update_func_t updateFunc,
+                          end_func_t endFunc) noexcept;
 
     GraphicsNodeInterface(GraphicsNodeInterface const&) = default;
 
@@ -60,6 +62,8 @@ public:
 
     void update(uint32_t& semaphoreCount, uint64_t frameNumber, real deltaTime);
 
+    void end(uint32_t semaphoreCount);
+
     void dispose();
 
 private:
@@ -70,6 +74,7 @@ private:
     is_surface_node_func_t isSurfaceNode_;
     make_expired_func_t makeExpired_;
     update_func_t update_;
+    end_func_t end_;
 };
 }
 

@@ -51,7 +51,7 @@ public:
 
     [[nodiscard]] auto wait() const -> VkSemaphore;
 
-    auto swapBuffers(vulkan::Device const& device, uint32_t currentFrameImageIndex) -> uint32_t;
+    void swapBuffers(vulkan::Device const& device);
 
 private:
     std::array<vulkan::Handle<VkSemaphore>, 2> accessSemaphores_;

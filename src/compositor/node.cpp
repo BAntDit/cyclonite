@@ -36,4 +36,13 @@ void Node::updateDependency(uint64_t id, std::shared_future<void> const& depende
     assert(dependencies_.contains(id));
     dependencies_[id] = dependency;
 }
+
+void Node::clearDependencies()
+{
+    std::for_each(dependencies_.begin(), dependencies_.end(), [](auto&& d) -> void {
+        auto&& [id, dependency] = d;
+        (void)id;
+        dependency = std::nullopt;
+    });
+}
 }

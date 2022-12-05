@@ -128,9 +128,9 @@ private:
     uint64_t frameNumber_;
 
     std::vector<VkSubmitInfo> submits_;
+    std::vector<std::shared_future<void>> gfxFutures_;
 
     uint32_t submitCount_;
-    uint8_t presentationNodeIndex_;
 
     std::chrono::time_point<std::chrono::high_resolution_clock> lastTimeUpdate_;
 };

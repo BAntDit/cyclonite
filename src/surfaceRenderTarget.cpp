@@ -139,7 +139,7 @@ auto SurfaceRenderTarget::acquireBackBufferIndex(vulkan::Device const& device, u
     return std::make_pair(currentImageIndex_, wait);
 }
 
-void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device, vulkan::Handle<VkSemaphore> const& signal)
+void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device)
 {
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

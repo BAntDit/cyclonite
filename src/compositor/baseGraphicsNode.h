@@ -72,6 +72,8 @@ public:
 
     explicit BaseGraphicsNode(uint8_t bufferCount) noexcept;
 
+    void swapBuffers(vulkan::Device& device);
+
     template<typename RenderTargetType>
     [[nodiscard]] auto getRenderTarget() const -> RenderTargetType const&;
     template<typename RenderTargetType>
@@ -89,11 +91,14 @@ public:
 
     [[nodiscard]] auto passFinishedSemaphore() const -> VkSemaphore;
 
+    [[nodiscard]] auto submitInfo() const -> VkSubmitInfo const& { return submit_; }
+
 public:
     template<NodeConfig Config>
     class Builder;
 
 protected:
+    VkSubmitInfo submit_;
     render_target_t renderTarget_;
     uint32_t frameIndex_;
     uint32_t bufferIndex_;

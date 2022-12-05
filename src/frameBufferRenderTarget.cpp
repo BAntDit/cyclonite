@@ -41,11 +41,9 @@ auto FrameBufferRenderTarget::signal() const -> VkSemaphore
     return static_cast<VkSemaphore>(accessSemaphores_[1]);
 }
 
-auto FrameBufferRenderTarget::swapBuffers(vulkan::Device const& device, uint32_t currentFrameImageIndex) -> uint32_t
+void FrameBufferRenderTarget::swapBuffers(vulkan::Device const& device)
 {
     (void)device;
-    (void)currentFrameImageIndex;
-
     std::swap(accessSemaphores_[0], accessSemaphores_[1]);
 }
 }

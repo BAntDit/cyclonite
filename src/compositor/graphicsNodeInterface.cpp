@@ -13,7 +13,8 @@ GraphicsNodeInterface::GraphicsNodeInterface(void* node,
                                              wait_stages_func_t waitStagesFunc,
                                              is_surface_node_func_t surfaceNodeFunc,
                                              make_expired_func_t makeExpiredFunc,
-                                             update_func_t updateFunc) noexcept
+                                             update_func_t updateFunc,
+                                             end_func_t endFunc) noexcept
   : node_{ node }
   , dispose_{ disposeFunc }
   , begin_{ beginFunc }
@@ -21,6 +22,7 @@ GraphicsNodeInterface::GraphicsNodeInterface(void* node,
   , isSurfaceNode_{ surfaceNodeFunc }
   , makeExpired_{ makeExpiredFunc }
   , update_{ updateFunc }
+  , end_{ endFunc }
 {}
 
 auto GraphicsNodeInterface::get() const -> BaseGraphicsNode const&
@@ -61,6 +63,11 @@ void GraphicsNodeInterface::makeExpired(size_t bufferIndex)
 void GraphicsNodeInterface::update(uint32_t& semaphoreCount, uint64_t frameNumber, real deltaTime)
 {
     update_(node_, semaphoreCount, frameNumber, deltaTime);
+}
+
+void GraphicsNodeInterface::end(uint32_t semaphoreCount)
+{
+    end_(node_, semaphoreCount);
 }
 
 void GraphicsNodeInterface::dispose()

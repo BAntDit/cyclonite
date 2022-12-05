@@ -46,6 +46,8 @@ public:
 
     void resolveDependencies();
 
+    void clearDependencies();
+
 protected:
     std::unordered_map<uint64_t, std::optional<std::shared_future<void>>> dependencies_;
 

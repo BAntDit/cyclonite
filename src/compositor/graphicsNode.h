@@ -52,7 +52,9 @@ public:
 
     void makeExpired(size_t bufferIndex);
 
-    void update(uint32_t semaphoreCount, uint64_t frameNumber, real deltaTime);
+    void update(uint32_t& semaphoreCount, uint64_t frameNumber, real deltaTime);
+
+    void end(uint32_t semaphoreCount);
 
 private:
     std::array<VkPipelineStageFlags, config_traits::max_wait_semaphore_count_v<Config>> nodeDstStageMasks_;
@@ -124,10 +126,18 @@ void GraphicsNode<Config>::makeExpired(size_t bufferIndex)
 }
 
 template<NodeConfig Config>
-void GraphicsNode<Config>::update(uint32_t semaphoreCount, uint64_t frameNumber, real deltaTime)
+void GraphicsNode<Config>::update(uint32_t& semaphoreCount, uint64_t frameNumber, real deltaTime)
 {
     auto& s = resourceManager().get(scene()).template as<scene_t>();
     systems_.update(s.entities(), *this, semaphoreCount, frameNumber, deltaTime);
+}
+
+template<NodeConfig Config>
+void GraphicsNode<Config>::end(uint32_t semaphoreCount)
+{
+    submit_ = VkSubmitInfo{};
+
+    // TODO::
 }
 }
 
