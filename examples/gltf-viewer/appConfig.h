@@ -8,7 +8,13 @@
 #include <cyclonite.h>
 
 namespace examples::viewer {
-struct MainNodeConfig : public cyclonite::DefaultConfigs
+using main_scene_component_config_t = cyclonite::default_component_config_t;
+
+using scene_animation_systems_t = cyclonite::systems_config_t<value_cast(cyclonite::AnimationStage::COUNT),
+                                                              cyclonite::systems::AnimationSystem,
+                                                              cyclonite::systems::TransformSystem>;
+
+/* struct MainNodeConfig : public cyclonite::DefaultConfigs
 {
     constexpr static bool is_surface_node = false;
 };
@@ -22,7 +28,7 @@ struct SurfaceNodeConfig : public cyclonite::DefaultConfigs
 };
 
 using node_type_register_t = cyclonite::compositor::node_type_register<cyclonite::compositor::Node<MainNodeConfig>,
-                                                                       cyclonite::compositor::Node<SurfaceNodeConfig>>;
+                                                                       cyclonite::compositor::Node<SurfaceNodeConfig>>;*/
 }
 
 #endif // EX_CYCLONITE_CONFIG_H

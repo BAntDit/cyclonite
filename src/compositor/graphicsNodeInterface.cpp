@@ -11,12 +11,16 @@ GraphicsNodeInterface::GraphicsNodeInterface(void* node,
                                              dispose_func_t disposeFunc,
                                              begin_func_t beginFunc,
                                              wait_stages_func_t waitStagesFunc,
-                                             is_surface_node_func_t surfaceNodeFunc) noexcept
+                                             is_surface_node_func_t surfaceNodeFunc,
+                                             make_expired_func_t makeExpiredFunc,
+                                             update_func_t updateFunc) noexcept
   : node_{ node }
   , dispose_{ disposeFunc }
   , begin_{ beginFunc }
   , waitStages_{ waitStagesFunc }
   , isSurfaceNode_{ surfaceNodeFunc }
+  , makeExpired_{ makeExpiredFunc }
+  , update_{ updateFunc }
 {}
 
 auto GraphicsNodeInterface::get() const -> BaseGraphicsNode const&
@@ -47,6 +51,16 @@ auto GraphicsNodeInterface::begin(vulkan::Device& device, uint64_t frameNumber) 
 auto GraphicsNodeInterface::waitStages() -> std::pair<VkSemaphore*, VkPipelineStageFlags*>
 {
     return waitStages_(node_);
+}
+
+void GraphicsNodeInterface::makeExpired(size_t bufferIndex)
+{
+    makeExpired_(node_, bufferIndex);
+}
+
+void GraphicsNodeInterface::update(uint32_t& semaphoreCount, uint64_t frameNumber, real deltaTime)
+{
+    update_(node_, semaphoreCount, frameNumber, deltaTime);
 }
 
 void GraphicsNodeInterface::dispose()

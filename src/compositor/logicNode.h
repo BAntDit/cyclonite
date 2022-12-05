@@ -59,7 +59,7 @@ template<NodeConfig Config>
 void LogicNode<Config>::update(uint64_t frameNumber, real deltaTime)
 {
     auto& s = resourceManager().get(scene()).template as<scene_t>();
-    systems_.update(s.entities(), this, frameNumber, deltaTime);
+    systems_.update(s.entities(), *this, frameNumber, deltaTime);
 }
 
 template<NodeConfig Config>

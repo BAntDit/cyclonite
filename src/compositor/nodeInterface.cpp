@@ -3,7 +3,6 @@
 //
 
 #include "nodeInterface.h"
-#include "baseNode.h"
 
 namespace cyclonite::compositor {
 NodeInterface::NodeInterface(void* node,

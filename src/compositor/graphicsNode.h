@@ -50,9 +50,15 @@ public:
     [[nodiscard]] auto waitStages() const -> VkPipelineStageFlags const* { return nodeDstStageMasks_.data(); }
     auto waitStages() -> VkPipelineStageFlags* { return nodeDstStageMasks_.data(); }
 
+    void makeExpired(size_t bufferIndex);
+
+    void update(uint32_t semaphoreCount, uint64_t frameNumber, real deltaTime);
+
 private:
     std::array<VkPipelineStageFlags, config_traits::max_wait_semaphore_count_v<Config>> nodeDstStageMasks_;
     std::array<VkSemaphore, config_traits::max_wait_semaphore_count_v<Config>> nodeWaitSemaphores_;
+    std::bitset<8> expirationBits_; // 8 - place here max swapchain bits
+    system_manager_t systems_;
 
     // dummy, tmp solution:
     std::unique_ptr<vulkan::ShaderModule> vertexSceneShader_;
@@ -68,8 +74,6 @@ private:
     std::array<vulkan::Handle<VkPipelineLayout>, config_traits::pass_count_v<Config>> passPipelineLayout_;
     std::array<vulkan::Handle<VkPipeline>, config_traits::pass_count_v<Config>> passPipeline_;
     std::array<VkDescriptorSet, config_traits::pass_count_v<Config>> descriptorSets_;
-
-    std::array<std::byte, 4> expirationBits_; // 32 / 8 - put there max possible swap chain length somehow
 };
 
 template<NodeConfig Config>
@@ -82,18 +86,48 @@ auto GraphicsNode<Config>::begin([[maybe_unused]] vulkan::Device& device, uint64
     frameIndex_ = static_cast<uint32_t>(frameNumber % swapChainLength());
 
     if constexpr (config_traits::is_surface_node_v<Config>) {
-        auto&& rt = getRenderTarget<SurfaceRenderTarget>();
-        auto [imgIndex, wait] = rt.acquireBackBufferIndex(device, frameIndex_);
-        commandIndex = static_cast<size_t>(imgIndex);
-        waitSemaphore = wait;
+        auto& rt = getRenderTarget<SurfaceRenderTarget>();
+
+        auto acquireBackBufferTask = [&rt, &device, frameIndex = frameIndex_]() -> std::pair<VkSemaphore, size_t> {
+            auto [imgIndex, wait] = rt.acquireBackBufferIndex(device, frameIndex);
+            return std::make_pair(wait, static_cast<size_t>(imgIndex));
+        };
+
+        // it has to be fine even in the worker thread,
+        // but let it be in the render just in case
+        if (multithreading::Render::isInRenderThread()) {
+            auto [w, i] = acquireBackBufferTask();
+            commandIndex = i;
+            waitSemaphore = w;
+        } else {
+            assert(multithreading::Worker::isInWorkerThread());
+            auto future = multithreading::Worker::threadWorker().taskManager().submitRenderTask(acquireBackBufferTask);
+            auto [w, i] = future.get();
+            commandIndex = i;
+            waitSemaphore = w;
+        }
     } else {
-        auto&& rt = getRenderTarget<FrameBufferRenderTarget>();
+        auto& rt = getRenderTarget<FrameBufferRenderTarget>();
         waitSemaphore = rt.wait();
     }
 
     bufferIndex_ = commandIndex;
 
     return std::make_pair(waitSemaphore, commandIndex);
+}
+
+template<NodeConfig Config>
+void GraphicsNode<Config>::makeExpired(size_t bufferIndex)
+{
+    assert(bufferIndex < expirationBits_.size());
+    expirationBits_.set(bufferIndex, false);
+}
+
+template<NodeConfig Config>
+void GraphicsNode<Config>::update(uint32_t semaphoreCount, uint64_t frameNumber, real deltaTime)
+{
+    auto& s = resourceManager().get(scene()).template as<scene_t>();
+    systems_.update(s.entities(), *this, semaphoreCount, frameNumber, deltaTime);
 }
 }
 

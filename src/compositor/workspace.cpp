@@ -112,13 +112,15 @@ void Workspace::render(vulkan::Device& device)
 
                           if (view != attachment.handle()) {
                               view = attachment.handle();
-                              // TODO:: make expired
+                              node.makeExpired(commandIndex);
                           }
                       }
                   } // all input views
-              } // all inputs
+              }     // all inputs
 
-              // TODO:: update
+              node.update(semaphoreCount, frameNumber, dt);
+
+              // TODO:: make the end
           }) };
 
         // further nodes
