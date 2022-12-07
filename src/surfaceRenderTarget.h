@@ -43,6 +43,8 @@ public:
 
     [[nodiscard]] auto signal() const -> VkSemaphore;
 
+    [[nodiscard]] auto signalPtr() const -> VkSemaphore const*;
+
 private:
     std::optional<Surface> surface_;
     vulkan::Handle<VkSwapchainKHR> vkSwapChain_;

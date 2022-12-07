@@ -54,7 +54,7 @@ public:
 
     void update(uint32_t& semaphoreCount, uint64_t frameNumber, real deltaTime);
 
-    void end(uint32_t semaphoreCount);
+    void end(uint32_t waitSemaphoreCount);
 
 private:
     std::array<VkPipelineStageFlags, config_traits::max_wait_semaphore_count_v<Config>> nodeDstStageMasks_;
@@ -133,11 +133,21 @@ void GraphicsNode<Config>::update(uint32_t& semaphoreCount, uint64_t frameNumber
 }
 
 template<NodeConfig Config>
-void GraphicsNode<Config>::end(uint32_t semaphoreCount)
+void GraphicsNode<Config>::end(uint32_t waitSemaphoreCount)
 {
     submit_ = VkSubmitInfo{};
 
-    // TODO::
+    auto [count, commands] = frameCommands();
+    auto const signalSemaphoreCount = uint32_t{ 1 };
+
+    submit_.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_.waitSemaphoreCount = waitSemaphoreCount;
+    submit_.pWaitSemaphores = waitSemaphores();
+    submit_.pWaitDstStageMask = waitStages();
+    submit_.commandBufferCount = count;
+    submit_.pCommandBuffers = commands;
+    submit_.signalSemaphoreCount = signalSemaphoreCount;
+    submit_.pSignalSemaphores = passFinishedSemaphorePtr();
 }
 }
 

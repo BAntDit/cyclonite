@@ -49,6 +49,8 @@ public:
 
     [[nodiscard]] auto signal() const -> VkSemaphore;
 
+    [[nodiscard]] auto signalPtr() const -> VkSemaphore const*;
+
     [[nodiscard]] auto wait() const -> VkSemaphore;
 
     void swapBuffers(vulkan::Device const& device);

@@ -15,11 +15,11 @@ class BaseRenderTarget;
 namespace cyclonite::compositor {
 class Links;
 class PassIterator;
-class BaseNode;
+class BaseGraphicsNode;
 
 class FrameCommands
 {
-    friend class BaseNode;
+    friend class BaseGraphicsNode;
 
 private:
     FrameCommands() noexcept;

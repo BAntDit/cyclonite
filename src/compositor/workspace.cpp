@@ -152,15 +152,29 @@ void Workspace::endFrame(vulkan::Device& device)
         submits_[i] = graphicsNodes_[i].get().submitInfo();
     }
 
-    if (auto result = vkQueueSubmit(device.graphicsQueue(), submitCount_, submits_.data(), VK_NULL_HANDLE);
-        result != VK_SUCCESS) {
-        throw std::runtime_error{ "submit commands failed" };
-    }
+    auto endFrameTask = [&device,
+                         &submits = submits_,
+                         &graphicsNodes = graphicsNodes_,
+                         submitCount = submitCount_,
+                         graphicsNodeCount = graphicsNodeCount_]() -> void {
+        if (auto result = vkQueueSubmit(device.graphicsQueue(), submitCount, submits.data(), VK_NULL_HANDLE);
+            result != VK_SUCCESS) {
+            throw std::runtime_error{ "submit commands failed" };
+        }
 
-    for (auto gni = uint8_t{ 0 }; gni < graphicsNodeCount_; gni++) {
-        auto& node = graphicsNodes_[gni];
-        node.get().swapBuffers(device);
-        node.get().clearDependencies();
+        for (auto gni = uint8_t{ 0 }; gni < graphicsNodeCount; gni++) {
+            auto& node = graphicsNodes[gni];
+            node.get().swapBuffers(device);
+            node.get().clearDependencies();
+        }
+    };
+
+    if (multithreading::Render::isInRenderThread()) {
+        endFrameTask();
+    } else {
+        assert(multithreading::Worker::isInWorkerThread());
+        auto future = multithreading::Worker::threadWorker().taskManager().submitRenderTask(endFrameTask);
+        future.get();
     }
 
     frameNumber_++;

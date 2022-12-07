@@ -91,7 +91,11 @@ public:
 
     [[nodiscard]] auto passFinishedSemaphore() const -> VkSemaphore;
 
+    [[nodiscard]] auto passFinishedSemaphorePtr() const -> VkSemaphore const*;
+
     [[nodiscard]] auto submitInfo() const -> VkSubmitInfo const& { return submit_; }
+
+    [[nodiscard]] auto frameCommands() const -> std::pair<uint32_t, VkCommandBuffer const*>;
 
 public:
     template<NodeConfig Config>
@@ -105,9 +109,7 @@ protected:
 
 private:
     Links inputs_;
-    uint32_t swapChainLength_; // TODO:: gets from RT
-
-    std::vector<vulkan::Handle<VkSemaphore>> semaphores_;
+    uint32_t swapChainLength_;
     std::bitset<value_cast(RenderTargetOutputSemantic::COUNT)> publicSemanticBits_;
     std::vector<FrameCommands> frameCommands_;
     vulkan::Handle<VkRenderPass> vkRenderPass_;

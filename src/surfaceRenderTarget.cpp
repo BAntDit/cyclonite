@@ -148,7 +148,7 @@ void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device)
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &std::as_const(vkSwapChain_);
 
-    // image at fixedPartIndex currentFrameImageIndex gets available after signal
+    // image at currentFrameImageIndex gets available after signal
     presentInfo.pImageIndices = &currentImageIndex_;
 
     vkQueuePresentKHR(device.graphicsQueue(), &presentInfo);
@@ -156,5 +156,11 @@ void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device)
 auto SurfaceRenderTarget::signal() const -> VkSemaphore
 {
     return static_cast<VkSemaphore>(imageReadyToBePresentedSemaphore_[currentImageIndex_]);
+}
+
+auto SurfaceRenderTarget::signalPtr() const -> VkSemaphore const*
+{
+    auto& s = imageReadyToBePresentedSemaphore_[currentImageIndex_];
+    return &s;
 }
 }

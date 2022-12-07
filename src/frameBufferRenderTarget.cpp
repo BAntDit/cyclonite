@@ -41,6 +41,12 @@ auto FrameBufferRenderTarget::signal() const -> VkSemaphore
     return static_cast<VkSemaphore>(accessSemaphores_[1]);
 }
 
+auto FrameBufferRenderTarget::signalPtr() const -> VkSemaphore const*
+{
+    auto& s = accessSemaphores_[1];
+    return &s;
+}
+
 void FrameBufferRenderTarget::swapBuffers(vulkan::Device const& device)
 {
     (void)device;
