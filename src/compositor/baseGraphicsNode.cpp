@@ -3,8 +3,29 @@
 //
 
 #include "baseGraphicsNode.h"
+#include "frameCommands.h"
 
 namespace cyclonite::compositor {
+BaseGraphicsNode::BaseGraphicsNode(resources::ResourceManager& resourceManager,
+                                   std::string_view name,
+                                   uint64_t typeId,
+                                   uint8_t bufferCount /* = 1*/) noexcept
+  : Node{ resourceManager, name, typeId }
+  , submit_{}
+  , renderTarget_{}
+  , frameIndex_{ 0 }
+  , bufferIndex_{ 0 }
+  , inputs_{}
+  , swapChainLength_{ bufferCount }
+  , publicSemanticBits_{}
+  , frameCommands_{}
+  , vkRenderPass_{}
+{
+    frameCommands_.reserve(bufferCount);
+    for (auto i = size_t{ 0 }; i < bufferCount; i++)
+        frameCommands_.emplace_back(FrameCommands{ i });
+}
+
 auto BaseGraphicsNode::getRenderTargetBase() const -> BaseRenderTarget const&
 {
     return std::visit(

@@ -40,7 +40,20 @@ public:
     using system_manager_t = enttx::SystemManager<systems_config_t>;
     using scene_t = Scene<component_config_t>;
 
-    explicit GraphicsNode(uint8_t bufferCount);
+    GraphicsNode(resources::ResourceManager& resourceManager,
+                 std::string_view name,
+                 uint64_t typeId,
+                 uint8_t bufferCount = 1);
+
+    GraphicsNode(GraphicsNode const&) = delete;
+
+    GraphicsNode(GraphicsNode&&) = default;
+
+    ~GraphicsNode() = default;
+
+    auto operator=(GraphicsNode const&) -> GraphicsNode& = delete;
+
+    auto operator=(GraphicsNode &&) -> GraphicsNode& = default;
 
     auto begin([[maybe_unused]] vulkan::Device& device, uint64_t frameNumber) -> std::pair<VkSemaphore, size_t>;
 
@@ -55,6 +68,8 @@ public:
     void update(uint32_t& semaphoreCount, uint64_t frameNumber, real deltaTime);
 
     void end(uint32_t waitSemaphoreCount);
+
+    void dispose() { /* TODO:: */ }
 
 private:
     std::array<VkPipelineStageFlags, config_traits::max_wait_semaphore_count_v<Config>> nodeDstStageMasks_;
@@ -77,6 +92,24 @@ private:
     std::array<vulkan::Handle<VkPipeline>, config_traits::pass_count_v<Config>> passPipeline_;
     std::array<VkDescriptorSet, config_traits::pass_count_v<Config>> descriptorSets_;
 };
+
+template<NodeConfig Config>
+GraphicsNode<Config>::GraphicsNode(resources::ResourceManager& resourceManager,
+                                   std::string_view name,
+                                   uint64_t typeId,
+                                   uint8_t bufferCount /*= 1*/)
+  : BaseGraphicsNode{ resourceManager, name, typeId, bufferCount }
+  , nodeDstStageMasks_{}
+  , nodeWaitSemaphores_{}
+  , expirationBits_{ 255 }
+  , systems_{}
+  , passTypes_{}
+  , passDescriptorPool_{}
+  , passDescriptorSetLayout_{}
+  , passPipelineLayout_{}
+  , passPipeline_{}
+  , descriptorSets_{}
+{}
 
 template<NodeConfig Config>
 auto GraphicsNode<Config>::begin([[maybe_unused]] vulkan::Device& device, uint64_t frameNumber)

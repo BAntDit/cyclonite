@@ -134,7 +134,7 @@ void Workspace::render(vulkan::Device& device)
                                 }
                             }
                         } // input semantics
-                    } // all inputs
+                    }     // all inputs
                 });
               inputUpdateFuture.get();
 

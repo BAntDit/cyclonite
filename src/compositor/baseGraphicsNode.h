@@ -70,7 +70,7 @@ class BaseGraphicsNode : public Node
 public:
     using render_target_t = std::variant<std::monostate, SurfaceRenderTarget, FrameBufferRenderTarget>;
 
-    explicit BaseGraphicsNode(uint8_t bufferCount) noexcept;
+    ~BaseGraphicsNode() = default;
 
     void swapBuffers(vulkan::Device& device);
 
@@ -94,6 +94,12 @@ public:
     [[nodiscard]] auto passFinishedSemaphorePtr() const -> VkSemaphore const*;
 
     [[nodiscard]] auto submitInfo() const -> VkSubmitInfo const& { return submit_; }
+
+protected:
+    BaseGraphicsNode(resources::ResourceManager& resourceManager,
+                     std::string_view name,
+                     uint64_t typeId,
+                     uint8_t bufferCount = 1) noexcept;
 
     [[nodiscard]] auto frameCommands() const -> std::pair<uint32_t, VkCommandBuffer const*>;
 
