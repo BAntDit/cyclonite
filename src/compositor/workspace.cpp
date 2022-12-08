@@ -6,13 +6,20 @@
 
 namespace cyclonite::compositor {
 Workspace::Workspace() noexcept
-  : frameNumber_{ 0 }
-  , nodeDstStageMasks_{}
-  , nodeWaitSemaphores_{}
-  , nodeSignalSemaphores_{}
+  : logicNodeCount_{ 0 }
+  , logicNodeStorage_{}
+  , logicNodes_{}
+  , idToLogicNodeIndex_{}
+  , nameToLogicNodeIndex_{}
+  , graphicsNodeCount_{ 0 }
+  , graphicsNodeStorage_{}
+  , graphicsNodes_{}
+  , idToGraphicsNodeIndex_{}
+  , nameToGraphicsNodeIndex_{}
+  , frameNumber_{ 0 }
   , submits_{}
+  , gfxFutures_{}
   , submitCount_{ 0 }
-  , presentationNodeIndex_{ std::numeric_limits<uint8_t>::max() }
   , lastTimeUpdate_{ std::chrono::high_resolution_clock::now() }
 {}
 
@@ -205,7 +212,10 @@ void Workspace::endFrame(vulkan::Device& device)
 
 Workspace::~Workspace()
 {
-    // for (auto&& node : nodes_)
-    //    node.dispose();
+    for (auto&& n : graphicsNodes_)
+        n.dispose();
+
+    for(auto&& n : logicNodes_)
+        n.dispose();
 }
 }
