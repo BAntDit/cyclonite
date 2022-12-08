@@ -34,7 +34,6 @@ set(PUBLIC_HEADERS
     src/resources/buffer.h
     src/compositor/nodeIdentifier.h
     src/compositor/nodeTypeRegister.h
-    src/compositor/nodeInterface.h
     src/compositor/passType.h
     src/compositor/links.h
     src/compositor/workspace.h
@@ -127,7 +126,6 @@ set(SOURCES
     src/compositor/node.cpp
     src/compositor/nodeIdentifier.cpp
     src/compositor/nodeBuilder.cpp
-    src/compositor/nodeInterface.cpp
     src/compositor/frameCommands.cpp
     src/compositor/passIterator.cpp
     src/compositor/workspaceBuilder.cpp
