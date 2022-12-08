@@ -58,68 +58,90 @@ void Workspace::render(vulkan::Device& device)
     for (auto gni = uint8_t{ 0 }; gni < graphicsNodeCount_; gni++) {
         auto& node = graphicsNodes_[gni];
 
+        // it's going to be not trivial thing to execute gfx node in the parallel
+        // but let's try
         auto future = std::shared_future<void>{ multithreading::Worker::threadWorker().submitTask(
-          [& graphicsNodes = graphicsNodes_,
-           &idToGraphicsNodeIndex = idToGraphicsNodeIndex_,
-           frameNumber = frameNumber_,
-           node = node, // just copy interface
+          [& graphicsNodes = graphicsNodes_,                   // read only
+             & idToGraphicsNodeIndex = idToGraphicsNodeIndex_, // read only
+           frameNumber = frameNumber_,                         // read only
+           node = node,                                        // just copy interface
            dt,
            &device]() mutable -> void {
               node.get().resolveDependencies();
 
+              // safe
               auto semaphoreCount = uint32_t{ 0 };
               auto [baseSemaphore, baseDstStageMask] = node.waitStages();
 
-              auto [renderTargetReadySemaphore, commandIndex] = node.begin(device, frameNumber);
+              // node::begin modifies frame buffer index and have to be in the render thread
+              // to avoid data races
+              auto beginFuture = multithreading::Worker::threadWorker().taskManager().submitRenderTask(
+                [&node, &device, frameNumber]() -> std::pair<VkSemaphore, size_t> {
+                    return node.begin(device, frameNumber);
+                });
+              auto [renderTargetReadySemaphore, commandIndex] = beginFuture.get();
 
-              if (renderTargetReadySemaphore != VK_NULL_HANDLE) { // waiting for acquired image or frame buffer
+              if (renderTargetReadySemaphore != VK_NULL_HANDLE) { // to waiting for acquired image or frame buffer
                   *(baseSemaphore + semaphoreCount) = renderTargetReadySemaphore;
                   *(baseDstStageMask + semaphoreCount) = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
                   semaphoreCount++;
               }
 
-              auto& inputs = node.get().inputs();
-              for (size_t linkIdx = 0, linkCount = inputs.size(); linkIdx < linkCount; linkIdx++) {
-                  auto& [inputNodeId, sampler, views, semantics] = inputs.get(linkIdx);
-                  (void)sampler;
+              // reads input frame buffer index and must be in the render thread
+              auto inputUpdateFuture = multithreading::Worker::threadWorker().taskManager().submitRenderTask(
+                [&node,
+                 &graphicsNodes,
+                 &idToGraphicsNodeIndex,
+                 &semaphoreCount,
+                 baseSemaphore = baseSemaphore,
+                 baseDstStageMask = baseDstStageMask]() -> void {
+                    auto& inputs = node.get().inputs();
 
-                  if (inputNodeId == std::numeric_limits<size_t>::max())
-                      continue;
+                    for (size_t linkIdx = 0, linkCount = inputs.size(); linkIdx < linkCount; linkIdx++) {
+                        auto& [inputNodeId, sampler, views, semantics] = inputs.get(linkIdx);
+                        (void)sampler;
 
-                  assert(idToGraphicsNodeIndex.contains(inputNodeId));
-                  auto& inputNode = graphicsNodes[idToGraphicsNodeIndex[inputNodeId]];
+                        if (inputNodeId == std::numeric_limits<size_t>::max())
+                            continue;
 
-                  auto signal = inputNode.get().passFinishedSemaphore();
-                  if (signal != VK_NULL_HANDLE) { // wait all nodes this node depends on
-                      *(baseSemaphore + semaphoreCount) = signal;
-                      *(baseDstStageMask + semaphoreCount) = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-                      semaphoreCount++;
-                  }
+                        assert(idToGraphicsNodeIndex.contains(inputNodeId));
+                        auto const& inputNode = graphicsNodes[idToGraphicsNodeIndex[inputNodeId]];
 
-                  auto const inputFrameBufferIndex = inputNode.get().frameBufferIndex();
-                  for (auto i = size_t{ 0 }; i < value_cast(RenderTargetOutputSemantic::COUNT); i++) {
-                      auto const& rt =
-                        inputNode.isSurfaceNode()
-                          ? static_cast<BaseRenderTarget const&>((*inputNode).getRenderTarget<SurfaceRenderTarget>())
-                          : static_cast<BaseRenderTarget const&>(
-                              (*inputNode).getRenderTarget<FrameBufferRenderTarget>());
+                        auto signal = inputNode.get().passFinishedSemaphore();
+                        if (signal != VK_NULL_HANDLE) { // to wait all nodes this node depends on
+                            *(baseSemaphore + semaphoreCount) = signal;
+                            *(baseDstStageMask + semaphoreCount) = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                            semaphoreCount++;
+                        }
 
-                      auto semantic = semantics[i];
+                        auto const inputFrameBufferIndex = inputNode.get().frameBufferIndex();
+                        for (auto i = size_t{ 0 }; i < value_cast(RenderTargetOutputSemantic::COUNT); i++) {
+                            auto const& rt = inputNode.isSurfaceNode()
+                                               ? static_cast<BaseRenderTarget const&>(
+                                                   (*inputNode).getRenderTarget<SurfaceRenderTarget>())
+                                               : static_cast<BaseRenderTarget const&>(
+                                                   (*inputNode).getRenderTarget<FrameBufferRenderTarget>());
 
-                      if (semantic != RenderTargetOutputSemantic::INVALID) {
-                          auto& view = views[i];
-                          auto const& attachment = rt.getColorAttachment(inputFrameBufferIndex, semantic);
+                            auto semantic = semantics[i];
 
-                          if (view != attachment.handle()) {
-                              view = attachment.handle();
-                              node.makeExpired(commandIndex);
-                          }
-                      }
-                  } // all input views
-              }     // all inputs
+                            if (semantic != RenderTargetOutputSemantic::INVALID) {
+                                auto& view = views[i];
+                                auto const& attachment = rt.getColorAttachment(inputFrameBufferIndex, semantic);
 
+                                if (view != attachment.handle()) {
+                                    view = attachment.handle();
+                                    node.makeExpired(commandIndex);
+                                }
+                            }
+                        } // input semantics
+                    } // all inputs
+                });
+              inputUpdateFuture.get();
+
+              // it has to be safe after dependency resolve
               node.update(semaphoreCount, frameNumber, dt);
 
+              // writes own submit info only
               node.end(semaphoreCount);
           }) };
 
@@ -137,6 +159,7 @@ void Workspace::render(vulkan::Device& device)
         gfxFutures_[submitCount_++] = future;
     } // gfx nodes
 
+    // submits everything and swap buffers
     endFrame(device);
 }
 

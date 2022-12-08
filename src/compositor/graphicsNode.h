@@ -82,6 +82,8 @@ template<NodeConfig Config>
 auto GraphicsNode<Config>::begin([[maybe_unused]] vulkan::Device& device, uint64_t frameNumber)
   -> std::pair<VkSemaphore, size_t>
 {
+    assert(multithreading::Render::isInRenderThread());
+
     auto waitSemaphore = VkSemaphore{ VK_NULL_HANDLE };
     auto commandIndex = size_t{ 0 };
 
@@ -89,25 +91,9 @@ auto GraphicsNode<Config>::begin([[maybe_unused]] vulkan::Device& device, uint64
 
     if constexpr (config_traits::is_surface_node_v<Config>) {
         auto& rt = getRenderTarget<SurfaceRenderTarget>();
-
-        auto acquireBackBufferTask = [&rt, &device, frameIndex = frameIndex_]() -> std::pair<VkSemaphore, size_t> {
-            auto [imgIndex, wait] = rt.acquireBackBufferIndex(device, frameIndex);
-            return std::make_pair(wait, static_cast<size_t>(imgIndex));
-        };
-
-        // it has to be fine even in the worker thread,
-        // but let it be in the render just in case
-        if (multithreading::Render::isInRenderThread()) {
-            auto [w, i] = acquireBackBufferTask();
-            commandIndex = i;
-            waitSemaphore = w;
-        } else {
-            assert(multithreading::Worker::isInWorkerThread());
-            auto future = multithreading::Worker::threadWorker().taskManager().submitRenderTask(acquireBackBufferTask);
-            auto [w, i] = future.get();
-            commandIndex = i;
-            waitSemaphore = w;
-        }
+        auto [imgIndex, wait] = rt.acquireBackBufferIndex(device, frameIndex_);
+        commandIndex = imgIndex;
+        waitSemaphore = wait;
     } else {
         auto& rt = getRenderTarget<FrameBufferRenderTarget>();
         waitSemaphore = rt.wait();
