@@ -185,8 +185,8 @@ auto Links::create(vulkan::Device& device) -> Links
     Links links;
     links.links_ = std::conditional_t<linkCount != 0, std::array<Link, linkCount>, std::monostate>{};
 
-    for (auto& [index, sampler, views, semantics] : links) {
-        index = std::numeric_limits<size_t>::max();
+    for (auto& [nodeId, sampler, views, semantics] : links) {
+        nodeId = std::numeric_limits<size_t>::max();
 
         {
             auto samplerInfo = VkSamplerCreateInfo{};

@@ -19,7 +19,7 @@ public:
             uint64_t (M::*nameToId)(std::string_view),
             uint64_t typeId);
 
-    void setName(std::string_view name) { name_ = name; }
+    auto setName(std::string_view name) -> Builder&;
 
     auto addDependency(std::string_view name) -> Builder&;
 
@@ -44,6 +44,13 @@ BaseLogicNode::Builder<Config>::Builder(resources::ResourceManager& resourceMana
   , dependencies_{}
   , nodeTypeId_{ typeId }
 {}
+
+template<NodeConfig Config>
+auto BaseLogicNode::Builder<Config>::setName(std::string_view name) -> Builder&
+{
+    name_ = name;
+    return *this;
+}
 
 template<NodeConfig Config>
 auto BaseLogicNode::Builder<Config>::addDependency(std::string_view name) -> Builder&

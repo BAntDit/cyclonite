@@ -69,7 +69,9 @@ public:
 
     void end(uint32_t waitSemaphoreCount);
 
-    void dispose() { /* TODO:: */ }
+    void dispose()
+    { /* TODO:: */
+    }
 
 private:
     std::array<VkPipelineStageFlags, config_traits::max_wait_semaphore_count_v<Config>> nodeDstStageMasks_;

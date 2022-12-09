@@ -215,7 +215,7 @@ Workspace::~Workspace()
     for (auto&& n : graphicsNodes_)
         n.dispose();
 
-    for(auto&& n : logicNodes_)
+    for (auto&& n : logicNodes_)
         n.dispose();
 }
 }

@@ -41,6 +41,7 @@ set(PUBLIC_HEADERS
     src/compositor/baseGraphicsNode.h
     src/compositor/logicNode.h
     src/compositor/graphicsNode.h
+    src/compositor/graphicsNodeBuilder.h
     src/compositor/logicNodeBuilder.h
     src/compositor/logicNodeInterface.h
     src/compositor/graphicsNodeInterface.h
