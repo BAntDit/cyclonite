@@ -54,6 +54,8 @@ public:
 
         auto logicNodeNameToId(std::string_view name) -> uint64_t;
 
+        auto graphicsNodeNameToId(std::string_view name) -> uint64_t;
+
     private:
         template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
         auto createLogicNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if_t<
@@ -166,6 +168,43 @@ auto Workspace::Builder::createLogicNode(type_pair<Config, NodeTypeId>, NodeFact
           (reinterpret_cast<LogicNode<Config>*>(node))->update(frameIndex, deltaTime);
       },
       [](void* node) -> void { (reinterpret_cast<LogicNode<Config>*>(node))->dispose(); } });
+
+    return *this;
+}
+
+template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
+auto Workspace::Builder::createGraphicsNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory)
+  -> std::enable_if<config_traits::is_graphics_node_v<Config> &&
+                      std::is_same_v<GraphicsNode<Config>,
+                                     std::decay_t<std::result_of<NodeFactory(BaseGraphicsNode::Builder<Config>&&)>>>,
+                    Builder&>
+{
+    graphicNodes_.emplace_back(GraphicsNodeInterface{
+      new (allocateNodeMemory<Config>()) GraphicsNode<Config>{ nodeFactory(BaseGraphicsNode::Builder<Config>{
+        *device_, *resourceManager_, this, &Workspace::Builder::graphicsNodeNameToId, NodeTypeId::value }) },
+      [](void* node) -> void { (reinterpret_cast<GraphicsNode<Config>*>(node))->dispose(); },
+      [](void* node, vulkan::Device& device, uint64_t frameNumber) -> std::pair<VkSemaphore, size_t> {
+          return (reinterpret_cast<GraphicsNode<Config>*>(node))->begin(device, frameNumber);
+      },
+      [](void* node) -> std::pair<VkSemaphore*, VkPipelineStageFlags*> {
+          auto* stages = (reinterpret_cast<GraphicsNode<Config>*>(node))->waitStages();
+          auto* semaphores = (reinterpret_cast<GraphicsNode<Config>*>(node))->waitSemaphores();
+
+          return std::make_pair(semaphores, stages);
+      },
+      []() -> bool { return config_traits::is_surface_node_v<Config>; },
+      [](void* node, size_t bufferIndex) -> void {
+          (reinterpret_cast<GraphicsNode<Config>*>(node))->makeExpired(bufferIndex);
+      },
+      [](void* node, uint32_t& semaphoreCount, uint64_t frameNumber, real deltaTime) -> void {
+          (reinterpret_cast<GraphicsNode<Config>*>(node))->update(semaphoreCount, frameNumber, deltaTime);
+      },
+      [](void* node, uint32_t waitSemaphoreCount) -> void {
+          (reinterpret_cast<GraphicsNode<Config>*>(node))->end(waitSemaphoreCount);
+      },
+      [](void* node, vulkan::Device& device) -> void {
+          (reinterpret_cast<GraphicsNode<Config>*>(node))->writeFrameCommands(device);
+      } });
 
     return *this;
 }
