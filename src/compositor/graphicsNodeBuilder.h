@@ -132,6 +132,33 @@ private:
 };
 
 template<NodeConfig Config>
+template<typename T, typename M>
+BaseGraphicsNode::Builder<Config>::Builder(vulkan::Device& device,
+                                           resources::ResourceManager& resourceManager,
+                                           T* wsBuilder,
+                                           uint64_t M::*nameToId(std::string_view),
+                                           uint64_t typeId)
+  : device_{ &device }
+  , resourceManager_{ &resourceManager }
+  , name_{}
+  , nameToNodeId_{ [wsBuilder, nameToId](std::string_view n) -> uint64_t { return wsBuilder->*nameToId(n); } }
+  , dependencies_{}
+  , nodeTypeId_{ typeId }
+  , width_{ 0 }
+  , height_{ 0 }
+  , inputLinks_{}
+  , depthFormat_{ VK_FORMAT_UNDEFINED }
+  , depthTiling_{ VK_IMAGE_TILING_OPTIMAL }
+  , publicSemanticBits_{}
+  , colorOutputs_{}
+  , surfaceProps_{}
+  , passDependencies_{}
+  , renderPasses_{}
+  , vkRenderPass_{}
+  , renderTarget_{}
+{}
+
+template<NodeConfig Config>
 auto BaseGraphicsNode::Builder<Config>::setName(std::string_view name) -> Builder&
 {
     name = name_;

@@ -25,7 +25,7 @@ class GraphicsNodeInterface
     using make_expired_func_t = void (*)(void*, size_t);
     using update_func_t = void (*)(void*, uint32_t&, uint64_t, real);
     using end_func_t = void (*)(void*, uint32_t);
-    using write_frame_commands_func_t = void(*)(void*, vulkan::Device& device);
+    using write_frame_commands_func_t = void (*)(void*, vulkan::Device& device);
 
 public:
     GraphicsNodeInterface(void* node,
