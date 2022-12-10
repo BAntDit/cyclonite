@@ -13,13 +13,13 @@ BaseGraphicsNode::BaseGraphicsNode(resources::ResourceManager& resourceManager,
   : Node{ resourceManager, name, typeId }
   , submit_{}
   , renderTarget_{}
+  , vkRenderPass_{}
+  , frameCommands_{}
+  , inputs_{}
   , frameIndex_{ 0 }
   , bufferIndex_{ 0 }
-  , inputs_{}
   , swapChainLength_{ bufferCount }
   , publicSemanticBits_{}
-  , frameCommands_{}
-  , vkRenderPass_{}
 {
     frameCommands_.reserve(bufferCount);
     for (auto i = size_t{ 0 }; i < bufferCount; i++)

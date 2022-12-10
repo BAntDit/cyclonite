@@ -32,7 +32,8 @@ public:
                 VkRenderPass vkRenderPass,
                 Links const& links,
                 PassIterator const& begin,
-                PassIterator const& end);
+                PassIterator const& end,
+                bool isExpired);
 
     void setIndexBuffer(VkQueue graphicQueue, std::shared_ptr<vulkan::Buffer> const& indices);
 
@@ -49,7 +50,7 @@ private:
 
     using graphics_queue_commands_t = vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>;
 
-    size_t swapChainIndex_ = 0;
+    size_t bufferIndex_;
 
     std::shared_ptr<vulkan::Buffer> indices_;
     std::shared_ptr<vulkan::Buffer> vertices_;

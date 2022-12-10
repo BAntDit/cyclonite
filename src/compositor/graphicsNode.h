@@ -6,6 +6,7 @@
 #define CYCLONITE_GRAPHICSNODE_H
 
 #include "baseGraphicsNode.h"
+#include "passIterator.h"
 #include "scene.h"
 #include "typedefs.h"
 #include "vulkan/shaderModule.h"
@@ -65,6 +66,8 @@ public:
 
     void makeExpired(size_t bufferIndex);
 
+    void writeFrameCommands(vulkan::Device& device);
+
     void update(uint32_t& semaphoreCount, uint64_t frameNumber, real deltaTime);
 
     void end(uint32_t waitSemaphoreCount);
@@ -72,6 +75,13 @@ public:
     void dispose()
     { /* TODO:: */
     }
+
+private:
+    void _createPass(uint32_t subPassIndex,
+                     PassType passType,
+                     vulkan::Device& device,
+                     bool depthStencilRequired,
+                     uint32_t imageInputCount);
 
 private:
     std::array<VkPipelineStageFlags, config_traits::max_wait_semaphore_count_v<Config>> nodeDstStageMasks_;
@@ -169,6 +179,95 @@ void GraphicsNode<Config>::end(uint32_t waitSemaphoreCount)
     submit_.pCommandBuffers = commands;
     submit_.signalSemaphoreCount = signalSemaphoreCount;
     submit_.pSignalSemaphores = passFinishedSemaphorePtr();
+}
+
+template<NodeConfig Config>
+void GraphicsNode<Config>::writeFrameCommands(vulkan::Device& device)
+{
+    constexpr auto pass_count_v = config_traits::pass_count_v<Config>;
+
+    auto begin = PassIterator{ pass_count_v,
+                               0,
+                               passTypes_.data(),
+                               passDescriptorPool_.data(),
+                               passDescriptorSetLayout_.data(),
+                               passPipelineLayout_.data(),
+                               passPipeline_.data(),
+                               descriptorSets_.data() };
+
+    auto end = PassIterator{ pass_count_v,
+                             pass_count_v,
+                             passTypes_.data(),
+                             passDescriptorPool_.data(),
+                             passDescriptorSetLayout_.data(),
+                             passPipelineLayout_.data(),
+                             passPipeline_.data(),
+                             descriptorSets_.data() };
+
+    auto frameUpdateTask = [this,
+                            &device,
+                            &renderTarget = getRenderTargetBase(),
+                            renderPass = static_cast<VkRenderPass>(vkRenderPass_),
+                            &inputs = inputs_,
+                            &begin,
+                            &end]() -> void {
+        auto commandIndex = bufferIndex_;
+
+        assert(commandIndex < frameCommands_.size());
+        auto& frameCommand = frameCommands_[commandIndex];
+
+        auto isExpired = expirationBits_.test(bufferIndex_);
+        expirationBits_.reset(bufferIndex_);
+
+        frameCommand.update(device, renderTarget, renderPass, inputs, begin, end, isExpired);
+    };
+
+    if (multithreading::Render::isInRenderThread()) {
+        frameUpdateTask();
+    } else {
+        assert(multithreading::Worker::isInWorkerThread());
+        auto future = multithreading::Worker::threadWorker().taskManager().submitRenderTask(frameUpdateTask);
+        future.get();
+    }
+}
+
+template<NodeConfig Config>
+void GraphicsNode<Config>::_createPass(uint32_t subPassIndex,
+                                       PassType passType,
+                                       vulkan::Device& device,
+                                       bool depthStencilRequired,
+                                       uint32_t imageInputCount)
+{
+    auto [width, height, bufferCount] = std::visit(
+      [](auto&& rt) -> std::tuple<uint32_t, uint32_t, uint32_t> {
+          if constexpr (!std::is_same_v<std::decay_t<decltype(rt)>, std::monostate>) {
+              return std::make_tuple(rt.width(), rt.height(), rt.frameBufferCount());
+          }
+
+          std::terminate();
+      },
+      renderTarget_);
+
+    auto viewport = std::array<uint32_t, 4>{ 0, 0, width, height };
+
+    createPass(device,
+               subPassIndex,
+               depthStencilRequired,
+               static_cast<VkRenderPass>(vkRenderPass_),
+               viewport,
+               bufferCount,
+               imageInputCount,
+               getRenderTargetBase().colorAttachmentCount(),
+               passType,
+               passTypes_[subPassIndex],
+               vertexSceneShader_,
+               fragmentSceneShader_,
+               vertexScreenShader_,
+               fragmentScreenShader_,
+               passDescriptorPool_[subPassIndex],
+               passDescriptorSetLayout_[subPassIndex],
+               passPipelineLayout_[subPassIndex],
+               passPipeline_[subPassIndex]);
 }
 }
 

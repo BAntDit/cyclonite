@@ -136,6 +136,7 @@ set(SOURCES
     src/compositor/baseLogicNode.cpp
     src/compositor/logicNodeInterface.cpp
     src/compositor/graphicsNodeInterface.cpp
+    src/compositor/graphicsNodeBuilder.cpp
     src/compositor/workspace.cpp
     src/components/transform.cpp
     src/components/camera.cpp

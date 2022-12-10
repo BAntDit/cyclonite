@@ -13,8 +13,7 @@ PassIterator::PassIterator(uint32_t passCount,
                            vulkan::Handle<VkDescriptorSetLayout>* baseDescriptorSetLayout,
                            vulkan::Handle<VkPipelineLayout>* basePipelineLayout,
                            vulkan::Handle<VkPipeline>* basePipeline,
-                           VkDescriptorSet* baseDescriptorSet,
-                           std::byte* baseExpirationBitsByte) noexcept
+                           VkDescriptorSet* baseDescriptorSet) noexcept
   : count_{ passCount }
   , cursor_{ cursor }
   , basePassType_{ passType }
@@ -23,7 +22,6 @@ PassIterator::PassIterator(uint32_t passCount,
   , basePipelineLayout_{ basePipelineLayout }
   , basePipeline_{ basePipeline }
   , baseDescriptorSet_{ baseDescriptorSet }
-  , baseExpirationBitsByte_{ baseExpirationBitsByte }
 {}
 
 auto PassIterator::operator++() -> PassIterator&
@@ -42,8 +40,8 @@ auto PassIterator::operator++(int) -> PassIterator
     return tmp;
 }
 
-auto PassIterator::operator*() const -> std::
-  tuple<PassType, VkDescriptorPool, VkDescriptorSetLayout, VkPipelineLayout, VkPipeline, VkDescriptorSet*, std::byte*>
+auto PassIterator::operator*() const
+  -> std::tuple<PassType, VkDescriptorPool, VkDescriptorSetLayout, VkPipelineLayout, VkPipeline, VkDescriptorSet*>
 {
     assert(cursor_ < count_);
 
@@ -53,9 +51,7 @@ auto PassIterator::operator*() const -> std::
     auto pipelineLayout = static_cast<VkPipelineLayout>(*(basePipelineLayout_ + cursor_));
     auto pipeline = static_cast<VkPipeline>(*(basePipeline_ + cursor_));
     auto descriptorSet = baseDescriptorSet_ + cursor_;
-    auto flags = baseExpirationBitsByte_;
 
-    return std::make_tuple(
-      passType, descriptorPool, descriptorSetLayout, pipelineLayout, pipeline, descriptorSet, flags);
+    return std::make_tuple(passType, descriptorPool, descriptorSetLayout, pipelineLayout, pipeline, descriptorSet);
 }
 }

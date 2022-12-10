@@ -14,7 +14,8 @@ GraphicsNodeInterface::GraphicsNodeInterface(void* node,
                                              is_surface_node_func_t surfaceNodeFunc,
                                              make_expired_func_t makeExpiredFunc,
                                              update_func_t updateFunc,
-                                             end_func_t endFunc) noexcept
+                                             end_func_t endFunc,
+                                             write_frame_commands_func_t writeFrameCommandsFunc) noexcept
   : node_{ node }
   , dispose_{ disposeFunc }
   , begin_{ beginFunc }
@@ -23,6 +24,7 @@ GraphicsNodeInterface::GraphicsNodeInterface(void* node,
   , makeExpired_{ makeExpiredFunc }
   , update_{ updateFunc }
   , end_{ endFunc }
+  , writeFrameCommands_{ writeFrameCommandsFunc }
 {}
 
 auto GraphicsNodeInterface::get() const -> BaseGraphicsNode const&
@@ -68,6 +70,11 @@ void GraphicsNodeInterface::update(uint32_t& semaphoreCount, uint64_t frameNumbe
 void GraphicsNodeInterface::end(uint32_t semaphoreCount)
 {
     end_(node_, semaphoreCount);
+}
+
+void GraphicsNodeInterface::writeFrameCommands(vulkan::Device& device)
+{
+    writeFrameCommands_(node_, device);
 }
 
 void GraphicsNodeInterface::dispose()

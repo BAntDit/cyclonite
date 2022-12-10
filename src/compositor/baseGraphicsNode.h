@@ -110,15 +110,15 @@ public:
 protected:
     VkSubmitInfo submit_;
     render_target_t renderTarget_;
+    vulkan::Handle<VkRenderPass> vkRenderPass_;
+    std::vector<FrameCommands> frameCommands_;
+    Links inputs_;
     uint32_t frameIndex_;
     uint32_t bufferIndex_;
 
 private:
-    Links inputs_;
     uint32_t swapChainLength_;
     std::bitset<value_cast(RenderTargetOutputSemantic::COUNT)> publicSemanticBits_;
-    std::vector<FrameCommands> frameCommands_;
-    vulkan::Handle<VkRenderPass> vkRenderPass_;
 };
 
 template<typename RenderTargetType>

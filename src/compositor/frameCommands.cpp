@@ -38,7 +38,7 @@ static void _createDescriptorSet(VkDevice vkDevice,
 }
 
 FrameCommands::FrameCommands() noexcept
-  : swapChainIndex_{ 0 }
+  : bufferIndex_{ 0 }
   , indices_{}
   , vertices_{}
   , instances_{}
@@ -48,10 +48,10 @@ FrameCommands::FrameCommands() noexcept
   , graphicsCommands_{}
 {}
 
-FrameCommands::FrameCommands(size_t swapChainIndex) noexcept
+FrameCommands::FrameCommands(size_t bufferIndex) noexcept
   : FrameCommands()
 {
-    swapChainIndex_ = swapChainIndex;
+    bufferIndex_ = bufferIndex;
 }
 
 void FrameCommands::setIndexBuffer(VkQueue graphicQueue, std::shared_ptr<vulkan::Buffer> const& indices)
@@ -102,8 +102,108 @@ void FrameCommands::update(vulkan::Device& device,
                            VkRenderPass vkRenderPass,
                            Links const& links,
                            PassIterator const& begin,
-                           PassIterator const& end)
+                           PassIterator const& end,
+                           bool isExpired)
 {
+    assert(multithreading::Render::isInRenderThread());
+
+    for (auto it = begin; it != end; it++) {
+        auto [passType, descriptorPool, descriptorSetLayout, pipelineLayout, pipeline, descriptorSetPtr] = *it;
+        (void)pipelineLayout;
+        (void)pipeline;
+
+        auto isNew = false;
+        if (*descriptorSetPtr == VK_NULL_HANDLE) {
+            _createDescriptorSet(device.handle(), descriptorPool, descriptorSetLayout, descriptorSetPtr);
+            isNew = true;
+        }
+
+        if (isNew || isExpired) {
+            constexpr auto maxBufferDescriptorCount = size_t{ 3 };
+            constexpr auto maxImageDescriptorCount = size_t{ 32 };
+            constexpr auto maxDescriptorCount = maxBufferDescriptorCount + maxImageDescriptorCount;
+
+            auto bufferDescriptors = std::array<VkDescriptorBufferInfo, maxBufferDescriptorCount>{};
+            auto imageDescriptors = std::array<VkDescriptorImageInfo, maxImageDescriptorCount>{};
+            auto writeDescriptorSets = std::array<VkWriteDescriptorSet, maxDescriptorCount>{};
+
+            auto bufferDescriptorCount = uint32_t{ 0 };
+            auto imageDescriptorCount = uint32_t{ 0 };
+
+            if (passType == compositor::PassType::SCENE) {
+                if (vertices_) {
+                    bufferDescriptors[bufferDescriptorCount].buffer = vertices_->handle();
+                    bufferDescriptors[bufferDescriptorCount].offset = 0;
+                    bufferDescriptors[bufferDescriptorCount].range = VK_WHOLE_SIZE;
+
+                    auto setIdx = bufferDescriptorCount;
+                    writeDescriptorSets[setIdx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                    writeDescriptorSets[setIdx].dstSet = *descriptorSetPtr;
+                    writeDescriptorSets[setIdx].dstBinding = bufferDescriptorCount;
+                    writeDescriptorSets[setIdx].descriptorCount = 1;
+                    writeDescriptorSets[setIdx].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                    writeDescriptorSets[setIdx].pBufferInfo = bufferDescriptors.data() + bufferDescriptorCount++;
+                }
+
+                if (instances_) {
+                    bufferDescriptors[bufferDescriptorCount].buffer = instances_->handle();
+                    bufferDescriptors[bufferDescriptorCount].offset = 0;
+                    bufferDescriptors[bufferDescriptorCount].range = VK_WHOLE_SIZE;
+
+                    auto setIdx = bufferDescriptorCount;
+                    writeDescriptorSets[setIdx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                    writeDescriptorSets[setIdx].dstSet = *descriptorSetPtr;
+                    writeDescriptorSets[setIdx].dstBinding = bufferDescriptorCount;
+                    writeDescriptorSets[setIdx].descriptorCount = 1;
+                    writeDescriptorSets[setIdx].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                    writeDescriptorSets[setIdx].pBufferInfo = bufferDescriptors.data() + bufferDescriptorCount++;
+                }
+
+                if (uniforms_) {
+                    bufferDescriptors[bufferDescriptorCount].buffer = uniforms_->handle();
+                    bufferDescriptors[bufferDescriptorCount].offset = 0;
+                    bufferDescriptors[bufferDescriptorCount].range = VK_WHOLE_SIZE;
+
+                    auto setIdx = bufferDescriptorCount;
+                    writeDescriptorSets[setIdx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                    writeDescriptorSets[setIdx].dstSet = *descriptorSetPtr;
+                    writeDescriptorSets[setIdx].dstBinding = bufferDescriptorCount;
+                    writeDescriptorSets[setIdx].descriptorCount = 1;
+                    writeDescriptorSets[setIdx].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                    writeDescriptorSets[setIdx].pBufferInfo = bufferDescriptors.data() + bufferDescriptorCount++;
+                }
+            } // scene type
+
+            auto descriptorSetIdx = bufferDescriptorCount;
+            for (auto i = size_t{ 0 }, count = links.size(); i < count; i++) {
+                auto&& [idx, sampler, views, semantics] = links.get(i);
+
+                for (auto j = size_t{ 0 }; j < value_cast(RenderTargetOutputSemantic::COUNT); j++) {
+                    auto semantic = semantics[j];
+
+                    if (semantic == RenderTargetOutputSemantic::INVALID)
+                        continue;
+
+                    imageDescriptors[imageDescriptorCount].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    imageDescriptors[imageDescriptorCount].imageView = views[j];
+                    imageDescriptors[imageDescriptorCount].sampler = sampler;
+
+                    auto& writeDescriptorSet = writeDescriptorSets[descriptorSetIdx];
+
+                    writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                    writeDescriptorSet.dstSet = *descriptorSetPtr;
+                    writeDescriptorSet.dstBinding = descriptorSetIdx++;
+                    writeDescriptorSet.descriptorCount = 1;
+                    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                    writeDescriptorSet.pImageInfo = imageDescriptors.data() + imageDescriptorCount++;
+                }
+            } // links
+
+            vkUpdateDescriptorSets(
+              device.handle(), bufferDescriptorCount + imageDescriptorCount, writeDescriptorSets.data(), 0, nullptr);
+        }
+    }
+
     if (!graphicsCommands_) {
         graphicsCommands_ = std::make_unique<graphics_queue_commands_t>(device.commandPool().allocCommandBuffers(
           vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>{
@@ -126,7 +226,7 @@ void FrameCommands::update(vulkan::Device& device,
               VkRenderPassBeginInfo renderPassBeginInfo = {};
               renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
               renderPassBeginInfo.renderPass = vkRenderPass;
-              renderPassBeginInfo.framebuffer = renderTarget.frameBuffer(swapChainIndex_).handle();
+              renderPassBeginInfo.framebuffer = renderTarget.frameBuffer(bufferIndex_).handle();
               renderPassBeginInfo.renderArea.offset.x = 0;
               renderPassBeginInfo.renderArea.offset.y = 0;
               renderPassBeginInfo.renderArea.extent.width = renderTarget.width();
@@ -138,121 +238,12 @@ void FrameCommands::update(vulkan::Device& device,
 
               // all passes:
               auto passIndex = size_t{ 0 };
-
               for (auto it = begin; it != end; it++) { // subpasses
-                  auto [passType,
-                        descriptorPool,
-                        descriptorSetLayout,
-                        pipelineLayout,
-                        pipeline,
-                        descriptorSetPtr,
-                        flagsPtr] = *it;
+                  auto [passType, descriptorPool, descriptorSetLayout, pipelineLayout, pipeline, descriptorSetPtr] =
+                    *it;
 
-                  auto& flags = *(flagsPtr + (swapChainIndex_ / CHAR_BIT));
-                  auto mask = static_cast<std::byte>(1 << (swapChainIndex_ % CHAR_BIT));
-                  bool isExpired = (flags & mask) != std::byte{ 0 };
-
-                  if (isExpired && *descriptorSetPtr != VK_NULL_HANDLE) {
-                      vkFreeDescriptorSets(device.handle(), descriptorPool, 1, descriptorSetPtr);
-                      *descriptorSetPtr = VK_NULL_HANDLE;
-                  }
-
-                  if (*descriptorSetPtr == VK_NULL_HANDLE) {
-                      _createDescriptorSet(device.handle(), descriptorPool, descriptorSetLayout, descriptorSetPtr);
-
-                      constexpr auto maxBufferDescriptorCount = size_t{ 3 };
-                      constexpr auto maxImageDescriptorCount = size_t{ 32 };
-                      constexpr auto maxDescriptorCount = maxBufferDescriptorCount + maxImageDescriptorCount;
-
-                      auto bufferDescriptors = std::array<VkDescriptorBufferInfo, maxBufferDescriptorCount>{};
-                      auto imageDescriptors = std::array<VkDescriptorImageInfo, maxImageDescriptorCount>{};
-                      auto writeDescriptorSets = std::array<VkWriteDescriptorSet, maxDescriptorCount>{};
-
-                      auto bufferDescriptorCount = uint32_t{ 0 };
-                      auto imageDescriptorCount = uint32_t{ 0 };
-
-                      if (passType == compositor::PassType::SCENE) {
-                          if (vertices_) {
-                              bufferDescriptors[bufferDescriptorCount].buffer = vertices_->handle();
-                              bufferDescriptors[bufferDescriptorCount].offset = 0;
-                              bufferDescriptors[bufferDescriptorCount].range = VK_WHOLE_SIZE;
-
-                              auto setIdx = bufferDescriptorCount;
-                              writeDescriptorSets[setIdx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                              writeDescriptorSets[setIdx].dstSet = *descriptorSetPtr;
-                              writeDescriptorSets[setIdx].dstBinding = bufferDescriptorCount;
-                              writeDescriptorSets[setIdx].descriptorCount = 1;
-                              writeDescriptorSets[setIdx].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                              writeDescriptorSets[setIdx].pBufferInfo =
-                                bufferDescriptors.data() + bufferDescriptorCount++;
-                          }
-
-                          if (instances_) {
-                              bufferDescriptors[bufferDescriptorCount].buffer = instances_->handle();
-                              bufferDescriptors[bufferDescriptorCount].offset = 0;
-                              bufferDescriptors[bufferDescriptorCount].range = VK_WHOLE_SIZE;
-
-                              auto setIdx = bufferDescriptorCount;
-                              writeDescriptorSets[setIdx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                              writeDescriptorSets[setIdx].dstSet = *descriptorSetPtr;
-                              writeDescriptorSets[setIdx].dstBinding = bufferDescriptorCount;
-                              writeDescriptorSets[setIdx].descriptorCount = 1;
-                              writeDescriptorSets[setIdx].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                              writeDescriptorSets[setIdx].pBufferInfo =
-                                bufferDescriptors.data() + bufferDescriptorCount++;
-                          }
-
-                          // TODO:: move this out SCENE conditions
-                          if (uniforms_) {
-                              bufferDescriptors[bufferDescriptorCount].buffer = uniforms_->handle();
-                              bufferDescriptors[bufferDescriptorCount].offset = 0;
-                              bufferDescriptors[bufferDescriptorCount].range = VK_WHOLE_SIZE;
-
-                              auto setIdx = bufferDescriptorCount;
-                              writeDescriptorSets[setIdx].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                              writeDescriptorSets[setIdx].dstSet = *descriptorSetPtr;
-                              writeDescriptorSets[setIdx].dstBinding = bufferDescriptorCount;
-                              writeDescriptorSets[setIdx].descriptorCount = 1;
-                              writeDescriptorSets[setIdx].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                              writeDescriptorSets[setIdx].pBufferInfo =
-                                bufferDescriptors.data() + bufferDescriptorCount++;
-                          }
-                      }
-
-                      auto descriptorSetIdx = bufferDescriptorCount;
-                      for (auto i = size_t{ 0 }, count = links.size(); i < count; i++) {
-                          auto&& [idx, sampler, views, semantics] = links.get(i);
-
-                          for (auto j = size_t{ 0 }; j < value_cast(RenderTargetOutputSemantic::COUNT); j++) {
-                              auto semantic = semantics[j];
-
-                              if (semantic == RenderTargetOutputSemantic::INVALID)
-                                  continue;
-
-                              imageDescriptors[imageDescriptorCount].imageLayout =
-                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                              imageDescriptors[imageDescriptorCount].imageView = views[j];
-                              imageDescriptors[imageDescriptorCount].sampler = sampler;
-
-                              auto& writeDescriptorSet = writeDescriptorSets[descriptorSetIdx];
-
-                              writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                              writeDescriptorSet.dstSet = *descriptorSetPtr;
-                              writeDescriptorSet.dstBinding = descriptorSetIdx++;
-                              writeDescriptorSet.descriptorCount = 1;
-                              writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                              writeDescriptorSet.pImageInfo = imageDescriptors.data() + imageDescriptorCount++;
-                          }
-                      }
-
-                      vkUpdateDescriptorSets(device.handle(),
-                                             bufferDescriptorCount + imageDescriptorCount,
-                                             writeDescriptorSets.data(),
-                                             0,
-                                             nullptr);
-
-                      flags &= ~mask;
-                  } // descriptor set update
+                  (void)descriptorPool;
+                  (void)descriptorSetLayout;
 
                   if (passIndex != 0) {
                       vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);

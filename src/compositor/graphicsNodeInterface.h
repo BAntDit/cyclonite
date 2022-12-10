@@ -25,6 +25,7 @@ class GraphicsNodeInterface
     using make_expired_func_t = void (*)(void*, size_t);
     using update_func_t = void (*)(void*, uint32_t&, uint64_t, real);
     using end_func_t = void (*)(void*, uint32_t);
+    using write_frame_commands_func_t = void(*)(void*, vulkan::Device& device);
 
 public:
     GraphicsNodeInterface(void* node,
@@ -34,7 +35,8 @@ public:
                           is_surface_node_func_t surfaceNodeFunc,
                           make_expired_func_t makeExpiredFunc,
                           update_func_t updateFunc,
-                          end_func_t endFunc) noexcept;
+                          end_func_t endFunc,
+                          write_frame_commands_func_t writeFrameCommandsFunc) noexcept;
 
     GraphicsNodeInterface(GraphicsNodeInterface const&) = default;
 
@@ -64,6 +66,8 @@ public:
 
     void end(uint32_t semaphoreCount);
 
+    void writeFrameCommands(vulkan::Device& device);
+
     void dispose();
 
 private:
@@ -75,6 +79,7 @@ private:
     make_expired_func_t makeExpired_;
     update_func_t update_;
     end_func_t end_;
+    write_frame_commands_func_t writeFrameCommands_;
 };
 }
 

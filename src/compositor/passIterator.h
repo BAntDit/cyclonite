@@ -16,13 +16,8 @@ class PassIterator
 public:
     using iterator_category = std::input_iterator_tag;
     using difference_type = std::ptrdiff_t;
-    using value_type = std::tuple<PassType,
-                                  VkDescriptorPool,
-                                  VkDescriptorSetLayout,
-                                  VkPipelineLayout,
-                                  VkPipeline,
-                                  VkDescriptorSet*,
-                                  std::byte*>;
+    using value_type =
+      std::tuple<PassType, VkDescriptorPool, VkDescriptorSetLayout, VkPipelineLayout, VkPipeline, VkDescriptorSet*>;
     using pointer = std::add_pointer_t<value_type>;
     using reference = std::add_lvalue_reference_t<value_type>;
     using const_reference = std::add_const_t<reference>;
@@ -34,8 +29,7 @@ public:
                  vulkan::Handle<VkDescriptorSetLayout>* baseDescriptorSetLayout,
                  vulkan::Handle<VkPipelineLayout>* basePipelineLayout,
                  vulkan::Handle<VkPipeline>* basePipeline,
-                 VkDescriptorSet* baseDescriptorSet,
-                 std::byte* baseExpirationBitsByte) noexcept;
+                 VkDescriptorSet* baseDescriptorSet) noexcept;
 
     PassIterator(PassIterator const&) = default;
 
@@ -46,13 +40,8 @@ public:
     auto operator++() -> PassIterator&;
     auto operator++(int) -> PassIterator;
 
-    auto operator*() const -> std::tuple<PassType,
-                                         VkDescriptorPool,
-                                         VkDescriptorSetLayout,
-                                         VkPipelineLayout,
-                                         VkPipeline,
-                                         VkDescriptorSet*,
-                                         std::byte*>;
+    auto operator*() const
+      -> std::tuple<PassType, VkDescriptorPool, VkDescriptorSetLayout, VkPipelineLayout, VkPipeline, VkDescriptorSet*>;
 
     auto operator==(PassIterator const& rhs) const -> bool { return cursor_ == rhs.cursor_; }
     auto operator!=(PassIterator const& rhs) const -> bool { return cursor_ != rhs.cursor_; }
@@ -66,7 +55,6 @@ private:
     vulkan::Handle<VkPipelineLayout>* basePipelineLayout_;
     vulkan::Handle<VkPipeline>* basePipeline_;
     VkDescriptorSet* baseDescriptorSet_;
-    std::byte* baseExpirationBitsByte_;
 };
 }
 
