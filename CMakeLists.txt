@@ -47,7 +47,6 @@ set(PUBLIC_HEADERS
     src/compositor/graphicsNodeInterface.h
     src/compositor/node.h
     src/compositor/frameCommands.h
-    src/compositor/nodeBuilder.h
     src/compositor/passIterator.h
     src/components/transform.h
     src/components/transformStorage.h
@@ -126,7 +125,6 @@ set(SOURCES
     src/resources/resourceManager.cpp
     src/compositor/node.cpp
     src/compositor/nodeIdentifier.cpp
-    src/compositor/nodeBuilder.cpp
     src/compositor/frameCommands.cpp
     src/compositor/passIterator.cpp
     src/compositor/workspaceBuilder.cpp
