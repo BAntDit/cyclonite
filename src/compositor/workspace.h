@@ -101,7 +101,7 @@ public:
     };
 
 private:
-    Workspace() noexcept; // TODO:: ...
+    Workspace() noexcept;
 
     void beginFrame();
 
@@ -149,9 +149,9 @@ auto Workspace::Builder::allocateNodeMemory()
 }
 
 template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
-auto Workspace::Builder::createNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if<
-  std::is_same_v<node_t<Config>, std::decay_t<std::result_of<NodeFactory(node_builder_t<Config>&&)>>>,
-  Builder&>
+auto Workspace::Builder::createNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory)
+  -> std::enable_if<std::is_same_v<node_t<Config>, std::decay_t<std::result_of<NodeFactory(node_builder_t<Config>&&)>>>,
+                    Builder&>
 {
     if constexpr (config_traits::is_logic_node_v<Config>) {
         return createLogicNode(type_pair<Config, NodeTypeId>{}, std::forward<decltype(nodeFactory)>(nodeFactory));
@@ -164,7 +164,6 @@ auto Workspace::Builder::createNode(type_pair<Config, NodeTypeId>, NodeFactory&&
     // can not get here
     std::terminate();
 }
-
 
 template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
 auto Workspace::Builder::createLogicNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if_t<

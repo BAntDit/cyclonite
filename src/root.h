@@ -92,8 +92,8 @@ private:
 template<typename WorkspaceFactory>
 auto Root::createWorkspace(WorkspaceFactory&& workspaceFactory) -> std::shared_ptr<compositor::Workspace> const&
 {
-    return workspaces_.emplace_back(
-      std::make_shared<compositor::Workspace>(workspaceFactory(compositor::Workspace::Builder{ *vulkanDevice_ })));
+    return workspaces_.emplace_back(std::make_shared<compositor::Workspace>(
+      workspaceFactory(compositor::Workspace::Builder{ *resourceManager_, *vulkanDevice_ })));
 }
 
 void Root::declareResources(size_t initialResourceCount, resources::ResourceRegInfoSpecialization auto&&... regInfo)
