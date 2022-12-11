@@ -210,6 +210,44 @@ void Workspace::endFrame(vulkan::Device& device)
     frameNumber_++;
 }
 
+auto Workspace::get(uint64_t id) const -> Node const&
+{
+    if (idToGraphicsNodeIndex_.contains(id)) {
+        auto idx = idToGraphicsNodeIndex_.at(id);
+        return graphicsNodes_[idx].get();
+    }
+    else if (idToLogicNodeIndex_.contains(id)) {
+        auto idx = idToLogicNodeIndex_.at(id);
+        return logicNodes_[idx].get();
+    }
+
+    assert(false);
+}
+
+auto Workspace::get(uint64_t id) -> Node&
+{
+    return const_cast<Node&>(std::as_const(*this).get(id));
+}
+
+auto Workspace::get(std::string_view name) const -> Node const&
+{
+    if (nameToGraphicsNodeIndex_.contains(name.data())) {
+        auto idx = nameToGraphicsNodeIndex_.at(name.data());
+        return graphicsNodes_[idx].get();
+    }
+    else if (nameToLogicNodeIndex_.contains(name.data())) {
+        auto idx = nameToLogicNodeIndex_.at(name.data());
+        return logicNodes_[idx].get();
+    }
+
+    assert(false);
+}
+
+auto Workspace::get(std::string_view name) -> Node&
+{
+    return const_cast<Node&>((std::as_const(*this)).get(name));
+}
+
 Workspace::~Workspace()
 {
     for (auto&& n : graphicsNodes_)
