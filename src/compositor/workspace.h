@@ -35,15 +35,14 @@ public:
     auto get(uint64_t id) -> Node&;
 
 public:
-    // TODO::
     class Builder
     {
     public:
-        explicit Builder(resources::ResourceManager& resourceManager,
-                         vulkan::Device& device,
-                         size_t maxBytesPerNode = 64 * 1024,
-                         uint8_t maxLogicNodeCount = 10,
-                         uint8_t maxGraphicNodeCount = 10);
+        Builder(resources::ResourceManager& resourceManager,
+                vulkan::Device& device,
+                size_t maxBytesPerNode = 64 * 1024,
+                uint8_t maxLogicNodeCount = 10,
+                uint8_t maxGraphicNodeCount = 10);
 
         template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
         auto createNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if<
@@ -52,9 +51,9 @@ public:
 
         auto build() -> Workspace;
 
-        auto logicNodeNameToId(std::string_view name) -> uint64_t;
+        [[nodiscard]] auto logicNodeNameToId(std::string_view _name) const -> uint64_t;
 
-        auto graphicsNodeNameToId(std::string_view name) -> uint64_t;
+        [[nodiscard]] auto graphicsNodeNameToId(std::string_view _name) const -> uint64_t;
 
     private:
         template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
@@ -81,8 +80,6 @@ public:
         auto nodeSize(bool isLogic, size_t index) -> size_t&;
         auto nodeStorage(bool isLogic) -> std::byte*;
 
-        void emplaceNodeTypeId(uint64_t value);
-
         template<NodeConfig Config>
         auto allocateNodeMemory()
           -> std::enable_if_t<(sizeof(node_t<Config>) % hardware_constructive_interference_size) == 0, void*>;
@@ -101,10 +98,6 @@ public:
 
         uint8_t logicNodeCount_;
         uint8_t graphicNodeCount_;
-
-        std::vector<uint8_t> waitSemaphoresPerNodeCount_;
-        std::vector<vulkan::Handle<VkSemaphore>> nodeSignalSemaphores_;
-        std::vector<VkSemaphore> nodeWaitSemaphores_;
     };
 
 private:
@@ -156,6 +149,24 @@ auto Workspace::Builder::allocateNodeMemory()
 }
 
 template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
+auto Workspace::Builder::createNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if<
+  std::is_same_v<node_t<Config>, std::decay_t<std::result_of<NodeFactory(node_builder_t<Config>&&)>>>,
+  Builder&>
+{
+    if constexpr (config_traits::is_logic_node_v<Config>) {
+        return createLogicNode(type_pair<Config, NodeTypeId>{}, std::forward<decltype(nodeFactory)>(nodeFactory));
+    }
+
+    if constexpr (config_traits::is_graphics_node_v<Config>) {
+        return createGraphicsNode(type_pair<Config, NodeTypeId>{}, std::forward<decltype(nodeFactory)>(nodeFactory));
+    }
+
+    // can not get here
+    std::terminate();
+}
+
+
+template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
 auto Workspace::Builder::createLogicNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if_t<
   config_traits::is_logic_node_v<Config> &&
     std::is_same_v<LogicNode<Config>, std::decay_t<std::result_of_t<NodeFactory(BaseLogicNode::Builder<Config>&&)>>>,
@@ -205,42 +216,6 @@ auto Workspace::Builder::createGraphicsNode(type_pair<Config, NodeTypeId>, NodeF
       [](void* node, vulkan::Device& device) -> void {
           (reinterpret_cast<GraphicsNode<Config>*>(node))->writeFrameCommands(device);
       } });
-
-    return *this;
-}
-
-template<typename NodeConfig, typename NodeTypeId, typename NodeFactory>
-auto Workspace::Builder::createNode(type_pair<Node<NodeConfig>, NodeTypeId>, NodeFactory&& nodeFactory)
-  -> std::enable_if_t<
-    std::is_same_v<Node<NodeConfig>, std::decay_t<std::result_of_t<NodeFactory(BaseNode::Builder<NodeConfig>&&)>>>,
-    Builder&>
-{
-    nodes_.emplace_back(
-      new (allocateNode(sizeof(Node<NodeConfig>)))
-        Node{ nodeFactory(cyclonite::compositor::BaseNode::Builder<NodeConfig>{ *device_ }) },
-      [](void* node, size_t index) -> void { (reinterpret_cast<Node<NodeConfig>*>(node))->makeExpired(index); },
-      []() -> uint32_t { return Node<NodeConfig>::getExpectedWaitSignalCount(); },
-      []() -> bool { return Node<NodeConfig>::isSurfaceNode(); },
-      [](void* node, vulkan::Device& device, uint64_t frameNumber) -> std::pair<VkSemaphore, size_t> {
-          return (reinterpret_cast<Node<NodeConfig>*>(node))->begin(device, frameNumber);
-      },
-      [](void* node, uint32_t& signalCount, VkSemaphore* baseSignal, VkPipelineStageFlags* baseFlag) -> void {
-          (reinterpret_cast<Node<NodeConfig>*>(node))->update(signalCount, baseSignal, baseFlag);
-      },
-      [](void* node,
-         VkSemaphore* waitSemaphores,
-         VkPipelineStageFlags const* waitDstStageMasks,
-         uint32_t waitSemaphoreCount) -> VkSubmitInfo {
-          return std::as_const(*reinterpret_cast<Node<NodeConfig>*>(node))
-            .end(waitSemaphores, waitDstStageMasks, waitSemaphoreCount);
-      },
-      [](void* node) -> FrameCommands& { return (reinterpret_cast<Node<NodeConfig>*>(node))->getCurrentFrame(); },
-      [](void* node) -> void { (reinterpret_cast<Node<NodeConfig>*>(node))->~Node<NodeConfig>(); },
-      [](void* node, vulkan::Device& device) -> void {
-          return (reinterpret_cast<Node<NodeConfig>*>(node))->writeFrameCommands(device);
-      });
-
-    nodeTypeIds_.emplace_back(NodeTypeId::value);
 
     return *this;
 }

@@ -5,11 +5,13 @@
 #include "workspace.h"
 
 namespace cyclonite::compositor {
-Workspace::Builder::Builder(vulkan::Device& device,
+Workspace::Builder::Builder(resources::ResourceManager& resourceManager,
+                            vulkan::Device& device,
                             size_t maxBytesPerNode /* = 64 * 1024*/,
                             uint8_t maxLogicNodeCount /* = 10*/,
                             uint8_t maxGraphicNodeCount /* = 10*/)
-  : device_{ &device }
+  : resourceManager_{ &resourceManager }
+  , device_{ &device }
   , logicNodeOffsets_(maxLogicNodeCount, size_t{ 0 })
   , graphicNodeOffsets_(maxGraphicNodeCount, size_t{ 0 })
   , logicNodeSizes_(maxLogicNodeCount, std::size_t{ 0 })
@@ -20,9 +22,6 @@ Workspace::Builder::Builder(vulkan::Device& device,
   , graphicNodes_{}
   , logicNodeCount_{ 0 }
   , graphicNodeCount_{ 0 }
-  , waitSemaphoresPerNodeCount_{}
-  , nodeSignalSemaphores_{}
-  , nodeWaitSemaphores_{}
 {}
 
 auto Workspace::Builder::nodeCount(bool isLogic) const -> uint8_t
@@ -69,9 +68,30 @@ auto Workspace::Builder::nodeStorage(bool isLogic) -> std::byte*
     return isLogic ? logicNodeStorage_.data() : graphicNodeStorage_.data();
 }
 
-void Workspace::Builder::emplaceNodeTypeId(uint64_t value)
+auto Workspace::Builder::logicNodeNameToId(std::string_view _name) const -> uint64_t
 {
-    nodeTypeIds_.emplace_back(value);
+    auto id = std::numeric_limits<uint64_t>::max();
+    for (auto&& node : logicNodes_) {
+        if (node.get().name() == _name) {
+            id = node.get().id();
+            break;
+        }
+    }
+
+    return id;
+}
+
+auto Workspace::Builder::graphicsNodeNameToId(std::string_view _name) const -> uint64_t
+{
+    auto id = std::numeric_limits<uint64_t>::max();
+    for (auto&& node : graphicNodes_) {
+        if (node.get().name() == _name) {
+            id = node.get().id();
+            break;
+        }
+    }
+
+    return id;
 }
 
 auto Workspace::Builder::build() -> Workspace
