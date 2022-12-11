@@ -98,46 +98,38 @@ auto Workspace::Builder::build() -> Workspace
 {
     Workspace workspace{};
 
-    workspace.nodeCount_ = nodeCount_;
+    workspace.logicNodeCount_ = logicNodeCount_;
 
-    [[maybe_unused]] auto const* storageBase = nodeStorage_.data();
-    workspace.nodeStorage_ = std::move(nodeStorage_);
-    assert(workspace.nodeStorage_.data() == storageBase);
+    [[maybe_unused]] auto const* logicStorageBase = logicNodeStorage_.data();
+    workspace.logicNodeStorage_ = std::move(logicNodeStorage_);
+    assert(workspace.logicNodeStorage_.data() == logicStorageBase);
 
-    workspace.nodes_ = std::move(nodes_);
-    workspace.nodeTypeIds_ = std::move(nodeTypeIds_);
+    workspace.logicNodes_ = std::move(logicNodes_);
 
-    uint32_t waitSemaphoreCount = 0;
+    for (auto idx = size_t{ 0 }, count = static_cast<size_t>(logicNodeCount_); idx < count; idx++) {
+        auto&& ln = workspace.logicNodes_[idx];
 
-    for (auto i = uint8_t{ 0 }; i < nodeCount_; i++) {
-        auto const& node = workspace.nodes_[i];
-
-        for (auto const& [nodeIndex, sampler, _a, _b] : (*node).getInputs()) {
-            (void)_a;
-            (void)_b;
-            (void)sampler;
-
-            if (nodeIndex == std::numeric_limits<size_t>::max())
-                continue;
-
-            waitSemaphoreCount++; // waiting for previous node
-        }
-
-        waitSemaphoreCount += node.getExpectedWaitSignalCount();
-
-        if (node.isSurfaceNode()) {
-            // workspace can have only one presentation node
-            assert(workspace.presentationNodeIndex_ == std::numeric_limits<uint8_t>::max());
-            workspace.presentationNodeIndex_ = i;
-        }
+        workspace.idToLogicNodeIndex_.emplace(ln.get().id(), idx);
+        workspace.nameToLogicNodeIndex_.emplace(ln.get().name(), idx);
     }
 
-    workspace.nodeWaitSemaphores_.resize(waitSemaphoreCount, VK_NULL_HANDLE);
-    workspace.nodeDstStageMasks_.resize(waitSemaphoreCount, VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM);
+    workspace.graphicsNodeCount_ = graphicNodeCount_;
 
-    workspace.nodeSignalSemaphores_.resize(workspace.nodes_.size(), VK_NULL_HANDLE);
+    [[maybe_unused]] auto const* graphicsStorageBase = graphicNodeStorage_.data();
+    workspace.graphicsNodeStorage_ = std::move(graphicNodeStorage_);
+    assert(workspace.graphicsNodeStorage_.data() == graphicsStorageBase);
 
-    workspace.submits_.resize(workspace.nodes_.size(), VkSubmitInfo{});
+    workspace.graphicsNodes_ = std::move(graphicNodes_);
+
+    for (auto idx = size_t{ 0 }, count = static_cast<size_t>(graphicNodeCount_); idx < count; idx++) {
+        auto&& gn = workspace.graphicsNodes_[idx];
+
+        workspace.idToLogicNodeIndex_.emplace(gn.get().id(), idx);
+        workspace.nameToGraphicsNodeIndex_.emplace(gn.get().name(), idx);
+    }
+
+    workspace.submits_.resize(static_cast<size_t>(graphicNodeCount_), VkSubmitInfo{});
+    workspace.gfxFutures_.resize(static_cast<size_t>(graphicNodeCount_));
 
     return workspace;
 }
