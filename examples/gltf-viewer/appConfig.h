@@ -22,10 +22,13 @@ using scene_animation_systems_t = cyclonite::systems_config_t<value_cast(cycloni
                                                               cyclonite::systems::AnimationSystem,
                                                               cyclonite::systems::TransformSystem>;
 
-struct MainNodeConfig: public cyclonite::Config<main_component_config_t, scene_animation_systems_t>
+struct MainNodeConfig : public cyclonite::Config<main_component_config_t, scene_animation_systems_t>
 {
-    constexpr static bool is_logic_node = false;
+    constexpr static bool is_logic_node_v = false;
 };
+
+using node_type_register_t =
+  cyclonite::compositor::node_type_register<cyclonite::compositor::LogicNode<MainNodeConfig>>;
 
 /* struct MainNodeConfig : public cyclonite::DefaultConfigs
 {

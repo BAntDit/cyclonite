@@ -34,6 +34,10 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
     uint32_t height = 768;
 
     auto&& workspace = root_->createWorkspace([=](auto&& workspaceBuilder) -> cyclonite::compositor::Workspace {
+        // workspaceBuilder.createNode();
+    });
+    /*
+    auto&& workspace = root_->createWorkspace([=](auto&& workspaceBuilder) -> cyclonite::compositor::Workspace {
         workspaceBuilder.createNode(
           node_type_register_t::node_key_t<MainNodeConfig>{},
           [width = width, height = height](auto&& nodeBuilder) -> cyclonite::compositor::Node<MainNodeConfig> {
@@ -94,6 +98,7 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
 
         return workspaceBuilder.build();
     });
+    */
 
     model_ = std::make_unique<Model>();
     model_->init(*root_, "./BoxAnimated.gltf", workspace);

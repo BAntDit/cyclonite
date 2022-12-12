@@ -97,10 +97,10 @@ private:
     using no_t = uint16_t;
 
     template<typename C>
-    static constexpr auto test_field(std::bool_constant<C::is_logic_node_v>*) -> yes_t;
+    static constexpr auto test_field(decltype(&C::is_logic_node_v)) -> yes_t;
 
     template<typename C>
-    static constexpr auto test_filed(...) -> no_t;
+    static constexpr auto test_field(...) -> no_t;
 
     static constexpr auto has_logic_field = sizeof(test_field<T>(0)) == sizeof(yes_t);
 
@@ -108,7 +108,10 @@ public:
     static constexpr auto value() -> bool
     {
         if constexpr (has_logic_field) {
-            return T::is_logic_node_v;
+            if constexpr (std::is_same_v<std::decay_t<decltype(T::is_logic_node_v)>, bool>)
+                return T::is_logic_node_v;
+            else
+                return false;
         } else {
             return false;
         }
@@ -129,10 +132,10 @@ private:
     using no_t = uint16_t;
 
     template<typename C>
-    static constexpr auto test_field(std::integral_constant<size_t, C::max_wait_semaphore_count_v>*) -> yes_t;
+    static constexpr auto test_field(decltype(&C::max_wait_semaphore_count_v)) -> yes_t;
 
     template<typename C>
-    static constexpr auto test_filed(...) -> no_t;
+    static constexpr auto test_field(...) -> no_t;
 
     static constexpr auto has_max_wait_semaphore_count_field = sizeof(test_field<T>(0)) == sizeof(yes_t);
 
@@ -141,7 +144,8 @@ public:
     {
         if constexpr (is_graphics_node_v<T>) {
             if constexpr (has_max_wait_semaphore_count_field) {
-                return T::max_wait_semaphore_count_v;
+                static_assert(std::is_nothrow_convertible_v<decltype(T::max_wait_semaphore_count_v), size_t>);
+                return static_cast<size_t>(T::max_wait_semaphore_count_v);
             } else {
                 return size_t{ 16 };
             }
@@ -162,10 +166,10 @@ private:
     using no_t = uint16_t;
 
     template<typename C>
-    static constexpr auto test_field(std::bool_constant<C::is_surface_node_v>*) -> yes_t;
+    static constexpr auto test_field(decltype(&C::is_surface_node_v)) -> yes_t;
 
     template<typename C>
-    static constexpr auto test_filed(...) -> no_t;
+    static constexpr auto test_field(...) -> no_t;
 
     static constexpr auto has_surface_field = sizeof(test_field<T>(0)) == sizeof(yes_t);
 
@@ -173,7 +177,10 @@ public:
     static constexpr auto value() -> bool
     {
         if constexpr (has_surface_field) {
-            return T::is_surface_node_v;
+            if constexpr (std::is_same_v<std::decay_t<decltype(T::is_surface_node_v)>, bool>)
+                return T::is_surface_node_v;
+            else
+                return false;
         } else {
             return false;
         }
@@ -191,10 +198,10 @@ private:
     using no_t = uint16_t;
 
     template<typename C>
-    static constexpr auto test_field(std::integral_constant<uint8_t, C::pass_count_v>*) -> yes_t;
+    static constexpr auto test_field(decltype(&C::pass_count_v)) -> yes_t;
 
     template<typename C>
-    static constexpr auto test_filed(...) -> no_t;
+    static constexpr auto test_field(...) -> no_t;
 
     static constexpr auto has_pass_count_field = sizeof(test_field<T>(0)) == sizeof(yes_t);
 
@@ -202,7 +209,8 @@ public:
     static constexpr auto value() -> uint8_t
     {
         if constexpr (has_pass_count_field) {
-            return T::pass_count_v;
+            static_assert(std::is_nothrow_convertible_v<decltype(T::pass_count_v), uint8_t>);
+            return static_cast<uint8_t>(T::pass_count_v);
         } else {
             return 0;
         }
@@ -234,10 +242,12 @@ inline constexpr auto is_node_config_specialization_v = is_node_config_specializ
 }
 
 template<typename T>
-concept NodeConfig = node_internal::is_node_config_specialization_v<T> &&
-                     ((config_traits::is_logic_node<T>::value() && !config_traits::is_surface_node<T>::value() &&
-                       config_traits::get_pass_count<T>::value() == 0) ||
-                      !config_traits::is_logic_node<T>::value());
+concept NodeConfig = (node_internal::is_node_config_specialization_v<T> ||
+                      std::is_base_of_v<Config<typename T::component_config_t, typename T::systems_config_t>,
+                                        T>)&&((config_traits::is_logic_node<T>::value() &&
+                                               !config_traits::is_surface_node<T>::value() &&
+                                               config_traits::get_pass_count<T>::value() == 0) ||
+                                              !config_traits::is_logic_node<T>::value());
 
 namespace node_traits {
 template<typename NodeType>
