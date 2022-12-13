@@ -108,8 +108,7 @@ struct node_type_register
 
     template<NodeConfig Config>
     using node_key_t =
-      type_pair<node_t<Config>,
-                std::integral_constant<uint64_t, details::get_type_id<0, node_t<Config>, NodeTypes...>::id_v>>;
+      type_pair<Config, std::integral_constant<uint64_t, details::get_type_id<0, node_t<Config>, NodeTypes...>::id_v>>;
 
     static constexpr size_t max_node_size_v = details::get_max_node_size<NodeTypes...>::value;
 };
