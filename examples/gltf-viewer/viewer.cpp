@@ -34,7 +34,11 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
     uint32_t height = 768;
 
     auto&& workspace = root_->createWorkspace([=](auto&& workspaceBuilder) -> cyclonite::compositor::Workspace {
-        // workspaceBuilder.createNode();
+        workspaceBuilder.createNode(
+          node_type_register_t::node_key_t<MainNodeConfig>{},
+          [](auto&& nodeBuilder) -> cyclonite::compositor::node_t<MainNodeConfig> {
+              return nodeBuilder.setName("animation-node").build();
+          });
     });
     /*
     auto&& workspace = root_->createWorkspace([=](auto&& workspaceBuilder) -> cyclonite::compositor::Workspace {

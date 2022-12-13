@@ -13,10 +13,10 @@ template<NodeConfig Config>
 class BaseLogicNode::Builder
 {
 public:
-    template<typename T, typename M>
+    template<typename T>
     Builder(resources::ResourceManager& resourceManager,
             T* wsBuilder,
-            uint64_t (M::*nameToId)(std::string_view),
+            uint64_t (T::*nameToId)(std::string_view) const,
             uint64_t typeId);
 
     auto setName(std::string_view name) -> Builder&;
@@ -34,10 +34,10 @@ private:
 };
 
 template<NodeConfig Config>
-template<typename T, typename M>
+template<typename T>
 BaseLogicNode::Builder<Config>::Builder(resources::ResourceManager& resourceManager,
                                         T* wsBuilder,
-                                        uint64_t (M::*nameToId)(std::string_view),
+                                        uint64_t (T::*nameToId)(std::string_view) const,
                                         uint64_t typeId)
   : resourceManager_{ &resourceManager }
   , name_{}

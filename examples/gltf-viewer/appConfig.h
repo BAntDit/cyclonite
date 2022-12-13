@@ -24,7 +24,7 @@ using scene_animation_systems_t = cyclonite::systems_config_t<value_cast(cycloni
 
 struct MainNodeConfig : public cyclonite::Config<main_component_config_t, scene_animation_systems_t>
 {
-    constexpr static bool is_logic_node_v = false;
+    constexpr static bool is_logic_node_v = true;
 };
 
 using node_type_register_t =
