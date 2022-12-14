@@ -41,7 +41,7 @@ BaseLogicNode::Builder<Config>::Builder(resources::ResourceManager& resourceMana
                                         uint64_t typeId)
   : resourceManager_{ &resourceManager }
   , name_{}
-  , nameToNodeId_{ [wsBuilder, nameToId](std::string_view n) -> uint64_t { return wsBuilder->*nameToId(n); } }
+  , nameToNodeId_{ [wsBuilder, nameToId](std::string_view n) -> uint64_t { return (wsBuilder->*nameToId)(n); } }
   , dependencies_{}
   , nodeTypeId_{ typeId }
 {}
