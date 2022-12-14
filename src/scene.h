@@ -18,7 +18,7 @@ struct get_entity_manager_config;
 template<typename... C, typename... S>
 struct get_entity_manager_config<component_config_t<type_list<C...>, type_list<S...>>>
 {
-    using type = enttx::EntityManagerConfig<C..., S...>;
+    using type = enttx::EntityManagerConfig<type_list<C...>, type_list<S...>>;
 };
 
 template<ComponentConfig ComponentCfg>
