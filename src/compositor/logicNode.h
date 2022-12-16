@@ -6,7 +6,7 @@
 #define CYCLONITE_LOGICNODE_H
 
 #include "baseLogicNode.h"
-#include "scene.h"
+#include "nodeAsset.h"
 #include "typedefs.h"
 
 namespace cyclonite::compositor {
@@ -18,7 +18,7 @@ public:
     using systems_config_t = typename Config::systems_config_t;
     using entity_manager_t = enttx::EntityManager<component_config_t>;
     using system_manager_t = enttx::SystemManager<systems_config_t>;
-    using scene_t = Scene<component_config_t>;
+    using asset_t = NodeAsset<component_config_t>;
 
     LogicNode(resources::ResourceManager& resourceManager, std::string_view name, uint64_t typeId);
 
@@ -58,15 +58,15 @@ LogicNode<Config>::LogicNode(resources::ResourceManager& resourceManager, std::s
 template<NodeConfig Config>
 void LogicNode<Config>::update(uint64_t frameNumber, real deltaTime)
 {
-    auto& s = resourceManager().get(scene()).template as<scene_t>();
-    systems_.update(s.entities(), *this, frameNumber, deltaTime);
+    auto& a = resourceManager().get(asset()).template as<asset_t>();
+    systems_.update(a.entities(), *this, frameNumber, deltaTime);
 }
 
 template<NodeConfig Config>
 auto LogicNode<Config>::entities() const -> entity_manager_t const&
 {
-    auto& s = resourceManager().get(scene()).template as<scene_t>();
-    return s.entities();
+    auto& a = resourceManager().get(asset()).template as<asset_t>();
+    return a.entities();
 }
 
 template<NodeConfig Config>

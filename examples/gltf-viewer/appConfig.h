@@ -18,11 +18,17 @@ using main_component_config_t =
                                           enttx::ComponentStorage<1, 1, cyclonite::components::Camera>,
                                           cyclonite::components::AnimatorStorage>>;
 
-using scene_animation_systems_t = cyclonite::systems_config_t<value_cast(cyclonite::AnimationStage::COUNT),
+using animation_systems_t = cyclonite::systems_config_t<value_cast(cyclonite::systems::AnimationStage::COUNT),
                                                               cyclonite::systems::AnimationSystem,
                                                               cyclonite::systems::TransformSystem>;
 
-struct MainNodeConfig : public cyclonite::Config<main_component_config_t, scene_animation_systems_t>
+using g_buffer_node_systems_t = cyclonite::systems_config_t<value_cast(cyclonite::systems::UpdateStage::COUNT),
+                                                            cyclonite::systems::CameraSystem,
+                                                            cyclonite::systems::MeshSystem,
+                                                            cyclonite::systems::UniformSystem,
+                                                            cyclonite::systems::RenderSystem>;
+
+struct MainNodeConfig : public cyclonite::Config<main_component_config_t, animation_systems_t>
 {
     constexpr static bool is_logic_node_v = true;
 };

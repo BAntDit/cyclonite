@@ -528,7 +528,7 @@ void Reader::read(std::istream& stream, F&& f)
 
         auto const& scenes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"scenes"));
         auto const& nodes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"nodes"));
-        auto defaultSceneIdx = _getOptional(input, reinterpret_cast<char const*>(u8"scene"), static_cast<size_t>(0));
+        auto defaultSceneIdx = _getOptional(input, reinterpret_cast<char const*>(u8"asset"), static_cast<size_t>(0));
         auto const& meshes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"meshes"));
         auto const& scene = scenes.at(defaultSceneIdx);
         auto const& rootNodes = _getJsonProperty(scene, reinterpret_cast<char const*>(u8"nodes"));

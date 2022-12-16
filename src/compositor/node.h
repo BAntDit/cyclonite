@@ -19,8 +19,8 @@ class Node : public NodeIdentifier
 public:
     Node(resources::ResourceManager& resourceManager, std::string_view name, [[maybe_unused]] uint64_t typeId) noexcept;
 
-    [[nodiscard]] auto scene() const -> resources::Resource::Id { return scene_; }
-    auto scene() -> resources::Resource::Id& { return scene_; }
+    [[nodiscard]] auto asset() const -> resources::Resource::Id { return asset_; }
+    auto asset() -> resources::Resource::Id& { return asset_; }
 
     [[nodiscard]] auto resourceManager() const -> resources::ResourceManager const& { return *resourceManager_; }
     auto resourceManager() -> resources::ResourceManager& { return *resourceManager_; }
@@ -53,7 +53,7 @@ protected:
 
 private:
     resources::ResourceManager* resourceManager_;
-    resources::Resource::Id scene_;
+    resources::Resource::Id asset_;
 #if !defined(NDEBUG)
     uint64_t typeId_;
 #endif

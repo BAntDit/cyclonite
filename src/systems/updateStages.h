@@ -7,7 +7,7 @@
 
 #include <cstddef>
 
-namespace cyclonite {
+namespace cyclonite::systems {
 enum class AnimationStage : size_t
 {
     FRAME_START = 0,

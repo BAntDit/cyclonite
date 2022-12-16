@@ -2,8 +2,8 @@
 // Created by bantdit on 11/23/22.
 //
 
-#ifndef CYCLONITE_SCENE_H
-#define CYCLONITE_SCENE_H
+#ifndef CYCLONITE_NODEASSET_H
+#define CYCLONITE_NODEASSET_H
 
 #include "config.h"
 #include "resources/resource.h"
@@ -28,9 +28,8 @@ template<ComponentConfig ComponentCfg>
 using entity_manager_t = enttx::EntityManager<entity_manager_config_t<ComponentCfg>>;
 }
 
-// rename to node content or content
 template<ComponentConfig ComponentCfg>
-class Scene : public resources::Resource
+class NodeAsset : public resources::Resource
 {
 public:
     using component_config_t = ComponentCfg;
@@ -46,9 +45,9 @@ private:
     static ResourceTag tag;
 
 public:
-    static auto type_tag_const() -> ResourceTag const& { return Scene::tag; }
-    static auto type_tag() -> ResourceTag& { return Scene::tag; }
+    static auto type_tag_const() -> ResourceTag const& { return NodeAsset::tag; }
+    static auto type_tag() -> ResourceTag& { return NodeAsset::tag; }
 };
 }
 
-#endif // CYCLONITE_SCENE_H
+#endif // CYCLONITE_NODEASSET_H

@@ -6,8 +6,8 @@
 #define CYCLONITE_GRAPHICSNODE_H
 
 #include "baseGraphicsNode.h"
+#include "nodeAsset.h"
 #include "passIterator.h"
-#include "scene.h"
 #include "typedefs.h"
 #include "vulkan/shaderModule.h"
 
@@ -39,7 +39,7 @@ public:
     using systems_config_t = typename Config::systems_config_t;
     using entity_manager_t = enttx::EntityManager<component_config_t>;
     using system_manager_t = enttx::SystemManager<systems_config_t>;
-    using scene_t = Scene<component_config_t>;
+    using asset_t = NodeAsset<component_config_t>;
 
     GraphicsNode(resources::ResourceManager& resourceManager,
                  std::string_view name,
@@ -159,8 +159,8 @@ void GraphicsNode<Config>::makeExpired(size_t bufferIndex)
 template<NodeConfig Config>
 void GraphicsNode<Config>::update(uint32_t& semaphoreCount, uint64_t frameNumber, real deltaTime)
 {
-    auto& s = resourceManager().get(scene()).template as<scene_t>();
-    systems_.update(s.entities(), *this, semaphoreCount, frameNumber, deltaTime);
+    auto& a = resourceManager().get(asset()).template as<asset_t>();
+    systems_.update(a.entities(), *this, semaphoreCount, frameNumber, deltaTime);
 }
 
 template<NodeConfig Config>
