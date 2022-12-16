@@ -45,15 +45,13 @@ private:
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
 void AnimationSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
+    auto&& [node, frameNumber, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
+    (void)node;
+
     if constexpr (STAGE == value_cast(UpdateStage::EARLY_UPDATE)) {
-        auto end = std::chrono::high_resolution_clock::now();
-        auto dt = std::min(std::chrono::duration<real, std::ratio<1>>{ end - start_ }.count(), 0.1f);
-
-        start_ = end;
-
         for (auto& animation : resourceManager_->template resourceList<animations::Animation>()) {
-            // TODO:: make possible to be sure animation is updated once a frame
-            animation.beginUpdate(dt);
+            if (animation.lastFrameUpdate() != frameNumber)
+                animation.beginUpdate(dt);
         }
 
         {
@@ -74,6 +72,7 @@ void AnimationSystem::update(SystemManager& systemManager, EntityManager& entity
 
         for (auto& animation : resourceManager_->template resourceList<animations::Animation>()) {
             animation.endUpdate();
+            animation.lastFrameUpdate() = frameNumber;
         }
     }
 

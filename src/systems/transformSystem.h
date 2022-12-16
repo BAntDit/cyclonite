@@ -44,15 +44,18 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
 {
     using namespace easy_mp;
 
-    ((void)args, ...);
-
     (void)systemManager;
+
+    auto&& [node, frameNumber, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
+    (void)node;
+    (void)dt;
 
     if constexpr (STAGE == value_cast(UpdateStage::EARLY_UPDATE)) {
         auto& transforms = entityManager.template getStorage<components::Transform>();
 
         for (auto& transform : transforms) {
-            auto& [position, scale, orientation, matrix, worldMatrix, state, parent, depth] = transform;
+            auto& [position, scale, orientation, matrix, worldMatrix, state, parent, depth, lastFrameUpdate] =
+              transform;
 
             auto* parentTransform = static_cast<uint64_t>(parent) != std::numeric_limits<uint64_t>::max()
                                       ? entityManager.template getComponent<components::Transform>(parent)
@@ -61,33 +64,32 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
             (void)depth;
 
             auto const& parentMatrix = parentTransform != nullptr ? parentTransform->worldMatrix : mat4{ 1.0f };
-            auto parentState =
-              parentTransform != nullptr ? parentTransform->state : components::Transform::State::UPDATE_NOTHING;
+            auto parentLastFrameUpdate =
+              parentTransform != nullptr ? parentTransform->lastFrameUpdate : std::numeric_limits<uint64_t>::max();
 
-            if (state == components::Transform::State::UPDATE_LOCAL) {
-                matrix = glm::translate(position) * glm::mat4_cast(orientation) * glm::scale(scale);
-                state = components::Transform::State::UPDATE_WORLD;
-            } else if (state == components::Transform::State::UPDATE_COMPONENTS) {
-                _decompose(matrix, position, scale, orientation);
-                state = components::Transform::State::UPDATE_WORLD;
-            }
+            auto parentUpdated = (parentLastFrameUpdate == frameNumber);
 
-            if (state == components::Transform::State::UPDATE_WORLD ||
-                parentState == components::Transform::State::UPDATE_WORLD) {
-                worldMatrix = parentMatrix * matrix;
-            }
+            if (state != components::Transform::State::UPDATE_NOTHING || parentUpdated) {
+                if (state == components::Transform::State::UPDATE_LOCAL) {
+                    matrix = glm::translate(position) * glm::mat4_cast(orientation) * glm::scale(scale);
+                    state = components::Transform::State::UPDATE_WORLD;
+                } else if (state == components::Transform::State::UPDATE_COMPONENTS) {
+                    _decompose(matrix, position, scale, orientation);
+                    state = components::Transform::State::UPDATE_WORLD;
+                }
+
+                if (state == components::Transform::State::UPDATE_WORLD || parentUpdated) {
+                    worldMatrix = parentMatrix * matrix;
+                }
+
+                lastFrameUpdate = frameNumber;
+                state = components::Transform::State::UPDATE_NOTHING;
+            } // if state to update
         }
-    }
-
-    if constexpr (STAGE == easy_mp::value_cast(UpdateStage::LATE_UPDATE)) {
-        auto& transforms = entityManager.template getStorage<components::Transform>();
-
-        for (auto&& transform : transforms) {
-            transform.state = components::Transform::State::UPDATE_NOTHING;
-        }
-    }
+    } // early update
 }
 
+// TODO:: move to scene
 template<typename EntityManager, typename... Args>
 auto TransformSystem::create(EntityManager& entityManager,
                              enttx::Entity parentEntity,

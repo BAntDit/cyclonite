@@ -18,6 +18,7 @@ Animation::Animation(multithreading::TaskManager& taskManager,
   , taskManager_{ &taskManager }
   , interpolationTaskArrayId_{}
   , samplerArrayId_{}
+  , lastFrameUpdate_{ std::numeric_limits<uint64_t>::max() }
   , sampleCount_{ sampleCount }
   , playtime_{ 0.f }
   , duration_{ duration }

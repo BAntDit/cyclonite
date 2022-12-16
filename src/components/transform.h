@@ -39,6 +39,8 @@ struct Transform
     enttx::Entity parent;
 
     size_t depth;
+
+    uint64_t lastFrameUpdate;
 };
 }
 

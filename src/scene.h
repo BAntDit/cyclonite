@@ -28,6 +28,7 @@ template<ComponentConfig ComponentCfg>
 using entity_manager_t = enttx::EntityManager<entity_manager_config_t<ComponentCfg>>;
 }
 
+// rename to node content or content
 template<ComponentConfig ComponentCfg>
 class Scene : public resources::Resource
 {
@@ -36,7 +37,6 @@ public:
     using entity_manager_t = internal::entity_manager_t<ComponentCfg>;
 
     [[nodiscard]] auto entities() const -> entity_manager_t const& { return entityManager_; }
-
     auto entities() -> entity_manager_t& { return entityManager_; }
 
 private:

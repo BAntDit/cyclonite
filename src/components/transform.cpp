@@ -15,6 +15,7 @@ Transform::Transform() noexcept
   , state{ State::UPDATE_WORLD }
   , parent{}
   , depth{ 0 }
+  , lastFrameUpdate{ std::numeric_limits<uint64_t>::max() }
 {}
 
 Transform::Transform(vec3 localPosition, vec3 localScale, quat localOrientation) noexcept
@@ -26,6 +27,7 @@ Transform::Transform(vec3 localPosition, vec3 localScale, quat localOrientation)
   , state{ State::UPDATE_LOCAL }
   , parent{}
   , depth{ 0 }
+  , lastFrameUpdate{ std::numeric_limits<uint64_t>::max() }
 {}
 
 Transform::Transform(mat4 localMatrix)
@@ -37,14 +39,12 @@ Transform::Transform(mat4 localMatrix)
   , state{ State::UPDATE_COMPONENTS }
   , parent{}
   , depth{ 0 }
+  , lastFrameUpdate{ std::numeric_limits<uint64_t>::max() }
 {
-    vec3 skew{};
-    vec4 perspective{};
+    [[maybe_unused]] vec3 skew{};
+    [[maybe_unused]] vec4 perspective{};
 
-    bool success = glm::decompose(matrix, scale, orientation, position, skew, perspective);
-
+    [[maybe_unused]] bool success = glm::decompose(matrix, scale, orientation, position, skew, perspective);
     assert(success);
-
-    (void)success;
 }
 }

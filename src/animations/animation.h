@@ -85,6 +85,10 @@ public:
 
     [[nodiscard]] auto sample(size_t i) const -> real const*;
 
+    [[nodiscard]] auto lastFrameUpdate() const -> uint64_t { return lastFrameUpdate_; }
+
+    auto lastFrameUpdate() -> uint64_t& { return lastFrameUpdate_; }
+
     void setupSampler(size_t samplerIndex,
                       resources::Resource::Id inBufferId,
                       resources::Resource::Id outBufferId,
@@ -111,6 +115,7 @@ private:
     resources::Resource::Id interpolationTaskArrayId_;
     resources::Resource::Id samplerArrayId_;
 
+    uint64_t lastFrameUpdate_;
     uint32_t sampleCount_;
     real playtime_;
     real duration_;
