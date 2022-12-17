@@ -95,6 +95,17 @@ public:
 
     [[nodiscard]] auto submitInfo() const -> VkSubmitInfo const& { return submit_; }
 
+    [[nodiscard]] auto getCurrentFrame() const -> FrameCommands const&
+    {
+        assert(bufferIndex_ < frameCommands_.size());
+        return frameCommands_[bufferIndex_];
+    }
+    auto getCurrentFrame() -> FrameCommands&
+    {
+        assert(bufferIndex_ < frameCommands_.size());
+        return frameCommands_[bufferIndex_];
+    }
+
 protected:
     BaseGraphicsNode(resources::ResourceManager& resourceManager,
                      std::string_view name,

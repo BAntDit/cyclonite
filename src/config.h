@@ -82,7 +82,7 @@ using default_component_config_t =
 static_assert(internal::is_component_config_specialization_v<default_component_config_t>);
 
 using default_systems_config_t = systems_config_t<
-  value_cast(UpdateStage::COUNT),
+  value_cast(systems::UpdateStage::COUNT),
   type_list<systems::AnimationSystem, systems::TransformSystem, systems::CameraSystem, systems::MeshSystem>>;
 
 // test:
@@ -212,7 +212,11 @@ public:
             static_assert(std::is_nothrow_convertible_v<decltype(T::pass_count_v), uint8_t>);
             return static_cast<uint8_t>(T::pass_count_v);
         } else {
-            return 0;
+            if constexpr (is_graphics_node_v<T>) {
+                return 1;
+            } else {
+                return 0;
+            }
         }
     }
 };

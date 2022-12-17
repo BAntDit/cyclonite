@@ -15,11 +15,11 @@ template<NodeConfig Config>
 class BaseGraphicsNode::Builder
 {
 public:
-    template<typename T, typename M>
+    template<typename T>
     Builder(vulkan::Device& device,
             resources::ResourceManager& resourceManager,
             T* wsBuilder,
-            uint64_t M::*nameToId(std::string_view),
+            uint64_t (T::*nameToId)(std::string_view) const,
             uint64_t typeId);
 
     auto setName(std::string_view name) -> Builder&;
@@ -132,16 +132,16 @@ private:
 };
 
 template<NodeConfig Config>
-template<typename T, typename M>
+template<typename T>
 BaseGraphicsNode::Builder<Config>::Builder(vulkan::Device& device,
                                            resources::ResourceManager& resourceManager,
                                            T* wsBuilder,
-                                           uint64_t M::*nameToId(std::string_view),
+                                           uint64_t (T::*nameToId)(std::string_view) const,
                                            uint64_t typeId)
   : device_{ &device }
   , resourceManager_{ &resourceManager }
   , name_{}
-  , nameToNodeId_{ [wsBuilder, nameToId](std::string_view n) -> uint64_t { return wsBuilder->*nameToId(n); } }
+  , nameToNodeId_{ [wsBuilder, nameToId](std::string_view n) -> uint64_t { return (wsBuilder->*nameToId)(n); } }
   , dependencies_{}
   , nodeTypeId_{ typeId }
   , width_{ 0 }

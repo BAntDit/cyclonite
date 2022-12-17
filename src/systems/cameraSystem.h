@@ -52,6 +52,12 @@ public:
     auto createCamera(EntityManager& entityManager,
                       enttx::Entity entity,
                       components::Camera::OrthographicProjection const& orthographic) -> components::Camera&;
+
+    [[nodiscard]] auto renderCamera() const -> enttx::Entity { return renderCamera_; }
+    auto renderCamera() -> enttx::Entity& { return renderCamera_; }
+
+private:
+    enttx::Entity renderCamera_;
 };
 
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
@@ -59,16 +65,11 @@ void CameraSystem::update(SystemManager& systemManager, EntityManager& entityMan
 {
     using namespace easy_mp;
 
+    ((void)args, ...);
+
     if constexpr (STAGE == value_cast(UpdateStage::LATE_UPDATE)) {
-        auto&& [node, cameraEntity, signalCount, baseSignal, baseMask] =
-          std::forward_as_tuple(std::forward<Args>(args)...);
-
-        (void)signalCount;
-        (void)baseSignal;
-        (void)baseMask;
-
-        auto [transform, camera] =
-          std::as_const(entityManager).template getComponents<components::Transform, components::Camera>(cameraEntity);
+        auto [transform, camera] = std::as_const(entityManager)
+                                     .template getComponents<components::Transform, components::Camera>(renderCamera());
 
         auto viewMatrix = glm::inverse(transform->worldMatrix);
 

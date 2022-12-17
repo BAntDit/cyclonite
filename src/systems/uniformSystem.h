@@ -68,15 +68,16 @@ void UniformSystem::update(SystemManager& systemManager, EntityManager& entityMa
     ((void)args, ...);
 
     if constexpr (STAGE == value_cast(UpdateStage::TRANSFER_STAGE)) {
-        auto&& [node, cameraEntity, signalCount, baseSignal, baseMask] =
-          std::forward_as_tuple(std::forward<Args>(args)...);
+        auto&& [node, signalCount, frameNumber, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
 
-        auto& frame = node->getCurrentFrame();
-        auto idx = (*node).commandIndex();
+        auto& frame = node.getCurrentFrame();
+        auto idx = node.frameBufferIndex();
         auto const& signal = std::as_const(transferSemaphores_[idx]);
+        auto baseSemaphore = node.waitSemaphores();
+        auto baseDstStageMask = node.waitStages();
 
-        *(baseSignal + signalCount) = static_cast<VkSemaphore>(signal);
-        *(baseMask + signalCount) = VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+        *(baseSemaphore + signalCount) = static_cast<VkSemaphore>(signal);
+        *(baseDstStageMask + signalCount) = VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
         signalCount++;
 
         VkSubmitInfo submitInfo = {};

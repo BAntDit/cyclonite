@@ -19,8 +19,8 @@ using main_component_config_t =
                                           cyclonite::components::AnimatorStorage>>;
 
 using animation_systems_t = cyclonite::systems_config_t<value_cast(cyclonite::systems::AnimationStage::COUNT),
-                                                              cyclonite::systems::AnimationSystem,
-                                                              cyclonite::systems::TransformSystem>;
+                                                        cyclonite::systems::AnimationSystem,
+                                                        cyclonite::systems::TransformSystem>;
 
 using g_buffer_node_systems_t = cyclonite::systems_config_t<value_cast(cyclonite::systems::UpdateStage::COUNT),
                                                             cyclonite::systems::CameraSystem,
@@ -33,8 +33,12 @@ struct MainNodeConfig : public cyclonite::Config<main_component_config_t, animat
     constexpr static bool is_logic_node_v = true;
 };
 
+struct GBufferNodeConfig : public cyclonite::Config<main_component_config_t, g_buffer_node_systems_t>
+{};
+
 using node_type_register_t =
-  cyclonite::compositor::node_type_register<cyclonite::compositor::LogicNode<MainNodeConfig>>;
+  cyclonite::compositor::node_type_register<cyclonite::compositor::LogicNode<MainNodeConfig>,
+                                            cyclonite::compositor::GraphicsNode<GBufferNodeConfig>>;
 
 /* struct MainNodeConfig : public cyclonite::DefaultConfigs
 {

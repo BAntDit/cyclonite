@@ -38,6 +38,12 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
                                     [](auto&& nodeBuilder) -> cyclonite::compositor::node_t<MainNodeConfig> {
                                         return nodeBuilder.setName("animation-node").build();
                                     });
+
+        workspaceBuilder.createNode(
+          node_type_register_t::node_key_t<GBufferNodeConfig>{},
+          [](auto&& nodeBuilder) -> cyclonite::compositor::node_t<GBufferNodeConfig> {
+              return nodeBuilder.setName("g-buffer-node").addDependency("animation-node").build();
+          });
     });
     /*
     auto&& workspace = root_->createWorkspace([=](auto&& workspaceBuilder) -> cyclonite::compositor::Workspace {

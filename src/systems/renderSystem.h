@@ -45,17 +45,15 @@ void RenderSystem::update(SystemManager& systemManager, EntityManager& entityMan
     using namespace easy_mp;
 
     if constexpr (STAGE == value_cast(UpdateStage::RENDERING)) {
-        auto&& [node, cameraEntity, signalCount, baseSignal, baseMask] =
-          std::forward_as_tuple(std::forward<Args>(args)...);
+        auto&& [node, semaphoreCount, frameNumber, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
 
-        (void)cameraEntity;
-        (void)signalCount;
-        (void)baseSignal;
-        (void)baseMask;
+        (void)semaphoreCount;
+        (void)frameNumber;
+        (void)dt;
 
         assert(device_ != nullptr);
 
-        node->writeFrameCommands(*device_);
+        node.writeFrameCommands(*device_);
     }
 
     (void)systemManager;

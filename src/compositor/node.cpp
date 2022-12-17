@@ -11,7 +11,8 @@ Node::Node(resources::ResourceManager& resourceManager,
   : NodeIdentifier{ name }
   , dependencies_{}
   , resourceManager_{ &resourceManager }
-  , asset_{}
+  , asset_
+{}
 #if !defined(NDEBUG)
 , typeId_
 {

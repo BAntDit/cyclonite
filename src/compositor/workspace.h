@@ -6,6 +6,7 @@
 #define CYCLONITE_WORKSPACE_H
 
 #include "graphicsNode.h"
+#include "graphicsNodeBuilder.h"
 #include "graphicsNodeInterface.h"
 #include "logicNode.h"
 #include "logicNodeBuilder.h"
