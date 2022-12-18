@@ -235,15 +235,28 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
         *(baseDstStageMask + signalCount) = VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
         signalCount++;
 
-        VkSubmitInfo submitInfo = {};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = commandBufferCount;
-        submitInfo.pCommandBuffers = transferCommands_->pCommandBuffers();
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = &signal;
+        auto transferTask = [transferQueue = vkTransferQueue_,
+                             commandBufferCount,
+                             commands = transferCommands_->pCommandBuffers(),
+                             signals = &signal]() -> void {
+            VkSubmitInfo submitInfo = {};
+            submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            submitInfo.commandBufferCount = commandBufferCount;
+            submitInfo.pCommandBuffers = commands;
+            submitInfo.signalSemaphoreCount = 1;
+            submitInfo.pSignalSemaphores = signals;
 
-        if (auto result = vkQueueSubmit(vkTransferQueue_, 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS) {
-            throw std::runtime_error("mesh system data could not be transferred");
+            if (auto result = vkQueueSubmit(transferQueue, 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS) {
+                throw std::runtime_error("mesh system data could not be transferred");
+            }
+        };
+
+        if (multithreading::Render::isInRenderThread()) {
+            transferTask();
+        } else {
+            assert(multithreading::Worker::isInWorkerThread());
+            auto future = multithreading::Worker::threadWorker().taskManager().submitRenderTask(transferTask);
+            future.get();
         }
 
         frame.setIndexBuffer(devicePtr_->graphicsQueue(), gpuIndexBuffer_);

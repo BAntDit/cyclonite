@@ -76,7 +76,7 @@ public:
 
     ~BaseGraphicsNode() = default;
 
-    auto operator=(BaseGraphicsNode&&) -> BaseGraphicsNode& = default;
+    auto operator=(BaseGraphicsNode &&) -> BaseGraphicsNode& = default;
 
     auto operator=(BaseGraphicsNode const&) -> BaseGraphicsNode& = delete;
 
