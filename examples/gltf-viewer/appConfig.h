@@ -18,6 +18,8 @@ using main_component_config_t =
                                           enttx::ComponentStorage<1, 1, cyclonite::components::Camera>,
                                           cyclonite::components::AnimatorStorage>>;
 
+using empty_component_config_t = cyclonite::component_config_t<type_list<>, type_list<>>;
+
 using animation_systems_t = cyclonite::systems_config_t<value_cast(cyclonite::systems::AnimationStage::COUNT),
                                                         cyclonite::systems::AnimationSystem,
                                                         cyclonite::systems::TransformSystem>;
@@ -28,33 +30,26 @@ using g_buffer_node_systems_t = cyclonite::systems_config_t<value_cast(cyclonite
                                                             cyclonite::systems::UniformSystem,
                                                             cyclonite::systems::RenderSystem>;
 
+using surface_node_systems_t =
+  cyclonite::systems_config_t<value_cast(cyclonite::systems::UpdateStage::COUNT), cyclonite::systems::RenderSystem>;
+
 struct MainNodeConfig : public cyclonite::Config<main_component_config_t, animation_systems_t>
 {
-    constexpr static bool is_logic_node_v = true;
+    constexpr static auto is_logic_node_v = true;
 };
 
 struct GBufferNodeConfig : public cyclonite::Config<main_component_config_t, g_buffer_node_systems_t>
 {};
 
+struct SurfaceNodeConfig : public cyclonite::Config<empty_component_config_t, surface_node_systems_t>
+{
+    constexpr static auto is_surface_node_v = true;
+};
+
 using node_type_register_t =
   cyclonite::compositor::node_type_register<cyclonite::compositor::LogicNode<MainNodeConfig>,
-                                            cyclonite::compositor::GraphicsNode<GBufferNodeConfig>>;
-
-/* struct MainNodeConfig : public cyclonite::DefaultConfigs
-{
-    constexpr static bool is_surface_node = false;
-};
-
-struct SurfaceNodeConfig : public cyclonite::DefaultConfigs
-{
-    using ecs_config_t = cyclonite::EcsConfig<easy_mp::type_list<>,
-                                              easy_mp::type_list<>,
-                                              easy_mp::type_list<cyclonite::systems::RenderSystem>,
-                                              easy_mp::value_cast(cyclonite::UpdateStage::COUNT)>;
-};
-
-using node_type_register_t = cyclonite::compositor::node_type_register<cyclonite::compositor::Node<MainNodeConfig>,
-                                                                       cyclonite::compositor::Node<SurfaceNodeConfig>>;*/
+                                            cyclonite::compositor::GraphicsNode<GBufferNodeConfig>,
+                                            cyclonite::compositor::GraphicsNode<SurfaceNodeConfig>>;
 }
 
 #endif // EX_CYCLONITE_CONFIG_H

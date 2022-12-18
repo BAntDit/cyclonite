@@ -12,9 +12,6 @@
 namespace examples::viewer {
 class Model
 {
-private:
-    using ecs_config_t = Viewer::ecs_config_t;
-
 public:
     Model() noexcept;
 

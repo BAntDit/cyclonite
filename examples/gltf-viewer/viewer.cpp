@@ -39,18 +39,13 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
                                         return nodeBuilder.setName("animation-node").build();
                                     });
 
+        // TODO:: make sure there are no data races in th gfx nodes update
         workspaceBuilder.createNode(
           node_type_register_t::node_key_t<GBufferNodeConfig>{},
-          [](auto&& nodeBuilder) -> cyclonite::compositor::node_t<GBufferNodeConfig> {
-              return nodeBuilder.setName("g-buffer-node").addDependency("animation-node").build();
-          });
-    });
-    /*
-    auto&& workspace = root_->createWorkspace([=](auto&& workspaceBuilder) -> cyclonite::compositor::Workspace {
-        workspaceBuilder.createNode(
-          node_type_register_t::node_key_t<MainNodeConfig>{},
-          [width = width, height = height](auto&& nodeBuilder) -> cyclonite::compositor::Node<MainNodeConfig> {
-              return nodeBuilder.setOutputResolution(width, height)
+          [width = width, height = height](auto&& nodeBuilder) -> cyclonite::compositor::node_t<GBufferNodeConfig> {
+              return nodeBuilder.setName("g-buffer-node")
+                .addDependency("animation-node")
+                .setOutputResolution(width, height)
                 .setRenderTargetDepthProperties(
                   cyclonite::compositor::render_target_output<
                     type_list<cyclonite::compositor::render_target_candidate_t<VK_FORMAT_D32_SFLOAT>>,
@@ -78,8 +73,10 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
 
         workspaceBuilder.createNode(
           node_type_register_t::node_key_t<SurfaceNodeConfig>{},
-          [width = width, height = height](auto&& nodeBuilder) -> cyclonite::compositor::Node<SurfaceNodeConfig> {
-              return nodeBuilder.template createInputLinks<1>()
+          [width = width, height = height](auto&& nodeBuilder) -> cyclonite::compositor::node_t<SurfaceNodeConfig> {
+              return nodeBuilder.setName("surface-node")
+                .addDependency("animation-node")
+                .template createInputLinks<1>()
                 .setOutputResolution(width, height)
                 .setRenderTargetColorProperties(
                   cyclonite::compositor::render_target_output<
@@ -101,13 +98,10 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
                          false,
                          0)
                 .template setInputs<cyclonite::RenderTargetOutputSemantic::VIEW_SPACE_NORMALS,
-                                    cyclonite::RenderTargetOutputSemantic::ALBEDO>(0)
+                                    cyclonite::RenderTargetOutputSemantic::ALBEDO>("g-buffer-node")
                 .build();
           });
-
-        return workspaceBuilder.build();
     });
-    */
 
     model_ = std::make_unique<Model>();
     model_->init(*root_, "./BoxAnimated.gltf", workspace);
@@ -152,13 +146,13 @@ void Viewer::done()
 
     assert(workspace);
     {
-        auto& node = workspace->get(node_type_register_t::node_key_t<MainNodeConfig>{});
-        node.systems().get<systems::RenderSystem>().finish();
+        // auto& node = workspace->get(node_type_register_t::node_key_t<MainNodeConfig>{});
+        // node.systems().get<systems::RenderSystem>().finish();
     }
 
     {
-        auto& node = workspace->get(node_type_register_t::node_key_t<SurfaceNodeConfig>{});
-        node.systems().get<systems::RenderSystem>().finish();
+        // auto& node = workspace->get(node_type_register_t::node_key_t<SurfaceNodeConfig>{});
+        // node.systems().get<systems::RenderSystem>().finish();
     }
 
     view_->dispose();

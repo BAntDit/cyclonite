@@ -11,6 +11,7 @@
 #include <concepts>
 #include <cstddef>
 #include <filesystem>
+#include <functional>
 #include <utility>
 
 namespace cyclonite::resources {

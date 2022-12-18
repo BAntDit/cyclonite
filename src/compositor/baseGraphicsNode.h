@@ -70,7 +70,15 @@ class BaseGraphicsNode : public Node
 public:
     using render_target_t = std::variant<std::monostate, SurfaceRenderTarget, FrameBufferRenderTarget>;
 
+    BaseGraphicsNode(BaseGraphicsNode&&) = default;
+
+    BaseGraphicsNode(BaseGraphicsNode const&) = delete;
+
     ~BaseGraphicsNode() = default;
+
+    auto operator=(BaseGraphicsNode&&) -> BaseGraphicsNode& = default;
+
+    auto operator=(BaseGraphicsNode const&) -> BaseGraphicsNode& = delete;
 
     void swapBuffers(vulkan::Device& device);
 

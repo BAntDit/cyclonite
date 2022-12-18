@@ -101,7 +101,8 @@ void Workspace::render(vulkan::Device& device)
                  &idToGraphicsNodeIndex,
                  &semaphoreCount,
                  baseSemaphore = baseSemaphore,
-                 baseDstStageMask = baseDstStageMask]() -> void {
+                 baseDstStageMask = baseDstStageMask,
+                 commandIndex = commandIndex]() -> void {
                     auto& inputs = node.get().inputs();
 
                     for (size_t linkIdx = 0, linkCount = inputs.size(); linkIdx < linkCount; linkIdx++) {

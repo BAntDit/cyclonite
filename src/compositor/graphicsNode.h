@@ -46,15 +46,15 @@ public:
                  uint64_t typeId,
                  uint8_t bufferCount = 1);
 
-    GraphicsNode(GraphicsNode const&) = delete;
+    GraphicsNode(GraphicsNode&& graphicsNode) = default;
 
-    GraphicsNode(GraphicsNode&&) = default;
+    GraphicsNode(GraphicsNode const&) = delete;
 
     ~GraphicsNode() = default;
 
-    auto operator=(GraphicsNode const&) -> GraphicsNode& = delete;
-
     auto operator=(GraphicsNode &&) -> GraphicsNode& = default;
+
+    auto operator=(GraphicsNode const&) -> GraphicsNode& = delete;
 
     auto begin([[maybe_unused]] vulkan::Device& device, uint64_t frameNumber) -> std::pair<VkSemaphore, size_t>;
 
@@ -77,6 +77,8 @@ public:
     }
 
 private:
+    friend class BaseGraphicsNode::Builder<Config>;
+
     void _createPass(uint32_t subPassIndex,
                      PassType passType,
                      vulkan::Device& device,

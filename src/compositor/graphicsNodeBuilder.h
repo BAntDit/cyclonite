@@ -632,7 +632,7 @@ auto BaseGraphicsNode::Builder<Config>::build() -> GraphicsNode<Config>
 
     assert(frameBufferCount > 0);
 
-    auto node = GraphicsNode<Config>{ *resourceManager_, name_, nodeTypeId_, frameBufferCount };
+    auto node = GraphicsNode<Config>{ *resourceManager_, name_, nodeTypeId_, static_cast<uint8_t>(frameBufferCount) };
 
     node.vkRenderPass_ = std::move(vkRenderPass_);
     node.renderTarget_ = std::move(renderTarget_);

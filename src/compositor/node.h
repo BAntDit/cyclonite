@@ -17,8 +17,6 @@ namespace cyclonite::compositor {
 class Node : public NodeIdentifier
 {
 public:
-    Node(resources::ResourceManager& resourceManager, std::string_view name, [[maybe_unused]] uint64_t typeId) noexcept;
-
     [[nodiscard]] auto asset() const -> resources::Resource::Id { return asset_; }
     auto asset() -> resources::Resource::Id& { return asset_; }
 
@@ -49,6 +47,8 @@ public:
     void clearDependencies();
 
 protected:
+    Node(resources::ResourceManager& resourceManager, std::string_view name, [[maybe_unused]] uint64_t typeId) noexcept;
+
     std::unordered_map<uint64_t, std::optional<std::shared_future<void>>> dependencies_;
 
 private:

@@ -12,9 +12,6 @@ class Model;
 
 class Controller final : public cyclonite::EventReceivable
 {
-private:
-    using ecs_config_t = Viewer::ecs_config_t;
-
 public:
     Controller() noexcept;
 
