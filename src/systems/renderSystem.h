@@ -53,7 +53,17 @@ void RenderSystem::update(SystemManager& systemManager, EntityManager& entityMan
 
         assert(device_ != nullptr);
 
-        node.writeFrameCommands(*device_);
+        auto writeCommandsTask = [&device = *device_]() -> void {
+            node.writeFrameCommands(device);
+        };
+
+        if (multithreading::Render::isInRenderThread()) {
+            writeCommandsTask();
+        } else {
+            assert(multithreading::Worker::isInWorkerThread());
+            auto future = multithreading::Worker::threadWorker().taskManager().submitRenderTask(writeCommandsTask);
+            future.get();
+        }
     }
 
     (void)systemManager;
