@@ -76,6 +76,9 @@ public:
     { /* TODO:: */
     }
 
+    [[nodiscard]] auto systems() const -> system_manager_t const& { return systems_; }
+    auto systems() -> system_manager_t& { return systems_; }
+
 private:
     friend class BaseGraphicsNode::Builder<Config>;
 
