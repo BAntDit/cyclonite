@@ -10,7 +10,7 @@
 #include <easy-mp/type_list.h>
 #include <enttx/enttx.h>
 
-namespace cyclonite {
+namespace cyclonite::compositor {
 namespace internal {
 template<ComponentConfig ComponentCfg>
 struct get_entity_manager_config;
