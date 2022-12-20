@@ -33,10 +33,10 @@ public:
     }
 
     template<NodeConfig Config, typename NodeTypeId>
-    [[nodiscard]] auto as(type_pair<node_t<Config>, NodeTypeId>) const -> node_t<Config> const&;
+    [[nodiscard]] auto as(type_pair<Config, NodeTypeId>) const -> node_t<Config> const&;
 
     template<NodeConfig Config, typename NodeTypeId>
-    auto as(type_pair<node_t<Config>, NodeTypeId>) -> node_t<Config>&;
+    auto as(type_pair<Config, NodeTypeId>) -> node_t<Config>&;
 
     auto dependsOn(uint64_t id) const -> bool { return dependencies_.contains(id); }
 
@@ -60,7 +60,7 @@ private:
 };
 
 template<NodeConfig Config, typename NodeTypeId>
-auto Node::as(type_pair<node_t<Config>, NodeTypeId>) const -> node_t<Config> const&
+auto Node::as(type_pair<Config, NodeTypeId>) const -> node_t<Config> const&
 {
 #if !defined(NDEBUG)
     assert(typeId_ == NodeTypeId::value);
@@ -69,7 +69,7 @@ auto Node::as(type_pair<node_t<Config>, NodeTypeId>) const -> node_t<Config> con
 }
 
 template<NodeConfig Config, typename NodeTypeId>
-auto Node::as(type_pair<node_t<Config>, NodeTypeId>) -> node_t<Config>&
+auto Node::as(type_pair<Config, NodeTypeId>) -> node_t<Config>&
 {
 #if !defined(NDEBUG)
     assert(typeId_ == NodeTypeId::value);
