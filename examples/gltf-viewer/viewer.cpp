@@ -39,7 +39,6 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
                                         return nodeBuilder.setName("animation-node").build();
                                     });
 
-        // TODO:: make sure there are no data races in th gfx nodes update
         workspaceBuilder.createNode(
           node_type_register_t::node_key_t<GBufferNodeConfig>{},
           [width = width, height = height](auto&& nodeBuilder) -> cyclonite::compositor::node_t<GBufferNodeConfig> {

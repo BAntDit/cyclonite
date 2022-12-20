@@ -5,6 +5,106 @@
 #include "reader.h"
 
 namespace examples::viewer::gltf {
+auto Reader::resourceCount(std::pair<void const*, size_t> buffer) -> ResourceCount
+{
+    std::stringstream stream;
+
+    auto [data, size] = buffer;
+
+    stream.write(static_cast<char const*>(data), static_cast<std::streamsize>(size));
+
+    return resourceCount(stream);
+}
+
+auto Reader::resourceCount(std::filesystem::path const& path) -> ResourceCount
+{
+    std::ifstream file;
+    file.exceptions(std::ios::failbit);
+    file.open(path.string());
+    file.exceptions(std::ios::badbit);
+
+    resourceCount(file);
+}
+
+auto Reader::resourceCount(std::istream& stream) -> ResourceCount
+{
+    auto resCount = ResourceCount{};
+
+    auto input = nlohmann::json{};
+    stream >> input;
+
+    if (!input.is_object()) {
+        throw std::runtime_error("input data is not glTF json");
+    }
+
+    auto it = input.find(reinterpret_cast<char const*>(u8"asset"));
+    if (it == input.end()) {
+        throw std::runtime_error("glTF json must contain asset object");
+    }
+
+    nlohmann::json& asset = (*it);
+    if (!asset.is_object()) {
+        throw std::runtime_error("glTF json must contain asset object");
+    }
+
+    if (!_testVersion(asset)) {
+        throw std::runtime_error("asset has unsupported glTF version");
+    }
+
+    auto const& scenes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"scenes"));
+    resCount.sceneCount = static_cast<uint8_t>(scenes.size());
+
+    auto const& buffers = _getJsonProperty(input, reinterpret_cast<char const*>(u8"buffers"));
+    resCount.bufferCount = buffers.size();
+
+    {
+        using unique_geometry_key_t = std::tuple<size_t, size_t, size_t>;
+        std::set<unique_geometry_key_t, std::less<>> uniqueGeometry = {};
+
+        auto const& meshes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"meshes"));
+        auto meshCount = meshes.size();
+
+        for (auto meshIndex = size_t{ 0 }; meshIndex < meshCount; meshIndex++) {
+            auto const& mesh = meshes.at(meshIndex);
+            auto const& primitives = _getJsonProperty(mesh, reinterpret_cast<char const*>(u8"primitives"));
+
+            for (auto j = size_t{ 0 }, primitiveCount = primitives.size(); j < primitiveCount; j++) {
+                auto& primitive = primitives.at(j);
+
+                auto idxIndices = _getOptional(
+                  primitive, reinterpret_cast<char const*>(u8"indices"), std::numeric_limits<size_t>::max());
+
+                if (idxIndices == std::numeric_limits<size_t>::max()) // skip non-indexed geometry
+                    continue;
+
+                auto attributes = _getJsonProperty(primitive, reinterpret_cast<char const*>(u8"attributes"));
+
+                auto idxPositions = _getOptional(
+                  attributes, reinterpret_cast<char const*>(u8"POSITION"), std::numeric_limits<size_t>::max());
+                auto idxNormals = _getOptional(
+                  attributes, reinterpret_cast<char const*>(u8"NORMAL"), std::numeric_limits<size_t>::max());
+
+                if (idxPositions >= std::numeric_limits<size_t>::max() ||
+                    idxNormals >= std::numeric_limits<size_t>::max())
+                    continue;
+
+                auto geometryIt = uniqueGeometry.find(std::make_tuple(idxIndices, idxPositions, idxNormals));
+
+                if (geometryIt == uniqueGeometry.end()) {
+                    uniqueGeometry.emplace(std::make_tuple(idxIndices, idxPositions, idxNormals));
+                }
+            }
+        } // meshes
+
+        resCount.geometryCount = uniqueGeometry.size();
+    }
+
+    auto const& animations = _getJsonProperty(input, reinterpret_cast<char const*>(u8"animations"));
+    resCount.animationCount = animations.size();
+
+    return resCount;
+}
+
 void Reader::_countNode(
   nlohmann::json const& nodes,
   nlohmann::json const& meshes,

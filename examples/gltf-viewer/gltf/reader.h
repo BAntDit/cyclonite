@@ -150,7 +150,6 @@ auto _readArray(nlohmann::json const& array) -> std::array<T, Size>
 
 enum class ReaderDataType : uint8_t
 {
-    RESOURCE_COUNT,
     NODE_COUNT,
     BUFFER_BYTES,
     BUFFER_STREAM,
@@ -245,6 +244,14 @@ public:
         quat rotation;
     };
 
+    struct ResourceCount
+    {
+        uint32_t geometryCount;
+        uint32_t animationCount;
+        uint8_t bufferCount;
+        uint8_t sceneCount;
+    };
+
 public:
     Reader() = default;
 
@@ -260,6 +267,12 @@ public:
 
     template<typename F>
     void read(std::istream& stream, F&& f);
+
+    static auto resourceCount(std::pair<void const*, size_t> buffer) -> ResourceCount;
+
+    static auto resourceCount(std::filesystem::path const& path) -> ResourceCount;
+
+    static auto resourceCount(std::istream& stream) -> ResourceCount;
 
 private:
     using intance_key_t = std::tuple<size_t, size_t, size_t>;

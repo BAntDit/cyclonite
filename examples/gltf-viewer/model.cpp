@@ -4,6 +4,7 @@
 
 #include "model.h"
 #include "appConfig.h"
+#include "compositor/nodeAsset.h"
 #include "gltf/reader.h"
 #include "resources/buffer.h"
 #include "resources/geometry.h"
@@ -23,7 +24,51 @@ void Model::init(cyclonite::Root& root,
 
     workspace_ = workspace;
 
-    auto& node = workspace_->get(node_type_register_t::node_key_t<MainNodeConfig>{});
+    auto&& [geometryCount, animationCount, bufferCount, sceneCount] = gltf::Reader::resourceCount(path);
+
+    // move expected count as non constexpr argument (reg info field)
+    constexpr auto expectedStagingCount = uint32_t{ 4 };
+    constexpr auto expectedBufferCount = size_t{ 1 };
+    constexpr auto expectedGeometryCount = size_t{ 32 };
+    constexpr auto expectedAnimationCount = size_t{ 1 };
+
+    constexpr auto initialInterpolationTaskCount = size_t{ 256 };
+    constexpr auto initialSamplersCount = size_t{ 1024 };
+    constexpr auto initialBufferMemory = size_t{ 64 * 1024 * 1024 };
+    constexpr auto initialStagingMemory = size_t{ 64 * 1024 * 1024 };
+
+    root.declareResources(
+      sceneCount + bufferCount + geometryCount + animationCount,
+      cyclonite::resources::resource_reg_info_t<cyclonite::compositor::NodeAsset<main_component_config_t>, 2, 0>{},
+      cyclonite::resources::
+        resource_reg_info_t<cyclonite::resources::Buffer, expectedBufferCount, initialBufferMemory>{},
+      cyclonite::resources::resource_reg_info_t<cyclonite::resources::Geometry, expectedGeometryCount, 0>{},
+      cyclonite::resources::
+        resource_reg_info_t<cyclonite::resources::Staging, expectedStagingCount, initialStagingMemory>{},
+      cyclonite::resources::resource_reg_info_t<cyclonite::animations::SamplerArray,
+                                                expectedAnimationCount,
+                                                initialSamplersCount * sizeof(cyclonite::animations::Sampler)>{},
+      cyclonite::resources::resource_reg_info_t<cyclonite::animations::AnimationInterpolationTaskArray,
+                                                expectedAnimationCount,
+                                                initialInterpolationTaskCount *
+                                                  sizeof(cyclonite::animations::AnimationInterpolationTaskArray)>{},
+      cyclonite::resources::resource_reg_info_t<cyclonite::animations::Animation, expectedAnimationCount, 0>{});
+
+    // init systems::
+    auto&& animationNode = workspace_->get("animation-node").as(node_type_register_t::node_key_t<MainNodeConfig>{});
+
+    animationNode.systems().template get<cyclonite::systems::AnimationSystem>().init(root.resourceManager(),
+                                                                                     root.taskManager());
+    animationNode.systems().template get<cyclonite::systems::TransformSystem>().init();
+
+    auto&& gBufferNode = workspace_->get("g-buffer-node").as(node_type_register_t::node_key_t<GBufferNodeConfig>{});
+
+    gBufferNode.systems().template get<cyclonite::systems::CameraSystem>().init();
+
+    // TODO::
+    // gBufferNode.systems().template get<cyclonite::systems::MeshSystem>().init();
+
+    // old::
 
     // maps
     std::unordered_map<size_t, cyclonite::resources::Resource::Id> gltfBufferIndexToResourceId{};
@@ -36,47 +81,6 @@ void Model::init(cyclonite::Root& root,
 
     reader.read(path, [&](auto dataType, auto&&... args) -> void {
         auto&& t = std::forward_as_tuple(args...);
-
-        if constexpr (gltf::reader_data_test<gltf::ReaderDataType::RESOURCE_COUNT, decltype(dataType)>()) {
-            auto [bufferCount, geometryCount, animationCount] = t;
-
-            constexpr auto expectedStagingCount = uint32_t{ 4 };
-            constexpr auto expectedBufferCount = size_t{ 1 };
-            constexpr auto expectedAnimationCount = size_t{ 1 };
-            constexpr auto expectedGeometryCount = size_t{ 32 };
-            constexpr auto initialBufferMemory = size_t{ 64 * 1024 * 1024 };
-            constexpr auto initialStagingMemory = size_t{ 64 * 1024 * 1024 };
-            constexpr auto initialSamplersCount = size_t{ 1024 };
-            constexpr auto initialInterpolationTaskCount = size_t{ 256 };
-
-            root.declareResources(
-              bufferCount + geometryCount + animationCount + expectedStagingCount,
-              cyclonite::resources::
-                resource_reg_info_t<cyclonite::resources::Buffer, expectedBufferCount, initialBufferMemory>{},
-              cyclonite::resources::resource_reg_info_t<cyclonite::resources::Geometry, expectedGeometryCount, 0>{},
-              cyclonite::resources::
-                resource_reg_info_t<cyclonite::resources::Staging, expectedStagingCount, initialStagingMemory>{},
-              cyclonite::resources::resource_reg_info_t<cyclonite::animations::SamplerArray,
-                                                        expectedAnimationCount,
-                                                        initialSamplersCount *
-                                                          sizeof(cyclonite::animations::Sampler)>{},
-              cyclonite::resources::resource_reg_info_t<
-                cyclonite::animations::AnimationInterpolationTaskArray,
-                expectedAnimationCount,
-                initialInterpolationTaskCount * sizeof(cyclonite::animations::AnimationInterpolationTaskArray)>{},
-              cyclonite::resources::resource_reg_info_t<cyclonite::animations::Animation, expectedAnimationCount, 0>{});
-
-            auto& uniformSystem = node.systems().get<systems::UniformSystem>();
-
-            auto uniformInitializationFuture = root.taskManager().submitRenderTask(
-              [&uniformSystem, &device, &resourceManager = root.resourceManager()]() -> void {
-                  uniformSystem.init(resourceManager, device, 1);
-              });
-            uniformInitializationFuture.get();
-
-            auto& animationSystem = node.systems().get<systems::AnimationSystem>();
-            animationSystem.init(root.resourceManager(), root.taskManager());
-        }
 
         if constexpr (gltf::reader_data_test<gltf::ReaderDataType::BUFFER_STREAM, decltype(dataType)>()) {
             auto&& [bufferIndex, bufferSize, stream] = t;
