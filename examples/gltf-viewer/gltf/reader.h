@@ -246,6 +246,10 @@ public:
 
     struct ResourceCount
     {
+        uint32_t instanceCount;
+        uint32_t vertexCount;
+        uint32_t indexCount;
+        uint32_t commandCount;
         uint32_t geometryCount;
         uint32_t animationCount;
         uint8_t bufferCount;
@@ -359,57 +363,6 @@ void Reader::read(std::istream& stream, F&& f)
 
     if (!_testVersion(asset)) {
         throw std::runtime_error("asset has unsupported glTF version");
-    }
-
-    // count resources:
-    {
-        using unique_geometry_key_t = std::tuple<size_t, size_t, size_t>;
-        std::set<unique_geometry_key_t, std::less<std::tuple<size_t, size_t, size_t>>> uniqueGeometry = {};
-
-        auto const& buffers = _getJsonProperty(input, reinterpret_cast<char const*>(u8"buffers"));
-        auto bufferCount = buffers.size();
-
-        auto const& meshes = _getJsonProperty(input, reinterpret_cast<char const*>(u8"meshes"));
-        auto meshCount = meshes.size();
-
-        for (auto meshIndex = size_t{ 0 }; meshIndex < meshCount; meshIndex++) {
-            auto const& mesh = meshes.at(meshIndex);
-            auto const& primitives = _getJsonProperty(mesh, reinterpret_cast<char const*>(u8"primitives"));
-
-            for (size_t j = 0, primitiveCount = primitives.size(); j < primitiveCount; j++) {
-                auto& primitive = primitives.at(j);
-
-                auto idxIndices = _getOptional(
-                  primitive, reinterpret_cast<char const*>(u8"indices"), std::numeric_limits<size_t>::max());
-
-                if (idxIndices == std::numeric_limits<size_t>::max()) // skip non-indexed geometry
-                    continue;
-
-                auto attributes = _getJsonProperty(primitive, reinterpret_cast<char const*>(u8"attributes"));
-
-                auto idxPositions = _getOptional(
-                  attributes, reinterpret_cast<char const*>(u8"POSITION"), std::numeric_limits<size_t>::max());
-                auto idxNormals = _getOptional(
-                  attributes, reinterpret_cast<char const*>(u8"NORMAL"), std::numeric_limits<size_t>::max());
-
-                if (idxPositions >= std::numeric_limits<size_t>::max() ||
-                    idxNormals >= std::numeric_limits<size_t>::max())
-                    continue;
-
-                auto geometryIt = uniqueGeometry.find(std::make_tuple(idxIndices, idxPositions, idxNormals));
-
-                if (geometryIt == uniqueGeometry.end()) {
-                    uniqueGeometry.emplace(std::make_tuple(idxIndices, idxPositions, idxNormals));
-                }
-            }
-        }
-
-        auto geometryCount = uniqueGeometry.size();
-
-        auto const& animations = _getJsonProperty(input, reinterpret_cast<char const*>(u8"animations"));
-        auto animationCount = animations.size();
-
-        f(reader_data_type_t<ReaderDataType::RESOURCE_COUNT>{}, bufferCount, geometryCount, animationCount);
     }
 
     // buffers:

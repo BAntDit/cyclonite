@@ -24,7 +24,14 @@ void Model::init(cyclonite::Root& root,
 
     workspace_ = workspace;
 
-    auto&& [geometryCount, animationCount, bufferCount, sceneCount] = gltf::Reader::resourceCount(path);
+    auto&& [initialInstanceCount,
+            initialVertexCount,
+            initialIndexCount,
+            initialCommandCount,
+            geometryCount,
+            animationCount,
+            bufferCount,
+            sceneCount] = gltf::Reader::resourceCount(path);
 
     // move expected count as non constexpr argument (reg info field)
     constexpr auto expectedStagingCount = uint32_t{ 4 };
@@ -63,10 +70,21 @@ void Model::init(cyclonite::Root& root,
 
     auto&& gBufferNode = workspace_->get("g-buffer-node").as(node_type_register_t::node_key_t<GBufferNodeConfig>{});
 
+    auto frameBufferCount = gBufferNode.getRenderTargetBase().frameBufferCount();
+
     gBufferNode.systems().template get<cyclonite::systems::CameraSystem>().init();
 
-    // TODO::
-    // gBufferNode.systems().template get<cyclonite::systems::MeshSystem>().init();
+    gBufferNode.systems().template get<cyclonite::systems::MeshSystem>().init(
+      root, frameBufferCount, initialCommandCount, initialInstanceCount, initialIndexCount, initialVertexCount);
+
+    gBufferNode.systems().template get<cyclonite::systems::UniformSystem>().init(
+      root.resourceManager(), device, frameBufferCount);
+
+    gBufferNode.systems().template get<cyclonite::systems::RenderSystem>().init(root.taskManager(), device);
+
+    auto&& surfaceNode = workspace_->get("surface-node").as(node_type_register_t::node_key_t<SurfaceNodeConfig>{});
+
+    surfaceNode.systems().template get<cyclonite::systems::RenderSystem>().init(root.taskManager(), device);
 
     // old::
 
