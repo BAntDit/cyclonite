@@ -38,6 +38,8 @@ public:
     [[nodiscard]] auto entities() const -> entity_manager_t const& { return entityManager_; }
     auto entities() -> entity_manager_t& { return entityManager_; }
 
+    [[nodiscard]] auto instance_tag() const -> ResourceTag const& override { return tag; }
+
 private:
     entity_manager_t entityManager_;
 
