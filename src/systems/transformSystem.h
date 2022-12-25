@@ -89,7 +89,6 @@ void TransformSystem::update(SystemManager& systemManager, EntityManager& entity
     } // early update
 }
 
-// TODO:: move to scene
 template<typename EntityManager, typename... Args>
 auto TransformSystem::create(EntityManager& entityManager,
                              enttx::Entity parentEntity,

@@ -70,6 +70,13 @@ public:
     void requestVertexDeviceBufferUpdate();
 
 private:
+    void _init(Root& root,
+               size_t swapChainLength,
+               size_t initialCommandCapacity,
+               size_t initialInstanceCapacity,
+               size_t initialIndexCapacity,
+               size_t initialVertexCapacity);
+
     void _addSubMesh(components::SubMesh& subMesh, uint64_t geometryId);
 
     void _reAllocCommandBuffer(size_t size);

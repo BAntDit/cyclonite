@@ -14,6 +14,37 @@ void MeshSystem::init(Root& root,
                       size_t initialIndexCapacity,
                       size_t initialVertexCapacity)
 {
+    auto initTask = [this,
+                     &root,
+                     swapChainLength,
+                     initialCommandCapacity,
+                     initialInstanceCapacity,
+                     initialIndexCapacity,
+                     initialVertexCapacity]() -> void {
+        _init(root,
+              swapChainLength,
+              initialCommandCapacity,
+              initialInstanceCapacity,
+              initialIndexCapacity,
+              initialVertexCapacity);
+    };
+
+    if (multithreading::Render::isInRenderThread()) {
+        initTask();
+    } else {
+        assert(multithreading::Worker::isInWorkerThread());
+        auto future = multithreading::Worker::threadWorker().taskManager().submitRenderTask(initTask);
+        future.get();
+    }
+}
+
+void MeshSystem::_init(Root& root,
+                       size_t swapChainLength,
+                       size_t initialCommandCapacity,
+                       size_t initialInstanceCapacity,
+                       size_t initialIndexCapacity,
+                       size_t initialVertexCapacity)
+{
     auto& device = root.device();
 
     devicePtr_ = &device;
