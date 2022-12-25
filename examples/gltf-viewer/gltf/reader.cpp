@@ -195,6 +195,7 @@ auto Reader::resourceCount(std::istream& stream) -> ResourceCount
               nodes, meshes, accessors, instanceCommands, instanceCount, vertexCount, indexCount, idx);
         }
 
+        resCount.nodeCount = static_cast<uint32_t>(nodes.size());
         resCount.commandCount = static_cast<uint32_t>(instanceCommands.size());
         resCount.instanceCount = instanceCount;
         resCount.vertexCount = vertexCount;

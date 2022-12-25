@@ -150,12 +150,10 @@ auto _readArray(nlohmann::json const& array) -> std::array<T, Size>
 
 enum class ReaderDataType : uint8_t
 {
-    NODE_COUNT,
     BUFFER_BYTES,
     BUFFER_STREAM,
     BUFFER_VIEW,
     ACCESSOR,
-    VERTEX_INDEX_INSTANCE_COUNT,
     NODE,
     GEOMETRY,
     MESH,
@@ -163,7 +161,7 @@ enum class ReaderDataType : uint8_t
     ANIMATOR,
     ANIMATION_SAMPLER,
     ANIMATION_CHANNEL,
-    MIN_VALUE = NODE_COUNT,
+    MIN_VALUE = BUFFER_BYTES,
     MAX_VALUE = ANIMATION_CHANNEL,
     COUNT = MAX_VALUE + 1
 };
@@ -246,6 +244,7 @@ public:
 
     struct ResourceCount
     {
+        uint32_t nodeCount;
         uint32_t instanceCount;
         uint32_t vertexCount;
         uint32_t indexCount;
@@ -488,7 +487,6 @@ void Reader::read(std::istream& stream, F&& f)
     }
 
     {
-        using intance_key_t = std::tuple<size_t, size_t, size_t>;
         std::unordered_map<intance_key_t, std::tuple<uint32_t, uint32_t, uint32_t>, cyclonite::hash>
           instanceCommands = {};
 
@@ -499,18 +497,10 @@ void Reader::read(std::istream& stream, F&& f)
         auto const& scene = scenes.at(defaultSceneIdx);
         auto const& rootNodes = _getJsonProperty(scene, reinterpret_cast<char const*>(u8"nodes"));
 
-        f(reader_data_type_t<ReaderDataType::NODE_COUNT>{}, static_cast<uint32_t>(nodes.size()));
-
         for (size_t i = 0, count = rootNodes.size(); i < count; i++) {
             auto idx = rootNodes.at(i).get<size_t>();
             _countNode(nodes, meshes, accessors, instanceCommands, idx);
         }
-
-        f(reader_data_type_t<ReaderDataType::VERTEX_INDEX_INSTANCE_COUNT>{},
-          vertexCount_,
-          indexCount_,
-          instanceCount_,
-          static_cast<uint32_t>(instanceCommands.size()));
 
         for (size_t i = 0, count = rootNodes.size(); i < count; i++) {
             auto idx = rootNodes.at(i).get<size_t>();
