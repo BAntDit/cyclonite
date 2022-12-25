@@ -72,7 +72,7 @@ auto LogicNode<Config>::entities() const -> entity_manager_t const&
 template<NodeConfig Config>
 auto LogicNode<Config>::entities() -> entity_manager_t&
 {
-    return const_cast<resources::ResourceManager&>(std::as_const(this)->entities());
+    return const_cast<entity_manager_t&>(std::as_const(*this).entities());
 }
 }
 
