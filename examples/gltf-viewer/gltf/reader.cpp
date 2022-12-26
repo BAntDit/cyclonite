@@ -94,7 +94,7 @@ auto Reader::resourceCount(std::filesystem::path const& path) -> ResourceCount
     file.open(path.string());
     file.exceptions(std::ios::badbit);
 
-    resourceCount(file);
+    return resourceCount(file);
 }
 
 auto Reader::resourceCount(std::istream& stream) -> ResourceCount
