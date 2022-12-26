@@ -161,7 +161,7 @@ BaseGraphicsNode::Builder<Config>::Builder(vulkan::Device& device,
 template<NodeConfig Config>
 auto BaseGraphicsNode::Builder<Config>::setName(std::string_view name) -> Builder&
 {
-    name = name_;
+    name_ = name;
     return *this;
 }
 
