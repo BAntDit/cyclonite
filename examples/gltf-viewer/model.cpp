@@ -80,7 +80,7 @@ void Model::init(cyclonite::Root& root,
       root, frameBufferCount, initialCommandCount, initialInstanceCount, initialIndexCount, initialVertexCount);
 
     gBufferNode.systems().template get<cyclonite::systems::UniformSystem>().init(
-      root.resourceManager(), device, frameBufferCount);
+      root.taskManager(), root.resourceManager(), device, frameBufferCount);
 
     auto&& surfaceNode = workspace_->get("surface-node").as(node_type_register_t::node_key_t<SurfaceNodeConfig>{});
 

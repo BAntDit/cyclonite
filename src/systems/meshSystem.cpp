@@ -32,8 +32,7 @@ void MeshSystem::init(Root& root,
     if (multithreading::Render::isInRenderThread()) {
         initTask();
     } else {
-        assert(multithreading::Worker::isInWorkerThread());
-        auto future = multithreading::Worker::threadWorker().taskManager().submitRenderTask(initTask);
+        auto&& future = root.taskManager().submitRenderTask(initTask);
         future.get();
     }
 }

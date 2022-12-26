@@ -8,7 +8,24 @@
 #include <glm/gtc/type_ptr.hpp>
 
 namespace cyclonite::systems {
-void UniformSystem::init(resources::ResourceManager& resourceManager, vulkan::Device& device, size_t swapChainLength)
+void UniformSystem::init(multithreading::TaskManager& taskManager,
+                         resources::ResourceManager& resourceManager,
+                         vulkan::Device& device,
+                         size_t swapChainLength)
+{
+    auto&& initTask = [this, &resourceManager, &device, swapChainLength]() -> void {
+        _init(resourceManager, device, swapChainLength);
+    };
+
+    if (multithreading::Render::isInRenderThread()) {
+        initTask();
+    } else {
+        auto&& future = taskManager.submitRenderTask(initTask);
+        future.get();
+    }
+}
+
+void UniformSystem::_init(resources::ResourceManager& resourceManager, vulkan::Device& device, size_t swapChainLength)
 {
     devicePtr_ = &device;
     resourceManager_ = &resourceManager;

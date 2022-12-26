@@ -31,7 +31,10 @@ public:
 
     auto operator=(UniformSystem &&) -> UniformSystem& = default;
 
-    void init(resources::ResourceManager& resourceManager, vulkan::Device& device, size_t swapChainLength);
+    void init(multithreading::TaskManager& taskManager,
+              resources::ResourceManager& resourceManager,
+              vulkan::Device& device,
+              size_t swapChainLength);
 
     [[nodiscard]] auto uniforms() const -> resources::Staging const&;
 
@@ -48,6 +51,8 @@ public:
     void setViewProjectionMatrix(mat4& viewProjMatrix);
 
 private:
+    void _init(resources::ResourceManager& resourceManager, vulkan::Device& device, size_t swapChainLength);
+
     vulkan::Device* devicePtr_;
     resources::ResourceManager* resourceManager_;
     VkQueue vkTransferQueue_;
