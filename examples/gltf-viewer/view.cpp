@@ -21,13 +21,13 @@ void View::init(cyclonite::multithreading::TaskManager& taskManager,
     workspace_ = workspace;
 
     {
-        // auto& node = workspace_->get(node_type_register_t::node_key_t<MainNodeConfig>{});
-        // node.systems().get<systems::RenderSystem>().init(taskManager, device);
+        auto&& gBufferNode = workspace_->get("g-buffer-node").as(node_type_register_t::node_key_t<GBufferNodeConfig>{});
+        gBufferNode.systems().template get<cyclonite::systems::RenderSystem>().init(taskManager, device);
     }
 
     {
-        // auto& node = workspace_->get(node_type_register_t::node_key_t<SurfaceNodeConfig>{});
-        // node.systems().get<systems::RenderSystem>().init(taskManager, device);
+        auto&& surfaceNode = workspace_->get("surface-node").as(node_type_register_t::node_key_t<SurfaceNodeConfig>{});
+        surfaceNode.systems().template get<cyclonite::systems::RenderSystem>().init(taskManager, device);
     }
 }
 

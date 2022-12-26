@@ -82,11 +82,7 @@ void Model::init(cyclonite::Root& root,
     gBufferNode.systems().template get<cyclonite::systems::UniformSystem>().init(
       root.resourceManager(), device, frameBufferCount);
 
-    gBufferNode.systems().template get<cyclonite::systems::RenderSystem>().init(root.taskManager(), device);
-
     auto&& surfaceNode = workspace_->get("surface-node").as(node_type_register_t::node_key_t<SurfaceNodeConfig>{});
-
-    surfaceNode.systems().template get<cyclonite::systems::RenderSystem>().init(root.taskManager(), device);
 
     // scene
     auto mainSceneId =

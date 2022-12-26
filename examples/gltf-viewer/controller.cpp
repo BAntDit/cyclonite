@@ -88,8 +88,8 @@ void Controller::onMouseMotion(int32_t x, int32_t y)
         rotate_.x = pi * 2.f * speed * (static_cast<real>(x) - rotationStart_.x) / static_cast<real>(width_);
         rotate_.y = pi * 2.f * speed * (static_cast<real>(y) - rotationStart_.y) / static_cast<real>(height_);
 
-        rotationStart_.x = x;
-        rotationStart_.y = y;
+        rotationStart_.x = static_cast<real>(x);
+        rotationStart_.y = static_cast<real>(y);
     }
 }
 

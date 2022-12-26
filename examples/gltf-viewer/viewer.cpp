@@ -145,13 +145,13 @@ void Viewer::done()
 
     assert(workspace);
     {
-        // auto& node = workspace->get(node_type_register_t::node_key_t<MainNodeConfig>{});
-        // node.systems().get<systems::RenderSystem>().finish();
+        auto&& gBufferNode = workspace->get("g-buffer-node").as(node_type_register_t::node_key_t<GBufferNodeConfig>{});
+        gBufferNode.systems().template get<systems::RenderSystem>().finish();
     }
 
     {
-        // auto& node = workspace->get(node_type_register_t::node_key_t<SurfaceNodeConfig>{});
-        // node.systems().get<systems::RenderSystem>().finish();
+        auto&& surfaceNode = workspace->get("surface-node").as(node_type_register_t::node_key_t<SurfaceNodeConfig>{});
+        surfaceNode.systems().template get<systems::RenderSystem>().finish();
     }
 
     view_->dispose();
