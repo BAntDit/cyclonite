@@ -50,6 +50,9 @@ public:
     static auto type_tag_const() -> ResourceTag const& { return NodeAsset::tag; }
     static auto type_tag() -> ResourceTag& { return NodeAsset::tag; }
 };
+
+template<ComponentConfig ComponentCfg>
+resources::Resource::ResourceTag NodeAsset<ComponentCfg>::tag{};
 }
 
 #endif // CYCLONITE_NODEASSET_H

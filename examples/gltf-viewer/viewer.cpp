@@ -100,6 +100,8 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
                                     cyclonite::RenderTargetOutputSemantic::ALBEDO>("g-buffer-node")
                 .build();
           });
+
+        return workspaceBuilder.build();
     });
 
     model_ = std::make_unique<Model>();
