@@ -68,11 +68,9 @@ inline auto getImageView(vulkan::Device& device,
 {
     return std::visit(
       [&](auto&& out) -> vulkan::ImageView {
-          if (usageFlags & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-
-              if constexpr (std::is_same_v<std::decay_t<decltype(out)>, vulkan::ImagePtr>) {
-                  return vulkan::ImageView{ device, out, VK_IMAGE_VIEW_TYPE_2D, aspectFlags };
-              }
+          if constexpr (std::is_same_v<std::decay_t<decltype(out)>, vulkan::ImagePtr>) {
+              return vulkan::ImageView{ device, out, VK_IMAGE_VIEW_TYPE_2D, aspectFlags };
+          }
 
           if constexpr (std::is_same_v<std::decay_t<decltype(out)>, VkFormat>) {
               return vulkan::ImageView{ device,
@@ -129,8 +127,7 @@ FrameBufferRenderTarget::FrameBufferRenderTarget(
       vkRenderPass,
       width,
       height,
-      getColorAttachments(
-        std::make_index_sequence<_colorAttachmentCount>{}, device, width, height, _colorAttachmentCount, images));
+      getColorAttachments(std::make_index_sequence<_colorAttachmentCount>{}, device, width, height, 0, images));
 
     for (auto i = size_t{ 0 }, count = accessSemaphores_.size(); i < count; i++) {
         accessSemaphores_[i] = vulkan::Handle<VkSemaphore>{ device.handle(), vkDestroySemaphore };
@@ -167,8 +164,7 @@ FrameBufferRenderTarget::FrameBufferRenderTarget(
                    depthStencil,
                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
                    VK_IMAGE_ASPECT_DEPTH_BIT),
-      getColorAttachments(
-        std::make_index_sequence<_colorAttachmentCount>{}, device, width, height, _colorAttachmentCount, images));
+      getColorAttachments(std::make_index_sequence<_colorAttachmentCount>{}, device, width, height, 0, images));
 
     for (auto i = size_t{ 0 }, count = accessSemaphores_.size(); i < count; i++) {
         accessSemaphores_[i] = vulkan::Handle<VkSemaphore>{ device.handle(), vkDestroySemaphore };
