@@ -95,7 +95,15 @@ void Model::init(cyclonite::Root& root,
     gBufferNode.asset() = mainSceneId;
     surfaceNode.asset() = emptySceneId;
 
-    auto pool = std::vector<enttx::Entity>(initialNodeCount, enttx::Entity{ std::numeric_limits<uint64_t>::max() });
+    auto pool = std::vector<enttx::Entity>{};
+    {
+        auto& asset = root.resourceManager()
+                        .get(mainSceneId)
+                        .template as<cyclonite::compositor::NodeAsset<main_component_config_t>>();
+
+        pool = asset.entities().create(
+          std::vector<enttx::Entity>(initialNodeCount, enttx::Entity{ std::numeric_limits<uint64_t>::max() }));
+    }
 
     auto reader = gltf::Reader{};
 
