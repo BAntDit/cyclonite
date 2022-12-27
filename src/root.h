@@ -45,8 +45,6 @@ public:
 
     void init(uint32_t deviceId);
 
-    void declareResources(size_t initialResourceCount, resources::ResourceRegInfoSpecialization auto&&... regInfo);
-
     [[nodiscard]] auto getDeviceCount() const -> size_t { return physicalDeviceList_.size(); }
 
     [[nodiscard]] auto getDeviceId(size_t deviceIndex = 0) const -> uint32_t;
@@ -94,14 +92,6 @@ auto Root::createWorkspace(WorkspaceFactory&& workspaceFactory) -> std::shared_p
 {
     return workspaces_.emplace_back(std::make_shared<compositor::Workspace>(
       workspaceFactory(compositor::Workspace::Builder{ *resourceManager_, *vulkanDevice_ })));
-}
-
-void Root::declareResources(size_t initialResourceCount, resources::ResourceRegInfoSpecialization auto&&... regInfo)
-{
-    assert(!resourceManager_);
-
-    resourceManager_ = std::make_unique<resources::ResourceManager>(initialResourceCount);
-    resourceManager_->template registerResources(std::forward<decltype(regInfo)>(regInfo)...);
 }
 }
 #endif // CYCLONITE_ROOT_H

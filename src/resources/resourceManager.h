@@ -41,7 +41,7 @@ class ResourceManager
     friend class Resource;
 
 public:
-    explicit ResourceManager(size_t expectedResourceCount);
+    ResourceManager() noexcept;
 
     ResourceManager(ResourceManager const&) = delete;
 
@@ -253,6 +253,14 @@ void ResourceManager::registerResource(resource_reg_info_t<R, N, M>)
 
 void ResourceManager::registerResources(ResourceRegInfoSpecialization auto&&... regInfo)
 {
+    assert(resources_.empty());
+
+    auto initialResCount = []<typename R, size_t N, size_t M>(resource_reg_info_t<R, N, M>)->size_t { return N; };
+    auto expectedResourceCount = (... + initialResCount(regInfo));
+
+    resources_.reserve(expectedResourceCount);
+    freeResourceIndices_.reserve(expectedResourceCount);
+
     storages_.reserve(sizeof...(regInfo));
     freeItems_.reserve(sizeof...(regInfo));
 

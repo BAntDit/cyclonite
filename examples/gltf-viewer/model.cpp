@@ -45,8 +45,7 @@ void Model::init(cyclonite::Root& root,
     constexpr auto initialBufferMemory = size_t{ 64 * 1024 * 1024 };
     constexpr auto initialStagingMemory = size_t{ 64 * 1024 * 1024 };
 
-    root.declareResources(
-      sceneCount + bufferCount + geometryCount + animationCount,
+    root.resourceManager().registerResources(
       cyclonite::resources::resource_reg_info_t<cyclonite::compositor::NodeAsset<main_component_config_t>, 1, 0>{},
       cyclonite::resources::resource_reg_info_t<cyclonite::compositor::NodeAsset<empty_component_config_t>, 1, 0>{},
       cyclonite::resources::

@@ -5,17 +5,14 @@
 #include "resourceManager.h"
 
 namespace cyclonite::resources {
-ResourceManager::ResourceManager(size_t expectedResourceCount)
+ResourceManager::ResourceManager() noexcept
   : resources_{}
   , freeResourceIndices_{}
   , storages_{}
   , freeItems_{}
   , buffers_{}
   , freeRanges_{}
-{
-    resources_.reserve(expectedResourceCount);
-    freeResourceIndices_.reserve(expectedResourceCount);
-}
+{}
 
 auto ResourceManager::allocResource(Resource::ResourceTag tag, size_t size) -> Resource::Id
 {
