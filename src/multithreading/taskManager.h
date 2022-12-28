@@ -19,6 +19,7 @@ namespace cyclonite::multithreading {
 class TaskManager
 {
     friend class Worker;
+    friend class Render;
 
 public:
     explicit TaskManager(size_t workerCount = std::max(std::thread::hardware_concurrency(), 2u) - 1u);
@@ -48,16 +49,22 @@ public:
     template<TaskFunctor F>
     auto submitTask(F&& f) -> std::future<std::result_of_t<F()>>;
 
+    auto getLastException() -> std::exception_ptr;
+
 private:
+    void propagateException(std::exception_ptr const& exception);
+
     [[nodiscard]] auto workers() const -> std::unique_ptr<Worker[]> const& { return workers_; }
 
     auto workers() -> std::unique_ptr<Worker[]>& { return workers_; }
 
 private:
+    std::vector<std::exception_ptr> exceptions_;
     std::vector<std::thread> threadPool_;
     std::unique_ptr<Worker[]> workers_;
     size_t workerCount_;
     Render render_;
+    std::mutex exceptionMutex_;
     std::atomic<bool> alive_;
 };
 

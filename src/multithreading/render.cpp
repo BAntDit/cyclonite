@@ -29,12 +29,18 @@ void Render::operator()()
     assert(_renderThread == nullptr);
     _renderThread = this;
 
-    while (taskManager().keepAlive()) {
-        if (auto task = pendingTask()) {
-            task.value()();
-        } else {
-            std::this_thread::yield();
+    try {
+        while (taskManager().keepAlive()) {
+            if (auto task = pendingTask()) {
+                task.value()();
+            } else {
+                std::this_thread::yield();
+            }
         }
+    }
+    catch(...)
+    {
+        taskManager().propagateException(std::current_exception());
     }
 }
 
