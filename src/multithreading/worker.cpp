@@ -61,7 +61,14 @@ void Worker::operator()()
 {
     _setThreadWorkerPtr();
 
-    threadId_ = std::this_thread::get_id();
+    if (!isInMainThread()) {
+        threadId_ = std::this_thread::get_id();
+    }
+#ifndef NDEBUG
+    else {
+        assert(threadId_ == std::this_thread::get_id());
+    }
+#endif
 
     try {
         while (taskManager().keepAlive()) {
@@ -103,5 +110,7 @@ void Worker::_setAsMainThreadWorker()
     assert(_mainThreadWorker == nullptr);
     _mainThreadWorker = this;
     _threadWorker = this;
+
+    threadId_ = std::this_thread::get_id();
 }
 }

@@ -132,7 +132,14 @@ auto Worker::operator()(F&& f) -> std::future<std::result_of_t<F()>>
 {
     _setThreadWorkerPtr();
 
-    threadId_ = std::this_thread::get_id();
+    if (!isInMainThread()) {
+        threadId_ = std::this_thread::get_id();
+    }
+#ifndef NDEBUG
+    else {
+        assert(threadId_ == std::this_thread::get_id());
+    }
+#endif
 
     using result_type_t = std::result_of_t<F()>;
 
