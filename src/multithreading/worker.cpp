@@ -100,7 +100,7 @@ void Worker::_resetThreadWorkerPtr()
 
 void Worker::_setAsMainThreadWorker()
 {
-    assert(_mainThreadWorker = nullptr);
+    assert(_mainThreadWorker == nullptr);
     _mainThreadWorker = this;
     _threadWorker = this;
 }
