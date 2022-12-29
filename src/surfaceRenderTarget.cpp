@@ -144,7 +144,7 @@ void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device)
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = &imageReadyToBePresentedSemaphore_[currentImageIndex_];
+    presentInfo.pWaitSemaphores = &std::as_const(imageReadyToBePresentedSemaphore_[currentImageIndex_]);
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = &std::as_const(vkSwapChain_);
 
