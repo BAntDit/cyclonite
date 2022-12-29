@@ -3,8 +3,8 @@
 //
 
 #include "render.h"
-#include "taskManager.h"
 #include "internal/utils.h"
+#include "taskManager.h"
 
 namespace cyclonite::multithreading {
 static thread_local Render* _renderThread = nullptr;
@@ -36,9 +36,7 @@ void Render::operator()()
                 std::this_thread::yield();
             }
         }
-    }
-    catch(...)
-    {
+    } catch (...) {
         taskManager().propagateException(std::current_exception());
     }
 }

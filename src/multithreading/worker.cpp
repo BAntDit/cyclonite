@@ -3,8 +3,8 @@
 //
 
 #include "worker.h"
-#include "taskManager.h"
 #include "internal/utils.h"
+#include "taskManager.h"
 
 namespace cyclonite::multithreading {
 static thread_local Worker* _mainThreadWorker = nullptr;
@@ -78,8 +78,7 @@ void Worker::operator()()
                 std::this_thread::yield();
             }
         }
-    }
-    catch(...) {
+    } catch (...) {
         taskManager().propagateException(std::current_exception());
     }
 

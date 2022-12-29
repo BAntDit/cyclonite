@@ -7,8 +7,7 @@
 
 #include <random>
 
-namespace cyclonite::multithreading::internal
-{
+namespace cyclonite::multithreading::internal {
 static auto randomWorkerIndex(size_t count) -> size_t
 {
     assert(count > 0);
