@@ -124,7 +124,7 @@ auto Workspace::Builder::build() -> Workspace
     for (auto idx = size_t{ 0 }, count = static_cast<size_t>(graphicNodeCount_); idx < count; idx++) {
         auto&& gn = workspace.graphicsNodes_[idx];
 
-        workspace.idToLogicNodeIndex_.emplace(gn.get().id(), idx);
+        workspace.idToGraphicsNodeIndex_.emplace(gn.get().id(), idx);
         workspace.nameToGraphicsNodeIndex_.emplace(gn.get().name(), idx);
     }
 

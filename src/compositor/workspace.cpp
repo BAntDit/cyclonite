@@ -27,6 +27,7 @@ void Workspace::render(vulkan::Device& device)
 {
     beginFrame();
 
+    // TODO:: receive as argument instead
     auto updateTime = std::chrono::high_resolution_clock::now();
     auto dt = std::min(std::chrono::duration<real, std::ratio<1>>{ updateTime - lastTimeUpdate_ }.count(), 0.1f);
 
