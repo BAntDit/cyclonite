@@ -33,7 +33,7 @@ void View::init(cyclonite::multithreading::TaskManager& taskManager,
 
 void View::draw(cyclonite::vulkan::Device& device)
 {
-    workspace_->render(device);
+    workspace_->render(device); // TODO:: pass time since last update here
 }
 
 void View::dispose()

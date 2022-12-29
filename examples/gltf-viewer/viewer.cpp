@@ -131,6 +131,10 @@ auto Viewer::run() -> Viewer&
             controller_->update(*model_, dt);
 
             view_->draw(root_->device());
+
+            if (auto e = root_->taskManager().getLastException()) {
+                std::rethrow_exception(e);
+            }
         }
     };
 
