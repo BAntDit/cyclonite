@@ -53,6 +53,8 @@ public:
     [[nodiscard]] auto taskManager() const -> TaskManager const& { return *taskManager_; }
     auto taskManager() -> TaskManager& { return *taskManager_; }
 
+    static auto isInMainThread() -> bool;
+
     static auto isInWorkerThread() -> bool;
 
     static auto threadWorker() -> Worker&;
@@ -72,6 +74,8 @@ private:
     void _setThreadWorkerPtr();
 
     void _resetThreadWorkerPtr();
+
+    void _setAsMainThreadWorker();
 
 private:
     std::thread::id threadId_;

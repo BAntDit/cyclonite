@@ -75,7 +75,9 @@ template<TaskFunctor F>
 auto TaskManager::submitRenderTask(F&& f) -> std::future<std::result_of_t<F()>>
 {
     assert(!Render::isInRenderThread());
-    return workers_[0].submitRenderTask(std::forward<F>(f));
+    assert(Worker::isInWorkerThread());
+
+    return Worker::threadWorker().submitRenderTask(std::forward<F>(f));
 }
 
 template<TaskFunctor F>
@@ -86,6 +88,7 @@ auto TaskManager::start(F&& f) -> std::future<std::result_of_t<F()>>
     for (auto i = firstWorkerThread; i < workerCount_; i++)
         threadPool_.emplace_back([](Worker& worker) -> void { worker(); }, std::ref(workers_[i]));
 
+    // TODO:: adds ability to steal task for main thread
     return workers_[0](std::forward<F>(f));
 }
 

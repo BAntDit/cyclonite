@@ -7,7 +7,9 @@
 #include "internal/utils.h"
 
 namespace cyclonite::multithreading {
+static thread_local Worker* _mainThreadWorker = nullptr;
 static thread_local Worker* _threadWorker = nullptr;
+
 auto Worker::threadWorker() -> Worker&
 {
     assert(_threadWorker);
@@ -17,6 +19,11 @@ auto Worker::threadWorker() -> Worker&
 auto Worker::isInWorkerThread() -> bool
 {
     return _threadWorker;
+}
+
+auto Worker::isInMainThread() -> bool
+{
+    return _mainThreadWorker;
 }
 
 Worker::Worker(TaskManager& taskManager, size_t size)
@@ -79,6 +86,9 @@ auto Worker::canSubmit() const -> bool
 
 void Worker::_setThreadWorkerPtr()
 {
+    if (isInMainThread())
+        return;
+
     assert(_threadWorker == nullptr);
     _threadWorker = this;
 }
@@ -86,5 +96,12 @@ void Worker::_setThreadWorkerPtr()
 void Worker::_resetThreadWorkerPtr()
 {
     _threadWorker = nullptr;
+}
+
+void Worker::_setAsMainThreadWorker()
+{
+    assert(_mainThreadWorker = nullptr);
+    _mainThreadWorker = this;
+    _threadWorker = this;
 }
 }

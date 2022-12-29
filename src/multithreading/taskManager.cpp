@@ -25,6 +25,8 @@ TaskManager::TaskManager(size_t workerCount)
     threadPool_.emplace_back([](Render& render) -> void { render(); }, std::ref(render_));
 
     exceptions_.reserve(workerCount);
+
+    workers_[0]._setAsMainThreadWorker();
 }
 
 TaskManager::~TaskManager()
