@@ -41,7 +41,7 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
                                                          VK_IMAGE_TILING_OPTIMAL,
                                                          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    auto semaphoreCreateInfo = VkSemaphoreCreateInfo{};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     for (auto vkImage : vkImages) {
