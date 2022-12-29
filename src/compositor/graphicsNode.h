@@ -147,6 +147,10 @@ auto GraphicsNode<Config>::begin([[maybe_unused]] vulkan::Device& device, uint64
     } else {
         auto& rt = getRenderTarget<FrameBufferRenderTarget>();
         waitSemaphore = rt.wait();
+
+        if (rt.signal() == VK_NULL_HANDLE) {
+            rt._createSignal(device);
+        }
     }
 
     bufferIndex_ = commandIndex;

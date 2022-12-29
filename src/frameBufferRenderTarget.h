@@ -55,6 +55,8 @@ public:
 
     void swapBuffers(vulkan::Device const& device);
 
+    void _createSignal(vulkan::Device const& device);
+
 private:
     std::array<vulkan::Handle<VkSemaphore>, 2> accessSemaphores_;
 };
@@ -121,7 +123,6 @@ FrameBufferRenderTarget::FrameBufferRenderTarget(
     }
 
     frameBuffers_.reserve(1);
-
     frameBuffers_.emplace_back(
       device,
       vkRenderPass,
@@ -152,7 +153,6 @@ FrameBufferRenderTarget::FrameBufferRenderTarget(
     }
 
     frameBuffers_.reserve(1);
-
     frameBuffers_.emplace_back(
       device,
       vkRenderPass,
