@@ -13,7 +13,7 @@ TaskManager::TaskManager(size_t workerCount)
   , threadPool_{}
   , workers_{ std::make_unique_for_overwrite<Worker[]>(workerCount) }
   , workerCount_{ workerCount }
-  , render_{ *this, _taskPoolSize }
+  , render_{ *this }
   , exceptionMutex_{}
   , alive_{ true }
 {
@@ -60,5 +60,16 @@ auto TaskManager::getLastException() -> std::exception_ptr
     }
 
     return ex;
+}
+
+auto TaskManager::renderQueue(size_t workerIndex) const -> lock_free_spmc_queue_t<Task*> const&
+{
+    assert(workerIndex < workerCount_);
+    return workers_[workerIndex].renderQueue();
+}
+auto TaskManager::renderQueue(size_t workerIndex) -> lock_free_spmc_queue_t<Task*>&
+{
+    assert(workerIndex < workerCount_);
+    return workers_[workerIndex].renderQueue();
 }
 }

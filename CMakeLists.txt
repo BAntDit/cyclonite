@@ -104,6 +104,7 @@ set(PRIVATE_HEADERS
     src/vulkan/internal/fillImageCreationInfo.h
     src/vulkan/internal/imageHelpers.h
     src/animations/internal/interpolation.h
+    src/multithreading/internal/utils.h
 )
 
 set(SOURCES

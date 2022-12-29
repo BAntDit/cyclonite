@@ -25,8 +25,8 @@ Task::Task(Task&& task) noexcept
         functor_ = std::exchange(task.functor_, nullptr);
     }
 
-    pending_.store(functor_ != nullptr, std::memory_order_relaxed);
-    task.pending_.store(false, std::memory_order_relaxed);
+    pending_.store(functor_ != nullptr, std::memory_order_release);
+    task.pending_.store(false, std::memory_order_release);
 }
 
 auto Task::operator=(Task&& rhs) noexcept -> Task&
@@ -42,8 +42,8 @@ auto Task::operator=(Task&& rhs) noexcept -> Task&
         functor_ = std::exchange(rhs.functor_, nullptr);
     }
 
-    pending_.store(functor_ != nullptr, std::memory_order_relaxed);
-    rhs.pending_.store(false, std::memory_order_relaxed);
+    pending_.store(functor_ != nullptr, std::memory_order_release);
+    rhs.pending_.store(false, std::memory_order_release);
 
     return *this;
 }

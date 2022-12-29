@@ -4,6 +4,7 @@
 
 #include "render.h"
 #include "taskManager.h"
+#include "internal/utils.h"
 
 namespace cyclonite::multithreading {
 static thread_local Render* _renderThread = nullptr;
@@ -18,10 +19,8 @@ auto Render::isInRenderThread() -> bool
     return _renderThread;
 }
 
-Render::Render(cyclonite::multithreading::TaskManager& taskManager, size_t taskPoolSize)
+Render::Render(cyclonite::multithreading::TaskManager& taskManager) noexcept
   : taskManager_{ &taskManager }
-  , taskPool_{ taskPoolSize }
-  , taskQueue_{ taskPoolSize }
 {}
 
 void Render::operator()()
@@ -48,9 +47,11 @@ auto Render::pendingTask() -> std::optional<Task>
 {
     auto task = std::optional<Task>{ std::nullopt };
 
-    Task* taskPtr = nullptr;
-    if (queue().pop(taskPtr)) {
-        task = std::move(*taskPtr);
+    auto workerCount = taskManager().workerCount();
+    auto workerIndex = internal::randomWorkerIndex(workerCount);
+
+    if (auto stolenTaskPtr = taskManager().renderQueue(workerIndex).steal()) {
+        task = std::move(*stolenTaskPtr.value());
     }
 
     return task;

@@ -69,7 +69,7 @@ public:
 
     void operator()();
 
-    [[nodiscard]] auto pending() const -> bool { return pending_.load(std::memory_order_relaxed); }
+    [[nodiscard]] auto pending() const -> bool { return pending_.load(std::memory_order_acquire); }
 
     ~Task();
 

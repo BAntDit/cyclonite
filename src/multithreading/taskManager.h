@@ -58,6 +58,9 @@ private:
 
     auto workers() -> std::unique_ptr<Worker[]>& { return workers_; }
 
+    [[nodiscard]] auto renderQueue(size_t workerIndex) const -> lock_free_spmc_queue_t<Task*> const&;
+    auto renderQueue(size_t workerIndex) -> lock_free_spmc_queue_t<Task*>&;
+
 private:
     std::vector<std::exception_ptr> exceptions_;
     std::vector<std::thread> threadPool_;
@@ -71,7 +74,8 @@ private:
 template<TaskFunctor F>
 auto TaskManager::submitRenderTask(F&& f) -> std::future<std::result_of_t<F()>>
 {
-    return render_.submitTask(std::forward<F>(f));
+    assert(!Render::isInRenderThread());
+    return workers_[0].submitRenderTask(std::forward<F>(f));
 }
 
 template<TaskFunctor F>

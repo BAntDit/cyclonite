@@ -4,7 +4,7 @@
 
 #include "worker.h"
 #include "taskManager.h"
-#include <random>
+#include "internal/utils.h"
 
 namespace cyclonite::multithreading {
 static thread_local Worker* _threadWorker = nullptr;
@@ -22,10 +22,12 @@ auto Worker::isInWorkerThread() -> bool
 Worker::Worker(TaskManager& taskManager, size_t size)
   : threadId_{}
   , taskManager_{ &taskManager }
-  , taskPool_{ size }
+  , taskPool_{ size * 2 }
   , workerQueue_{ nullptr }
+  , renderQueue_{ nullptr }
 {
     workerQueue_ = std::make_unique<lock_free_spmc_queue_t<Task*>>(size);
+    renderQueue_ = std::make_unique<lock_free_spmc_queue_t<Task*>>(size);
 }
 
 auto Worker::pendingTask() -> std::optional<Task>
@@ -36,7 +38,7 @@ auto Worker::pendingTask() -> std::optional<Task>
         task = std::move(*taskPointer.value());
     } else {
         auto workerCount = taskManager().workerCount();
-        auto workerIndex = randomWorkerIndex(workerCount);
+        auto workerIndex = internal::randomWorkerIndex(workerCount);
         auto& workers = taskManager().workers();
         auto& worker = workers[workerIndex];
 
@@ -68,18 +70,6 @@ void Worker::operator()()
     }
 
     _resetThreadWorkerPtr();
-}
-
-auto Worker::randomWorkerIndex(size_t count) -> size_t
-{
-    assert(count > 0);
-
-    static thread_local auto rd = std::random_device();
-    static thread_local auto generator = std::mt19937{ rd() };
-
-    std::uniform_int_distribution<int> distribution(0, static_cast<int>(count) - 1);
-
-    return static_cast<size_t>(distribution(generator));
 }
 
 auto Worker::canSubmit() const -> bool
