@@ -57,6 +57,8 @@ public:
 
         [[nodiscard]] auto graphicsNodeNameToId(std::string_view _name) const -> uint64_t;
 
+        [[nodiscard]] auto nodeNameToId(std::string_view _name) const -> uint64_t;
+
     private:
         template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
         auto createLogicNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if_t<
@@ -194,7 +196,7 @@ auto Workspace::Builder::createGraphicsNode(type_pair<Config, NodeTypeId>, NodeF
 {
     graphicNodes_.emplace_back(GraphicsNodeInterface{
       new (allocateNodeMemory<Config>()) GraphicsNode<Config>{ nodeFactory(BaseGraphicsNode::Builder<Config>{
-        *device_, *resourceManager_, this, &Workspace::Builder::graphicsNodeNameToId, NodeTypeId::value }) },
+        *device_, *resourceManager_, this, &Workspace::Builder::nodeNameToId, NodeTypeId::value }) },
       [](void* node) -> void { (reinterpret_cast<GraphicsNode<Config>*>(node))->dispose(); },
       [](void* node, vulkan::Device& device, uint64_t frameNumber) -> std::pair<VkSemaphore, size_t> {
           return (reinterpret_cast<GraphicsNode<Config>*>(node))->begin(device, frameNumber);

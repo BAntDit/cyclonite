@@ -94,6 +94,12 @@ auto Workspace::Builder::graphicsNodeNameToId(std::string_view _name) const -> u
     return id;
 }
 
+auto Workspace::Builder::nodeNameToId(std::string_view _name) const -> uint64_t
+{
+    auto id = logicNodeNameToId(_name);
+    return id == std::numeric_limits<uint64_t>::max() ? graphicsNodeNameToId(_name) : id;
+}
+
 auto Workspace::Builder::build() -> Workspace
 {
     Workspace workspace{};
