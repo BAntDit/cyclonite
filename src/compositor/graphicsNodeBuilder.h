@@ -663,6 +663,10 @@ auto BaseGraphicsNode::Builder<Config>::build() -> GraphicsNode<Config>
     node.inputs_ = inputLinks_;
     node.publicSemanticBits_ = publicSemanticBits_;
 
+    for (auto&& dep : dependencies_) {
+        node.dependencies_.insert(std::pair{ nameToNodeId_(dep), std::nullopt });
+    }
+
     return node;
 }
 

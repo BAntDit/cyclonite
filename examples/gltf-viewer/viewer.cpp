@@ -74,7 +74,7 @@ auto Viewer::init(cyclonite::Options options) -> Viewer&
           node_type_register_t::node_key_t<SurfaceNodeConfig>{},
           [width = width, height = height](auto&& nodeBuilder) -> cyclonite::compositor::node_t<SurfaceNodeConfig> {
               return nodeBuilder.setName("surface-node")
-                .addDependency("animation-node")
+                .addDependency("g-buffer-node")
                 .template createInputLinks<1>()
                 .setOutputResolution(width, height)
                 .setRenderTargetColorProperties(
