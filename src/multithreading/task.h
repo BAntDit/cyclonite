@@ -22,7 +22,7 @@ class alignas(hardware_constructive_interference_size) Task
 {
     static constexpr size_t storage_size_v = 64;
 
-    using storage_t = std::aligned_storage_t<storage_size_v>;
+    using storage_t = std::aligned_storage_t<storage_size_v>; // TODO:: replace with aligned array of bytes
 
     struct functor_base_t
     {
