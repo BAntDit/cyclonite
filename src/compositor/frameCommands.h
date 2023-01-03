@@ -32,8 +32,7 @@ public:
                 VkRenderPass vkRenderPass,
                 Links const& links,
                 PassIterator const& begin,
-                PassIterator const& end,
-                bool isExpired);
+                PassIterator const& end);
 
     void setIndexBuffer(VkQueue graphicQueue, std::shared_ptr<vulkan::Buffer> const& indices);
 

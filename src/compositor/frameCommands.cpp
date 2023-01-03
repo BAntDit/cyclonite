@@ -102,13 +102,13 @@ void FrameCommands::update(vulkan::Device& device,
                            VkRenderPass vkRenderPass,
                            Links const& links,
                            PassIterator const& begin,
-                           PassIterator const& end,
-                           bool isExpired)
+                           PassIterator const& end)
 {
     assert(multithreading::Render::isInRenderThread());
 
     for (auto it = begin; it != end; it++) {
-        auto [passType, descriptorPool, descriptorSetLayout, pipelineLayout, pipeline, descriptorSetPtr] = *it;
+        auto [passType, descriptorPool, descriptorSetLayout, pipelineLayout, pipeline, descriptorSetPtr, isExpired] =
+          *it;
         (void)pipelineLayout;
         (void)pipeline;
 
@@ -239,8 +239,13 @@ void FrameCommands::update(vulkan::Device& device,
               // all passes:
               auto passIndex = size_t{ 0 };
               for (auto it = begin; it != end; it++) { // subpasses
-                  auto [passType, descriptorPool, descriptorSetLayout, pipelineLayout, pipeline, descriptorSetPtr] =
-                    *it;
+                  auto [passType,
+                        descriptorPool,
+                        descriptorSetLayout,
+                        pipelineLayout,
+                        pipeline,
+                        descriptorSetPtr,
+                        isExpired] = *it;
 
                   (void)descriptorPool;
                   (void)descriptorSetLayout;

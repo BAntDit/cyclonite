@@ -208,9 +208,7 @@ auto Workspace::Builder::createGraphicsNode(type_pair<Config, NodeTypeId>, NodeF
           return std::make_pair(semaphores, stages);
       },
       []() -> bool { return config_traits::is_surface_node_v<Config>; },
-      [](void* node, size_t bufferIndex) -> void {
-          (reinterpret_cast<GraphicsNode<Config>*>(node))->makeExpired(bufferIndex);
-      },
+      [](void* node) -> void { (reinterpret_cast<GraphicsNode<Config>*>(node))->makeDescriptorSetExpired(); },
       [](void* node, uint32_t& semaphoreCount, uint64_t frameNumber, real deltaTime) -> void {
           (reinterpret_cast<GraphicsNode<Config>*>(node))->update(semaphoreCount, frameNumber, deltaTime);
       },

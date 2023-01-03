@@ -22,7 +22,7 @@ class GraphicsNodeInterface
     using begin_func_t = std::pair<VkSemaphore, size_t> (*)(void*, vulkan::Device&, uint64_t);
     using wait_stages_func_t = std::pair<VkSemaphore*, VkPipelineStageFlags*> (*)(void*);
     using is_surface_node_func_t = bool (*)();
-    using make_expired_func_t = void (*)(void*, size_t);
+    using make_expired_func_t = void (*)(void*);
     using update_func_t = void (*)(void*, uint32_t&, uint64_t, real);
     using end_func_t = void (*)(void*, uint32_t);
     using write_frame_commands_func_t = void (*)(void*, vulkan::Device& device);
@@ -60,7 +60,7 @@ public:
 
     auto waitStages() -> std::pair<VkSemaphore*, VkPipelineStageFlags*>;
 
-    void makeExpired(size_t bufferIndex);
+    void makeDescriptorSetExpired();
 
     void update(uint32_t& semaphoreCount, uint64_t frameNumber, real deltaTime);
 

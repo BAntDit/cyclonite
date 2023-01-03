@@ -64,7 +64,7 @@ public:
     [[nodiscard]] auto waitStages() const -> VkPipelineStageFlags const* { return nodeDstStageMasks_.data(); }
     auto waitStages() -> VkPipelineStageFlags* { return nodeDstStageMasks_.data(); }
 
-    void makeExpired(size_t bufferIndex);
+    void makeDescriptorSetExpired();
 
     void writeFrameCommands(vulkan::Device& device);
 
@@ -91,7 +91,6 @@ private:
 private:
     std::array<VkPipelineStageFlags, config_traits::max_wait_semaphore_count_v<Config>> nodeDstStageMasks_;
     std::array<VkSemaphore, config_traits::max_wait_semaphore_count_v<Config>> nodeWaitSemaphores_;
-    std::bitset<8> expirationBits_; // 8 - place here max swapchain bits
     system_manager_t systems_;
 
     // dummy, tmp solution:
@@ -108,6 +107,7 @@ private:
     std::array<vulkan::Handle<VkPipelineLayout>, config_traits::pass_count_v<Config>> passPipelineLayout_;
     std::array<vulkan::Handle<VkPipeline>, config_traits::pass_count_v<Config>> passPipeline_;
     std::array<VkDescriptorSet, config_traits::pass_count_v<Config>> descriptorSets_;
+    std::bitset<config_traits::pass_count_v<Config>> descriptorSetExpirationBits_;
 };
 
 template<NodeConfig Config>
@@ -118,7 +118,6 @@ GraphicsNode<Config>::GraphicsNode(resources::ResourceManager& resourceManager,
   : BaseGraphicsNode{ resourceManager, name, typeId, bufferCount }
   , nodeDstStageMasks_{}
   , nodeWaitSemaphores_{}
-  , expirationBits_{ 255 }
   , systems_{}
   , passTypes_{}
   , passDescriptorPool_{}
@@ -126,7 +125,10 @@ GraphicsNode<Config>::GraphicsNode(resources::ResourceManager& resourceManager,
   , passPipelineLayout_{}
   , passPipeline_{}
   , descriptorSets_{}
-{}
+  , descriptorSetExpirationBits_{}
+{
+    descriptorSetExpirationBits_.set();
+}
 
 template<NodeConfig Config>
 auto GraphicsNode<Config>::begin([[maybe_unused]] vulkan::Device& device, uint64_t frameNumber)
@@ -159,10 +161,9 @@ auto GraphicsNode<Config>::begin([[maybe_unused]] vulkan::Device& device, uint64
 }
 
 template<NodeConfig Config>
-void GraphicsNode<Config>::makeExpired(size_t bufferIndex)
+void GraphicsNode<Config>::makeDescriptorSetExpired()
 {
-    assert(bufferIndex < expirationBits_.size());
-    expirationBits_.set(bufferIndex, false);
+    descriptorSetExpirationBits_.set(); // all passes at once
 }
 
 template<NodeConfig Config>
@@ -202,7 +203,8 @@ void GraphicsNode<Config>::writeFrameCommands(vulkan::Device& device)
                                passDescriptorSetLayout_.data(),
                                passPipelineLayout_.data(),
                                passPipeline_.data(),
-                               descriptorSets_.data() };
+                               descriptorSets_.data(),
+                               descriptorSetExpirationBits_ };
 
     auto end = PassIterator{ pass_count_v,
                              pass_count_v,
@@ -211,7 +213,8 @@ void GraphicsNode<Config>::writeFrameCommands(vulkan::Device& device)
                              passDescriptorSetLayout_.data(),
                              passPipelineLayout_.data(),
                              passPipeline_.data(),
-                             descriptorSets_.data() };
+                             descriptorSets_.data(),
+                             descriptorSetExpirationBits_ };
 
     auto frameUpdateTask = [this,
                             &device,
@@ -225,10 +228,9 @@ void GraphicsNode<Config>::writeFrameCommands(vulkan::Device& device)
         assert(commandIndex < frameCommands_.size());
         auto& frameCommand = frameCommands_[commandIndex];
 
-        auto isExpired = expirationBits_.test(bufferIndex_);
-        expirationBits_.reset(bufferIndex_);
+        frameCommand.update(device, renderTarget, renderPass, inputs, begin, end);
 
-        frameCommand.update(device, renderTarget, renderPass, inputs, begin, end, isExpired);
+        descriptorSetExpirationBits_.reset(); // all descriptors must be up-to-date here
     };
 
     if (multithreading::Render::isInRenderThread()) {

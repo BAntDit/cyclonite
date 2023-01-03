@@ -57,9 +57,9 @@ auto GraphicsNodeInterface::waitStages() -> std::pair<VkSemaphore*, VkPipelineSt
     return waitStages_(node_);
 }
 
-void GraphicsNodeInterface::makeExpired(size_t bufferIndex)
+void GraphicsNodeInterface::makeDescriptorSetExpired()
 {
-    makeExpired_(node_, bufferIndex);
+    makeExpired_(node_);
 }
 
 void GraphicsNodeInterface::update(uint32_t& semaphoreCount, uint64_t frameNumber, real deltaTime)

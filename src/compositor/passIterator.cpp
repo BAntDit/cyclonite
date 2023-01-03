@@ -6,24 +6,6 @@
 #include <climits>
 
 namespace cyclonite::compositor {
-PassIterator::PassIterator(uint32_t passCount,
-                           uint32_t cursor,
-                           PassType* passType,
-                           vulkan::Handle<VkDescriptorPool>* baseDescriptorPool,
-                           vulkan::Handle<VkDescriptorSetLayout>* baseDescriptorSetLayout,
-                           vulkan::Handle<VkPipelineLayout>* basePipelineLayout,
-                           vulkan::Handle<VkPipeline>* basePipeline,
-                           VkDescriptorSet* baseDescriptorSet) noexcept
-  : count_{ passCount }
-  , cursor_{ cursor }
-  , basePassType_{ passType }
-  , baseDescriptorPool_{ baseDescriptorPool }
-  , baseDescriptorSetLayout_{ baseDescriptorSetLayout }
-  , basePipelineLayout_{ basePipelineLayout }
-  , basePipeline_{ basePipeline }
-  , baseDescriptorSet_{ baseDescriptorSet }
-{}
-
 auto PassIterator::operator++() -> PassIterator&
 {
     assert(cursor_ < count_);
@@ -41,7 +23,7 @@ auto PassIterator::operator++(int) -> PassIterator
 }
 
 auto PassIterator::operator*() const
-  -> std::tuple<PassType, VkDescriptorPool, VkDescriptorSetLayout, VkPipelineLayout, VkPipeline, VkDescriptorSet*>
+  -> std::tuple<PassType, VkDescriptorPool, VkDescriptorSetLayout, VkPipelineLayout, VkPipeline, VkDescriptorSet*, bool>
 {
     assert(cursor_ < count_);
 
@@ -52,6 +34,12 @@ auto PassIterator::operator*() const
     auto pipeline = static_cast<VkPipeline>(*(basePipeline_ + cursor_));
     auto descriptorSet = baseDescriptorSet_ + cursor_;
 
-    return std::make_tuple(passType, descriptorPool, descriptorSetLayout, pipelineLayout, pipeline, descriptorSet);
+    return std::make_tuple(passType,
+                           descriptorPool,
+                           descriptorSetLayout,
+                           pipelineLayout,
+                           pipeline,
+                           descriptorSet,
+                           bitsWrapper_.isExpired(cursor_));
 }
 }
