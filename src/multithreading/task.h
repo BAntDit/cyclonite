@@ -22,7 +22,7 @@ class alignas(hardware_constructive_interference_size) Task
 {
     static constexpr size_t storage_size_v = 64;
 
-    using storage_t = std::aligned_storage_t<storage_size_v>; // TODO:: replace with aligned array of bytes
+    using storage_t = std::array<std::byte, 64>;
 
     struct functor_base_t
     {
@@ -76,7 +76,7 @@ public:
 private:
     void _reset();
 
-    auto storage() -> void* { return std::addressof(storage_); }
+    auto storage() -> void* { return storage_.data(); }
 
 private:
     storage_t storage_;
@@ -105,7 +105,7 @@ auto Task::functor_t<F>::move_to(storage_t& storage) -> functor_base_t*
     functor_base_t* r = nullptr;
 
     if constexpr (sizeof(f_) <= sizeof(storage_t)) {
-        r = new (std::addressof(storage)) functor_t<std::decay_t<decltype(f_)>>{ std::move(f_) };
+        r = new (storage.data()) functor_t<std::decay_t<decltype(f_)>>{ std::move(f_) };
     }
 
     assert(r != nullptr);
