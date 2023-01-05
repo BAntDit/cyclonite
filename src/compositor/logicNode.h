@@ -10,6 +10,9 @@
 #include "typedefs.h"
 
 namespace cyclonite::compositor {
+/**
+ * Logic node class
+ */
 template<NodeConfig Config>
 class alignas(hardware_constructive_interference_size) LogicNode : public BaseLogicNode
 {

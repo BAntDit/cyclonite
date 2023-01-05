@@ -31,6 +31,9 @@ extern void createPass(vulkan::Device& device,
                        vulkan::Handle<VkPipelineLayout>& outPipelineLayout,
                        vulkan::Handle<VkPipeline>& outPipeline);
 
+/**
+ * Graphics node class
+ */
 template<NodeConfig Config>
 class alignas(hardware_constructive_interference_size) GraphicsNode : public BaseGraphicsNode
 {
