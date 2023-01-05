@@ -77,10 +77,6 @@ public:
 
     void end(uint32_t waitSemaphoreCount);
 
-    void dispose()
-    { /* TODO:: */
-    }
-
     [[nodiscard]] auto systems() const -> system_manager_t const& { return systems_; }
     auto systems() -> system_manager_t& { return systems_; }
 

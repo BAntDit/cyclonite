@@ -185,7 +185,7 @@ auto Workspace::Builder::createLogicNode(type_pair<Config, NodeTypeId>, NodeFact
       [](void* node, uint64_t frameIndex, real deltaTime) -> void {
           (reinterpret_cast<LogicNode<Config>*>(node))->update(frameIndex, deltaTime);
       },
-      [](void* node) -> void { (reinterpret_cast<LogicNode<Config>*>(node))->dispose(); } });
+      [](void* node) -> void { (reinterpret_cast<LogicNode<Config>*>(node))->~LogicNode<Config>(); } });
 
     return *this;
 }
@@ -201,7 +201,7 @@ auto Workspace::Builder::createGraphicsNode(type_pair<Config, NodeTypeId>, NodeF
     graphicNodes_.emplace_back(GraphicsNodeInterface{
       new (allocateNodeMemory<Config>()) GraphicsNode<Config>{ nodeFactory(BaseGraphicsNode::Builder<Config>{
         *device_, *resourceManager_, this, &Workspace::Builder::nodeNameToId, NodeTypeId::value }) },
-      [](void* node) -> void { (reinterpret_cast<GraphicsNode<Config>*>(node))->dispose(); },
+      [](void* node) -> void { (reinterpret_cast<GraphicsNode<Config>*>(node))->~GraphicsNode<Config>(); },
       [](void* node, vulkan::Device& device) -> std::pair<VkSemaphore, size_t> {
           return (reinterpret_cast<GraphicsNode<Config>*>(node))->begin(device);
       },

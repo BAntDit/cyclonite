@@ -43,11 +43,6 @@ public:
 
     void update(uint64_t frameNumber, real deltaTime);
 
-    void dispose()
-    {
-        // TODO:: ...
-    }
-
 private:
     system_manager_t systems_;
 };
