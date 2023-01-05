@@ -154,7 +154,7 @@ BaseGraphicsNode::Builder<Config>::Builder(vulkan::Device& device,
   , surfaceProps_{}
   , passDependencies_{}
   , renderPasses_{}
-  , vkRenderPass_{}
+  , vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{}
 {}
 
