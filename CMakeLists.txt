@@ -88,7 +88,6 @@ set(PUBLIC_HEADERS
     src/vulkan/frameBuffer.h
     src/vulkan/buffer.h
     src/vulkan/shaderModule.h
-    src/log/log.h
     src/multithreading/lockFreeQueue.h
     src/multithreading/taskManager.h
     src/multithreading/task.h
@@ -115,7 +114,6 @@ set(SOURCES
     src/input.cpp
     src/root.cpp
     src/surface.cpp
-    src/log/log.cpp
     src/baseRenderTarget.cpp
     src/frameBufferRenderTarget.cpp
     src/surfaceRenderTarget.cpp

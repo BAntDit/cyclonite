@@ -3,7 +3,6 @@
 //
 
 #include "workspace.h"
-#include "log/log.h"
 
 namespace cyclonite::compositor {
 Workspace::Workspace() noexcept
@@ -27,8 +26,6 @@ Workspace::Workspace() noexcept
 
 void Workspace::render(vulkan::Device& device)
 {
-    [[maybe_unused]] auto logger = SCOPED_LOG();
-
     beginFrame();
 
     // TODO:: receive as argument instead
@@ -41,13 +38,8 @@ void Workspace::render(vulkan::Device& device)
     for (auto lni = uint8_t{ 0 }; lni < logicNodeCount_; lni++) {
         auto& node = logicNodes_[lni];
 
-        LOG_LINE(logger, "update logic node id: %d, name: %s", node.get().id(), node.get().name().data());
-
         auto future = std::shared_future<void>{ multithreading::Worker::threadWorker().submitTask(
           [frameNumber = frameNumber_, node = node /* just copy interface */, dt]() mutable -> void {
-              [[maybe_unused]] auto l = SCOPED_LOG();
-              LOG_FMT(l, "logic update task: %s", node.get().name().data());
-
               node.get().resolveDependencies();
               node.update(frameNumber, dt);
           }) };
@@ -58,7 +50,6 @@ void Workspace::render(vulkan::Device& device)
             auto id = node.get().id();
 
             if (n.get().dependsOn(id)) {
-                LOG_LINE(logger, "update deps for node id: %d, name: %s", node.get().id(), node.get().name().data());
                 n.get().updateDependency(id, future);
             }
         }
@@ -68,7 +59,6 @@ void Workspace::render(vulkan::Device& device)
             auto id = node.get().id();
 
             if (gn.get().dependsOn(id)) {
-                LOG_LINE(logger, "update deps for node id: %d, name: %s", node.get().id(), node.get().name().data());
                 gn.get().updateDependency(id, future);
             }
         }
@@ -80,8 +70,6 @@ void Workspace::render(vulkan::Device& device)
     for (auto gni = uint8_t{ 0 }; gni < graphicsNodeCount_; gni++) {
         auto& node = graphicsNodes_[gni];
 
-        LOG_LINE(logger, "update gfx node id: %d, name: %s", node.get().id(), node.get().name().data());
-
         // it's going to be not trivial thing to execute gfx node in the parallel
         // but let's try
         auto future = std::shared_future<void>{ multithreading::Worker::threadWorker().submitTask(
@@ -91,9 +79,6 @@ void Workspace::render(vulkan::Device& device)
            node = node,                                        // just copy interface
            dt,
            &device]() mutable -> void {
-              [[maybe_unused]] auto l = SCOPED_LOG();
-              LOG_FMT(l, "gfx update task: %s", node.get().name().data());
-
               node.get().resolveDependencies();
 
               // safe
@@ -239,15 +224,10 @@ void Workspace::beginFrame()
 
 void Workspace::endFrame(vulkan::Device& device, VkFence fence)
 {
-    [[maybe_unused]] auto logger = SCOPED_LOG();
-    LOG(logger, "end frame");
-
-    LOG(logger, "resolve gfx nodes start\n");
     for (auto i = size_t{ 0 }; i < submitCount_; i++) {
         gfxFutures_[i].get();
         submits_[i] = graphicsNodes_[i].get().submitInfo();
     }
-    LOG(logger, "resolve gfx nodes end\n");
 
     auto endFrameTask = [&device,
                          &submits = submits_,
@@ -255,9 +235,6 @@ void Workspace::endFrame(vulkan::Device& device, VkFence fence)
                          submitCount = submitCount_,
                          graphicsNodeCount = graphicsNodeCount_,
                          fence]() -> void {
-        [[maybe_unused]] auto l = SCOPED_LOG();
-        LOG(l, "gfx queue submit");
-
         if (auto result = vkQueueSubmit(device.graphicsQueue(), submitCount, submits.data(), fence);
             result != VK_SUCCESS) {
             throw std::runtime_error{ "submit commands failed" };
