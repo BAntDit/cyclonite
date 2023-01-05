@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(cyclonite VERSION 0.3.0.0)
+project(cyclonite VERSION 0.4.0.0)
 
 option(ENABLE_SIMD_AVX2 "enable SIMD AVX2" OFF)
 option(ENABLE_SIMD_AVX "enable SIMD AVX" OFF)
