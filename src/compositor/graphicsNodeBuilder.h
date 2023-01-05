@@ -660,7 +660,7 @@ auto BaseGraphicsNode::Builder<Config>::build() -> GraphicsNode<Config>
         node._createPass(i, passType, *device_, writeDepth, inputImageCount);
     }
 
-    node.inputs_ = inputLinks_;
+    node.inputs_ = std::move(inputLinks_);
     node.publicSemanticBits_ = publicSemanticBits_;
 
     for (auto&& dep : dependencies_) {

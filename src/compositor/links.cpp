@@ -217,4 +217,34 @@ auto Links::get(size_t index) -> Link&
 {
     return const_cast<Link&>(std::as_const(*this).get(index));
 }
+
+Links::Links() :
+  links_{}
+  , vkDevice_{ VK_NULL_HANDLE }
+{}
+
+Links::Links(Links&& links) noexcept :
+  links_(links.links_)
+  , vkDevice_{ links.vkDevice_ }
+{
+    links.vkDevice_ = VK_NULL_HANDLE;
+}
+
+Links::~Links()
+{
+    if (vkDevice_ != VK_NULL_HANDLE) {
+        for (auto& link : (*this)) {
+            vkDestroySampler(vkDevice_, link.sampler, nullptr);
+        }
+    }
+}
+
+auto Links::operator=(Links&& rhs) noexcept -> Links&
+{
+    links_ = rhs.links_;
+    vkDevice_ = rhs.vkDevice_;
+    rhs.vkDevice_ = VK_NULL_HANDLE;
+
+    return *this;
+}
 }

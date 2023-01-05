@@ -142,7 +142,17 @@ public:
     template<size_t linkCount>
     static auto create(vulkan::Device& device) -> Links;
 
-    Links() = default;
+    Links();
+
+    Links(Links const&) = delete;
+
+    Links(Links&& links) noexcept;
+
+    ~Links();
+
+    auto operator=(Links const&) -> Links& = delete;
+
+    auto operator=(Links&& rhs) noexcept -> Links&;
 
     auto begin() -> Iterator { return Iterator{ *this, 0 }; }
 
@@ -175,6 +185,7 @@ private:
     static constexpr size_t maxInputCount = 64;
 
     image_io<maxInputCount> links_;
+    VkDevice vkDevice_;
 };
 
 template<size_t linkCount>
@@ -184,6 +195,7 @@ auto Links::create(vulkan::Device& device) -> Links
 
     Links links;
     links.links_ = std::conditional_t<linkCount != 0, std::array<Link, linkCount>, std::monostate>{};
+    links.vkDevice_ = device.handle();
 
     for (auto& [nodeId, sampler, views, semantics] : links) {
         nodeId = std::numeric_limits<size_t>::max();
