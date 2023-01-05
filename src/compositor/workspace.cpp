@@ -269,6 +269,7 @@ auto Workspace::get(uint64_t id) const -> Node const&
     }
 
     assert(false);
+    std::terminate();
 }
 
 auto Workspace::get(uint64_t id) -> Node&
@@ -287,6 +288,7 @@ auto Workspace::get(std::string_view name) const -> Node const&
     }
 
     assert(false);
+    std::terminate();
 }
 
 auto Workspace::get(std::string_view name) -> Node&
