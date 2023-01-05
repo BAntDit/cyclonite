@@ -41,6 +41,8 @@ public:
 
     void swapBuffers(vulkan::Device const& device);
 
+    [[nodiscard]] auto wait(uint32_t frameIndex) const -> VkSemaphore;
+
     [[nodiscard]] auto signal() const -> VkSemaphore;
 
     [[nodiscard]] auto signalPtr() const -> VkSemaphore const*;

@@ -15,7 +15,8 @@ GraphicsNodeInterface::GraphicsNodeInterface(void* node,
                                              make_expired_func_t makeExpiredFunc,
                                              update_func_t updateFunc,
                                              end_func_t endFunc,
-                                             write_frame_commands_func_t writeFrameCommandsFunc) noexcept
+                                             write_frame_commands_func_t writeFrameCommandsFunc,
+                                             frame_sync_func_t frameSyncFunc) noexcept
   : node_{ node }
   , dispose_{ disposeFunc }
   , begin_{ beginFunc }
@@ -25,6 +26,7 @@ GraphicsNodeInterface::GraphicsNodeInterface(void* node,
   , update_{ updateFunc }
   , end_{ endFunc }
   , writeFrameCommands_{ writeFrameCommandsFunc }
+  , frameSync_{ frameSyncFunc }
 {}
 
 auto GraphicsNodeInterface::get() const -> BaseGraphicsNode const&
@@ -47,9 +49,9 @@ auto GraphicsNodeInterface::operator*() -> BaseGraphicsNode&
     return get();
 }
 
-auto GraphicsNodeInterface::begin(vulkan::Device& device, uint64_t frameNumber) -> std::pair<VkSemaphore, size_t>
+auto GraphicsNodeInterface::begin(vulkan::Device& device) -> std::pair<VkSemaphore, size_t>
 {
-    return begin_(node_, device, frameNumber);
+    return begin_(node_, device);
 }
 
 auto GraphicsNodeInterface::waitStages() -> std::pair<VkSemaphore*, VkPipelineStageFlags*>
@@ -75,6 +77,11 @@ void GraphicsNodeInterface::end(uint32_t semaphoreCount)
 void GraphicsNodeInterface::writeFrameCommands(vulkan::Device& device)
 {
     writeFrameCommands_(node_, device);
+}
+
+auto GraphicsNodeInterface::frameSync(vulkan::Device& device, uint64_t frameNumber) -> size_t
+{
+    return frameSync_(node_, device, frameNumber);
 }
 
 void GraphicsNodeInterface::dispose()

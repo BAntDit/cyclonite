@@ -21,6 +21,7 @@ Workspace::Workspace() noexcept
   , submits_{}
   , gfxFutures_{}
   , submitCount_{ 0 }
+  , frameFences_{}
   , lastTimeUpdate_{ std::chrono::high_resolution_clock::now() }
 {}
 
@@ -73,6 +74,9 @@ void Workspace::render(vulkan::Device& device)
         }
     }
 
+    // frame sync
+    auto fence = syncFrame(device);
+
     for (auto gni = uint8_t{ 0 }; gni < graphicsNodeCount_; gni++) {
         auto& node = graphicsNodes_[gni];
 
@@ -99,8 +103,8 @@ void Workspace::render(vulkan::Device& device)
               // node::begin modifies frame buffer index and have to be in the render thread
               // to avoid data races
               auto beginFuture = multithreading::Worker::threadWorker().taskManager().submitRenderTask(
-                [&node, &device, frameNumber]() -> std::pair<VkSemaphore, size_t> {
-                    return node.begin(device, frameNumber);
+                [&node, &device]() -> std::pair<VkSemaphore, size_t> {
+                    return node.begin(device);
                 });
               auto [renderTargetReadySemaphore, commandIndex] = beginFuture.get();
 
@@ -117,8 +121,7 @@ void Workspace::render(vulkan::Device& device)
                  &idToGraphicsNodeIndex,
                  &semaphoreCount,
                  baseSemaphore = baseSemaphore,
-                 baseDstStageMask = baseDstStageMask,
-                 commandIndex = commandIndex]() -> void {
+                 baseDstStageMask = baseDstStageMask]() -> void {
                     auto& inputs = node.get().inputs();
 
                     for (size_t linkIdx = 0, linkCount = inputs.size(); linkIdx < linkCount; linkIdx++) {
@@ -184,7 +187,49 @@ void Workspace::render(vulkan::Device& device)
     } // gfx nodes
 
     // submits everything and swap buffers
-    endFrame(device);
+    endFrame(device, fence);
+}
+
+auto Workspace::syncFrame(vulkan::Device& device) -> VkFence
+{
+    auto frameSyncTask = [& fences = frameFences_,
+                          &nodes = graphicsNodes_,
+                          nodeCount = graphicsNodeCount_,
+                          frameNumber = frameNumber_,
+                          &device]() -> VkFence {
+        auto vkFence = VkFence{ VK_NULL_HANDLE };
+        auto fenceIdx = std::numeric_limits<size_t>::max();
+
+        for (auto i = uint8_t{ 0 }; i < nodeCount; i++) {
+            auto&& node = nodes[i];
+            auto syncIdx = node.frameSync(device, frameNumber);
+
+            if (node.isSurfaceNode()) {
+                fenceIdx = syncIdx;
+            }
+        }
+
+        if (fenceIdx != std::numeric_limits<size_t>::max()) {
+            auto const& fence = fences[fenceIdx];
+
+            if (auto result =
+                  vkWaitForFences(device.handle(), 1, &fence, VK_FALSE, std::numeric_limits<uint64_t>::max());
+                result != VK_SUCCESS) {
+                throw std::runtime_error("can not sync frame");
+            }
+
+            if (auto result = vkResetFences(device.handle(), 1, &fence); result != VK_SUCCESS) {
+                throw std::runtime_error("can not reset frame sync fence");
+            }
+
+            vkFence = static_cast<VkFence>(fence);
+        }
+
+        return vkFence;
+    };
+
+    auto future = multithreading::Worker::threadWorker().taskManager().submitRenderTask(frameSyncTask);
+    return future.get();
 }
 
 void Workspace::beginFrame()
@@ -192,7 +237,7 @@ void Workspace::beginFrame()
     submitCount_ = 0;
 }
 
-void Workspace::endFrame(vulkan::Device& device)
+void Workspace::endFrame(vulkan::Device& device, VkFence fence)
 {
     [[maybe_unused]] auto logger = SCOPED_LOG();
     LOG(logger, "end frame");
@@ -208,11 +253,12 @@ void Workspace::endFrame(vulkan::Device& device)
                          &submits = submits_,
                          &graphicsNodes = graphicsNodes_,
                          submitCount = submitCount_,
-                         graphicsNodeCount = graphicsNodeCount_]() -> void {
+                         graphicsNodeCount = graphicsNodeCount_,
+                         fence]() -> void {
         [[maybe_unused]] auto l = SCOPED_LOG();
         LOG(l, "gfx queue submit");
 
-        if (auto result = vkQueueSubmit(device.graphicsQueue(), submitCount, submits.data(), VK_NULL_HANDLE);
+        if (auto result = vkQueueSubmit(device.graphicsQueue(), submitCount, submits.data(), fence);
             result != VK_SUCCESS) {
             throw std::runtime_error{ "submit commands failed" };
         }

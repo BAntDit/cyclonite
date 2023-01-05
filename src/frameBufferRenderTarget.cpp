@@ -33,7 +33,7 @@ FrameBufferRenderTarget::FrameBufferRenderTarget(vulkan::Device& device,
 
 auto FrameBufferRenderTarget::wait() const -> VkSemaphore
 {
-    return static_cast<VkSemaphore>(accessSemaphores_[0]);
+    return VK_NULL_HANDLE; // static_cast<VkSemaphore>(accessSemaphores_[0]);
 }
 
 auto FrameBufferRenderTarget::signal() const -> VkSemaphore

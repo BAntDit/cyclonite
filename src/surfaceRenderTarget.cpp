@@ -153,6 +153,12 @@ void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device)
 
     vkQueuePresentKHR(device.graphicsQueue(), &presentInfo);
 }
+
+auto SurfaceRenderTarget::wait(uint32_t frameIndex) const -> VkSemaphore
+{
+    return static_cast<VkSemaphore>(imageAvailableSemaphores_[frameIndex]);
+}
+
 auto SurfaceRenderTarget::signal() const -> VkSemaphore
 {
     return static_cast<VkSemaphore>(imageReadyToBePresentedSemaphore_[currentImageIndex_]);

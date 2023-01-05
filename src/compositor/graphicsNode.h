@@ -56,7 +56,9 @@ public:
 
     auto operator=(GraphicsNode const&) -> GraphicsNode& = delete;
 
-    auto begin([[maybe_unused]] vulkan::Device& device, uint64_t frameNumber) -> std::pair<VkSemaphore, size_t>;
+    auto syncFrame(vulkan::Device& device, uint64_t frameNumber) -> size_t;
+
+    auto begin([[maybe_unused]] vulkan::Device& device) -> std::pair<VkSemaphore, size_t>;
 
     [[nodiscard]] auto waitSemaphores() const -> VkSemaphore const* { return nodeWaitSemaphores_.data(); }
     auto waitSemaphores() -> VkSemaphore* { return nodeWaitSemaphores_.data(); }
@@ -131,31 +133,46 @@ GraphicsNode<Config>::GraphicsNode(resources::ResourceManager& resourceManager,
 }
 
 template<NodeConfig Config>
-auto GraphicsNode<Config>::begin([[maybe_unused]] vulkan::Device& device, uint64_t frameNumber)
-  -> std::pair<VkSemaphore, size_t>
+auto GraphicsNode<Config>::syncFrame(vulkan::Device& device, uint64_t frameNumber) -> size_t
 {
-    assert(multithreading::Render::isInRenderThread());
-
-    auto waitSemaphore = VkSemaphore{ VK_NULL_HANDLE };
-    auto commandIndex = size_t{ 0 };
+    auto syncIndex = size_t{ 0 };
 
     frameIndex_ = static_cast<uint32_t>(frameNumber % swapChainLength());
 
     if constexpr (config_traits::is_surface_node_v<Config>) {
         auto& rt = getRenderTarget<SurfaceRenderTarget>();
         auto [imgIndex, wait] = rt.acquireBackBufferIndex(device, frameIndex_);
-        commandIndex = imgIndex;
-        waitSemaphore = wait;
+        (void)wait;
+
+        syncIndex = imgIndex;
+        bufferIndex_ = imgIndex;
+    } else {
+        bufferIndex_ = 0;
+    }
+
+    return syncIndex;
+}
+
+template<NodeConfig Config>
+auto GraphicsNode<Config>::begin([[maybe_unused]] vulkan::Device& device)
+  -> std::pair<VkSemaphore, size_t>
+{
+    assert(multithreading::Render::isInRenderThread());
+
+    auto waitSemaphore = VkSemaphore{ VK_NULL_HANDLE };
+    auto commandIndex = bufferIndex_;
+
+    if constexpr (config_traits::is_surface_node_v<Config>) {
+        auto& rt = getRenderTarget<SurfaceRenderTarget>();
+        waitSemaphore = rt.wait(frameIndex_);
     } else {
         auto& rt = getRenderTarget<FrameBufferRenderTarget>();
         waitSemaphore = rt.wait();
 
         if (rt.signal() == VK_NULL_HANDLE) {
-            rt._createSignal(device);
+            rt._createSignal(device); // TODO:: make out somewhere and make possible to run not in the render thread
         }
     }
-
-    bufferIndex_ = commandIndex;
 
     return std::make_pair(waitSemaphore, commandIndex);
 }

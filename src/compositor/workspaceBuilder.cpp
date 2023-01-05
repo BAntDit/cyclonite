@@ -127,11 +127,38 @@ auto Workspace::Builder::build() -> Workspace
 
     workspace.graphicsNodes_ = std::move(graphicNodes_);
 
+    auto surfaceNodeIdx = std::numeric_limits<size_t>::max();
     for (auto idx = size_t{ 0 }, count = static_cast<size_t>(graphicNodeCount_); idx < count; idx++) {
         auto&& gn = workspace.graphicsNodes_[idx];
 
         workspace.idToGraphicsNodeIndex_.emplace(gn.get().id(), idx);
         workspace.nameToGraphicsNodeIndex_.emplace(gn.get().name(), idx);
+
+        if (gn.isSurfaceNode()) {
+            surfaceNodeIdx = idx;
+        }
+    }
+
+    if (surfaceNodeIdx < static_cast<size_t>(graphicNodeCount_)) {
+        auto&& rt = workspace.graphicsNodes_[surfaceNodeIdx].get().getRenderTargetBase();
+        auto necessaryFenceCount = rt.frameBufferCount();
+
+        auto& fences = workspace.frameFences_;
+        fences.reserve(necessaryFenceCount);
+
+        auto fenceCreateInfo = VkFenceCreateInfo{};
+        fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+        while (necessaryFenceCount-- > 0) {
+            if (auto result = vkCreateFence(device_->handle(),
+                                            &fenceCreateInfo,
+                                            nullptr,
+                                            &fences.emplace_back(device_->handle(), vkDestroyFence));
+                result != VK_SUCCESS) {
+                throw std::runtime_error("can not create frame sync fence");
+            }
+        }
     }
 
     workspace.submits_.resize(static_cast<size_t>(graphicNodeCount_), VkSubmitInfo{});

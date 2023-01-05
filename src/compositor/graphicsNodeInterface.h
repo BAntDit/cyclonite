@@ -19,13 +19,14 @@ class BaseGraphicsNode;
 class GraphicsNodeInterface
 {
     using dispose_func_t = void (*)(void*);
-    using begin_func_t = std::pair<VkSemaphore, size_t> (*)(void*, vulkan::Device&, uint64_t);
+    using begin_func_t = std::pair<VkSemaphore, size_t> (*)(void*, vulkan::Device&);
     using wait_stages_func_t = std::pair<VkSemaphore*, VkPipelineStageFlags*> (*)(void*);
     using is_surface_node_func_t = bool (*)();
     using make_expired_func_t = void (*)(void*);
     using update_func_t = void (*)(void*, uint32_t&, uint64_t, real);
     using end_func_t = void (*)(void*, uint32_t);
     using write_frame_commands_func_t = void (*)(void*, vulkan::Device& device);
+    using frame_sync_func_t = size_t (*)(void*, vulkan::Device&, uint64_t);
 
 public:
     GraphicsNodeInterface(void* node,
@@ -36,7 +37,8 @@ public:
                           make_expired_func_t makeExpiredFunc,
                           update_func_t updateFunc,
                           end_func_t endFunc,
-                          write_frame_commands_func_t writeFrameCommandsFunc) noexcept;
+                          write_frame_commands_func_t writeFrameCommandsFunc,
+                          frame_sync_func_t frameSyncFunc) noexcept;
 
     GraphicsNodeInterface(GraphicsNodeInterface const&) = default;
 
@@ -56,7 +58,7 @@ public:
 
     [[nodiscard]] auto isSurfaceNode() const -> bool { return isSurfaceNode_(); }
 
-    auto begin(vulkan::Device& device, uint64_t frameNumber) -> std::pair<VkSemaphore, size_t>;
+    auto begin(vulkan::Device& device) -> std::pair<VkSemaphore, size_t>;
 
     auto waitStages() -> std::pair<VkSemaphore*, VkPipelineStageFlags*>;
 
@@ -67,6 +69,8 @@ public:
     void end(uint32_t semaphoreCount);
 
     void writeFrameCommands(vulkan::Device& device);
+
+    auto frameSync(vulkan::Device& device, uint64_t frameNumber) -> size_t;
 
     void dispose();
 
@@ -80,6 +84,7 @@ private:
     update_func_t update_;
     end_func_t end_;
     write_frame_commands_func_t writeFrameCommands_;
+    frame_sync_func_t frameSync_;
 };
 }
 

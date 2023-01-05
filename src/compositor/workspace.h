@@ -109,7 +109,9 @@ private:
 
     void beginFrame();
 
-    void endFrame(vulkan::Device& device);
+    void endFrame(vulkan::Device& device, VkFence fence);
+
+    auto syncFrame(vulkan::Device& device) -> VkFence;
 
 private:
     uint8_t logicNodeCount_;
@@ -130,6 +132,8 @@ private:
     std::vector<std::shared_future<void>> gfxFutures_;
 
     uint32_t submitCount_;
+
+    std::vector<vulkan::Handle<VkFence>> frameFences_;
 
     std::chrono::time_point<std::chrono::high_resolution_clock> lastTimeUpdate_;
 };
@@ -198,8 +202,8 @@ auto Workspace::Builder::createGraphicsNode(type_pair<Config, NodeTypeId>, NodeF
       new (allocateNodeMemory<Config>()) GraphicsNode<Config>{ nodeFactory(BaseGraphicsNode::Builder<Config>{
         *device_, *resourceManager_, this, &Workspace::Builder::nodeNameToId, NodeTypeId::value }) },
       [](void* node) -> void { (reinterpret_cast<GraphicsNode<Config>*>(node))->dispose(); },
-      [](void* node, vulkan::Device& device, uint64_t frameNumber) -> std::pair<VkSemaphore, size_t> {
-          return (reinterpret_cast<GraphicsNode<Config>*>(node))->begin(device, frameNumber);
+      [](void* node, vulkan::Device& device) -> std::pair<VkSemaphore, size_t> {
+          return (reinterpret_cast<GraphicsNode<Config>*>(node))->begin(device);
       },
       [](void* node) -> std::pair<VkSemaphore*, VkPipelineStageFlags*> {
           auto* stages = (reinterpret_cast<GraphicsNode<Config>*>(node))->waitStages();
@@ -217,6 +221,9 @@ auto Workspace::Builder::createGraphicsNode(type_pair<Config, NodeTypeId>, NodeF
       },
       [](void* node, vulkan::Device& device) -> void {
           (reinterpret_cast<GraphicsNode<Config>*>(node))->writeFrameCommands(device);
+      },
+      [](void* node, vulkan::Device& device, uint64_t frameNumber) -> size_t {
+          return (reinterpret_cast<GraphicsNode<Config>*>(node))->syncFrame(device, frameNumber);
       } });
 
     return *this;
