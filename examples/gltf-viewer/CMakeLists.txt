@@ -56,3 +56,5 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_ENABLE_EXPERIMENTAL)
 target_link_libraries(${PROJECT_NAME} glm)
 
 target_link_libraries(${PROJECT_NAME} SDL2)
+
+find_package(nlohmann_json REQUIRED)
