@@ -88,6 +88,10 @@ set(PUBLIC_HEADERS
     src/vulkan/frameBuffer.h
     src/vulkan/buffer.h
     src/vulkan/shaderModule.h
+    src/vulkan/descriptorSetKey.h
+    src/vulkan/descriptorSet.h
+    src/vulkan/descriptorType.h
+    src/vulkan/descriptorSetManager.h
     src/multithreading/lockFreeQueue.h
     src/multithreading/taskManager.h
     src/multithreading/task.h
@@ -165,6 +169,9 @@ set(SOURCES
     src/vulkan/buffer.cpp
     src/vulkan/frameBuffer.cpp
     src/vulkan/shaderModule.cpp
+    src/vulkan/descriptorSetKey.cpp
+    src/vulkan/descriptorSet.cpp
+    src/vulkan/descriptorSetManager.cpp
     src/multithreading/task.cpp
     src/multithreading/taskPool.cpp
     src/multithreading/render.cpp

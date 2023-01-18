@@ -218,13 +218,13 @@ auto Links::get(size_t index) -> Link&
     return const_cast<Link&>(std::as_const(*this).get(index));
 }
 
-Links::Links() :
-  links_{}
+Links::Links()
+  : links_{}
   , vkDevice_{ VK_NULL_HANDLE }
 {}
 
-Links::Links(Links&& links) noexcept :
-  links_(links.links_)
+Links::Links(Links&& links) noexcept
+  : links_(links.links_)
   , vkDevice_{ links.vkDevice_ }
 {
     links.vkDevice_ = VK_NULL_HANDLE;

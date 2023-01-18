@@ -88,9 +88,7 @@ void Workspace::render(vulkan::Device& device)
               // node::begin modifies frame buffer index and have to be in the render thread
               // to avoid data races
               auto beginFuture = multithreading::Worker::threadWorker().taskManager().submitRenderTask(
-                [&node, &device]() -> std::pair<VkSemaphore, size_t> {
-                    return node.begin(device);
-                });
+                [&node, &device]() -> std::pair<VkSemaphore, size_t> { return node.begin(device); });
               auto [renderTargetReadySemaphore, commandIndex] = beginFuture.get();
 
               if (renderTargetReadySemaphore != VK_NULL_HANDLE) { // to waiting for acquired image or frame buffer
