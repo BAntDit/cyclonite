@@ -105,7 +105,7 @@ WeakHandle<T>::SharedData::SharedData(SharedData const& sharedData) noexcept
   , handle_{ sharedData.handle_ }
 {
     if (controlBlock_ != nullptr)
-        controlBlock_->weakRefCount.fetch_add(std::memory_order_relaxed);
+        controlBlock_->weakRefCount.fetch_add(1, std::memory_order_relaxed);
 }
 
 template<typename T>
@@ -123,7 +123,7 @@ WeakHandle<T>::SharedData::SharedData(control_block_t* controlBlock, T handle) n
   , handle_{ handle }
 {
     if (controlBlock_ != nullptr) {
-        controlBlock_->weakRefCount.fetch_add(std::memory_order_relaxed);
+        controlBlock_->weakRefCount.fetch_add(1, std::memory_order_relaxed);
     }
 }
 
@@ -131,7 +131,7 @@ template<typename T>
 WeakHandle<T>::SharedData::~SharedData() noexcept
 {
     if (controlBlock_ != nullptr) {
-        if (controlBlock_->weakRefCount.fetch_sub(std::memory_order_acq_rel) == 1) {
+        if (controlBlock_->weakRefCount.fetch_sub(1, std::memory_order_acq_rel) == 1) {
             destroy();
         }
     }
@@ -145,11 +145,11 @@ auto WeakHandle<T>::SharedData::operator=(SharedData const& rhs) noexcept -> Sha
 
     if (tmp != controlBlock_) {
         if (tmp != nullptr) {
-            tmp->weakRefCount.fetch_add(std::memory_order_relaxed);
+            tmp->weakRefCount.fetch_add(1, std::memory_order_relaxed);
         }
 
         if (controlBlock_ != nullptr) {
-            if (controlBlock_->weakRefCount.fetch_sub(std::memory_order_acq_rel) == 1) {
+            if (controlBlock_->weakRefCount.fetch_sub(1, std::memory_order_acq_rel) == 1) {
                 destroy();
             }
         }
@@ -171,7 +171,7 @@ auto WeakHandle<T>::SharedData::operator=(SharedData&& rhs) noexcept -> SharedDa
     rhs.handle_ = VK_NULL_HANDLE;
 
     if (controlBlock_ != nullptr) {
-        if (controlBlock_->weakRefCount.fetch_sub(std::memory_order_acq_rel) == 1) {
+        if (controlBlock_->weakRefCount.fetch_sub(1, std::memory_order_acq_rel) == 1) {
             destroy();
         }
     }

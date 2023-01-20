@@ -24,11 +24,9 @@ public:
 
     explicit SharedHandle(void (*deleter)(T, VkAllocationCallbacks const*)) noexcept;
 
-    SharedHandle(SharedHandle<VkInstance> const& instance,
-                 void (*deleter)(VkInstance, T, VkAllocationCallbacks const*)) noexcept;
+    SharedHandle(VkInstance vkInstance, void (*deleter)(VkInstance, T, VkAllocationCallbacks const*)) noexcept;
 
-    SharedHandle(SharedHandle<VkDevice> const& device,
-                 void (*deleter)(VkDevice, T, VkAllocationCallbacks const*)) noexcept;
+    SharedHandle(VkDevice vkDevice, void (*deleter)(VkDevice, T, VkAllocationCallbacks const*)) noexcept;
 
     SharedHandle(SharedHandle const&) = default;
 
@@ -78,10 +76,9 @@ private:
 
         explicit SharedData(void (*deleter)(T, VkAllocationCallbacks const*)) noexcept;
 
-        SharedData(SharedHandle<VkInstance> const& instance,
-                   void (*deleter)(VkInstance, T, VkAllocationCallbacks const*)) noexcept;
+        SharedData(VkInstance vkInstance, void (*deleter)(VkInstance, T, VkAllocationCallbacks const*)) noexcept;
 
-        SharedData(SharedHandle<VkDevice> const& device, void (*deleter)(VkDevice, T, VkAllocationCallbacks const*));
+        SharedData(VkDevice vkDevice, void (*deleter)(VkDevice, T, VkAllocationCallbacks const*));
 
         SharedData(ControlBlock const* controlBlock, T handle) noexcept;
 
@@ -134,7 +131,7 @@ SharedHandle<T>::SharedData::SharedData(Deleter&& deleter, [[maybe_unused]] priv
 
 template<typename T>
 SharedHandle<T>::SharedData::SharedData() noexcept
-  : SharedData{ [](T, VkAllocationCallbacks const*) -> void {}, 0 }
+  : SharedData{ [](T, VkAllocationCallbacks const*) -> void {} }
 {}
 
 template<typename T>
@@ -143,20 +140,19 @@ SharedHandle<T>::SharedData::SharedData(void (*deleter)(T, VkAllocationCallbacks
 {}
 
 template<typename T>
-SharedHandle<T>::SharedData::SharedData(SharedHandle<VkInstance> const& instance,
+SharedHandle<T>::SharedData::SharedData(VkInstance vkInstance,
                                         void (*deleter)(VkInstance, T, VkAllocationCallbacks const*)) noexcept
-  : SharedData{ [deleter, instance](T handle, VkAllocationCallbacks const* vkAllocationCallbacks) -> void {
-                   deleter(static_cast<VkInstance>(instance), handle, vkAllocationCallbacks);
+  : SharedData{ [deleter, vkInstance](T handle, VkAllocationCallbacks const* vkAllocationCallbacks) -> void {
+                   deleter(vkInstance, handle, vkAllocationCallbacks);
                },
                 private_tag{} }
 {}
 
 template<typename T>
-SharedHandle<T>::SharedData::SharedData(SharedHandle<VkDevice> const& device,
-                                        void (*deleter)(VkDevice, T, VkAllocationCallbacks const*))
+SharedHandle<T>::SharedData::SharedData(VkDevice vkDevice, void (*deleter)(VkDevice, T, VkAllocationCallbacks const*))
   : SharedData(
-      [deleter, device](T handle, VkAllocationCallbacks const* vkAllocationCallbacks) -> void {
-          deleter(static_cast<VkDevice>(device), handle, vkAllocationCallbacks);
+      [deleter, vkDevice](T handle, VkAllocationCallbacks const* vkAllocationCallbacks) -> void {
+          deleter(vkDevice, handle, vkAllocationCallbacks);
       },
       private_tag{})
 {}
@@ -167,7 +163,7 @@ SharedHandle<T>::SharedData::SharedData(ControlBlock const* controlBlock, T hand
   , handle_{ handle }
 {
     if (controlBlock_ != nullptr)
-        controlBlock_->refCount.fetch_add(std::memory_order_relaxed);
+        controlBlock_->refCount.fetch_add(1, std::memory_order_relaxed);
 }
 
 template<typename T>
@@ -176,7 +172,7 @@ SharedHandle<T>::SharedData::SharedData(SharedData const& rhs) noexcept
   , handle_{ rhs.handle_ }
 {
     if (controlBlock_ != nullptr)
-        controlBlock_->refCount.fetch_add(std::memory_order_relaxed);
+        controlBlock_->refCount.fetch_add(1, std::memory_order_relaxed);
 }
 
 template<typename T>
@@ -192,10 +188,10 @@ template<typename T>
 SharedHandle<T>::SharedData::~SharedData() noexcept
 {
     if (controlBlock_ != nullptr) {
-        if (controlBlock_->refCount.fetch_sub(std::memory_order_acq_rel) == 1) {
+        if (controlBlock_->refCount.fetch_sub(1, std::memory_order_acq_rel) == 1) {
             reset();
 
-            if (controlBlock_->weakRefCount.fetch_sub(std::memory_order_acq_rel) == 1) {
+            if (controlBlock_->weakRefCount.fetch_sub(1, std::memory_order_acq_rel) == 1) {
                 destroy();
             }
         }
@@ -209,13 +205,13 @@ auto SharedHandle<T>::SharedData::operator=(SharedData const& rhs) noexcept -> S
 
     if (tmp != controlBlock_) {
         if (tmp != nullptr) {
-            tmp->refCount.fetch_add(std::memory_order_relaxed);
+            tmp->refCount.fetch_add(1, std::memory_order_relaxed);
         }
         if (controlBlock_ != nullptr) {
-            if (controlBlock_->refCount.fetch_sub(std::memory_order_acq_rel) == 1) {
+            if (controlBlock_->refCount.fetch_sub(1, std::memory_order_acq_rel) == 1) {
                 reset();
 
-                if (controlBlock_->weakRefCount.fetch_sub(std::memory_order_acq_rel) == 1) {
+                if (controlBlock_->weakRefCount.fetch_sub(1, std::memory_order_acq_rel) == 1) {
                     destroy();
                 }
             }
@@ -238,10 +234,10 @@ auto SharedHandle<T>::SharedData::operator=(SharedData&& rhs) noexcept -> Shared
     rhs.handle_ = VK_NULL_HANDLE;
 
     if (controlBlock_ != nullptr) {
-        if (controlBlock_->refCount.fetch_sub(std::memory_order_acq_rel) == 1) {
+        if (controlBlock_->refCount.fetch_sub(1, std::memory_order_acq_rel) == 1) {
             reset();
 
-            if (controlBlock_->weakRefCount.fetch_sub(std::memory_order_acq_rel) == 1) {
+            if (controlBlock_->weakRefCount.fetch_sub(1, std::memory_order_acq_rel) == 1) {
                 destroy();
             }
         }
@@ -301,15 +297,14 @@ SharedHandle<T>::SharedHandle(void (*deleter)(T, VkAllocationCallbacks const*)) 
 {}
 
 template<typename T>
-SharedHandle<T>::SharedHandle(SharedHandle<VkInstance> const& instance,
+SharedHandle<T>::SharedHandle(VkInstance vkInstance,
                               void (*deleter)(VkInstance, T, VkAllocationCallbacks const*)) noexcept
-  : sharedData_{ instance, deleter }
+  : sharedData_{ vkInstance, deleter }
 {}
 
 template<typename T>
-SharedHandle<T>::SharedHandle(SharedHandle<VkDevice> const& device,
-                              void (*deleter)(VkDevice, T, VkAllocationCallbacks const*)) noexcept
-  : sharedData_{ device, deleter }
+SharedHandle<T>::SharedHandle(VkDevice vkDevice, void (*deleter)(VkDevice, T, VkAllocationCallbacks const*)) noexcept
+  : sharedData_{ vkDevice, deleter }
 {}
 
 template<typename T>
