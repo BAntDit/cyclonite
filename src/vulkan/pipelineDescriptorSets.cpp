@@ -80,7 +80,8 @@ auto PipelineDescriptorSets::makeExpired()
 PipelineDescriptorSets::~PipelineDescriptorSets()
 {
     if (manager_ != nullptr) {
-        // TODO:: manager_->freeDescriptorSet(pool_);
+        manager_->freeDescriptorSet(*this);
+        manager_ = nullptr;
     }
 }
 }
