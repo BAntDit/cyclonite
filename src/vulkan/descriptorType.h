@@ -5,6 +5,9 @@
 #ifndef CYCLONITE_DESCRIPTORTYPE_H
 #define CYCLONITE_DESCRIPTORTYPE_H
 
+#include <cassert>
+#include <vulkan/vulkan.h>
+
 namespace cyclonite::vulkan {
 enum class DescriptorType
 {

@@ -20,8 +20,8 @@ class ExpirationBitsWrapper
 
 public:
     template<size_t bitCount>
-    explicit ExpirationBitsWrapper(std::bitset<bitCount> const& bits) noexcept requires(sizeof(std::bitset<bitCount>) <=
-                                                                                        sizeof(bits_storage_t))
+    explicit ExpirationBitsWrapper(std::bitset<bitCount> const& bits) noexcept
+      requires(sizeof(std::bitset<bitCount>) <= sizeof(bits_storage_t))
       : isExpiredFunc_{ [](void const* b, size_t i) -> bool {
           assert(i < bitCount);
           return reinterpret_cast<std::bitset<bitCount> const*>(b)->test(i);

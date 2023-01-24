@@ -5,9 +5,9 @@
 #ifndef CYCLONITE_DESCRIPTORSETKEY_H
 #define CYCLONITE_DESCRIPTORSETKEY_H
 
+#include "descriptorType.h"
 #include <array>
 #include <cstdint>
-#include "descriptorType.h"
 
 namespace cyclonite::vulkan {
 // bytes:

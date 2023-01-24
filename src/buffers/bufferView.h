@@ -53,7 +53,7 @@ public:
 
         auto operator*() const -> DataType const&;
 
-        auto operator-> () const -> DataType*;
+        auto operator->() const -> DataType*;
 
         auto ptr() const -> DataType*;
 
@@ -166,7 +166,7 @@ auto BufferView<DataType>::Iterator::operator-(Iterator const& rhs) -> differenc
 }
 
 template<typename DataType>
-auto BufferView<DataType>::Iterator::operator-> () const -> DataType*
+auto BufferView<DataType>::Iterator::operator->() const -> DataType*
 {
     void* p = reinterpret_cast<std::byte*>(view_->ptr_) + view_->stride_ * index_;
     return reinterpret_cast<DataType*>(p);

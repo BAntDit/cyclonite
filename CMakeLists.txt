@@ -67,6 +67,7 @@ set(PUBLIC_HEADERS
     src/frameBufferRenderTarget.h
     src/sdl/sdlSupport.h
     src/sdl/sdlWindow.h
+    src/vulkan/concepts.h
     src/vulkan/handle.h
     src/vulkan/sharedHandle.h
     src/vulkan/weakHandle.h
@@ -89,7 +90,7 @@ set(PUBLIC_HEADERS
     src/vulkan/buffer.h
     src/vulkan/shaderModule.h
     src/vulkan/descriptorSetKey.h
-    src/vulkan/descriptorSet.h
+    src/vulkan/pipelineDescriptorSets.h
     src/vulkan/descriptorType.h
     src/vulkan/descriptorSetManager.h
     src/multithreading/lockFreeQueue.h
@@ -107,6 +108,7 @@ set(PRIVATE_HEADERS
     src/vulkan/internal/fillBufferCreationInfo.h
     src/vulkan/internal/fillImageCreationInfo.h
     src/vulkan/internal/imageHelpers.h
+    src/vulkan/internal/descriptorSetHelpers.h
     src/animations/internal/interpolation.h
     src/multithreading/internal/utils.h
 )
@@ -170,7 +172,7 @@ set(SOURCES
     src/vulkan/frameBuffer.cpp
     src/vulkan/shaderModule.cpp
     src/vulkan/descriptorSetKey.cpp
-    src/vulkan/descriptorSet.cpp
+    src/vulkan/pipelineDescriptorSets.cpp
     src/vulkan/descriptorSetManager.cpp
     src/multithreading/task.cpp
     src/multithreading/taskPool.cpp

@@ -73,7 +73,7 @@ void Workspace::render(vulkan::Device& device)
         // it's going to be not trivial thing to execute gfx node in the parallel
         // but let's try
         auto future = std::shared_future<void>{ multithreading::Worker::threadWorker().submitTask(
-          [& graphicsNodes = graphicsNodes_,                   // read only
+          [&graphicsNodes = graphicsNodes_,                    // read only
              & idToGraphicsNodeIndex = idToGraphicsNodeIndex_, // read only
            frameNumber = frameNumber_,                         // read only
            node = node,                                        // just copy interface
@@ -175,7 +175,7 @@ void Workspace::render(vulkan::Device& device)
 
 auto Workspace::syncFrame(vulkan::Device& device) -> VkFence
 {
-    auto frameSyncTask = [& fences = frameFences_,
+    auto frameSyncTask = [&fences = frameFences_,
                           &nodes = graphicsNodes_,
                           nodeCount = graphicsNodeCount_,
                           frameNumber = frameNumber_,

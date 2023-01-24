@@ -255,7 +255,7 @@ void ResourceManager::registerResources(ResourceRegInfoSpecialization auto&&... 
 {
     assert(resources_.empty());
 
-    auto initialResCount = []<typename R, size_t N, size_t M>(resource_reg_info_t<R, N, M>)->size_t { return N; };
+    auto initialResCount = []<typename R, size_t N, size_t M>(resource_reg_info_t<R, N, M>) -> size_t { return N; };
     auto expectedResourceCount = (... + initialResCount(regInfo));
 
     resources_.reserve(expectedResourceCount);
@@ -264,7 +264,7 @@ void ResourceManager::registerResources(ResourceRegInfoSpecialization auto&&... 
     storages_.reserve(sizeof...(regInfo));
     freeItems_.reserve(sizeof...(regInfo));
 
-    auto counter = []<typename R, size_t N, size_t M>(resource_reg_info_t<R, N, M>)->uint16_t { return M > 0; };
+    auto counter = []<typename R, size_t N, size_t M>(resource_reg_info_t<R, N, M>) -> uint16_t { return M > 0; };
     auto bufferCount = (... + counter(regInfo));
 
     buffers_.reserve(bufferCount);

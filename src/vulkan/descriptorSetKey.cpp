@@ -86,7 +86,6 @@ auto DescriptorPoolKey::operator=(std::array<uint64_t, 2> key) -> DescriptorPool
 
 auto DescriptorPoolKey::get(DescriptorType descriptorType) const -> uint32_t
 {
-    return static_cast<uint32_t>(
-      *(reinterpret_cast<std::byte const*>(key_.data()) + value_cast(descriptorType)));
+    return static_cast<uint32_t>(*(reinterpret_cast<std::byte const*>(key_.data()) + value_cast(descriptorType)));
 }
 }

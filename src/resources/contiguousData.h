@@ -51,7 +51,7 @@ public:
 
         auto operator*() const -> DataType const&;
 
-        auto operator-> () const -> pointer;
+        auto operator->() const -> pointer;
 
         [[nodiscard]] auto ptr() const -> pointer;
 
@@ -219,7 +219,7 @@ auto ContiguousData<DataType>::Iterator::operator*() const -> DataType const&
 }
 
 template<typename DataType>
-auto ContiguousData<DataType>::Iterator::operator-> () const -> DataType*
+auto ContiguousData<DataType>::Iterator::operator->() const -> DataType*
 {
     return data_ + index_;
 }

@@ -121,7 +121,7 @@ auto CommandPool::releaseCommandBuffers(BufferSet<CommandPool, Container>& comma
   std::is_same_v<std::decay_t<BufferSet<CommandPool, Container>>, CommandBufferSet<CommandPool, Container>>,
   void>
 {
-    auto releaseCommandsTask = [& commandPools = this->commandPools_,
+    auto releaseCommandsTask = [&commandPools = this->commandPools_,
                                 queueFamilyIndex = commandBufferSet.queueFamilyIndex(),
                                 flags = commandBufferSet.flags(),
                                 &src = commandBufferSet.commandBuffers_]() -> void {

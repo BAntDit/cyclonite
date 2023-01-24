@@ -78,8 +78,8 @@ LockFreeSPMCQueue<T>::CircularArray::CircularArray(size_t capacity)
 }
 
 template<typename T>
-void LockFreeSPMCQueue<T>::CircularArray::store(size_t index,
-                                                T&& t) noexcept requires std::is_nothrow_move_assignable_v<T>
+void LockFreeSPMCQueue<T>::CircularArray::store(size_t index, T&& t) noexcept
+  requires std::is_nothrow_move_assignable_v<T>
 {
     data_[static_cast<int64_t>(index) & mask_] = std::move(t);
 }
