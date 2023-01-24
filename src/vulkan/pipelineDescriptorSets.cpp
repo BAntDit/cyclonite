@@ -67,12 +67,12 @@ auto PipelineDescriptorSets::needsRewrite(size_t setIndex) const -> bool
     return needsRewriteFlags_.test(setIndex);
 }
 
-auto PipelineDescriptorSets::makeExpired(size_t setIndex)
+void PipelineDescriptorSets::makeExpired(size_t setIndex)
 {
     needsRewriteFlags_.reset(setIndex);
 }
 
-auto PipelineDescriptorSets::makeExpired()
+void PipelineDescriptorSets::makeExpired()
 {
     needsRewriteFlags_.reset();
 }

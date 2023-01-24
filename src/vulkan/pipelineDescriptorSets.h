@@ -43,9 +43,9 @@ public:
 
     [[nodiscard]] auto needsRewrite(size_t setIndex) const -> bool;
 
-    auto makeExpired(size_t setIndex);
+    void makeExpired(size_t setIndex);
 
-    auto makeExpired();
+    void makeExpired();
 
     ~PipelineDescriptorSets();
 
