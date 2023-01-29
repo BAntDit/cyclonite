@@ -5,6 +5,7 @@ project(cyclonite VERSION 0.4.0.0)
 option(ENABLE_SIMD_AVX2 "enable SIMD AVX2" OFF)
 option(ENABLE_SIMD_AVX "enable SIMD AVX" OFF)
 option(DISABLE_SIMD "force disable SIMD" OFF)
+option(ENABLE_SPIR_V_REFLECTION "SPIR-V reflection" ON)
 
 set(PUBLIC_HEADERS
     src/config.h
@@ -68,6 +69,7 @@ set(PUBLIC_HEADERS
     src/sdl/sdlSupport.h
     src/sdl/sdlWindow.h
     src/vulkan/concepts.h
+    src/vulkan/config.h
     src/vulkan/handle.h
     src/vulkan/sharedHandle.h
     src/vulkan/weakHandle.h
@@ -260,6 +262,11 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     endif()
 endif()
 
+if (ENABLE_SPIR_V_REFLECTION)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC ENABLE_SHADER_MODULE_FROM_SPIR_V)
+    message("-- enable SPIR-v reflection")
+endif()
+
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     PROJECT_NAME="${PROJECT_NAME}"
     VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
@@ -304,6 +311,11 @@ target_link_libraries(${PROJECT_NAME}
 
 find_package(Vulkan REQUIRED)
 target_link_libraries(${PROJECT_NAME} Vulkan::Vulkan)
+
+if (ENABLE_SPIR_V_REFLECTION)
+    find_package(spirv_cross_core REQUIRED)
+    target_link_libraries(${PROJECT_NAME} spirv-cross-core)
+endif()
 
 set(ALL_SOURCES_FOR_STYLE_CORRECTION ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
 file(GLOB_RECURSE ALL_EXAMPLES_SOURCES_FOR_STYLE_CORRECTION RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "examples/*.cpp")

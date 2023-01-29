@@ -5,6 +5,7 @@
 #ifndef CYCLONITE_PIPELINE_DESCRIPTORSETS_H
 #define CYCLONITE_PIPELINE_DESCRIPTORSETS_H
 
+#include "config.h"
 #include "descriptorSetKey.h"
 #include "sharedHandle.h"
 #include <bitset>
@@ -20,9 +21,6 @@ private:
     PipelineDescriptorSets() = default;
 
 public:
-    // must be an assertion in case value bigger than maxBoundDescriptorSets limitation
-    inline static constexpr auto maxDescriptorSetsPerPipeline = size_t{ 16 };
-
     PipelineDescriptorSets(PipelineDescriptorSets const&) = delete;
 
     PipelineDescriptorSets(PipelineDescriptorSets&& pipelineDescriptorSets) noexcept;

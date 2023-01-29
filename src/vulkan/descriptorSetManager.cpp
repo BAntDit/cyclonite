@@ -107,7 +107,7 @@ auto DescriptorSetManager::_allocDescriptorSet(DescriptorPoolKey poolKey,
                                                uint32_t count,
                                                uint32_t newPoolCapacity) -> PipelineDescriptorSets
 {
-    assert(count <= PipelineDescriptorSets::maxDescriptorSetsPerPipeline);
+    assert(count <= maxDescriptorSetsPerPipeline);
 
     auto&& allocTask = [this, poolKey, count, layouts, newPoolCapacity]() -> PipelineDescriptorSets {
         auto descriptorSets = PipelineDescriptorSets{};
