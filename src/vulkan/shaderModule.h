@@ -41,27 +41,17 @@ public:
                  ShaderStage stage,
                  std::string_view entryPointName = "");
 
-    /*ShaderModule(Device const& device,
-                 std::vector<uint32_t> const& code,
-                 VkShaderStageFlags stageFlags,
-                 std::string const& entryPointName = "main",
-                 uint32_t constantOffset = 0,
-                 uint32_t constantSize = 0);
+    [[nodiscard]] auto handle() const -> VkShaderModule { return static_cast<VkShaderModule>(vkShaderModule_); }
 
-    [[nodiscard]] auto constantSize() const -> uint32_t { return constantSize_; }
-
-    [[nodiscard]] auto constantOffset() const -> uint32_t { return constantOffset_; }
+    [[nodiscard]] auto entryPointName() const -> std::string_view { return entryPointName_; }
 
     [[nodiscard]] auto stageFlags() const -> VkShaderStageFlags { return stageFlags_; }
 
-    [[nodiscard]] auto handle() const -> VkShaderModule { return static_cast<VkShaderModule>(vkShaderModule_); }
+    [[nodiscard]] auto getDescriptorSetLayoutCount() const -> uint32_t { return descriptorSetLayoutCount_; }
 
-    [[nodiscard]] auto descriptorSetLayout() const -> VkDescriptorSetLayout
-    {
-        return static_cast<VkDescriptorSetLayout>(vkDescriptorSetLayout_);
-    }
+    template<VkDescriptorSetLayoutContainer Container>
+    [[nodiscard]] auto getDescriptorSetLayouts(Container&& container) const -> Container;
 
-    [[nodiscard]] auto entryPointName() const -> std::string const& { return entryPointName_; }*/
 private:
     void parseSpirV([[maybe_unused]] Device const& device,
                     [[maybe_unused]] std::vector<uint32_t> const& spirVCode,
@@ -81,6 +71,18 @@ public:
     static auto type_tag_const() -> ResourceTag const& { return ShaderModule::tag; }
     static auto type_tag() -> ResourceTag& { return ShaderModule::tag; }
 };
+
+template<VkDescriptorSetLayoutContainer Container>
+auto ShaderModule::getDescriptorSetLayouts(Container&& container) const -> Container
+{
+    assert(container.size() >= descriptorSetLayoutCount_);
+
+    for (auto i = uint32_t{ 0 }, count = descriptorSetLayoutCount_; i < count; i++) {
+        container[i] = static_cast<VkDescriptorSetLayout>(descriptorSetLayouts_[i]);
+    }
+
+    return container;
+}
 }
 
 #endif // CYCLONITE_SHADERMODULE_H
