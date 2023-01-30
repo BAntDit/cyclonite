@@ -49,6 +49,58 @@ auto getVulkanShaderStage(spv::ExecutionModel em) -> VkShaderStageFlags
     return flags;
 }
 
+auto getSpirVShaderExecutionModel(ShaderStage stage) -> spv::ExecutionModel
+{
+    spv::ExecutionModel result = spv::ExecutionModelMax;
+
+    switch(stage) {
+        case ShaderStage::VERTEX_STAGE:
+            result = spv::ExecutionModelVertex;
+            break;
+        case ShaderStage::FRAGMENT_STAGE:
+            result = spv::ExecutionModelFragment;
+            break;
+        case ShaderStage::TESSELATION_CONTROL_STAGE:
+            result = spv::ExecutionModelTessellationControl;
+            break;
+        case ShaderStage::TESSELATION_EVALUATION_STAGE:
+            result = spv::ExecutionModelTessellationEvaluation;
+            break;
+        case ShaderStage::GEOMETRY_STAGE:
+            result = spv::ExecutionModelGeometry;
+            break;
+        case ShaderStage::COMPUTE_STAGE:
+            result = spv::ExecutionModelGLCompute;
+            break;
+        case ShaderStage::MESHLETS_PIPELINE_TASK_STAGE:
+            result = spv::ExecutionModelTaskEXT;
+            break;
+        case ShaderStage::MESHLETS_PIPELINE_MESH_STAGE:
+            result = spv::ExecutionModelMeshEXT;
+            break;
+        case ShaderStage::RAY_TRACING_RAY_GENERATION_STAGE:
+            result = spv::ExecutionModelRayGenerationKHR;
+            break;
+        case ShaderStage::RAY_TRACING_ANY_HIT_STAGE:
+            result = spv::ExecutionModelAnyHitKHR;
+            break;
+        case ShaderStage::RAY_TRACING_CLOSEST_HIT_STAGE:
+            result = spv::ExecutionModelClosestHitKHR;
+            break;
+        case ShaderStage::RAY_TRACING_INTERSECTION_STAGE:
+            result = spv::ExecutionModelIntersectionKHR;
+            break;
+        case ShaderStage::RAY_TRACING_MISS_STAGE:
+            result = spv::ExecutionModelMissKHR;
+            break;
+        default:
+            assert(false);
+    }
+
+    assert(result != spv::ExecutionModelMax);
+    return result;
+}
+
 auto getResourcesByDescriptorType(spirv_cross::ShaderResources const& resources, DescriptorType descriptorType)
   -> spirv_cross::SmallVector<spirv_cross::Resource> const&
 {
