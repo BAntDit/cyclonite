@@ -29,7 +29,8 @@ enum class ShaderStage
     RAY_TRACING_MISS_STAGE = 12,
     MIN_VALUE = VERTEX_STAGE,
     MAX_VALUE = RAY_TRACING_MISS_STAGE,
-    COUNT = MAX_VALUE + 1
+    COUNT = MAX_VALUE + 1,
+    UNDEFINED = COUNT
 };
 
 class ShaderModule : public resources::Resource
@@ -56,6 +57,7 @@ public:
 private:
     void parseSpirV([[maybe_unused]] Device const& device,
                     [[maybe_unused]] std::vector<uint32_t> const& spirVCode,
+                    [[maybe_unused]] ShaderStage stage,
                     [[maybe_unused]] std::string_view entryPointName);
 
 private:

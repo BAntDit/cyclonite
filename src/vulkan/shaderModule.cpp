@@ -53,7 +53,7 @@ auto getSpirVShaderExecutionModel(ShaderStage stage) -> spv::ExecutionModel
 {
     spv::ExecutionModel result = spv::ExecutionModelMax;
 
-    switch(stage) {
+    switch (stage) {
         case ShaderStage::VERTEX_STAGE:
             result = spv::ExecutionModelVertex;
             break;
@@ -193,7 +193,8 @@ resources::Resource::ResourceTag ShaderModule::tag{};
 
 ShaderModule::ShaderModule(Device const& device,
                            std::vector<uint32_t> const& spirVCode,
-                           std::string_view entryPointName)
+                           ShaderStage stage,
+                           std::string_view entryPointName /* = ""*/)
   : resources::Resource{}
   , entryPointName_{}
   , stageFlags_{ VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM }
@@ -201,7 +202,7 @@ ShaderModule::ShaderModule(Device const& device,
   , descriptorSetLayouts_{}
   , descriptorSetLayoutCount_{ 0 }
 {
-    parseSpirV(device, spirVCode, entryPointName);
+    parseSpirV(device, spirVCode, stage, entryPointName);
 
     auto shaderModuleCreateInfo = VkShaderModuleCreateInfo{};
     shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -215,21 +216,14 @@ ShaderModule::ShaderModule(Device const& device,
 }
 
 ShaderModule::ShaderModule(Device const& device,
-             std::vector<uint32_t> const& spirVCode,
-             ShaderStage stage,
-             std::string_view entryPointName/* = ""*/)
-  : resources::Resource{}
-  , entryPointName_{}
-  , stageFlags_{ VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM }
-  , vkShaderModule_{ device.handle(), vkDestroyShaderModule }
-  , descriptorSetLayouts_{}
-  , descriptorSetLayoutCount_{ 0 }
-{
-    // TODO::
-}
+                           std::vector<uint32_t> const& spirVCode,
+                           std::string_view entryPointName)
+  : ShaderModule(device, spirVCode, ShaderStage::UNDEFINED, entryPointName)
+{}
 
 void ShaderModule::parseSpirV([[maybe_unused]] Device const& device,
                               [[maybe_unused]] std::vector<uint32_t> const& spirVCode,
+                              [[maybe_unused]] ShaderStage stage,
                               [[maybe_unused]] std::string_view entryPointName)
 {
 #ifdef ENABLE_SHADER_MODULE_FROM_SPIR_V
@@ -237,15 +231,36 @@ void ShaderModule::parseSpirV([[maybe_unused]] Device const& device,
 
     auto&& entries = compiler.get_entry_points_and_stages();
 
-    for (auto&& ep : entries) {
-        if (ep.name == entryPointName) {
-            entryPointName_ = ep.name;
-            stageFlags_ = getVulkanShaderStage(ep.execution_model);
+    {
+        auto executionModel = spv::ExecutionModelMax;
+        auto epName = std::string_view{};
 
-            compiler.set_entry_point(ep.name, ep.execution_model);
+        if (stage != ShaderStage::UNDEFINED) {
+            executionModel = getSpirVShaderExecutionModel(stage);
 
-            break;
+            for (auto&& ep : entries) {
+                if (ep.execution_model == executionModel && (entryPointName.empty() || ep.name == entryPointName)) {
+                    epName = ep.name;
+                    break;
+                }
+            }
+        } else if (!entryPointName.empty()) {
+            epName = entryPointName;
+
+            for (auto&& ep : entries) {
+                if (ep.name == entryPointName) {
+                    executionModel = ep.execution_model;
+                    break;
+                }
+            }
         }
+
+        assert(epName.empty());
+        assert(executionModel != spv::ExecutionModelMax);
+
+        entryPointName_ = epName;
+        stageFlags_ = getVulkanShaderStage(executionModel);
+        compiler.set_entry_point(entryPointName_, executionModel);
     }
 
     assert(stageFlags_ != VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM);
