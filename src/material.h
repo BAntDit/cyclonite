@@ -97,6 +97,16 @@ public:
         COUNT = 5
     };
 
+public:
+    [[nodiscard]] auto instance_tag() const -> ResourceTag const& override { return tag; }
+
+private:
+    static ResourceTag tag;
+
+public:
+    static auto type_tag_const() -> ResourceTag const& { return Material::tag; }
+    static auto type_tag() -> ResourceTag& { return Material::tag; }
+
 private:
     std::string name_;
 

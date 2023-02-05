@@ -124,6 +124,7 @@ set(SOURCES
     src/root.cpp
     src/surface.cpp
     src/baseRenderTarget.cpp
+    src/material.cpp
     src/frameBufferRenderTarget.cpp
     src/surfaceRenderTarget.cpp
     src/animations/animation.cpp
