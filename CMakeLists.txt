@@ -21,6 +21,7 @@ set(PUBLIC_HEADERS
     src/surface.h
     src/error.h
     src/typedefs.h
+    src/material.h
     src/compositor/nodeAsset.h
     src/animations/animation.h
     src/animations/sampler.h

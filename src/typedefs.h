@@ -7,12 +7,29 @@
 
 #include <boost/cstdfloat.hpp>
 #include <cstdint>
+#include <easy-mp/enum.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/transform.hpp>
 
 namespace cyclonite {
+enum class RenderTargetOutputSemantic : size_t
+{
+    UNDEFINED = 0,
+    DEFAULT = 1,
+    VIEW_SPACE_NORMALS = 2,
+    ALBEDO = 3,
+    LINEAR_HDR_COLOR = 4,
+    FINAL_SRGB_COLOR = 6,
+    MIN_VALUE = UNDEFINED,
+    MAX_VALUE = FINAL_SRGB_COLOR,
+    COUNT = MAX_VALUE + 1,
+    INVALID = COUNT
+};
+
+inline constexpr auto render_target_output_semantic_count_v = easy_mp::value_cast(RenderTargetOutputSemantic::COUNT);
+
 enum class InterpolationType : uint8_t
 {
     STEP = 0,

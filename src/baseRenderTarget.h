@@ -8,20 +8,6 @@
 #include "vulkan/frameBuffer.h"
 
 namespace cyclonite {
-enum class RenderTargetOutputSemantic : size_t
-{
-    UNDEFINED = 0,
-    DEFAULT = 1,
-    VIEW_SPACE_NORMALS = 2,
-    ALBEDO = 3,
-    LINEAR_HDR_COLOR = 4,
-    FINAL_SRGB_COLOR = 6,
-    MIN_VALUE = UNDEFINED,
-    MAX_VALUE = FINAL_SRGB_COLOR,
-    COUNT = MAX_VALUE + 1,
-    INVALID = COUNT
-};
-
 class BaseRenderTarget
 {
 public:
