@@ -13,6 +13,7 @@
 
 namespace cyclonite::compositor {
 extern void createPass(vulkan::Device& device,
+                       resources::ResourceManager& resourceManager,
                        uint32_t subPassIndex,
                        bool depthStencilRequired,
                        VkRenderPass renderPass,
@@ -22,10 +23,10 @@ extern void createPass(vulkan::Device& device,
                        uint32_t attachmentCount,
                        PassType inPassType,
                        PassType& outPassType,
-                       std::unique_ptr<vulkan::ShaderModule>& vertexSceneShader,
-                       std::unique_ptr<vulkan::ShaderModule>& fragmentSceneShader,
-                       std::unique_ptr<vulkan::ShaderModule>& vertexScreenShader,
-                       std::unique_ptr<vulkan::ShaderModule>& fragmentScreenShader,
+                       resources::Resource::Id& vertexSceneShader,
+                       resources::Resource::Id& fragmentSceneShader,
+                       resources::Resource::Id& vertexScreenShader,
+                       resources::Resource::Id& fragmentScreenShader,
                        vulkan::Handle<VkDescriptorPool>& outDescriptorPool,
                        vulkan::Handle<VkDescriptorSetLayout>& outDescriptorSetLayout,
                        vulkan::Handle<VkPipelineLayout>& outPipelineLayout,
@@ -95,10 +96,11 @@ private:
     system_manager_t systems_;
 
     // dummy, tmp solution:
-    std::unique_ptr<vulkan::ShaderModule> vertexSceneShader_;
-    std::unique_ptr<vulkan::ShaderModule> fragmentSceneShader_;
-    std::unique_ptr<vulkan::ShaderModule> vertexScreenShader_;
-    std::unique_ptr<vulkan::ShaderModule> fragmentScreenShader_;
+    // technique
+    resources::Resource::Id vertexSceneShader_;
+    resources::Resource::Id fragmentSceneShader_;
+    resources::Resource::Id vertexScreenShader_;
+    resources::Resource::Id fragmentScreenShader_;
 
     std::array<PassType, config_traits::pass_count_v<Config>> passTypes_;
 
@@ -120,6 +122,10 @@ GraphicsNode<Config>::GraphicsNode(resources::ResourceManager& resourceManager,
   , nodeDstStageMasks_{}
   , nodeWaitSemaphores_{}
   , systems_{}
+  , vertexSceneShader_{}
+  , fragmentSceneShader_{}
+  , vertexScreenShader_{}
+  , fragmentScreenShader_{}
   , passTypes_{}
   , passDescriptorPool_{}
   , passDescriptorSetLayout_{}
@@ -277,6 +283,7 @@ void GraphicsNode<Config>::_createPass(uint32_t subPassIndex,
     auto viewport = std::array<uint32_t, 4>{ 0, 0, width, height };
 
     createPass(device,
+               resourceManager(),
                subPassIndex,
                depthStencilRequired,
                static_cast<VkRenderPass>(vkRenderPass_),

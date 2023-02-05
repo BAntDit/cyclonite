@@ -43,6 +43,8 @@ public:
                  ShaderStage stage,
                  std::string_view entryPointName = "");
 
+    [[nodiscard]] auto instance_tag() const -> ResourceTag const& override { return tag; }
+
     [[nodiscard]] auto handle() const -> VkShaderModule { return static_cast<VkShaderModule>(vkShaderModule_); }
 
     [[nodiscard]] auto entryPointName() const -> std::string_view { return entryPointName_; }

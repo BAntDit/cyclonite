@@ -34,7 +34,7 @@ void Model::init(cyclonite::Root& root,
             bufferCount,
             sceneCount] = gltf::Reader::resourceCount(path);
 
-    // move expected count as non constexpr argument (reg info field)
+    // TODO:: move expected count as non constexpr argument (reg info field)
     constexpr auto expectedStagingCount = uint32_t{ 4 };
     constexpr auto expectedBufferCount = size_t{ 1 };
     constexpr auto expectedGeometryCount = size_t{ 32 };
@@ -44,6 +44,8 @@ void Model::init(cyclonite::Root& root,
     constexpr auto initialSamplersCount = size_t{ 1024 };
     constexpr auto initialBufferMemory = size_t{ 64 * 1024 * 1024 };
     constexpr auto initialStagingMemory = size_t{ 64 * 1024 * 1024 };
+
+    constexpr auto initialShaderCount = size_t{ 4 };
 
     root.resourceManager().registerResources(
       cyclonite::resources::resource_reg_info_t<cyclonite::compositor::NodeAsset<main_component_config_t>, 1, 0>{},
@@ -60,7 +62,8 @@ void Model::init(cyclonite::Root& root,
                                                 expectedAnimationCount,
                                                 initialInterpolationTaskCount *
                                                   sizeof(cyclonite::animations::AnimationInterpolationTaskArray)>{},
-      cyclonite::resources::resource_reg_info_t<cyclonite::animations::Animation, expectedAnimationCount, 0>{});
+      cyclonite::resources::resource_reg_info_t<cyclonite::animations::Animation, expectedAnimationCount, 0>{},
+      cyclonite::resources::resource_reg_info_t<cyclonite::vulkan::ShaderModule, initialShaderCount, 0>{});
 
     // init systems::
     auto&& animationNode = workspace_->get("animation-node").as(node_type_register_t::node_key_t<MainNodeConfig>{});

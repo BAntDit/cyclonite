@@ -7,6 +7,7 @@
 
 namespace cyclonite::compositor {
 void createPass(vulkan::Device& device,
+                resources::ResourceManager& resourceManager,
                 uint32_t subPassIndex,
                 bool depthStencilRequired,
                 VkRenderPass renderPass,
@@ -16,10 +17,10 @@ void createPass(vulkan::Device& device,
                 uint32_t attachmentCount,
                 PassType inPassType,
                 PassType& outPassType,
-                std::unique_ptr<vulkan::ShaderModule>& vertexSceneShader,
-                std::unique_ptr<vulkan::ShaderModule>& fragmentSceneShader,
-                std::unique_ptr<vulkan::ShaderModule>& vertexScreenShader,
-                std::unique_ptr<vulkan::ShaderModule>& fragmentScreenShader,
+                resources::Resource::Id& vertexSceneShader,
+                resources::Resource::Id& fragmentSceneShader,
+                resources::Resource::Id& vertexScreenShader,
+                resources::Resource::Id& fragmentScreenShader,
                 vulkan::Handle<VkDescriptorPool>& outDescriptorPool,
                 vulkan::Handle<VkDescriptorSetLayout>& outDescriptorSetLayout,
                 vulkan::Handle<VkPipelineLayout>& outPipelineLayout,
@@ -80,43 +81,49 @@ void createPass(vulkan::Device& device,
     // DUMMY PIPELINE, just for now
     {
         if (inPassType == PassType::SCENE) {
-            if (!vertexSceneShader)
-                vertexSceneShader = std::make_unique<vulkan::ShaderModule>(
+            if (!resourceManager.isValid(vertexSceneShader))
+                vertexSceneShader = resourceManager.template create<vulkan::ShaderModule>(
                   device,
                   shaders::getShader(shaders::ShaderType::DEFAULT_VERTEX_TRANSFORM_SHADER),
-                  VK_SHADER_STAGE_VERTEX_BIT);
+                  vulkan::ShaderStage::VERTEX_STAGE);
 
-            if (!fragmentSceneShader)
-                fragmentSceneShader = std::make_unique<vulkan::ShaderModule>(
+            if (!resourceManager.isValid(fragmentSceneShader))
+                fragmentSceneShader = resourceManager.template create<vulkan::ShaderModule>(
                   device,
                   shaders::getShader(shaders::ShaderType::DEFAULT_G_BUFFER_FRAGMENT_SHADER),
-                  VK_SHADER_STAGE_FRAGMENT_BIT);
+                  vulkan::ShaderStage::FRAGMENT_STAGE);
         } else if (inPassType == PassType::SCREEN) {
-            if (!vertexScreenShader)
-                vertexScreenShader = std::make_unique<vulkan::ShaderModule>(
+            if (!resourceManager.isValid(vertexScreenShader))
+                vertexScreenShader = resourceManager.template create<vulkan::ShaderModule>(
                   device,
                   shaders::getShader(shaders::ShaderType::SCREEN_TRIANGLE_VERTEX_SHADER),
-                  VK_SHADER_STAGE_VERTEX_BIT);
+                  vulkan::ShaderStage::VERTEX_STAGE);
 
-            if (!fragmentScreenShader)
-                fragmentScreenShader = std::make_unique<vulkan::ShaderModule>(
+            if (!resourceManager.isValid(fragmentScreenShader))
+                fragmentScreenShader = resourceManager.template create<vulkan::ShaderModule>(
                   device,
                   shaders::getShader(shaders::ShaderType::SCREEN_G_BUFFER_DEBUG_FRAGMENT_SHADER),
-                  VK_SHADER_STAGE_FRAGMENT_BIT);
+                  vulkan::ShaderStage::FRAGMENT_STAGE);
         }
+
+        auto& vertexShaderModule = (inPassType == PassType::SCENE)
+                                     ? resourceManager.get(vertexSceneShader).template as<vulkan::ShaderModule>()
+                                     : resourceManager.get(vertexScreenShader).template as<vulkan::ShaderModule>();
+
+        auto& fragmentShaderModule = (inPassType == PassType::SCENE)
+                                       ? resourceManager.get(fragmentSceneShader).template as<vulkan::ShaderModule>()
+                                       : resourceManager.get(fragmentScreenShader).template as<vulkan::ShaderModule>();
 
         VkPipelineShaderStageCreateInfo vertexShaderStageInfo = {};
         vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-        vertexShaderStageInfo.module =
-          (inPassType == PassType::SCENE) ? vertexSceneShader->handle() : vertexScreenShader->handle();
+        vertexShaderStageInfo.module = vertexShaderModule.handle();
         vertexShaderStageInfo.pName = "main";
 
         VkPipelineShaderStageCreateInfo fragmentShaderStageInfo = {};
         fragmentShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         fragmentShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        fragmentShaderStageInfo.module =
-          (inPassType == PassType::SCENE) ? fragmentSceneShader->handle() : fragmentScreenShader->handle();
+        fragmentShaderStageInfo.module = fragmentShaderModule.handle();
         fragmentShaderStageInfo.pName = "main";
 
         std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = { vertexShaderStageInfo,
