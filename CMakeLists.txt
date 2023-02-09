@@ -22,6 +22,7 @@ set(PUBLIC_HEADERS
     src/error.h
     src/typedefs.h
     src/material.h
+    src/render/technique.h
     src/compositor/nodeAsset.h
     src/animations/animation.h
     src/animations/sampler.h
@@ -125,6 +126,7 @@ set(SOURCES
     src/surface.cpp
     src/baseRenderTarget.cpp
     src/material.cpp
+    src/render/technique.cpp
     src/frameBufferRenderTarget.cpp
     src/surfaceRenderTarget.cpp
     src/animations/animation.cpp

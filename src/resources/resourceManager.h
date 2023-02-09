@@ -11,6 +11,8 @@
 #include <tuple>
 #include <vector>
 
+// TODO:: resource groups
+
 namespace cyclonite::resources {
 template<typename R, size_t N, size_t M>
 struct resource_reg_info_t

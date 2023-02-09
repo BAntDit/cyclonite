@@ -4,7 +4,6 @@
 
 #include "material.h"
 
-namespace cyclonite
-{
+namespace cyclonite {
 resources::Resource::ResourceTag Material::tag{};
 }

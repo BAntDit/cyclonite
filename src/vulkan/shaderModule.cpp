@@ -12,7 +12,8 @@ namespace cyclonite::vulkan {
 namespace {
 auto getVulkanShaderStage(spv::ExecutionModel em) -> VkShaderStageFlags
 {
-    VkShaderStageFlags flags;
+    auto flags = VkShaderStageFlags{ VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM };
+
     switch (em) {
         case spv::ExecutionModelVertex:
             flags = VK_SHADER_STAGE_VERTEX_BIT;
@@ -45,6 +46,7 @@ auto getVulkanShaderStage(spv::ExecutionModel em) -> VkShaderStageFlags
         default:
             throw std::runtime_error("unexpected shader execution mode");
     }
+    assert(flags != VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM);
 
     return flags;
 }

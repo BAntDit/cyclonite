@@ -14,6 +14,47 @@
 #include <glm/gtx/transform.hpp>
 
 namespace cyclonite {
+enum class OutputChannel
+{
+    R = 1,
+    G = 2,
+    B = 4,
+    A = 8,
+    MIN_VALUE = R,
+    MAX_VALUE = A,
+    COUNT = 4
+};
+
+inline constexpr auto channel_output_count_v = easy_mp::value_cast(OutputChannel::COUNT);
+
+enum class ShaderStage
+{
+    VERTEX_STAGE = 0,
+    TESSELATION_CONTROL_STAGE = 1,
+    TESSELATION_EVALUATION_STAGE = 2,
+    GEOMETRY_STAGE = 3,
+    FRAGMENT_STAGE = 4,
+    COMPUTE_STAGE = 5,
+    MESHLETS_PIPELINE_TASK_STAGE = 6,
+    MESHLETS_PIPELINE_MESH_STAGE = 7,
+    RAY_TRACING_RAY_GENERATION_STAGE = 8,
+    RAY_TRACING_INTERSECTION_STAGE = 9,
+    RAY_TRACING_ANY_HIT_STAGE = 10,
+    RAY_TRACING_CLOSEST_HIT_STAGE = 11,
+    RAY_TRACING_MISS_STAGE = 12,
+    MIN_VALUE = VERTEX_STAGE,
+    MAX_VALUE = RAY_TRACING_MISS_STAGE,
+    COUNT = MAX_VALUE + 1,
+    UNDEFINED = COUNT,
+    FIRST_RASTERIZATION_STAGE = VERTEX_STAGE,
+    LAST_RASTERIZATION_STAGE = FRAGMENT_STAGE,
+    RASTERIZATION_STAGE_COUNT = FRAGMENT_STAGE - VERTEX_STAGE,
+};
+
+inline constexpr auto shader_stage_count_v = easy_mp::value_cast(ShaderStage::COUNT);
+
+inline constexpr auto rasterization_shader_stage_count_v = easy_mp::value_cast(ShaderStage::RASTERIZATION_STAGE_COUNT);
+
 enum class RenderTargetOutputSemantic : size_t
 {
     UNDEFINED = 0,

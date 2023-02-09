@@ -10,29 +10,9 @@
 #include "device.h"
 #include "pipelineDescriptorSets.h"
 #include "resources/resource.h"
+#include "typedefs.h"
 
 namespace cyclonite::vulkan {
-enum class ShaderStage
-{
-    VERTEX_STAGE = 0,
-    TESSELATION_CONTROL_STAGE = 1,
-    TESSELATION_EVALUATION_STAGE = 2,
-    GEOMETRY_STAGE = 3,
-    FRAGMENT_STAGE = 4,
-    COMPUTE_STAGE = 5,
-    MESHLETS_PIPELINE_TASK_STAGE = 6,
-    MESHLETS_PIPELINE_MESH_STAGE = 7,
-    RAY_TRACING_RAY_GENERATION_STAGE = 8,
-    RAY_TRACING_INTERSECTION_STAGE = 9,
-    RAY_TRACING_ANY_HIT_STAGE = 10,
-    RAY_TRACING_CLOSEST_HIT_STAGE = 11,
-    RAY_TRACING_MISS_STAGE = 12,
-    MIN_VALUE = VERTEX_STAGE,
-    MAX_VALUE = RAY_TRACING_MISS_STAGE,
-    COUNT = MAX_VALUE + 1,
-    UNDEFINED = COUNT
-};
-
 class ShaderModule : public resources::Resource
 {
 public:
