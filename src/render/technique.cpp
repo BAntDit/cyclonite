@@ -3,6 +3,7 @@
 //
 
 #include "technique.h"
+#include "baseRenderTarget.h"
 #include "resources/resourceManager.h"
 #include "vulkan/shaderModule.h"
 
@@ -84,12 +85,98 @@ auto getVulkanSampleCount(uint32_t sampleCount) -> VkSampleCountFlagBits
 
     return samples;
 }
+
+auto getVulkanBlendFactor(Technique::BlendFactor blendFactor) -> VkBlendFactor
+{
+    auto r = VkBlendFactor{ VK_BLEND_FACTOR_MAX_ENUM };
+
+    switch (blendFactor) {
+        case Technique::BlendFactor::ZERO:
+            r = VK_BLEND_FACTOR_ZERO;
+            break;
+        case Technique::BlendFactor::ONE:
+            r = VK_BLEND_FACTOR_ONE;
+            break;
+        case Technique::BlendFactor::SRC_COLOR:
+            r = VK_BLEND_FACTOR_SRC_COLOR;
+            break;
+        case Technique::BlendFactor::ONE_MINUS_SRC_COLOR:
+            r = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+            break;
+        case Technique::BlendFactor::DST_COLOR:
+            r = VK_BLEND_FACTOR_DST_COLOR;
+            break;
+        case Technique::BlendFactor::ONE_MINUS_DST_COLOR:
+            r = VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+            break;
+        case Technique::BlendFactor::SRC_ALPHA:
+            r = VK_BLEND_FACTOR_SRC_ALPHA;
+            break;
+        case Technique::BlendFactor::ONE_MINUS_SRC_ALPHA:
+            r = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            break;
+        case Technique::BlendFactor::DST_ALPHA:
+            r = VK_BLEND_FACTOR_DST_ALPHA;
+            break;
+        case Technique::BlendFactor::ONE_MINUS_DST_ALPHA:
+            r = VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+            break;
+        case Technique::BlendFactor::CONSTANT_COLOR:
+            r = VK_BLEND_FACTOR_CONSTANT_COLOR;
+            break;
+        case Technique::BlendFactor::ONE_MINUS_CONSTANT_COLOR:
+            r = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+            break;
+        case Technique::BlendFactor::CONSTANT_ALPHA:
+            r = VK_BLEND_FACTOR_CONSTANT_ALPHA;
+            break;
+        case Technique::BlendFactor::ONE_MINUS_CONSTANT_ALPHA:
+            r = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
+            break;
+        case Technique::BlendFactor::SRC_ALPHA_SATURATE:
+            r = VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+            break;
+        case Technique::BlendFactor::SRC1_COLOR:
+            r = VK_BLEND_FACTOR_SRC1_COLOR;
+            break;
+        case Technique::BlendFactor::ONE_MINUS_SRC1_COLOR:
+            r = VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR;
+            break;
+        case Technique::BlendFactor::SRC1_ALPHA:
+            r = VK_BLEND_FACTOR_SRC1_ALPHA;
+            break;
+        case Technique::BlendFactor::ONE_MINUS_SRC1_ALPHA:
+            r = VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
+            break;
+        default:
+            throw std::runtime_error("unexpected blend factor value");
+    }
+
+    assert(r != VK_BLEND_FACTOR_MAX_ENUM);
+    return r;
+}
+
+auto getVulkanBlendOp(Technique::BlendEquation blendEquation) -> VkBlendOp
+{
+    auto r = VkBlendOp{ VK_BLEND_OP_MAX_ENUM };
+
+    r = (blendEquation == Technique::BlendEquation::FUNC_ADD)
+          ? VK_BLEND_OP_ADD
+          : (blendEquation == Technique::BlendEquation::FUNC_SUBTRACT)
+              ? VK_BLEND_OP_SUBTRACT
+              : (blendEquation == Technique::BlendEquation::FUNC_REVERSE_SUBTRACT) ? VK_BLEND_OP_REVERSE_SUBTRACT
+                                                                                   : VK_BLEND_OP_MAX_ENUM;
+
+    assert(r != VK_BLEND_OP_MAX_ENUM);
+    return r;
+}
 }
 
 resources::Resource::ResourceTag Technique::tag{};
 
 Technique::Technique()
   : Resource{}
+  , colorOutputCount_{ 0 }
   , alphaModePerOutput_{}
   , colorBlendEquationPerOutput_{}
   , alphaBlendEquationPerOutput_{}
@@ -98,6 +185,7 @@ Technique::Technique()
   , alphaSrcBlendFactorPerOutput_{}
   , alphaDstBlendFactorPerOutput_{}
   , writeMaskPerOutput_{}
+  , blendConstants_{ 0.f, 0.f, 0.f, 0.f }
   , cullFace_{ CullFace::BACK }
   , polygonMode_{ PolygonMode::FILL }
   , alphaCutoff_{ 0.f }
@@ -132,9 +220,14 @@ Technique::Technique()
 }
 
 void Technique::update(resources::ResourceManager const& resourceManager,
-                       bool sampleShadingEnabled /* = false*/,
-                       uint32_t sampleCount /* = 1*/)
+                       BaseRenderTarget const& rt,
+                       bool multisampleShadingEnabled /* = false*/,
+                       uint32_t sampleCount /* = 1*/,
+                       bool forceUpdate /* = false*/)
 {
+    isExpired_ |= forceUpdate;
+
+    // TODO:: handle render target resize
     if (!isExpired_ && pipeline_)
         return;
 
@@ -176,7 +269,26 @@ void Technique::update(resources::ResourceManager const& resourceManager,
     assemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     assemblyState.primitiveRestartEnable = VK_FALSE; // TODO:: make it comes from material
 
-    // TODO:: adds viewport struct and rasterization workspace
+    VkViewport vkViewport = {};
+    vkViewport.x = static_cast<real>(0);
+    vkViewport.y = static_cast<real>(0);
+    vkViewport.width = static_cast<real>(rt.width());
+    vkViewport.height = static_cast<real>(rt.height());
+    vkViewport.minDepth = 0.0;
+    vkViewport.maxDepth = 1.0;
+
+    VkRect2D vkScissor = {};
+    vkScissor.offset.x = static_cast<int32_t>(0);
+    vkScissor.offset.y = static_cast<int32_t>(0);
+    vkScissor.extent.width = rt.width();
+    vkScissor.extent.height = rt.height();
+
+    auto viewportState = VkPipelineViewportStateCreateInfo{};
+    viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewportState.viewportCount = 1;
+    viewportState.pViewports = &vkViewport;
+    viewportState.scissorCount = 1;
+    viewportState.pScissors = &vkScissor;
 
     auto rasterizationState = VkPipelineRasterizationStateCreateInfo{};
     rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -193,9 +305,53 @@ void Technique::update(resources::ResourceManager const& resourceManager,
 
     auto multisampleState = VkPipelineMultisampleStateCreateInfo{};
     multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampleState.sampleShadingEnable = VkBool32{ sampleShadingEnabled };
+    multisampleState.sampleShadingEnable = VkBool32{ multisampleShadingEnabled };
     multisampleState.rasterizationSamples = getVulkanSampleCount(sampleCount);
 
-    // TODO::
+    auto pipelineColorBlendAttachmentStates =
+      std::array<VkPipelineColorBlendAttachmentState, render_target_output_semantic_count_v>{};
+
+    auto attachmentCount = rt.colorAttachmentCount();
+    assert(attachmentCount <= render_target_output_semantic_count_v);
+
+    for (auto i = size_t{ 0 }; i < attachmentCount; i++) {
+        auto& pipelineColorBlendAttachmentState = pipelineColorBlendAttachmentStates[i];
+
+        auto alphaMode = alphaModePerOutput_[i];
+        auto colorBlendSrcFactor = colorSrcBlendFactorPerOutput_[i];
+        auto colorBlendDstFactor = colorDstBlendFactorPerOutput_[i];
+        auto alphaBlendSrcFactor = alphaSrcBlendFactorPerOutput_[i];
+        auto alphaBlendDstFactor = alphaDstBlendFactorPerOutput_[i];
+
+        auto colorBlendOp = colorBlendEquationPerOutput_[i];
+        auto alphaBlendOp = alphaBlendEquationPerOutput_[i];
+
+        pipelineColorBlendAttachmentState.blendEnable =
+          VkBool32{ alphaMode == AlphaMode::BLEND || alphaMode == AlphaMode::ADDITIVE_BLEND ||
+                    alphaMode == AlphaMode::SUBTRACTIVE_BLEND || alphaMode == AlphaMode::SUBTRACTIVE_BLEND ||
+                    alphaMode == AlphaMode::CUSTOM_BLEND };
+        pipelineColorBlendAttachmentState.srcColorBlendFactor = getVulkanBlendFactor(colorBlendSrcFactor);
+        pipelineColorBlendAttachmentState.dstColorBlendFactor = getVulkanBlendFactor(colorBlendDstFactor);
+        pipelineColorBlendAttachmentState.colorBlendOp = getVulkanBlendOp(colorBlendOp);
+        pipelineColorBlendAttachmentState.srcAlphaBlendFactor = getVulkanBlendFactor(alphaBlendSrcFactor);
+        pipelineColorBlendAttachmentState.dstAlphaBlendFactor = getVulkanBlendFactor(alphaBlendDstFactor);
+        pipelineColorBlendAttachmentState.alphaBlendOp = getVulkanBlendOp(alphaBlendOp);
+
+        auto writeMask = writeMaskPerOutput_[i];
+        pipelineColorBlendAttachmentState.colorWriteMask = static_cast<VkColorComponentFlags>(writeMask.to_ulong());
+
+        auto colorBlendState = VkPipelineColorBlendStateCreateInfo{};
+        colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        colorBlendState.logicOpEnable = VK_FALSE; // ???
+        colorBlendState.logicOp = VK_LOGIC_OP_COPY;
+        colorBlendState.attachmentCount = static_cast<uint32_t>(attachmentCount);
+        colorBlendState.pAttachments = pipelineColorBlendAttachmentStates.data();
+        colorBlendState.blendConstants[0] = blendConstants_.r;
+        colorBlendState.blendConstants[1] = blendConstants_.g;
+        colorBlendState.blendConstants[2] = blendConstants_.b;
+        colorBlendState.blendConstants[3] = blendConstants_.a;
+    }
+
+    isExpired_ = false;
 }
 }

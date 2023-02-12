@@ -7,13 +7,20 @@
 
 #include "resources/resource.h"
 #include "typedefs.h"
+#include "vulkan/config.h"
 #include "vulkan/handle.h"
+#include "vulkan/sharedHandle.h"
 #include <array>
 #include <bitset>
 
 namespace cyclonite::render {
+class BaseRenderTarget;
+class Material;
+
 class Technique : public resources::Resource
 {
+    friend class Material;
+
 public:
     using output_write_mask_t = std::bitset<channel_output_count_v>;
 
@@ -104,8 +111,10 @@ public:
     Technique();
 
     void update(resources::ResourceManager const& resourceManager,
-                bool sampleShadingEnabled = false,
-                uint32_t sampleCount = 1);
+                BaseRenderTarget const& rt,
+                bool multisampleShadingEnabled = false,
+                uint32_t sampleCount = 1,
+                bool forceUpdate = false);
 
     [[nodiscard]] auto instance_tag() const -> ResourceTag const& override { return tag; }
 
@@ -117,6 +126,18 @@ public:
     static auto type_tag() -> ResourceTag& { return Technique::tag; }
 
 private:
+    struct shader_entry_point_t
+    {
+        std::string name;
+        ShaderStage stage;
+        size_t moduleIndex;
+    };
+
+    uint32_t shaderModuleCount_;
+    std::array<vulkan::SharedHandle<VkShaderModule>, rasterization_shader_stage_count_v> shaderModules_;
+    std::array<shader_entry_point_t, rasterization_shader_stage_count_v> entryPoints_;
+
+    uint32_t colorOutputCount_;
     std::array<AlphaMode, render_target_output_semantic_count_v> alphaModePerOutput_;
     std::array<BlendEquation, render_target_output_semantic_count_v> colorBlendEquationPerOutput_;
     std::array<BlendEquation, render_target_output_semantic_count_v> alphaBlendEquationPerOutput_;
@@ -125,6 +146,8 @@ private:
     std::array<BlendFactor, render_target_output_semantic_count_v> alphaSrcBlendFactorPerOutput_;
     std::array<BlendFactor, render_target_output_semantic_count_v> alphaDstBlendFactorPerOutput_;
     std::array<output_write_mask_t, render_target_output_semantic_count_v> writeMaskPerOutput_;
+
+    vec4 blendConstants_;
 
     CullFace cullFace_;
     PolygonMode polygonMode_;
@@ -137,9 +160,7 @@ private:
 
     std::bitset<easy_mp::value_cast(Flags::COUNT)> flags_;
 
-    std::array<resources::Resource::Id, rasterization_shader_stage_count_v> shaders_;
-    std::bitset<rasterization_shader_stage_count_v> shaderFlags_; // test for valid stages
-
+    std::array<vulkan::Handle<VkDescriptorSetLayout>, vulkan::maxDescriptorSetsPerPipeline> descriptorSetLayouts_;
     vulkan::Handle<VkPipeline> pipeline_;
 
     bool isExpired_;

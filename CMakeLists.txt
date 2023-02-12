@@ -21,7 +21,7 @@ set(PUBLIC_HEADERS
     src/surface.h
     src/error.h
     src/typedefs.h
-    src/material.h
+    src/render/material.h
     src/render/technique.h
     src/compositor/nodeAsset.h
     src/animations/animation.h
@@ -95,7 +95,7 @@ set(PUBLIC_HEADERS
     src/vulkan/shaderModule.h
     src/vulkan/descriptorSetKey.h
     src/vulkan/pipelineDescriptorSets.h
-    src/vulkan/descriptorType.h
+    src/render/descriptorType.h
     src/vulkan/descriptorSetManager.h
     src/multithreading/lockFreeQueue.h
     src/multithreading/taskManager.h
@@ -125,7 +125,7 @@ set(SOURCES
     src/root.cpp
     src/surface.cpp
     src/baseRenderTarget.cpp
-    src/material.cpp
+    src/render/material.cpp
     src/render/technique.cpp
     src/frameBufferRenderTarget.cpp
     src/surfaceRenderTarget.cpp

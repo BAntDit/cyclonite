@@ -14,6 +14,8 @@
 #include <glm/gtx/transform.hpp>
 
 namespace cyclonite {
+using spir_v_code_t = std::vector<uint32_t>;
+
 enum class OutputChannel
 {
     R = 1,
@@ -48,8 +50,9 @@ enum class ShaderStage
     UNDEFINED = COUNT,
     FIRST_RASTERIZATION_STAGE = VERTEX_STAGE,
     LAST_RASTERIZATION_STAGE = FRAGMENT_STAGE,
-    RASTERIZATION_STAGE_COUNT = FRAGMENT_STAGE - VERTEX_STAGE,
+    RASTERIZATION_STAGE_COUNT = LAST_RASTERIZATION_STAGE - FIRST_RASTERIZATION_STAGE + 1,
 };
+static_assert(ShaderStage::LAST_RASTERIZATION_STAGE > ShaderStage::FIRST_RASTERIZATION_STAGE);
 
 inline constexpr auto shader_stage_count_v = easy_mp::value_cast(ShaderStage::COUNT);
 

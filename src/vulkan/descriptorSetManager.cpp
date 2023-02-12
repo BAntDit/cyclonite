@@ -3,9 +3,9 @@
 //
 
 #include "descriptorSetManager.h"
-#include "descriptorType.h"
 #include "device.h"
 #include "internal/descriptorSetHelpers.h"
+#include "render/descriptorType.h"
 
 namespace cyclonite::vulkan {
 using namespace easy_mp;
