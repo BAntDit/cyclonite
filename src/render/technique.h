@@ -118,6 +118,13 @@ public:
 
     [[nodiscard]] auto instance_tag() const -> ResourceTag const& override { return tag; }
 
+    [[nodiscard]] auto stageMask() const -> std::bitset<rasterization_shader_stage_count_v> { return stageMask_; }
+
+    [[nodiscard]] auto stageCount() const -> uint32_t { return stageMask_.count(); }
+
+private:
+    auto stageMask() -> std::bitset<rasterization_shader_stage_count_v>& { return stageMask_; }
+
 private:
     static ResourceTag tag;
 
@@ -132,6 +139,8 @@ private:
         ShaderStage stage;
         size_t moduleIndex;
     };
+
+    std::bitset<rasterization_shader_stage_count_v> stageMask_;
 
     uint32_t shaderModuleCount_;
     std::array<vulkan::SharedHandle<VkShaderModule>, rasterization_shader_stage_count_v> shaderModules_;
@@ -160,6 +169,7 @@ private:
 
     std::bitset<easy_mp::value_cast(Flags::COUNT)> flags_;
 
+    uint32_t descriptorSetLayoutCount_;
     std::array<vulkan::Handle<VkDescriptorSetLayout>, vulkan::maxDescriptorSetsPerPipeline> descriptorSetLayouts_;
     vulkan::Handle<VkPipeline> pipeline_;
 

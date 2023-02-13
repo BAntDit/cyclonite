@@ -3,13 +3,13 @@
 //
 
 #include "material.h"
-#include "technique.h"
 #include "descriptorType.h"
+#include "technique.h"
 #include "vulkan/device.h"
 #ifdef ENABLE_SHADER_MODULE_FROM_SPIR_V
 #include <spirv_cross/spirv_cross.hpp>
 #endif
-#include <unordered_set>
+#include <unordered_map>
 
 namespace cyclonite::render {
 #ifdef ENABLE_SHADER_MODULE_FROM_SPIR_V
@@ -206,10 +206,12 @@ void Material::addTechnique(vulkan::Device& device,
 {
 #ifdef ENABLE_SHADER_MODULE_FROM_SPIR_V
     auto technique = Technique{};
+    technique.stageMask() = stageMask;
 
-    auto uniqueModules = std::unordered_set<spir_v_code_t const*>{};
-    auto stageToModuleIdx = std::array<decltype(uniqueModules.cbegin()), rasterization_shader_stage_count_v>{};
-    std::fill_n(stageToModuleIdx.begin(), rasterization_shader_stage_count_v, uniqueModules.cend());
+    auto uniqueModules = std::unordered_map<spir_v_code_t const*, size_t>{};
+    auto uniqueModuleIndex = size_t{ 0 };
+
+    auto entryPointNames = std::array<std::string, rasterization_shader_stage_count_v>{};
 
     auto sets = std::unordered_map<uint32_t, size_t>{};
     auto bindingSets = std::vector<std::vector<VkDescriptorSetLayoutBinding>>{};
@@ -224,6 +226,8 @@ void Material::addTechnique(vulkan::Device& device,
                                         ShaderStage::FRAGMENT_STAGE };
     static_assert(stages.size() == rasterization_shader_stage_count_v);
 
+    auto validStageIdx = size_t{ 0 };
+
     for (auto i = size_t{ 0 }, count = std::size(stages); i < count; i++) {
         if (!stageMask.test(i))
             continue;
@@ -233,10 +237,6 @@ void Material::addTechnique(vulkan::Device& device,
         auto stageFlags = getVulkanShaderStage(executionModel);
         auto entryPointName = std::string{ entryPoints[i] };
         auto const* code = spirVCode[i];
-        assert(code != nullptr);
-
-        auto insertion = uniqueModules.insert(code);
-        stageToModuleIdx[i] = std::get<0>(insertion);
 
         auto compiler = spirv_cross::Compiler{ std::vector(*code) };
 
@@ -257,6 +257,13 @@ void Material::addTechnique(vulkan::Device& device,
         if (!isEntryPointValid) {
             throw std::runtime_error("entry point is not valid");
         }
+
+        assert(code != nullptr);
+        if (!uniqueModules.contains(code)) {
+            uniqueModules.insert(std::pair{ code, uniqueModuleIndex++ });
+        }
+
+        entryPointNames[i] = entryPointName;
 
         compiler.set_entry_point(entryPointName, executionModel);
 
@@ -318,10 +325,47 @@ void Material::addTechnique(vulkan::Device& device,
                 binding.stageFlags = stageFlags;
             }
         }
-        // TODO::
+
+        {
+            assert(uniqueModules.contains(code));
+            auto index = uniqueModules.at(code);
+
+            technique.entryPoints_[validStageIdx++] = Technique::shader_entry_point_t{
+                .name = entryPointName,
+                .stage = stage,
+                .moduleIndex = index
+            };
+        }
     }
 
-    // technique.shaderModuleCount_ =
+    assert(validStageIdx == technique.stageCount());
+    for (auto&& [code, idx] : uniqueModules) {
+        (void)idx;
+
+        // TODO:: create shader modules
+    }
+
+    assert(descriptorSetLayoutCount <= vulkan::maxDescriptorSetsPerPipeline);
+    technique.descriptorSetLayoutCount_ = descriptorSetLayoutCount;
+
+    for (auto&& [set, idx] : sets) {
+        assert(set < descriptorSetLayoutCreateInfo.size());
+
+        auto& bindings = bindingSets[idx];
+
+        descriptorSetLayoutCreateInfo[set].sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        descriptorSetLayoutCreateInfo[set].bindingCount = bindings.size();
+        descriptorSetLayoutCreateInfo[set].pBindings = bindings.data();
+
+        technique.descriptorSetLayouts_[set] =
+          vulkan::Handle<VkDescriptorSetLayout>{ device.handle(), vkDestroyDescriptorSetLayout };
+
+        if (auto result = vkCreateDescriptorSetLayout(
+              device.handle(), &descriptorSetLayoutCreateInfo[set], nullptr, &technique.descriptorSetLayouts_[set]);
+            result != VK_SUCCESS) {
+            throw std::runtime_error("could not create descriptor set layouts");
+        }
+    }
 #else
     throw std::runtime_error("SPIR-V reflection must be enabled");
 #endif
