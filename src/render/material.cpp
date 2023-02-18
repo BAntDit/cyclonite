@@ -11,7 +11,6 @@
 #ifdef ENABLE_SHADER_MODULE_FROM_SPIR_V
 #include <spirv_cross/spirv_cross.hpp>
 #endif
-#include <unordered_map>
 
 namespace cyclonite::render {
 #ifdef ENABLE_SHADER_MODULE_FROM_SPIR_V
@@ -205,8 +204,9 @@ void Material::addTechnique(vulkan::Device& device,
                             std::array<std::string_view, rasterization_shader_stage_count_v> entryPoints,
                             std::bitset<rasterization_shader_stage_count_v> stageMask)
 {
-#ifdef ENABLE_SHADER_MODULE_FROM_SPIR_V
     auto technique = Technique{};
+
+#ifdef ENABLE_SHADER_MODULE_FROM_SPIR_V
     technique.stageMask() = stageMask;
 
     auto uniqueModules = std::unordered_map<spir_v_code_t const*, std::pair<size_t, resources::Resource::Id>>{};
@@ -379,6 +379,8 @@ void Material::addTechnique(vulkan::Device& device,
 #else
     throw std::runtime_error("SPIR-V reflection must be enabled");
 #endif
+
     technique.name_ = techniqueName;
+    techniques_.emplace(techniqueName, std::move(technique));
 }
 }

@@ -172,11 +172,8 @@ auto getVulkanBlendOp(Technique::BlendEquation blendEquation) -> VkBlendOp
 }
 }
 
-resources::Resource::ResourceTag Technique::tag{};
-
-Technique::Technique()
-  : Resource{}
-  , colorOutputCount_{ 0 }
+Technique::Technique() :
+  colorOutputCount_{ 0 }
   , alphaModePerOutput_{}
   , colorBlendEquationPerOutput_{}
   , alphaBlendEquationPerOutput_{}
@@ -193,8 +190,6 @@ Technique::Technique()
   , depthBiasClamp_{ 0.f }
   , depthBiasConstantFactor_{ 0.f }
   , depthBiasSlopeFactor_{ 0.f }
-  , shaders_{}
-  , shaderFlags_{}
   , pipeline_{}
   , isExpired_{ false }
 {
@@ -215,8 +210,6 @@ Technique::Technique()
     flags_.set(value_cast(Flags::RASTERIZER_DISCARD_ENABLE), false);
     flags_.set(value_cast(Flags::DEPTH_CLAMP_ENABLE), false);
     flags_.set(value_cast(Flags::DEPTH_BIAS_ENABLE), false);
-
-    std::fill(shaders_.begin(), shaders_.end(), resources::Resource::Id{ std::numeric_limits<uint64_t>::max() });
 }
 
 void Technique::update(resources::ResourceManager const& resourceManager,

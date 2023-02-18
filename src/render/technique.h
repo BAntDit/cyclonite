@@ -17,7 +17,7 @@ namespace cyclonite::render {
 class BaseRenderTarget;
 class Material;
 
-class Technique : public resources::Resource
+class Technique
 {
     friend class Material;
 
@@ -116,21 +116,12 @@ public:
                 uint32_t sampleCount = 1,
                 bool forceUpdate = false);
 
-    [[nodiscard]] auto instance_tag() const -> ResourceTag const& override { return tag; }
-
     [[nodiscard]] auto stageMask() const -> std::bitset<rasterization_shader_stage_count_v> { return stageMask_; }
 
     [[nodiscard]] auto stageCount() const -> uint32_t { return stageMask_.count(); }
 
 private:
     auto stageMask() -> std::bitset<rasterization_shader_stage_count_v>& { return stageMask_; }
-
-private:
-    static ResourceTag tag;
-
-public:
-    static auto type_tag_const() -> ResourceTag const& { return Technique::tag; }
-    static auto type_tag() -> ResourceTag& { return Technique::tag; }
 
 private:
     struct shader_entry_point_t

@@ -7,8 +7,10 @@
 
 #include "resources/resource.h"
 #include "typedefs.h"
+#include "technique.h"
 #include <array>
 #include <bitset>
+#include <unordered_map>
 
 namespace cyclonite::vulkan {
 class Device;
@@ -39,6 +41,7 @@ public:
 
 private:
     std::string name_;
+    std::unordered_map<std::string, Technique> techniques_;
 };
 }
 
