@@ -4,8 +4,10 @@
 
 #include "material.h"
 #include "descriptorType.h"
+#include "resources/resourceManager.h"
 #include "technique.h"
 #include "vulkan/device.h"
+#include "vulkan/shaderModule.h"
 #ifdef ENABLE_SHADER_MODULE_FROM_SPIR_V
 #include <spirv_cross/spirv_cross.hpp>
 #endif
@@ -198,8 +200,7 @@ resources::Resource::ResourceTag Material::tag{};
 
 void Material::addTechnique(vulkan::Device& device,
                             std::string_view techniqueName,
-                            std::string_view nodeName,
-                            size_t passIndex,
+                            std::array<resources::Resource::Id, rasterization_shader_stage_count_v> precompiledShaders,
                             std::array<spir_v_code_t const*, rasterization_shader_stage_count_v> spirVCode,
                             std::array<std::string_view, rasterization_shader_stage_count_v> entryPoints,
                             std::bitset<rasterization_shader_stage_count_v> stageMask)
@@ -208,7 +209,7 @@ void Material::addTechnique(vulkan::Device& device,
     auto technique = Technique{};
     technique.stageMask() = stageMask;
 
-    auto uniqueModules = std::unordered_map<spir_v_code_t const*, size_t>{};
+    auto uniqueModules = std::unordered_map<spir_v_code_t const*, std::pair<size_t, resources::Resource::Id>>{};
     auto uniqueModuleIndex = size_t{ 0 };
 
     auto entryPointNames = std::array<std::string, rasterization_shader_stage_count_v>{};
@@ -237,6 +238,7 @@ void Material::addTechnique(vulkan::Device& device,
         auto stageFlags = getVulkanShaderStage(executionModel);
         auto entryPointName = std::string{ entryPoints[i] };
         auto const* code = spirVCode[i];
+        auto shaderId = precompiledShaders[i];
 
         auto compiler = spirv_cross::Compiler{ std::vector(*code) };
 
@@ -260,7 +262,7 @@ void Material::addTechnique(vulkan::Device& device,
 
         assert(code != nullptr);
         if (!uniqueModules.contains(code)) {
-            uniqueModules.insert(std::pair{ code, uniqueModuleIndex++ });
+            uniqueModules.insert(std::pair{ code, std::pair{ uniqueModuleIndex++, shaderId } });
         }
 
         entryPointNames[i] = entryPointName;
@@ -328,21 +330,29 @@ void Material::addTechnique(vulkan::Device& device,
 
         {
             assert(uniqueModules.contains(code));
-            auto index = uniqueModules.at(code);
+            auto identifiers = uniqueModules.at(code);
 
             technique.entryPoints_[validStageIdx++] = Technique::shader_entry_point_t{
-                .name = entryPointName,
-                .stage = stage,
-                .moduleIndex = index
+                .name = entryPointName, .stage = stage, .moduleIndex = identifiers.first
             };
         }
     }
 
+    [[maybe_unused]] auto uniqueResourceIdentifiers = std::unordered_set<uint64_t>{};
     assert(validStageIdx == technique.stageCount());
-    for (auto&& [code, idx] : uniqueModules) {
-        (void)idx;
+    for (auto&& [code, identifiers] : uniqueModules) {
+        auto [idx, id] = identifiers;
 
-        // TODO:: create shader modules
+        assert(id  == resources::Resource::Id{} || !uniqueResourceIdentifiers.contains(static_cast<uint64_t>(id)));
+        uniqueResourceIdentifiers.insert(static_cast<uint64_t>(id));
+
+        if (id != resources::Resource::Id{ std::numeric_limits<uint32_t>::max() }) {
+            assert(resourceManager().isValid(id));
+            technique.shaderModules_[idx] = id;
+        } else {
+            technique.shaderModules_[idx] = resourceManager().template create<vulkan::ShaderModule>(device, *code);
+        }
+        technique.shaderModuleCount_++;
     }
 
     assert(descriptorSetLayoutCount <= vulkan::maxDescriptorSetsPerPipeline);
@@ -369,5 +379,6 @@ void Material::addTechnique(vulkan::Device& device,
 #else
     throw std::runtime_error("SPIR-V reflection must be enabled");
 #endif
+    technique.name_ = techniqueName;
 }
 }

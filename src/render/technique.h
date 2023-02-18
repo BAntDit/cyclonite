@@ -143,7 +143,7 @@ private:
     std::bitset<rasterization_shader_stage_count_v> stageMask_;
 
     uint32_t shaderModuleCount_;
-    std::array<vulkan::SharedHandle<VkShaderModule>, rasterization_shader_stage_count_v> shaderModules_;
+    std::array<resources::Resource::Id, rasterization_shader_stage_count_v> shaderModules_;
     std::array<shader_entry_point_t, rasterization_shader_stage_count_v> entryPoints_;
 
     uint32_t colorOutputCount_;
@@ -173,6 +173,7 @@ private:
     std::array<vulkan::Handle<VkDescriptorSetLayout>, vulkan::maxDescriptorSetsPerPipeline> descriptorSetLayouts_;
     vulkan::Handle<VkPipeline> pipeline_;
 
+    std::string name_;
     bool isExpired_;
 };
 }

@@ -26,8 +26,7 @@ public:
 private:
     void addTechnique(vulkan::Device& device,
                       std::string_view techniqueName,
-                      std::string_view nodeName,
-                      size_t passIndex,
+                      std::array<resources::Resource::Id, rasterization_shader_stage_count_v> precompiledShaders,
                       std::array<spir_v_code_t const*, rasterization_shader_stage_count_v> spirVCode,
                       std::array<std::string_view, rasterization_shader_stage_count_v> entryPoints,
                       std::bitset<rasterization_shader_stage_count_v> stageMask);
