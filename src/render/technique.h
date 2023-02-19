@@ -17,6 +17,10 @@ namespace cyclonite {
 class BaseRenderTarget;
 }
 
+namespace cyclonite::compositor {
+class BaseGraphicsNode;
+}
+
 namespace cyclonite::vulkan {
 class Device;
 }
@@ -135,6 +139,8 @@ public:
     Technique();
 
     void update(vulkan::Device const& device,
+                compositor::BaseGraphicsNode const& gfxNode,
+                size_t passIndex,
                 resources::ResourceManager const& resourceManager,
                 BaseRenderTarget const& rt,
                 bool multisampleShadingEnabled = false,
@@ -196,7 +202,6 @@ private:
     vulkan::Handle<VkPipelineLayout> pipelineLayout_;
     vulkan::Handle<VkPipeline> pipeline_;
 
-    std::string name_;
     bool isExpired_;
 };
 }

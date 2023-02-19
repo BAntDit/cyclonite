@@ -114,6 +114,8 @@ public:
         return frameCommands_[bufferIndex_];
     }
 
+    [[nodiscard]] auto renderPass() const -> VkRenderPass { return static_cast<VkRenderPass>(vkRenderPass_); }
+
 protected:
     BaseGraphicsNode(resources::ResourceManager& resourceManager,
                      std::string_view name,

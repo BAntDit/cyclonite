@@ -5,6 +5,7 @@
 #include "technique.h"
 #include "baseRenderTarget.h"
 #include "resources/resourceManager.h"
+#include "compositor/baseGraphicsNode.h"
 #include "vulkan/device.h"
 #include "vulkan/shaderModule.h"
 
@@ -238,7 +239,6 @@ Technique::Technique()
   , descriptorSetLayouts_{}
   , pipelineLayout_{}
   , pipeline_{}
-  , name_{}
   , isExpired_{ true }
 {
     std::fill(shaderModules_.begin(), shaderModules_.end(), resources::Resource::Id{});
@@ -268,6 +268,8 @@ Technique::Technique()
 }
 
 void Technique::update(vulkan::Device const& device,
+                       compositor::BaseGraphicsNode const& gfxNode,
+                       size_t passIndex,
                        resources::ResourceManager const& resourceManager,
                        BaseRenderTarget const& rt,
                        bool multisampleShadingEnabled /* = false*/,
@@ -428,9 +430,8 @@ void Technique::update(vulkan::Device const& device,
     graphicsPipelineCreateInfo.pMultisampleState = &multisampleState;
     graphicsPipelineCreateInfo.pColorBlendState = &colorBlendState;
     graphicsPipelineCreateInfo.layout = static_cast<VkPipelineLayout>(pipelineLayout_);
-    // TODO::
-    // graphicsPipelineCreateInfo.renderPass = renderPass;
-    // graphicsPipelineCreateInfo.subpass = subPassIndex;
+    graphicsPipelineCreateInfo.renderPass = gfxNode.renderPass();
+    graphicsPipelineCreateInfo.subpass = static_cast<uint32_t>(passIndex);
     graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 
     auto depthStencilStateCreateInfo = VkPipelineDepthStencilStateCreateInfo{};
