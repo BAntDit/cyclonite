@@ -5,6 +5,7 @@
 #include "technique.h"
 #include "baseRenderTarget.h"
 #include "resources/resourceManager.h"
+#include "vulkan/device.h"
 #include "vulkan/shaderModule.h"
 
 namespace cyclonite::render {
@@ -170,6 +171,43 @@ auto getVulkanBlendOp(Technique::BlendEquation blendEquation) -> VkBlendOp
     assert(r != VK_BLEND_OP_MAX_ENUM);
     return r;
 }
+
+auto getVulkanDepthCompareOp(Technique::DepthFunc depthFunc) -> VkCompareOp
+{
+    auto r = VkCompareOp{ VK_COMPARE_OP_MAX_ENUM };
+
+    switch (depthFunc) {
+        case Technique::DepthFunc::NEVER:
+            r = VK_COMPARE_OP_NEVER;
+            break;
+        case Technique::DepthFunc::LESS:
+            r = VK_COMPARE_OP_LESS;
+            break;
+        case Technique::DepthFunc::EQUAL:
+            r = VK_COMPARE_OP_EQUAL;
+            break;
+        case Technique::DepthFunc::LESS_OR_EQUAL:
+            r = VK_COMPARE_OP_LESS_OR_EQUAL;
+            break;
+        case Technique::DepthFunc::GREATER:
+            r = VK_COMPARE_OP_GREATER;
+            break;
+        case Technique::DepthFunc::NOT_EQUAL:
+            r = VK_COMPARE_OP_NOT_EQUAL;
+            break;
+        case Technique::DepthFunc::GREATER_OR_EQUAL:
+            r = VK_COMPARE_OP_GREATER_OR_EQUAL;
+            break;
+        case Technique::DepthFunc::ALWAYS:
+            r = VK_COMPARE_OP_ALWAYS;
+            break;
+        default:
+            r = VK_COMPARE_OP_MAX_ENUM;
+    }
+
+    assert(r != VK_COMPARE_OP_MAX_ENUM);
+    return r;
+}
 }
 
 Technique::Technique()
@@ -195,8 +233,10 @@ Technique::Technique()
   , depthBiasConstantFactor_{ 0.f }
   , depthBiasSlopeFactor_{ 0.f }
   , flags_{}
+  , depthFunc_{ DepthFunc::ALWAYS }
   , descriptorSetLayoutCount_{ 0 }
   , descriptorSetLayouts_{}
+  , pipelineLayout_{}
   , pipeline_{}
   , name_{}
   , isExpired_{ true }
@@ -227,7 +267,8 @@ Technique::Technique()
     flags_.set(value_cast(Flags::DEPTH_BIAS_ENABLE), false);
 }
 
-void Technique::update(resources::ResourceManager const& resourceManager,
+void Technique::update(vulkan::Device const& device,
+                       resources::ResourceManager const& resourceManager,
                        BaseRenderTarget const& rt,
                        bool multisampleShadingEnabled /* = false*/,
                        uint32_t sampleCount /* = 1*/,
@@ -235,35 +276,32 @@ void Technique::update(resources::ResourceManager const& resourceManager,
 {
     isExpired_ |= forceUpdate;
 
+    isExpired_ |= (rt.colorAttachmentCount() != colorOutputCount_);
+
     // TODO:: handle render target resize
-    if (!isExpired_ && pipeline_)
+    if (!isExpired_ && pipeline_ && pipelineLayout_) {
         return;
+    }
 
-    if (pipeline_)
+    if (pipeline_) {
+        assert(pipelineLayout_);
+
         pipeline_.reset();
+        pipelineLayout_.reset();
+    }
 
-    auto stages = { ShaderStage::VERTEX_STAGE,
-                    ShaderStage::TESSELATION_CONTROL_STAGE,
-                    ShaderStage::TESSELATION_EVALUATION_STAGE,
-                    ShaderStage::GEOMETRY_STAGE,
-                    ShaderStage::FRAGMENT_STAGE };
-
-    assert(rasterization_shader_stage_count_v == std::size(stages));
-
-    auto shaderStageCount = uint32_t{ 0 };
+    auto shaderStageCount = stageMask_.count();
     auto shaderStages = std::array<VkPipelineShaderStageCreateInfo, rasterization_shader_stage_count_v>{};
 
-    for (auto stage : stages) {
-        if (!shaderFlags_.test(shaderStageCount))
-            continue;
+    for (auto i = size_t{ 0 }; i < shaderStageCount; i++) {
+        auto&& [name, stage, index] = entryPoints_[i];
+        auto const& sm = resourceManager.get(shaderModules_[index]).template as<vulkan::ShaderModule>();
 
-        auto& sm = resourceManager.get(shaders_[shaderStageCount]).template as<vulkan::ShaderModule>();
-
-        auto& sci = shaderStages[shaderStageCount++];
+        auto& sci = shaderStages[i];
         sci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         sci.stage = getVulkanRasterizationShaderStage(stage);
         sci.module = sm.handle();
-        sci.pName = sm.entryPointName().data();
+        sci.pName = name.c_str();
     }
 
     // TODO:: extend reflection to extract vertex shader input as well
@@ -275,7 +313,7 @@ void Technique::update(resources::ResourceManager const& resourceManager,
     auto assemblyState = VkPipelineInputAssemblyStateCreateInfo{};
     assemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     assemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    assemblyState.primitiveRestartEnable = VK_FALSE; // TODO:: make it comes from material
+    assemblyState.primitiveRestartEnable = VK_FALSE; // TODO:: make it comes from material technique
 
     VkViewport vkViewport = {};
     vkViewport.x = static_cast<real>(0);
@@ -347,17 +385,76 @@ void Technique::update(resources::ResourceManager const& resourceManager,
 
         auto writeMask = writeMaskPerOutput_[i];
         pipelineColorBlendAttachmentState.colorWriteMask = static_cast<VkColorComponentFlags>(writeMask.to_ulong());
+    }
+    colorOutputCount_ = static_cast<uint32_t>(attachmentCount);
 
-        auto colorBlendState = VkPipelineColorBlendStateCreateInfo{};
-        colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        colorBlendState.logicOpEnable = VK_FALSE; // ???
-        colorBlendState.logicOp = VK_LOGIC_OP_COPY;
-        colorBlendState.attachmentCount = static_cast<uint32_t>(attachmentCount);
-        colorBlendState.pAttachments = pipelineColorBlendAttachmentStates.data();
-        colorBlendState.blendConstants[0] = blendConstants_.r;
-        colorBlendState.blendConstants[1] = blendConstants_.g;
-        colorBlendState.blendConstants[2] = blendConstants_.b;
-        colorBlendState.blendConstants[3] = blendConstants_.a;
+    auto colorBlendState = VkPipelineColorBlendStateCreateInfo{};
+    colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colorBlendState.logicOpEnable = VK_FALSE; // ???
+    colorBlendState.logicOp = VK_LOGIC_OP_COPY;
+    colorBlendState.attachmentCount = colorOutputCount_;
+    colorBlendState.pAttachments = pipelineColorBlendAttachmentStates.data();
+    colorBlendState.blendConstants[0] = blendConstants_.r;
+    colorBlendState.blendConstants[1] = blendConstants_.g;
+    colorBlendState.blendConstants[2] = blendConstants_.b;
+    colorBlendState.blendConstants[3] = blendConstants_.a;
+
+    auto descriptorSetLayouts =
+      ([]<size_t... idx>(std::index_sequence<idx...>, auto& descriptorSetLayouts)
+         ->std::array<VkDescriptorSetLayout, sizeof...(idx)> {
+             return std::array{ static_cast<VkDescriptorSetLayout>(descriptorSetLayouts[idx])... };
+         })(std::make_index_sequence<vulkan::maxDescriptorSetsPerPipeline>{}, descriptorSetLayouts_);
+
+    auto pipelineLayoutCreateInfo = VkPipelineLayoutCreateInfo{};
+    pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutCreateInfo.setLayoutCount = descriptorSetLayoutCount_;
+    pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
+
+    pipelineLayout_ = vulkan::Handle<VkPipelineLayout>{ device.handle(), vkDestroyPipelineLayout };
+
+    if (auto result = vkCreatePipelineLayout(device.handle(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout_);
+        result != VK_SUCCESS) {
+        throw std::runtime_error("could not create graphics pipeline layout");
+    }
+
+    auto graphicsPipelineCreateInfo = VkGraphicsPipelineCreateInfo{};
+    graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    graphicsPipelineCreateInfo.stageCount = shaderStageCount;
+    graphicsPipelineCreateInfo.pStages = shaderStages.data();
+    graphicsPipelineCreateInfo.pVertexInputState = &vertexInput;
+    graphicsPipelineCreateInfo.pInputAssemblyState = &assemblyState;
+    graphicsPipelineCreateInfo.pViewportState = &viewportState;
+    graphicsPipelineCreateInfo.pRasterizationState = &rasterizationState;
+    graphicsPipelineCreateInfo.pMultisampleState = &multisampleState;
+    graphicsPipelineCreateInfo.pColorBlendState = &colorBlendState;
+    graphicsPipelineCreateInfo.layout = static_cast<VkPipelineLayout>(pipelineLayout_);
+    // TODO::
+    // graphicsPipelineCreateInfo.renderPass = renderPass;
+    // graphicsPipelineCreateInfo.subpass = subPassIndex;
+    graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+    auto depthStencilStateCreateInfo = VkPipelineDepthStencilStateCreateInfo{};
+    if (rt.hasDepthStencil()) {
+        depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencilStateCreateInfo.depthTestEnable = VkBool32{ flags_.test(value_cast(Flags::DEPTH_TEST)) };
+        depthStencilStateCreateInfo.depthWriteEnable = VkBool32{ flags_.test(value_cast(Flags::DEPTH_WRITE)) };
+        depthStencilStateCreateInfo.depthCompareOp = getVulkanDepthCompareOp(depthFunc_);
+        depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+        depthStencilStateCreateInfo.minDepthBounds = 0.0f;
+        depthStencilStateCreateInfo.maxDepthBounds = 1.0f;
+        depthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
+        depthStencilStateCreateInfo.front = {};
+        depthStencilStateCreateInfo.back = {};
+
+        graphicsPipelineCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
+    }
+
+    pipeline_ = vulkan::Handle<VkPipeline>{ device.handle(), vkDestroyPipeline };
+
+    if (auto result = vkCreateGraphicsPipelines(
+          device.handle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &pipeline_);
+        result != VK_SUCCESS) {
+        throw std::runtime_error("could not create graphics pipeline");
     }
 
     isExpired_ = false;

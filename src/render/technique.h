@@ -13,8 +13,15 @@
 #include <array>
 #include <bitset>
 
-namespace cyclonite::render {
+namespace cyclonite {
 class BaseRenderTarget;
+}
+
+namespace cyclonite::vulkan {
+class Device;
+}
+
+namespace cyclonite::render {
 class Material;
 
 class Technique
@@ -95,6 +102,21 @@ public:
         COUNT = MAX_VALUE + 1
     };
 
+    enum class DepthFunc
+    {
+        NEVER = 0,
+        LESS = 1,
+        EQUAL = 2,
+        LESS_OR_EQUAL = 3,
+        GREATER = 4,
+        NOT_EQUAL = 5,
+        GREATER_OR_EQUAL = 6,
+        ALWAYS = 7,
+        MIN_VALUE = NEVER,
+        MAX_VALUE = ALWAYS,
+        COUNT = MAX_VALUE + 1
+    };
+
     enum class Flags
     {
         DEPTH_WRITE = 0,
@@ -112,7 +134,8 @@ public:
 public:
     Technique();
 
-    void update(resources::ResourceManager const& resourceManager,
+    void update(vulkan::Device const& device,
+                resources::ResourceManager const& resourceManager,
                 BaseRenderTarget const& rt,
                 bool multisampleShadingEnabled = false,
                 uint32_t sampleCount = 1,
@@ -162,8 +185,15 @@ private:
 
     flags_t flags_;
 
+    DepthFunc depthFunc_;
+
+    // TODO:: stencil test
+
+    // TODO:: depth bounds
+
     uint32_t descriptorSetLayoutCount_;
     std::array<vulkan::Handle<VkDescriptorSetLayout>, vulkan::maxDescriptorSetsPerPipeline> descriptorSetLayouts_;
+    vulkan::Handle<VkPipelineLayout> pipelineLayout_;
     vulkan::Handle<VkPipeline> pipeline_;
 
     std::string name_;
