@@ -343,7 +343,7 @@ void Material::addTechnique(vulkan::Device& device,
     for (auto&& [code, identifiers] : uniqueModules) {
         auto [idx, id] = identifiers;
 
-        assert(id  == resources::Resource::Id{} || !uniqueResourceIdentifiers.contains(static_cast<uint64_t>(id)));
+        assert(id == resources::Resource::Id{} || !uniqueResourceIdentifiers.contains(static_cast<uint64_t>(id)));
         uniqueResourceIdentifiers.insert(static_cast<uint64_t>(id));
 
         if (id != resources::Resource::Id{ std::numeric_limits<uint32_t>::max() }) {
@@ -356,8 +356,6 @@ void Material::addTechnique(vulkan::Device& device,
     }
 
     assert(descriptorSetLayoutCount <= vulkan::maxDescriptorSetsPerPipeline);
-    technique.descriptorSetLayoutCount_ = descriptorSetLayoutCount;
-
     for (auto&& [set, idx] : sets) {
         assert(set < descriptorSetLayoutCreateInfo.size());
 
@@ -375,12 +373,15 @@ void Material::addTechnique(vulkan::Device& device,
             result != VK_SUCCESS) {
             throw std::runtime_error("could not create descriptor set layouts");
         }
+        technique.descriptorSetLayoutCount_++;
     }
+    assert(technique.descriptorSetLayoutCount_ == descriptorSetLayoutCount);
 #else
     throw std::runtime_error("SPIR-V reflection must be enabled");
 #endif
 
     technique.name_ = techniqueName;
+
     techniques_.emplace(techniqueName, std::move(technique));
 }
 }

@@ -6,8 +6,8 @@
 #define CYCLONITE_MATERIAL_H
 
 #include "resources/resource.h"
-#include "typedefs.h"
 #include "technique.h"
+#include "typedefs.h"
 #include <array>
 #include <bitset>
 #include <unordered_map>

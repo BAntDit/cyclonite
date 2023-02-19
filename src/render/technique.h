@@ -107,6 +107,8 @@ public:
         COUNT = 5
     };
 
+    using flags_t = std::bitset<easy_mp::value_cast(Flags::COUNT)>;
+
 public:
     Technique();
 
@@ -148,17 +150,17 @@ private:
     std::array<output_write_mask_t, render_target_output_semantic_count_v> writeMaskPerOutput_;
 
     vec4 blendConstants_;
+    real alphaCutoff_;
 
     CullFace cullFace_;
     PolygonMode polygonMode_;
 
-    real alphaCutoff_;
     real lineWith_;
     real depthBiasClamp_;
     real depthBiasConstantFactor_;
     real depthBiasSlopeFactor_;
 
-    std::bitset<easy_mp::value_cast(Flags::COUNT)> flags_;
+    flags_t flags_;
 
     uint32_t descriptorSetLayoutCount_;
     std::array<vulkan::Handle<VkDescriptorSetLayout>, vulkan::maxDescriptorSetsPerPipeline> descriptorSetLayouts_;

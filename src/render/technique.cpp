@@ -172,8 +172,12 @@ auto getVulkanBlendOp(Technique::BlendEquation blendEquation) -> VkBlendOp
 }
 }
 
-Technique::Technique() :
-  colorOutputCount_{ 0 }
+Technique::Technique()
+  : stageMask_{}
+  , shaderModuleCount_{ 0 }
+  , shaderModules_{}
+  , entryPoints_{}
+  , colorOutputCount_{ 0 }
   , alphaModePerOutput_{}
   , colorBlendEquationPerOutput_{}
   , alphaBlendEquationPerOutput_{}
@@ -182,17 +186,28 @@ Technique::Technique() :
   , alphaSrcBlendFactorPerOutput_{}
   , alphaDstBlendFactorPerOutput_{}
   , writeMaskPerOutput_{}
-  , blendConstants_{ 0.f, 0.f, 0.f, 0.f }
+  , blendConstants_{ 1.f }
+  , alphaCutoff_{ 0.f }
   , cullFace_{ CullFace::BACK }
   , polygonMode_{ PolygonMode::FILL }
-  , alphaCutoff_{ 0.f }
   , lineWith_{ 1.f }
   , depthBiasClamp_{ 0.f }
   , depthBiasConstantFactor_{ 0.f }
   , depthBiasSlopeFactor_{ 0.f }
+  , flags_{}
+  , descriptorSetLayoutCount_{ 0 }
+  , descriptorSetLayouts_{}
   , pipeline_{}
-  , isExpired_{ false }
+  , name_{}
+  , isExpired_{ true }
 {
+    std::fill(shaderModules_.begin(), shaderModules_.end(), resources::Resource::Id{});
+
+    std::fill(entryPoints_.begin(),
+              entryPoints_.end(),
+              shader_entry_point_t{
+                .name = "", .stage = ShaderStage::COUNT, .moduleIndex = std::numeric_limits<size_t>::max() });
+
     std::fill(alphaModePerOutput_.begin(), alphaModePerOutput_.end(), AlphaMode::OPAQUE);
     std::fill(colorBlendEquationPerOutput_.begin(), colorBlendEquationPerOutput_.end(), BlendEquation::FUNC_ADD);
     std::fill(alphaBlendEquationPerOutput_.begin(), alphaBlendEquationPerOutput_.end(), BlendEquation::FUNC_ADD);
