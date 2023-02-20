@@ -23,6 +23,7 @@ set(PUBLIC_HEADERS
     src/typedefs.h
     src/render/material.h
     src/render/technique.h
+    src/render/batch.h
     src/compositor/nodeAsset.h
     src/animations/animation.h
     src/animations/sampler.h
