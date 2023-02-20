@@ -271,11 +271,12 @@ void Technique::update(vulkan::Device const& device,
                        compositor::BaseGraphicsNode const& gfxNode,
                        size_t passIndex,
                        resources::ResourceManager const& resourceManager,
-                       BaseRenderTarget const& rt,
                        bool multisampleShadingEnabled /* = false*/,
                        uint32_t sampleCount /* = 1*/,
                        bool forceUpdate /* = false*/)
 {
+    auto const& rt = gfxNode.getRenderTargetBase();
+
     isExpired_ |= forceUpdate;
 
     isExpired_ |= (rt.colorAttachmentCount() != colorOutputCount_);
@@ -322,8 +323,8 @@ void Technique::update(vulkan::Device const& device,
     vkViewport.y = static_cast<real>(0);
     vkViewport.width = static_cast<real>(rt.width());
     vkViewport.height = static_cast<real>(rt.height());
-    vkViewport.minDepth = 0.0;
-    vkViewport.maxDepth = 1.0;
+    vkViewport.minDepth = 0.f;
+    vkViewport.maxDepth = 1.f;
 
     VkRect2D vkScissor = {};
     vkScissor.offset.x = static_cast<int32_t>(0);

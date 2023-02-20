@@ -138,11 +138,20 @@ public:
 public:
     Technique();
 
+    Technique(Technique const&) = delete;
+
+    Technique(Technique&&) = default;
+
+    ~Technique() = default;
+
+    auto operator=(Technique const&) -> Technique& = delete;
+
+    auto operator=(Technique&&) -> Technique& = default;
+
     void update(vulkan::Device const& device,
                 compositor::BaseGraphicsNode const& gfxNode,
                 size_t passIndex,
                 resources::ResourceManager const& resourceManager,
-                BaseRenderTarget const& rt,
                 bool multisampleShadingEnabled = false,
                 uint32_t sampleCount = 1,
                 bool forceUpdate = false);
