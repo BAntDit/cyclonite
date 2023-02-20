@@ -267,9 +267,9 @@ Technique::Technique()
 }
 
 void Technique::update(vulkan::Device const& device,
+                       resources::ResourceManager const& resourceManager,
                        compositor::BaseGraphicsNode const& gfxNode,
                        size_t passIndex,
-                       resources::ResourceManager const& resourceManager,
                        bool forceUpdate /* = false*/)
 {
     auto const& rt = gfxNode.getRenderTargetBase();

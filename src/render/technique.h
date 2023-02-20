@@ -149,9 +149,9 @@ public:
     auto operator=(Technique&&) -> Technique& = default;
 
     void update(vulkan::Device const& device,
+                resources::ResourceManager const& resourceManager,
                 compositor::BaseGraphicsNode const& gfxNode,
                 size_t passIndex,
-                resources::ResourceManager const& resourceManager,
                 bool forceUpdate = false);
 
     [[nodiscard]] auto stageMask() const -> std::bitset<rasterization_shader_stage_count_v> { return stageMask_; }
