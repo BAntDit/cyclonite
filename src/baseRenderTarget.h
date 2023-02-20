@@ -50,6 +50,9 @@ public:
 
     [[nodiscard]] auto clearValues() const -> std::vector<VkClearValue> const& { return clearValues_; }
 
+    // TODO:: multisampling support
+    [[nodiscard]] auto multisampleSampleCount() const -> uint32_t { return 1; }
+
 private:
     VkExtent2D extent_;
     bool hasDepthStencil_;

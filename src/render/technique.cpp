@@ -270,8 +270,6 @@ void Technique::update(vulkan::Device const& device,
                        compositor::BaseGraphicsNode const& gfxNode,
                        size_t passIndex,
                        resources::ResourceManager const& resourceManager,
-                       bool multisampleShadingEnabled /* = false*/,
-                       uint32_t sampleCount /* = 1*/,
                        bool forceUpdate /* = false*/)
 {
     auto const& rt = gfxNode.getRenderTargetBase();
@@ -351,10 +349,12 @@ void Technique::update(vulkan::Device const& device,
     rasterizationState.depthBiasConstantFactor = depthBiasConstantFactor_;
     rasterizationState.depthBiasSlopeFactor = depthBiasSlopeFactor_;
 
+    auto multisampleSampleCount = rt.multisampleSampleCount();
+    auto multisampleShadingEnabled = multisampleSampleCount > 1;
     auto multisampleState = VkPipelineMultisampleStateCreateInfo{};
     multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampleState.sampleShadingEnable = VkBool32{ multisampleShadingEnabled };
-    multisampleState.rasterizationSamples = getVulkanSampleCount(sampleCount);
+    multisampleState.rasterizationSamples = getVulkanSampleCount(multisampleSampleCount);
 
     auto pipelineColorBlendAttachmentStates =
       std::array<VkPipelineColorBlendAttachmentState, render_target_output_semantic_count_v>{};

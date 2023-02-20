@@ -152,8 +152,6 @@ public:
                 compositor::BaseGraphicsNode const& gfxNode,
                 size_t passIndex,
                 resources::ResourceManager const& resourceManager,
-                bool multisampleShadingEnabled = false,
-                uint32_t sampleCount = 1,
                 bool forceUpdate = false);
 
     [[nodiscard]] auto stageMask() const -> std::bitset<rasterization_shader_stage_count_v> { return stageMask_; }
