@@ -3,7 +3,6 @@
 //
 
 #include "technique.h"
-#include "baseRenderTarget.h"
 #include "resources/resourceManager.h"
 #include "compositor/baseGraphicsNode.h"
 #include "vulkan/device.h"
