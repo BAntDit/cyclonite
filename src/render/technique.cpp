@@ -3,8 +3,8 @@
 //
 
 #include "technique.h"
-#include "resources/resourceManager.h"
 #include "compositor/baseGraphicsNode.h"
+#include "resources/resourceManager.h"
 #include "vulkan/device.h"
 #include "vulkan/shaderModule.h"
 
@@ -238,6 +238,7 @@ Technique::Technique()
   , descriptorSetLayouts_{}
   , pipelineLayout_{}
   , pipeline_{}
+  , buffers_{}
   , isExpired_{ true }
 {
     std::fill(shaderModules_.begin(), shaderModules_.end(), resources::Resource::Id{});
@@ -457,6 +458,8 @@ void Technique::update(vulkan::Device const& device,
         result != VK_SUCCESS) {
         throw std::runtime_error("could not create graphics pipeline");
     }
+
+    // TODO:: update buffer resources
 
     isExpired_ = false;
 }

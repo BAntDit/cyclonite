@@ -3,6 +3,8 @@
 //
 
 #include "renderSystem.h"
+#include "resources/geometry.h"
+#include "resources/resourceManager.h"
 
 /*
 std::vector<uint32_t> const defaultVertexShaderCode = {
@@ -19,6 +21,20 @@ void RenderSystem::init(multithreading::TaskManager& taskManager, vulkan::Device
 {
     taskManager_ = &taskManager;
     device_ = &device;
+}
+
+void RenderSystem::queueBatch(resources::Resource::Id materialId, resources::Resource::Id geometryId)
+{
+    auto drawCommandsKey = static_cast<uint64_t>(materialId);
+
+    if (!drawCommands_.contains(drawCommandsKey)) {
+        // TODO::
+    }
+    assert(drawCommands_.contains(drawCommandsKey));
+
+    auto& drawCommands = drawCommands_[drawCommandsKey];
+
+    // TODO::
 }
 
 void RenderSystem::finish()

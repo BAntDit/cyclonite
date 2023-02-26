@@ -3,12 +3,12 @@
 //
 
 #include "material.h"
+#include "compositor/nodeIdentifier.h"
 #include "descriptorType.h"
 #include "resources/resourceManager.h"
 #include "technique.h"
 #include "vulkan/device.h"
 #include "vulkan/shaderModule.h"
-#include "compositor/nodeIdentifier.h"
 #ifdef ENABLE_SHADER_MODULE_FROM_SPIR_V
 #include <spirv_cross/spirv_cross.hpp>
 #endif
@@ -194,6 +194,14 @@ auto getVulkanDescriptorType(std::string const& name, spirv_cross::SPIRType cons
 
     return result;
 }
+
+auto isBufferResource(VkDescriptorType descriptorType) -> bool
+{
+    return (descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER &&
+            descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC &&
+            descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER &&
+            descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC);
+}
 }
 #endif
 resources::Resource::ResourceTag Material::tag{};
@@ -327,6 +335,39 @@ void Material::addTechnique(vulkan::Device& device,
                 binding.descriptorType = getVulkanDescriptorType(name, type, descriptorType);
                 binding.descriptorCount = descriptorCount;
                 binding.stageFlags = stageFlags;
+
+                if (isBufferResource(binding.descriptorType)) {
+                    auto bufferResource = Technique::shader_buffer_resource_t{};
+
+                    bufferResource.name = name;
+                    bufferResource.set = set;
+                    bufferResource.binding = binding.binding;
+                    bufferResource.offset = std::numeric_limits<size_t>::max();
+
+                    if (binding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+                        binding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) {
+                        auto const& baseType = compiler.get_type(r.base_type_id);
+                        bufferResource.size = compiler.get_declared_struct_size(baseType);
+                        assert(bufferResource.size > 0);
+                    } else {
+                        bufferResource.size = std::numeric_limits<size_t>::max();
+                    }
+
+                    bufferResource.buffer = VK_NULL_HANDLE;
+                    bufferResource.ptr = nullptr;
+
+                    auto bufferResourceKey = std::string_view(bufferResource.name);
+
+                    auto const& [it, emplaced] =
+                      technique.buffers_.emplace(bufferResourceKey, std::move(bufferResource));
+                    assert(emplaced);
+                    (void)emplaced;
+
+                    auto const& [k, br] = *it;
+                    assert(k.data() == br.name.data());
+                    (void)k;
+                    (void)br;
+                }
             }
         }
 

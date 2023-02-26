@@ -146,7 +146,7 @@ public:
 
     auto operator=(Technique const&) -> Technique& = delete;
 
-    auto operator=(Technique&&) -> Technique& = default;
+    auto operator=(Technique &&) -> Technique& = default;
 
     void update(vulkan::Device const& device,
                 resources::ResourceManager const& resourceManager,
@@ -167,6 +167,17 @@ private:
         std::string name;
         ShaderStage stage;
         size_t moduleIndex;
+    };
+
+    struct shader_buffer_resource_t
+    {
+        std::string name;
+        uint32_t set;
+        uint32_t binding;
+        VkBuffer buffer;
+        size_t offset;
+        size_t size;
+        void* ptr;
     };
 
     std::bitset<rasterization_shader_stage_count_v> stageMask_;
@@ -208,6 +219,8 @@ private:
     std::array<vulkan::Handle<VkDescriptorSetLayout>, vulkan::maxDescriptorSetsPerPipeline> descriptorSetLayouts_;
     vulkan::Handle<VkPipelineLayout> pipelineLayout_;
     vulkan::Handle<VkPipeline> pipeline_;
+
+    std::unordered_map<std::string_view, shader_buffer_resource_t> buffers_;
 
     bool isExpired_;
 };

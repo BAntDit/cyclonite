@@ -6,6 +6,8 @@
 #define CYCLONITE_RENDERSYSTEM_H
 
 #include "multithreading/taskManager.h"
+#include "render/batch.h"
+#include "render/drawCommands.h"
 #include "updateStages.h"
 #include "vulkan/device.h"
 #include <easy-mp/enum.h>
@@ -34,9 +36,14 @@ public:
 
     void finish();
 
+    void queueBatch(resources::Resource::Id materialId, resources::Resource::Id geometryId);
+
 private:
+    resources::ResourceManager* resourceManager_;
     multithreading::TaskManager* taskManager_;
     vulkan::Device* device_;
+    // for the key is material Id only, but have to be a pair<material id, vertex format>
+    std::unordered_map<uint64_t, render::DrawCommands> drawCommands_;
 };
 
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>

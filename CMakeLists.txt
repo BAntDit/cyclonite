@@ -24,6 +24,7 @@ set(PUBLIC_HEADERS
     src/render/material.h
     src/render/technique.h
     src/render/batch.h
+    src/render/drawCommands.h
     src/compositor/nodeAsset.h
     src/animations/animation.h
     src/animations/sampler.h
