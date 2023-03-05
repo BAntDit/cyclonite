@@ -82,6 +82,9 @@ public:
 
     void free(AllocatedMemory const& allocatedMemory);
 
+    template<typename DataType>
+    auto view(size_t count, size_t offset = 0, size_t stride = sizeof(DataType)) -> buffers::BufferView<DataType>;
+
 protected:
     size_t size_;
     std::deque<std::pair<size_t, size_t>> freeRanges_;
@@ -197,6 +200,13 @@ template<typename MemoryPage>
 auto Arena<MemoryPage>::maxAvailableRange() const -> size_t
 {
     return freeRanges_.empty() ? 0 : static_cast<size_t>(freeRanges_.back().second);
+}
+
+template<typename MemoryPage>
+template<typename DataType>
+auto Arena<MemoryPage>::view(size_t count, size_t offset/* = 0*/, size_t stride/* = sizeof(DataType)*/) -> buffers::BufferView<DataType>
+{
+    return buffers::BufferView<DataType>{ ptr(), offset, count, stride };
 }
 
 template<typename MemoryPage>
