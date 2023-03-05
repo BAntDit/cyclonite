@@ -9,6 +9,7 @@
 #include <cassert>
 #include <cstddef>
 #include <deque>
+#include "bufferView.h"
 
 namespace cyclonite::buffers {
 template<typename MemoryPage>
@@ -45,6 +46,9 @@ public:
         [[nodiscard]] auto offset() const -> size_t { return offset_; }
 
         [[nodiscard]] auto memoryPage() const -> MemoryPage const& { return *memoryPage_; }
+
+        template<typename DataType>
+        auto view(size_t count, size_t offset = 0, size_t stride = sizeof(DataType)) -> buffers::BufferView<DataType>;
 
     private:
         MemoryPage* memoryPage_;
@@ -247,6 +251,15 @@ auto Arena<MemoryPage>::AllocatedMemory::operator=(Arena<MemoryPage>::AllocatedM
     rhs.size_ = 0;
 
     return *this;
+}
+
+template<typename MemoryPage>
+template<typename DataType>
+auto Arena<MemoryPage>::AllocatedMemory::view(size_t count,
+                                              size_t offset /* = 0*/,
+                                              size_t stride /* = sizeof(DataType)*/) -> buffers::BufferView<DataType>
+{
+    return buffers::BufferView<DataType>{ ptr(), offset, count, stride };
 }
 }
 
