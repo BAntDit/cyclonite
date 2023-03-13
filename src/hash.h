@@ -37,6 +37,17 @@ auto tuple_hash(Tuple&& tuple, std::index_sequence<idx...> &&) -> size_t
     return result;
 }
 
+template<typename T1, typename T2>
+auto hash_value(std::pair<T1, T2> const& value) -> size_t
+{
+    size_t result = 0;
+
+    result ^= std::hash<T1>{}(std::get<0>(value)) + 0x9e3779b9 + (result << 6) + (result >> 2);
+    result ^= std::hash<T2>{}(std::get<1>(value)) + 0x9e3779b9 + (result << 6) + (result >> 2);
+
+    return result;
+}
+
 struct hash
 {
     template<typename T>

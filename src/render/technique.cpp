@@ -238,7 +238,8 @@ Technique::Technique()
   , descriptorSetLayouts_{}
   , pipelineLayout_{}
   , pipeline_{}
-  , buffers_{}
+  , resourceDescriptors_{}
+  , nameToResourceDescriptor_{}
   , isExpired_{ true }
 {
     std::fill(shaderModules_.begin(), shaderModules_.end(), resources::Resource::Id{});
@@ -459,7 +460,18 @@ void Technique::update(vulkan::Device const& device,
         throw std::runtime_error("could not create graphics pipeline");
     }
 
-    // TODO:: update buffer resources
+    // TODO:: update buffer resources (uniform buffers)
+    for (auto&& [k, r] : resourceDescriptors_) {
+        auto [set, binding] = k;
+
+        if (r.header.descriptorType == DescriptorType::UNIFORM_BUFFER ||
+            r.header.descriptorType == DescriptorType::UNIFORM_BUFFER_DYNAMIC) {
+            auto* d = std::bit_cast<ShaderResourceUBODescriptor*>(std::data(r.descriptor));
+
+            // set 0 is shared
+        }
+        // TODO::
+    }
 
     isExpired_ = false;
 }

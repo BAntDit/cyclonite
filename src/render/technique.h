@@ -6,6 +6,7 @@
 #define CYCLONITE_RENDER_TECHNIQUE_H
 
 #include "resources/resource.h"
+#include "shaderResource.h"
 #include "typedefs.h"
 #include "vulkan/config.h"
 #include "vulkan/handle.h"
@@ -162,22 +163,21 @@ private:
     auto stageMask() -> std::bitset<rasterization_shader_stage_count_v>& { return stageMask_; }
 
 private:
+    struct shader_resource_hash_t
+    {
+        auto operator()(std::pair<uint8_t, uint8_t> k) const -> size_t
+        {
+            size_t result =
+              (0x000000FF & static_cast<size_t>(k.first)) + ((static_cast<size_t>(k.second) << 8) & 0x0000FF00);
+            return result;
+        }
+    };
+
     struct shader_entry_point_t
     {
         std::string name;
         ShaderStage stage;
         size_t moduleIndex;
-    };
-
-    struct shader_buffer_resource_t
-    {
-        std::string name;
-        uint32_t set;
-        uint32_t binding;
-        VkBuffer buffer;
-        size_t offset;
-        size_t size;
-        void* ptr;
     };
 
     std::bitset<rasterization_shader_stage_count_v> stageMask_;
@@ -220,7 +220,8 @@ private:
     vulkan::Handle<VkPipelineLayout> pipelineLayout_;
     vulkan::Handle<VkPipeline> pipeline_;
 
-    std::unordered_map<std::string_view, shader_buffer_resource_t> buffers_;
+    std::unordered_map<std::pair<uint8_t, uint8_t>, ShaderResource, shader_resource_hash_t> resourceDescriptors_;
+    std::unordered_map<std::string, std::pair<uint8_t, uint8_t>> nameToResourceDescriptor_;
 
     bool isExpired_;
 };

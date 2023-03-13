@@ -194,14 +194,6 @@ auto getVulkanDescriptorType(std::string const& name, spirv_cross::SPIRType cons
 
     return result;
 }
-
-auto isBufferResource(VkDescriptorType descriptorType) -> bool
-{
-    return (descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER &&
-            descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC &&
-            descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER &&
-            descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC);
-}
 }
 #endif
 resources::Resource::ResourceTag Material::tag{};
@@ -336,37 +328,45 @@ void Material::addTechnique(vulkan::Device& device,
                 binding.descriptorCount = descriptorCount;
                 binding.stageFlags = stageFlags;
 
-                if (isBufferResource(binding.descriptorType)) {
-                    auto bufferResource = Technique::shader_buffer_resource_t{};
+                {
+                    auto [insertion, success] = technique.resourceDescriptors_.emplace(
+                      std::pair{ static_cast<uint8_t>(set), static_cast<uint8_t>(binding.binding) }, ShaderResource{});
 
-                    bufferResource.name = name;
-                    bufferResource.set = set;
-                    bufferResource.binding = binding.binding;
-                    bufferResource.offset = std::numeric_limits<size_t>::max();
+                    assert(success);
+                    (void)success;
 
-                    if (binding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
-                        binding.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) {
-                        auto const& baseType = compiler.get_type(r.base_type_id);
-                        bufferResource.size = compiler.get_declared_struct_size(baseType);
-                        assert(bufferResource.size > 0);
-                    } else {
-                        bufferResource.size = std::numeric_limits<size_t>::max();
+                    auto& [k, shaderRes] = *insertion;
+                    technique.nameToResourceDescriptor_.emplace(name, k);
+
+                    shaderRes.header.descriptorType = descriptorType;
+
+                    auto* baseDescriptor = std::add_pointer_t<ShaderResourceCommonDescriptor>{ nullptr };
+
+                    switch (descriptorType) {
+                        case DescriptorType::STORAGE_BUFFER:
+                        case DescriptorType::STORAGE_BUFFER_DYNAMIC: {
+                            auto* d = new (std::data(shaderRes.descriptor)) ShaderResourceSSBODescriptor{};
+                            d->offset = 0;
+                            baseDescriptor = d;
+                        } break;
+                        case DescriptorType::UNIFORM_BUFFER:
+                        case DescriptorType::UNIFORM_BUFFER_DYNAMIC: {
+                            auto* d = new (std::data(shaderRes.descriptor)) ShaderResourceUBODescriptor{};
+                            d->offset = std::numeric_limits<size_t>::max();
+
+                            auto const& baseType = compiler.get_type(r.base_type_id);
+                            d->size = compiler.get_declared_struct_size(baseType);
+                            assert(d->size > 0);
+
+                            baseDescriptor = d;
+                        } break;
+                        default:
+                            baseDescriptor = new (std::data(shaderRes.descriptor)) ShaderResourceCommonDescriptor{};
                     }
 
-                    bufferResource.buffer = VK_NULL_HANDLE;
-                    bufferResource.ptr = nullptr;
-
-                    auto bufferResourceKey = std::string_view(bufferResource.name);
-
-                    auto const& [it, emplaced] =
-                      technique.buffers_.emplace(bufferResourceKey, std::move(bufferResource));
-                    assert(emplaced);
-                    (void)emplaced;
-
-                    auto const& [k, br] = *it;
-                    assert(k.data() == br.name.data());
-                    (void)k;
-                    (void)br;
+                    assert(baseDescriptor);
+                    baseDescriptor->binding = binding.binding;
+                    baseDescriptor->set = set;
                 }
             }
         }

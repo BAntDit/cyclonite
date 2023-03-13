@@ -21,6 +21,7 @@ set(PUBLIC_HEADERS
     src/surface.h
     src/error.h
     src/typedefs.h
+    src/render/shaderResource.h
     src/render/material.h
     src/render/technique.h
     src/render/batch.h
@@ -30,6 +31,7 @@ set(PUBLIC_HEADERS
     src/animations/sampler.h
     src/buffers/arena.h
     src/buffers/bufferView.h
+    src/buffers/ring.h
     src/resources/contiguousData.h
     src/resources/staging.h
     src/resources/geometry.h
