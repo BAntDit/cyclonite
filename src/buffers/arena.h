@@ -5,11 +5,11 @@
 #ifndef CYCLONITE_ARENA_H
 #define CYCLONITE_ARENA_H
 
+#include "bufferView.h"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <deque>
-#include "bufferView.h"
 
 namespace cyclonite::buffers {
 template<typename MemoryPage>
@@ -204,7 +204,8 @@ auto Arena<MemoryPage>::maxAvailableRange() const -> size_t
 
 template<typename MemoryPage>
 template<typename DataType>
-auto Arena<MemoryPage>::view(size_t count, size_t offset/* = 0*/, size_t stride/* = sizeof(DataType)*/) -> buffers::BufferView<DataType>
+auto Arena<MemoryPage>::view(size_t count, size_t offset /* = 0*/, size_t stride /* = sizeof(DataType)*/)
+  -> buffers::BufferView<DataType>
 {
     return buffers::BufferView<DataType>{ ptr(), offset, count, stride };
 }
