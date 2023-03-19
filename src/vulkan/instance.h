@@ -26,7 +26,7 @@ public:
 
     auto operator=(Instance const&) -> Instance& = delete;
 
-    auto operator=(Instance &&) -> Instance& = default;
+    auto operator=(Instance&&) -> Instance& = default;
 
 public:
     [[nodiscard]] auto handle() const -> VkInstance { return static_cast<VkInstance>(vkInstance_); }

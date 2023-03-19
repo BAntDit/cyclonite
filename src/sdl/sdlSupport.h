@@ -24,7 +24,7 @@ public:
 public:
     auto operator=(SDLSupport const&) -> SDLSupport& = delete;
 
-    auto operator=(SDLSupport &&) -> SDLSupport& = delete;
+    auto operator=(SDLSupport&&) -> SDLSupport& = delete;
 
 public:
     void storeDisplayResolutions(std::vector<std::pair<uint16_t, uint16_t>>& displayREsoltions, int displayIndex);

@@ -16,5 +16,6 @@ FrameBuffer::FrameBuffer(vulkan::Device const& device,
                 height,
                 std::optional<vulkan::ImageView>{ std::move(depthStencilAttachment) },
                 std::array<vulkan::ImageView, 0>{})
-{}
+{
+}
 }

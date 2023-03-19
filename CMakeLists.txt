@@ -21,6 +21,7 @@ set(PUBLIC_HEADERS
     src/surface.h
     src/error.h
     src/typedefs.h
+    src/buffers/allocatedMemory.h
     src/render/shaderResource.h
     src/render/material.h
     src/render/technique.h

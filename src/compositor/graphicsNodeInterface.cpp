@@ -27,7 +27,8 @@ GraphicsNodeInterface::GraphicsNodeInterface(void* node,
   , end_{ endFunc }
   , writeFrameCommands_{ writeFrameCommandsFunc }
   , frameSync_{ frameSyncFunc }
-{}
+{
+}
 
 auto GraphicsNodeInterface::get() const -> BaseGraphicsNode const&
 {

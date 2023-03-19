@@ -10,7 +10,8 @@ LogicNodeInterface::LogicNodeInterface(void* node, update_func_t updateFunc, dis
   : node_{ node }
   , update_{ updateFunc }
   , dispose_{ disposeFunc }
-{}
+{
+}
 
 auto LogicNodeInterface::get() -> BaseLogicNode&
 {

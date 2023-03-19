@@ -27,7 +27,7 @@ public:
 
     auto operator=(RenderSystem const&) -> RenderSystem& = delete;
 
-    auto operator=(RenderSystem &&) -> RenderSystem& = default;
+    auto operator=(RenderSystem&&) -> RenderSystem& = default;
 
     void init(multithreading::TaskManager& taskManager, vulkan::Device& device);
 

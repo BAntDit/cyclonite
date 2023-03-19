@@ -67,11 +67,10 @@ Device::Device(multithreading::TaskManager& taskManager,
                            : (queueFamilyIndices_.push_back(computeQueueFamilyIndex), queueFamilyIndices_.size() - 1);
 
     deviceHostTransferQueueIndex_ =
-      deviceHostTransferQueueFamilyIndex == graphicsQueueFamilyIndex
-        ? graphicsQueueIndex_
-        : deviceHostTransferQueueFamilyIndex == computeQueueFamilyIndex
-            ? computeQueueIndex_
-            : (queueFamilyIndices_.push_back(deviceHostTransferQueueFamilyIndex), queueFamilyIndices_.size() - 1);
+      deviceHostTransferQueueFamilyIndex == graphicsQueueFamilyIndex ? graphicsQueueIndex_
+      : deviceHostTransferQueueFamilyIndex == computeQueueFamilyIndex
+        ? computeQueueIndex_
+        : (queueFamilyIndices_.push_back(deviceHostTransferQueueFamilyIndex), queueFamilyIndices_.size() - 1);
 
     std::array<boost::float32_t, 1> deviceQueuePriority = { 1.0f };
 
@@ -165,5 +164,6 @@ Device::Capabilities::Capabilities(VkPhysicalDeviceLimits const& vkPhysicalDevic
   , minTexelBufferOffsetAlignment{ vkPhysicalDeviceLimits.minTexelBufferOffsetAlignment }
   , maxPushConstantsSize{ vkPhysicalDeviceLimits.maxPushConstantsSize }
   , maxColorAttachments{ vkPhysicalDeviceLimits.maxColorAttachments }
-{}
+{
+}
 }

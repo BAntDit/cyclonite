@@ -22,7 +22,8 @@ Workspace::Workspace() noexcept
   , submitCount_{ 0 }
   , frameFences_{}
   , lastTimeUpdate_{ std::chrono::high_resolution_clock::now() }
-{}
+{
+}
 
 void Workspace::render(vulkan::Device& device)
 {

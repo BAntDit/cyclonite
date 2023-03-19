@@ -22,7 +22,7 @@ public:
 
     auto operator=(Win32Surface const&) -> Win32Surface& = delete;
 
-    auto operator=(Win32Surface &&) -> Win32Surface& = default;
+    auto operator=(Win32Surface&&) -> Win32Surface& = default;
 
     ~Win32Surface() = default;
 };

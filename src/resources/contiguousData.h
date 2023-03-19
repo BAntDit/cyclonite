@@ -101,7 +101,8 @@ ContiguousData<DataType>::ContiguousData(size_t dataCount) noexcept
   : resources::Resource{ dataCount * sizeof(DataType) }
   , data_{ nullptr }
   , count_{ dataCount }
-{}
+{
+}
 
 template<typename DataType>
 void ContiguousData<DataType>::handleDynamicDataAllocation()

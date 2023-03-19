@@ -9,7 +9,8 @@ Resource::ResourceTag Buffer::tag{};
 
 Buffer::Buffer(size_t size) noexcept
   : Resource(size)
-{}
+{
+}
 
 void Buffer::load(std::istream& stream)
 {

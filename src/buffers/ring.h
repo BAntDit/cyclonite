@@ -7,13 +7,11 @@
 
 #include <cstddef>
 
-namespace cyclonite::buffers
-{
+namespace cyclonite::buffers {
 template<typename MemoryPage>
 class Ring
 {
 public:
-
 private:
     size_t size_;
     size_t align_;

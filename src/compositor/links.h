@@ -46,7 +46,7 @@ public:
 
         auto operator=(Iterator const&) -> Iterator& = default;
 
-        auto operator=(Iterator &&) -> Iterator& = default;
+        auto operator=(Iterator&&) -> Iterator& = default;
 
         auto operator==(Iterator const&) const -> bool = default;
 
@@ -103,7 +103,7 @@ public:
 
         auto operator=(ConstIterator const&) -> ConstIterator& = default;
 
-        auto operator=(ConstIterator &&) -> ConstIterator& = default;
+        auto operator=(ConstIterator&&) -> ConstIterator& = default;
 
         auto operator==(ConstIterator const&) const -> bool = default;
 

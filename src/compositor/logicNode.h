@@ -33,7 +33,7 @@ public:
 
     auto operator=(LogicNode const&) -> LogicNode& = delete;
 
-    auto operator=(LogicNode &&) -> LogicNode& = default;
+    auto operator=(LogicNode&&) -> LogicNode& = default;
 
     [[nodiscard]] auto systems() const -> system_manager_t const& { return systems_; }
     auto systems() -> system_manager_t& { return systems_; }
@@ -51,7 +51,8 @@ template<NodeConfig Config>
 LogicNode<Config>::LogicNode(resources::ResourceManager& resourceManager, std::string_view name, uint64_t typeId)
   : BaseLogicNode{ resourceManager, name, typeId }
   , systems_{}
-{}
+{
+}
 
 template<NodeConfig Config>
 void LogicNode<Config>::update(uint64_t frameNumber, real deltaTime)

@@ -11,7 +11,7 @@
 
 namespace cyclonite {
 template<typename Tuple, size_t... idx>
-auto tuple_hash(Tuple&& tuple, std::index_sequence<idx...> &&) -> size_t;
+auto tuple_hash(Tuple&& tuple, std::index_sequence<idx...>&&) -> size_t;
 
 template<typename T>
 auto hash_value(T&& value) -> size_t
@@ -26,7 +26,7 @@ auto hash_value(std::tuple<Args...> const& value) -> size_t
 }
 
 template<typename Tuple, size_t... idx>
-auto tuple_hash(Tuple&& tuple, std::index_sequence<idx...> &&) -> size_t
+auto tuple_hash(Tuple&& tuple, std::index_sequence<idx...>&&) -> size_t
 {
     size_t result = 0;
 

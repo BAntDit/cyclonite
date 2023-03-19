@@ -9,12 +9,14 @@ std::atomic_uint_fast64_t EventReceivable::lastId_{ 0 };
 
 EventReceivable::EventReceiver::EventReceiver(EventReceivable* instance)
   : instance_{ instance }
-{}
+{
+}
 
 EventReceivable::EventReceivable()
   : id_{ ++lastId_ }
   , eventReceiver_{ std::make_shared<EventReceiver>(this) }
-{}
+{
+}
 
 EventReceivable::EventReceivable(EventReceivable&& eventReceivable) noexcept
   : id_{ eventReceivable.id_ }

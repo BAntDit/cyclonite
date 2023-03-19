@@ -29,7 +29,7 @@ public:
 
     auto operator=(AnimationSystem const&) -> AnimationSystem& = delete;
 
-    auto operator=(AnimationSystem &&) -> AnimationSystem& = default;
+    auto operator=(AnimationSystem&&) -> AnimationSystem& = default;
 
     void init(resources::ResourceManager& resourceManager, multithreading::TaskManager& taskManager);
 

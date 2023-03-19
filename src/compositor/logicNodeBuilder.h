@@ -44,7 +44,8 @@ BaseLogicNode::Builder<Config>::Builder(resources::ResourceManager& resourceMana
   , nameToNodeId_{ [wsBuilder, nameToId](std::string_view n) -> uint64_t { return (wsBuilder->*nameToId)(n); } }
   , dependencies_{}
   , nodeTypeId_{ typeId }
-{}
+{
+}
 
 template<NodeConfig Config>
 auto BaseLogicNode::Builder<Config>::setName(std::string_view name) -> Builder&

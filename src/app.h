@@ -55,6 +55,9 @@ int letsGo(int argc, const char* argv[])
 }
 
 #define CYCLONITE_APP(cls)                                                                                             \
-    int main(int argc, const char* argv[]) { return cyclonite::letsGo<cls>(argc, argv); }
+    int main(int argc, const char* argv[])                                                                             \
+    {                                                                                                                  \
+        return cyclonite::letsGo<cls>(argc, argv);                                                                     \
+    }
 
 #endif // CYCLONITE_APP_H

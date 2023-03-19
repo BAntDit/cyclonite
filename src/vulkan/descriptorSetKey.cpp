@@ -76,7 +76,8 @@ DescriptorPoolKey::DescriptorPoolKey(uint32_t samplerCount,
 
 DescriptorPoolKey::DescriptorPoolKey(std::array<uint64_t, 2> val) noexcept
   : key_(val)
-{}
+{
+}
 
 auto DescriptorPoolKey::operator=(std::array<uint64_t, 2> key) -> DescriptorPoolKey&
 {

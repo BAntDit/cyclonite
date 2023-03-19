@@ -112,7 +112,8 @@ public:
 public:
     Event()
       : eventHandlers_{}
-    {}
+    {
+    }
 
     Event(Event const&) = delete;
 

@@ -86,7 +86,8 @@ BufferView<DataType>::BufferView(void* dataPtr, size_t offset, size_t count, siz
   : ptr_{ reinterpret_cast<std::byte*>(dataPtr) + offset }
   , stride_{ stride }
   , count_{ count }
-{}
+{
+}
 
 template<typename DataType>
 BufferView<DataType>::Iterator::Iterator(BufferView<DataType> const& view, difference_type index)

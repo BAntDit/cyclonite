@@ -11,7 +11,8 @@ Basic::Basic()
   , entities_{}
   , systems_{ &entities_ }
   , cameraEntity_{}
-{}
+{
+}
 
 auto Basic::init(cyclonite::Options const& options) -> Basic&
 {

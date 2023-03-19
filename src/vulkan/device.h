@@ -44,7 +44,7 @@ public:
 public:
     auto operator=(Device const&) -> Device& = delete;
 
-    auto operator=(Device &&) -> Device& = default;
+    auto operator=(Device&&) -> Device& = default;
 
 public:
     [[nodiscard]] auto vulkanInstance() const -> VkInstance { return vkInstance_; }

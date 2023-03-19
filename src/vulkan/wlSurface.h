@@ -22,7 +22,7 @@ public:
 
     auto operator=(WlSurface const&) -> WlSurface& = delete;
 
-    auto operator=(WlSurface &&) -> WlSurface& = default;
+    auto operator=(WlSurface&&) -> WlSurface& = default;
 
     ~WlSurface() = default;
 };

@@ -9,7 +9,8 @@ namespace cyclonite::multithreading {
 TaskPool::TaskPool(size_t size)
   : size_{ size }
   , tasks_{ std::make_unique_for_overwrite<Task[]>(size) }
-{}
+{
+}
 
 auto TaskPool::writeableTask() -> Task*
 {

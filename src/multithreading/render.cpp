@@ -21,7 +21,8 @@ auto Render::isInRenderThread() -> bool
 
 Render::Render(cyclonite::multithreading::TaskManager& taskManager) noexcept
   : taskManager_{ &taskManager }
-{}
+{
+}
 
 void Render::operator()()
 {

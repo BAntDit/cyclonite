@@ -24,7 +24,7 @@ public:
 
     auto operator=(XlibSurface const&) -> XlibSurface& = delete;
 
-    auto operator=(XlibSurface &&) -> XlibSurface& = default;
+    auto operator=(XlibSurface&&) -> XlibSurface& = default;
 
     ~XlibSurface() = default;
 };

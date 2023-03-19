@@ -33,7 +33,8 @@ Animation::Animation(multithreading::TaskManager& taskManager,
 
 Animation::Animation(multithreading::TaskManager& taskManager, uint32_t sampleCount, bool autoplay) noexcept
   : Animation{ taskManager, sampleCount, 0.f, autoplay }
-{}
+{
+}
 
 void Animation::handlePostAllocation()
 {
@@ -179,7 +180,8 @@ void Animation::setupSampler(size_t samplerIndex,
 AnimationInterpolationTaskArray::AnimationInterpolationTaskArray(uint16_t taskCount, uint16_t itemsPerTask)
   : resources::ContiguousData<std::future<void>>{ taskCount }
   , itemsPerTask_{ itemsPerTask }
-{}
+{
+}
 
 void AnimationInterpolationTaskArray::resolve()
 {

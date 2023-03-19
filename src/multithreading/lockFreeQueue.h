@@ -29,9 +29,11 @@ class LockFreeSPMCQueue
 
         [[nodiscard]] auto capacity() const -> size_t { return static_cast<size_t>(capacity_); }
 
-        void store(size_t index, T&& t) noexcept requires std::is_nothrow_move_assignable_v<T>;
+        void store(size_t index, T&& t) noexcept
+            requires std::is_nothrow_move_assignable_v<T>;
 
-        auto load(size_t index) noexcept -> T requires std::is_nothrow_move_constructible_v<T>;
+        auto load(size_t index) noexcept -> T
+            requires std::is_nothrow_move_constructible_v<T>;
 
         [[nodiscard]] auto resize(int64_t bottom, int64_t top) -> CircularArray*;
 
@@ -79,14 +81,14 @@ LockFreeSPMCQueue<T>::CircularArray::CircularArray(size_t capacity)
 
 template<typename T>
 void LockFreeSPMCQueue<T>::CircularArray::store(size_t index, T&& t) noexcept
-  requires std::is_nothrow_move_assignable_v<T>
+    requires std::is_nothrow_move_assignable_v<T>
 {
     data_[static_cast<int64_t>(index) & mask_] = std::move(t);
 }
 
 template<typename T>
 auto LockFreeSPMCQueue<T>::CircularArray::load(size_t index) noexcept -> T
-  requires std::is_nothrow_move_constructible_v<T>
+    requires std::is_nothrow_move_constructible_v<T>
 {
     return data_[static_cast<int64_t>(index) & mask_];
 }

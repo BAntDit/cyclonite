@@ -16,7 +16,8 @@ namespace examples::viewer {
 Viewer::Viewer()
   : root_{ std::make_unique<cyclonite::Root>() }
   , model_{ nullptr }
-{}
+{
+}
 
 auto Viewer::init(cyclonite::Options options) -> Viewer&
 {

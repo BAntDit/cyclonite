@@ -24,7 +24,7 @@ class Workspace
 public:
     Workspace(Workspace&&) = default;
 
-    auto operator=(Workspace &&) -> Workspace& = default;
+    auto operator=(Workspace&&) -> Workspace& = default;
 
     ~Workspace();
 

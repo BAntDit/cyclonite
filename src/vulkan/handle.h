@@ -16,12 +16,14 @@ class Handle
 public:
     Handle() noexcept
       : Handle([](T, VkAllocationCallbacks const*) -> void {})
-    {}
+    {
+    }
 
     explicit Handle(void (*deleter)(T, VkAllocationCallbacks const*))
       : handle_{ VK_NULL_HANDLE }
       , deleter_{ deleter }
-    {}
+    {
+    }
 
     Handle(VkInstance vkInstance, void (*deleter)(VkInstance, T, VkAllocationCallbacks const*))
       : handle_{ VK_NULL_HANDLE }

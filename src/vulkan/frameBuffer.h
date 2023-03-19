@@ -75,7 +75,7 @@ public:
 
     auto operator=(FrameBuffer const&) -> FrameBuffer& = delete;
 
-    auto operator=(FrameBuffer &&) -> FrameBuffer& = default;
+    auto operator=(FrameBuffer&&) -> FrameBuffer& = default;
 
     [[nodiscard]] auto handle() const -> VkFramebuffer { return static_cast<VkFramebuffer>(vkFrameBuffer_); }
 
@@ -190,7 +190,8 @@ FrameBuffer::FrameBuffer(vulkan::Device const& device,
                 height,
                 std::optional<vulkan::ImageView>{ std::move(depthStencilAttachment) },
                 std::move(attachments))
-{}
+{
+}
 
 template<size_t colorAttachmentsCount>
 FrameBuffer::FrameBuffer(vulkan::Device const& device,
@@ -199,7 +200,8 @@ FrameBuffer::FrameBuffer(vulkan::Device const& device,
                          uint32_t height,
                          std::array<vulkan::ImageView, colorAttachmentsCount>&& attachments)
   : FrameBuffer(device, vkRenderPass, width, height, std::optional<vulkan::ImageView>{}, std::move(attachments))
-{}
+{
+}
 }
 
 #endif // CYCLONITE_FRAMEBUFFER_H

@@ -35,7 +35,7 @@ public:
 
     auto operator=(SurfaceRenderTarget const&) -> SurfaceRenderTarget& = delete;
 
-    auto operator=(SurfaceRenderTarget &&) -> SurfaceRenderTarget& = default;
+    auto operator=(SurfaceRenderTarget&&) -> SurfaceRenderTarget& = default;
 
     auto acquireBackBufferIndex(vulkan::Device const& device, uint32_t frameIndex) -> std::pair<uint32_t, VkSemaphore>;
 

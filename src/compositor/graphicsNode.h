@@ -56,7 +56,7 @@ public:
 
     ~GraphicsNode() = default;
 
-    auto operator=(GraphicsNode &&) -> GraphicsNode& = default;
+    auto operator=(GraphicsNode&&) -> GraphicsNode& = default;
 
     auto operator=(GraphicsNode const&) -> GraphicsNode& = delete;
 

@@ -27,7 +27,7 @@ public:
 
     auto operator=(LogicNodeInterface const&) -> LogicNodeInterface& = default;
 
-    auto operator=(LogicNodeInterface &&) -> LogicNodeInterface& = default;
+    auto operator=(LogicNodeInterface&&) -> LogicNodeInterface& = default;
 
     [[nodiscard]] auto get() const -> BaseLogicNode const&;
     auto get() -> BaseLogicNode&;

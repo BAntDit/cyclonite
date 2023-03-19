@@ -57,7 +57,7 @@ public:
 
     auto operator=(Image const&) -> Image& = delete;
 
-    auto operator=(Image &&) -> Image& = default;
+    auto operator=(Image&&) -> Image& = default;
 
     [[nodiscard]] auto handle() const -> VkImage { return static_cast<VkImage>(vkImage_); }
 

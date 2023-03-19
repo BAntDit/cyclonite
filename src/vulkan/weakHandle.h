@@ -74,12 +74,14 @@ private:
 template<typename T>
 WeakHandle<T>::WeakHandle(SharedHandle<T>& sharedHandle) noexcept
   : sharedData_{ sharedHandle.sharedData_.handle(), sharedHandle.sharedData_.controlBlock() }
-{}
+{
+}
 
 template<typename T>
 WeakHandle<T>::WeakHandle(SharedHandle<T>&& sharedHandle) noexcept
   : sharedData_{ sharedHandle.sharedData_.handle(), sharedHandle.sharedData_.controlBlock() }
-{}
+{
+}
 
 template<typename T>
 auto WeakHandle<T>::lock() -> SharedHandle<T>
@@ -97,7 +99,8 @@ template<typename T>
 WeakHandle<T>::SharedData::SharedData() noexcept
   : controlBlock_{ nullptr }
   , handle_{ VK_NULL_HANDLE }
-{}
+{
+}
 
 template<typename T>
 WeakHandle<T>::SharedData::SharedData(SharedData const& sharedData) noexcept

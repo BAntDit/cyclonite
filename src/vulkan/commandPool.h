@@ -29,7 +29,7 @@ public:
 
     auto operator=(CommandPool const&) -> CommandPool& = delete;
 
-    auto operator=(CommandPool &&) -> CommandPool& = default;
+    auto operator=(CommandPool&&) -> CommandPool& = default;
 
     template<typename AllocationCallback, template<typename, typename> typename BufferSet, typename Container>
     auto allocCommandBuffers(BufferSet<CommandPool, Container>&& commandBufferSet, AllocationCallback&& callback)

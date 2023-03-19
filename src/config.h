@@ -247,11 +247,10 @@ inline constexpr auto is_node_config_specialization_v = is_node_config_specializ
 
 template<typename T>
 concept NodeConfig = (node_internal::is_node_config_specialization_v<T> ||
-                      std::is_base_of_v<Config<typename T::component_config_t, typename T::systems_config_t>,
-                                        T>)&&((config_traits::is_logic_node<T>::value() &&
-                                               !config_traits::is_surface_node<T>::value() &&
-                                               config_traits::get_pass_count<T>::value() == 0) ||
-                                              !config_traits::is_logic_node<T>::value());
+                      std::is_base_of_v<Config<typename T::component_config_t, typename T::systems_config_t>, T>) &&
+                     ((config_traits::is_logic_node<T>::value() && !config_traits::is_surface_node<T>::value() &&
+                       config_traits::get_pass_count<T>::value() == 0) ||
+                      !config_traits::is_logic_node<T>::value());
 
 namespace node_traits {
 template<typename NodeType>

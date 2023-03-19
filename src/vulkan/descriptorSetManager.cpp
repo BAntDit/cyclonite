@@ -13,7 +13,8 @@ using namespace easy_mp;
 DescriptorSetManager::DescriptorSetManager(Device& device, multithreading::TaskManager& taskManager)
   : device_{ &device }
   , taskManager_{ &taskManager }
-{}
+{
+}
 
 auto DescriptorSetManager::_addPool(
   DescriptorPoolKey poolKey,

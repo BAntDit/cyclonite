@@ -12,7 +12,8 @@ using namespace easy_mp;
 
 View::View() noexcept
   : workspace_{ nullptr }
-{}
+{
+}
 
 void View::init(cyclonite::multithreading::TaskManager& taskManager,
                 cyclonite::vulkan::Device& device,

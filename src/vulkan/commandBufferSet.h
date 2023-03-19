@@ -32,7 +32,7 @@ public:
 
     auto operator=(CommandBufferSet const&) -> CommandBufferSet& = delete;
 
-    auto operator=(CommandBufferSet &&) -> CommandBufferSet& = default;
+    auto operator=(CommandBufferSet&&) -> CommandBufferSet& = default;
 
     [[nodiscard]] auto queueFamilyIndex() const -> uint32_t { return queueFamilyIndex_; }
 
@@ -60,7 +60,8 @@ CommandBufferSet<CommandPool, Container>::CommandBufferSet() noexcept
   , queueFamilyIndex_{ 0 }
   , flags_{ 0 }
   , commandBuffers_{}
-{}
+{
+}
 
 template<typename CommandPool, typename Container>
 CommandBufferSet<CommandPool, Container>::CommandBufferSet(uint32_t queueFamilyIndex,
@@ -70,7 +71,8 @@ CommandBufferSet<CommandPool, Container>::CommandBufferSet(uint32_t queueFamilyI
   , queueFamilyIndex_{ queueFamilyIndex }
   , flags_{ flags }
   , commandBuffers_(std::move(buffers))
-{}
+{
+}
 
 template<typename CommandPool, typename Container>
 CommandBufferSet<CommandPool, Container>::~CommandBufferSet() noexcept

@@ -21,14 +21,15 @@ class ExpirationBitsWrapper
 public:
     template<size_t bitCount>
     explicit ExpirationBitsWrapper(std::bitset<bitCount> const& bits) noexcept
-      requires(sizeof(std::bitset<bitCount>) <= sizeof(bits_storage_t))
+        requires(sizeof(std::bitset<bitCount>) <= sizeof(bits_storage_t))
       : isExpiredFunc_{ [](void const* b, size_t i) -> bool {
           assert(i < bitCount);
           return reinterpret_cast<std::bitset<bitCount> const*>(b)->test(i);
       } }
       , m_{}
-      , bits_{ new (m_.data()) std::bitset<bitCount>(bits) }
-    {}
+      , bits_{ new(m_.data()) std::bitset<bitCount>(bits) }
+    {
+    }
 
     [[nodiscard]] auto isExpired(size_t bitIndex) const -> bool { return isExpiredFunc_(bits_, bitIndex); }
 
@@ -107,7 +108,8 @@ PassIterator::PassIterator(uint32_t passCount,
   , basePipelineLayout_{ basePipelineLayout }
   , basePipeline_{ basePipeline }
   , baseDescriptorSet_{ baseDescriptorSet }
-{}
+{
+}
 }
 
 #endif // CYCLONITE_PASSITERATOR_H

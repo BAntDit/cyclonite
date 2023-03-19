@@ -18,10 +18,9 @@ namespace cyclonite::resources {
 class ResourceManager;
 
 template<typename Loader, typename... Args>
-concept ResourceCustomLoader = requires(Loader&& l, ResourceManager& rm, Args&&... args)
-{
-    std::invoke(std::forward<Loader>(l), rm, std::forward<Args>(args)...);
-};
+concept ResourceCustomLoader = requires(Loader&& l, ResourceManager& rm, Args&&... args) {
+                                   std::invoke(std::forward<Loader>(l), rm, std::forward<Args>(args)...);
+                               };
 
 // non-copyable and non-movable
 // can be accessed only by Id through the resource manager;
@@ -76,16 +75,19 @@ public:
 
     auto operator=(Resource const&) -> Resource& = delete;
 
-    auto operator=(Resource &&) -> Resource& = delete;
+    auto operator=(Resource&&) -> Resource& = delete;
 
     template<typename T>
-    auto as() -> T& requires std::derived_from<T, Resource>;
+    auto as() -> T&
+        requires std::derived_from<T, Resource>;
 
     template<typename T>
-    [[nodiscard]] auto as() const -> T const& requires std::derived_from<T, Resource>;
+    [[nodiscard]] auto as() const -> T const&
+        requires std::derived_from<T, Resource>;
 
     template<typename T>
-    [[nodiscard]] auto is() const -> bool requires std::derived_from<T, Resource>;
+    [[nodiscard]] auto is() const -> bool
+        requires std::derived_from<T, Resource>;
 
     virtual void load(std::filesystem::path const& path);
 
@@ -135,20 +137,23 @@ protected:
 };
 
 template<typename T>
-auto Resource::as() const -> T const& requires std::derived_from<T, Resource>
+auto Resource::as() const -> T const&
+    requires std::derived_from<T, Resource>
 {
     assert(instance_tag().staticDataIndex == T::type_tag_const().staticDataIndex);
     return *static_cast<T const*>(this);
 }
 
 template<typename T>
-auto Resource::as() -> T& requires std::derived_from<T, Resource>
+auto Resource::as() -> T&
+    requires std::derived_from<T, Resource>
 {
     return const_cast<T&>(std::as_const(*this).template as<T>());
 }
 
 template<typename T>
-auto Resource::is() const -> bool requires std::derived_from<T, Resource>
+auto Resource::is() const -> bool
+    requires std::derived_from<T, Resource>
 {
     return instance_tag().staticDataIndex == T::type_tag_const().staticDataIndex;
 }

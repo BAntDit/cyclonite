@@ -30,7 +30,7 @@ public:
 
     auto operator=(DescriptorSetManager const&) -> DescriptorSetManager& = delete;
 
-    auto operator=(DescriptorSetManager &&) -> DescriptorSetManager& = default;
+    auto operator=(DescriptorSetManager&&) -> DescriptorSetManager& = default;
 
     auto addPool(DescriptorPoolKey poolKey, uint32_t capacity)
       -> std::tuple<vulkan::SharedHandle<VkDescriptorPool>, size_t&>;

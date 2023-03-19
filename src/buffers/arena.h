@@ -35,7 +35,7 @@ public:
 
         auto operator=(AllocatedMemory&& rhs) noexcept -> AllocatedMemory&;
 
-        explicit operator std::byte *() { return reinterpret_cast<std::byte*>(ptr_); }
+        explicit operator std::byte*() { return reinterpret_cast<std::byte*>(ptr_); }
 
         [[nodiscard]] auto ptr() const -> void const* { return ptr_; }
 
@@ -68,7 +68,7 @@ public:
 
     auto operator=(Arena const&) -> Arena& = delete;
 
-    auto operator=(Arena &&) -> Arena& = default;
+    auto operator=(Arena&&) -> Arena& = default;
 
     [[nodiscard]] auto size() const -> size_t { return size_; }
 
@@ -216,7 +216,8 @@ Arena<MemoryPage>::AllocatedMemory::AllocatedMemory()
   , ptr_{ nullptr }
   , offset_{ 0 }
   , size_{ 0 }
-{}
+{
+}
 
 template<typename MemoryPage>
 Arena<MemoryPage>::AllocatedMemory::AllocatedMemory(MemoryPage& memoryPage, size_t offset, size_t size)
@@ -224,7 +225,8 @@ Arena<MemoryPage>::AllocatedMemory::AllocatedMemory(MemoryPage& memoryPage, size
   , ptr_{ memoryPage_->ptr() == nullptr ? nullptr : reinterpret_cast<std::byte*>(memoryPage_->ptr()) + offset }
   , offset_{ offset }
   , size_{ size }
-{}
+{
+}
 
 template<typename MemoryPage>
 Arena<MemoryPage>::AllocatedMemory::AllocatedMemory(Arena<MemoryPage>::AllocatedMemory&& allocatedMemory) noexcept

@@ -147,7 +147,7 @@ public:
 
     auto operator=(Technique const&) -> Technique& = delete;
 
-    auto operator=(Technique &&) -> Technique& = default;
+    auto operator=(Technique&&) -> Technique& = default;
 
     void update(vulkan::Device const& device,
                 resources::ResourceManager const& resourceManager,

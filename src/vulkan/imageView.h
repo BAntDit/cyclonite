@@ -49,7 +49,7 @@ public:
 
     auto operator=(ImageView const&) -> ImageView& = delete;
 
-    auto operator=(ImageView &&) -> ImageView& = default;
+    auto operator=(ImageView&&) -> ImageView& = default;
 
     [[nodiscard]] auto handle() const -> VkImageView { return static_cast<VkImageView>(vkImageView_); }
 

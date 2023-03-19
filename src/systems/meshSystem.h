@@ -46,7 +46,7 @@ public:
 
     auto operator=(MeshSystem const&) -> MeshSystem& = delete;
 
-    auto operator=(MeshSystem &&) -> MeshSystem& = default;
+    auto operator=(MeshSystem&&) -> MeshSystem& = default;
 
     auto createGeometry(uint32_t vertexCount, uint32_t indexCount) -> uint64_t;
 

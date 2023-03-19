@@ -16,7 +16,8 @@ Staging::Staging(vulkan::Device& device, VkBufferUsageFlags usageFlags, VkDevice
              usageFlags,
              size,
              std::array<uint32_t, 1>{ device.hostTransferQueueFamilyIndex() } }
-{}
+{
+}
 
 auto Staging::ptr() const -> void const*
 {

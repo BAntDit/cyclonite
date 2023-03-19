@@ -48,7 +48,7 @@ public:
 
     auto operator=(GraphicsNodeInterface const&) -> GraphicsNodeInterface& = default;
 
-    auto operator=(GraphicsNodeInterface &&) -> GraphicsNodeInterface& = default;
+    auto operator=(GraphicsNodeInterface&&) -> GraphicsNodeInterface& = default;
 
     [[nodiscard]] auto get() const -> BaseGraphicsNode const&;
     auto get() -> BaseGraphicsNode&;

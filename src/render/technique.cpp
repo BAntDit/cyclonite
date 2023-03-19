@@ -44,11 +44,10 @@ auto getVulkanPolygonMode(Technique::PolygonMode polygonMode) -> VkPolygonMode
 {
     auto mode = VkPolygonMode{ VK_POLYGON_MODE_MAX_ENUM };
 
-    mode = (polygonMode == Technique::PolygonMode::FILL)
-             ? VK_POLYGON_MODE_FILL
-             : (polygonMode == Technique::PolygonMode::LINE)
-                 ? VK_POLYGON_MODE_LINE
-                 : (polygonMode == Technique::PolygonMode::POINT) ? VK_POLYGON_MODE_POINT : VK_POLYGON_MODE_MAX_ENUM;
+    mode = (polygonMode == Technique::PolygonMode::FILL)    ? VK_POLYGON_MODE_FILL
+           : (polygonMode == Technique::PolygonMode::LINE)  ? VK_POLYGON_MODE_LINE
+           : (polygonMode == Technique::PolygonMode::POINT) ? VK_POLYGON_MODE_POINT
+                                                            : VK_POLYGON_MODE_MAX_ENUM;
 
     assert(mode != VK_POLYGON_MODE_MAX_ENUM);
     return mode;
@@ -58,11 +57,10 @@ auto getVulkanCullFaceMode(Technique::CullFace cullFaceMode) -> VkCullModeFlagBi
 {
     auto mode = VkCullModeFlagBits{ VK_CULL_MODE_NONE };
 
-    mode = (cullFaceMode == Technique::CullFace::BACK)
-             ? VK_CULL_MODE_BACK_BIT
-             : (cullFaceMode == Technique::CullFace::FRONT)
-                 ? VK_CULL_MODE_FRONT_BIT
-                 : (cullFaceMode == Technique::CullFace::BOTH) ? VK_CULL_MODE_FRONT_AND_BACK : VK_CULL_MODE_NONE;
+    mode = (cullFaceMode == Technique::CullFace::BACK)    ? VK_CULL_MODE_BACK_BIT
+           : (cullFaceMode == Technique::CullFace::FRONT) ? VK_CULL_MODE_FRONT_BIT
+           : (cullFaceMode == Technique::CullFace::BOTH)  ? VK_CULL_MODE_FRONT_AND_BACK
+                                                          : VK_CULL_MODE_NONE;
 
     return mode;
 }
@@ -161,12 +159,10 @@ auto getVulkanBlendOp(Technique::BlendEquation blendEquation) -> VkBlendOp
 {
     auto r = VkBlendOp{ VK_BLEND_OP_MAX_ENUM };
 
-    r = (blendEquation == Technique::BlendEquation::FUNC_ADD)
-          ? VK_BLEND_OP_ADD
-          : (blendEquation == Technique::BlendEquation::FUNC_SUBTRACT)
-              ? VK_BLEND_OP_SUBTRACT
-              : (blendEquation == Technique::BlendEquation::FUNC_REVERSE_SUBTRACT) ? VK_BLEND_OP_REVERSE_SUBTRACT
-                                                                                   : VK_BLEND_OP_MAX_ENUM;
+    r = (blendEquation == Technique::BlendEquation::FUNC_ADD)                ? VK_BLEND_OP_ADD
+        : (blendEquation == Technique::BlendEquation::FUNC_SUBTRACT)         ? VK_BLEND_OP_SUBTRACT
+        : (blendEquation == Technique::BlendEquation::FUNC_REVERSE_SUBTRACT) ? VK_BLEND_OP_REVERSE_SUBTRACT
+                                                                             : VK_BLEND_OP_MAX_ENUM;
 
     assert(r != VK_BLEND_OP_MAX_ENUM);
     return r;

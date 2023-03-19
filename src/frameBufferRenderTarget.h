@@ -45,7 +45,7 @@ public:
 
     auto operator=(FrameBufferRenderTarget const&) -> FrameBufferRenderTarget& = delete;
 
-    auto operator=(FrameBufferRenderTarget &&) -> FrameBufferRenderTarget& = default;
+    auto operator=(FrameBufferRenderTarget&&) -> FrameBufferRenderTarget& = default;
 
     [[nodiscard]] auto signal() const -> VkSemaphore;
 

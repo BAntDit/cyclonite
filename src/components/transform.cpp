@@ -16,7 +16,8 @@ Transform::Transform() noexcept
   , parent{}
   , depth{ 0 }
   , lastFrameUpdate{ std::numeric_limits<uint64_t>::max() }
-{}
+{
+}
 
 Transform::Transform(vec3 localPosition, vec3 localScale, quat localOrientation) noexcept
   : position{ localPosition }
@@ -28,7 +29,8 @@ Transform::Transform(vec3 localPosition, vec3 localScale, quat localOrientation)
   , parent{}
   , depth{ 0 }
   , lastFrameUpdate{ std::numeric_limits<uint64_t>::max() }
-{}
+{
+}
 
 Transform::Transform(mat4 localMatrix)
   : position{ 0.0f }

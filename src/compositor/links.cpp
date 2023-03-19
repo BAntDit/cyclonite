@@ -221,7 +221,8 @@ auto Links::get(size_t index) -> Link&
 Links::Links()
   : links_{}
   , vkDevice_{ VK_NULL_HANDLE }
-{}
+{
+}
 
 Links::Links(Links&& links) noexcept
   : links_(links.links_)

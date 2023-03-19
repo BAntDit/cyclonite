@@ -235,7 +235,8 @@ public:
           : position{ p }
           , scale{ s }
           , rotation{ r }
-        {}
+        {
+        }
 
         vec3 position;
         vec3 scale;
