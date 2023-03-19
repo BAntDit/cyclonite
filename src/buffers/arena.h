@@ -5,58 +5,16 @@
 #ifndef CYCLONITE_ARENA_H
 #define CYCLONITE_ARENA_H
 
-#include "bufferView.h"
+#include "allocatedMemory.h"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <deque>
 
 namespace cyclonite::buffers {
-template<typename MemoryPage>
+template<MemoryPageConcept MemoryPage>
 class Arena
 {
-public:
-    class AllocatedMemory
-    {
-    public:
-        friend class Arena<MemoryPage>;
-
-        AllocatedMemory();
-
-        AllocatedMemory(MemoryPage& memoryPage, size_t offset, size_t size);
-
-        AllocatedMemory(AllocatedMemory const&) = delete;
-
-        AllocatedMemory(AllocatedMemory&& allocatedMemory) noexcept;
-
-        ~AllocatedMemory();
-
-        auto operator=(AllocatedMemory const&) -> AllocatedMemory& = delete;
-
-        auto operator=(AllocatedMemory&& rhs) noexcept -> AllocatedMemory&;
-
-        explicit operator std::byte*() { return reinterpret_cast<std::byte*>(ptr_); }
-
-        [[nodiscard]] auto ptr() const -> void const* { return ptr_; }
-
-        [[nodiscard]] auto ptr() -> void* { return ptr_; }
-
-        [[nodiscard]] auto size() const -> size_t { return size_; }
-
-        [[nodiscard]] auto offset() const -> size_t { return offset_; }
-
-        [[nodiscard]] auto memoryPage() const -> MemoryPage const& { return *memoryPage_; }
-
-        template<typename DataType>
-        auto view(size_t count, size_t offset = 0, size_t stride = sizeof(DataType)) -> buffers::BufferView<DataType>;
-
-    private:
-        MemoryPage* memoryPage_;
-        void* ptr_;
-        size_t offset_;
-        size_t size_;
-    };
-
 public:
     explicit Arena(size_t size);
 
@@ -78,9 +36,9 @@ public:
 
     [[nodiscard]] auto maxAvailableRange() const -> size_t;
 
-    [[nodiscard]] auto alloc(size_t size) -> AllocatedMemory;
+    [[nodiscard]] auto alloc(size_t size) -> AllocatedMemory<MemoryPage>;
 
-    void free(AllocatedMemory const& allocatedMemory);
+    void free(AllocatedMemory<MemoryPage> const& allocatedMemory);
 
     template<typename DataType>
     auto view(size_t count, size_t offset = 0, size_t stride = sizeof(DataType)) -> buffers::BufferView<DataType>;
@@ -90,7 +48,7 @@ protected:
     std::deque<std::pair<size_t, size_t>> freeRanges_;
 };
 
-template<typename MemoryPage>
+template<MemoryPageConcept MemoryPage>
 Arena<MemoryPage>::Arena(size_t size)
   : size_{ size }
   , freeRanges_{}
@@ -99,8 +57,8 @@ Arena<MemoryPage>::Arena(size_t size)
 }
 
 // calls in strand always
-template<typename MemoryPage>
-auto Arena<MemoryPage>::alloc(size_t size) -> Arena<MemoryPage>::AllocatedMemory
+template<MemoryPageConcept MemoryPage>
+auto Arena<MemoryPage>::alloc(size_t size) -> AllocatedMemory<MemoryPage>
 {
 
     auto it = std::lower_bound(freeRanges_.begin(), freeRanges_.end(), size, [](auto const& lhs, size_t rhs) -> bool {
@@ -128,11 +86,11 @@ auto Arena<MemoryPage>::alloc(size_t size) -> Arena<MemoryPage>::AllocatedMemory
         }
     }
 
-    return Arena<MemoryPage>::AllocatedMemory{ *(static_cast<MemoryPage*>(this)), rangeOffset, rangeSize };
+    return AllocatedMemory<MemoryPage>{ *(static_cast<MemoryPage*>(this)), rangeOffset, rangeSize };
 }
 
-template<typename MemoryPage>
-void Arena<MemoryPage>::free(Arena<MemoryPage>::AllocatedMemory const& allocatedMemory)
+template<MemoryPageConcept MemoryPage>
+void Arena<MemoryPage>::free(AllocatedMemory<MemoryPage> const& allocatedMemory)
 {
     auto offset = allocatedMemory.offset();
     auto size = allocatedMemory.size();
@@ -184,93 +142,28 @@ void Arena<MemoryPage>::free(Arena<MemoryPage>::AllocatedMemory const& allocated
     }
 }
 
-template<typename MemoryPage>
+template<MemoryPageConcept MemoryPage>
 auto Arena<MemoryPage>::ptr() const -> void const*
 {
     return static_cast<MemoryPage const*>(this)->ptr();
 }
 
-template<typename MemoryPage>
+template<MemoryPageConcept MemoryPage>
 auto Arena<MemoryPage>::ptr() -> void*
 {
     return static_cast<MemoryPage const*>(this)->ptr();
 }
 
-template<typename MemoryPage>
+template<MemoryPageConcept MemoryPage>
 auto Arena<MemoryPage>::maxAvailableRange() const -> size_t
 {
     return freeRanges_.empty() ? 0 : static_cast<size_t>(freeRanges_.back().second);
 }
 
-template<typename MemoryPage>
+template<MemoryPageConcept MemoryPage>
 template<typename DataType>
 auto Arena<MemoryPage>::view(size_t count, size_t offset /* = 0*/, size_t stride /* = sizeof(DataType)*/)
   -> buffers::BufferView<DataType>
-{
-    return buffers::BufferView<DataType>{ ptr(), offset, count, stride };
-}
-
-template<typename MemoryPage>
-Arena<MemoryPage>::AllocatedMemory::AllocatedMemory()
-  : memoryPage_{ nullptr }
-  , ptr_{ nullptr }
-  , offset_{ 0 }
-  , size_{ 0 }
-{
-}
-
-template<typename MemoryPage>
-Arena<MemoryPage>::AllocatedMemory::AllocatedMemory(MemoryPage& memoryPage, size_t offset, size_t size)
-  : memoryPage_{ &memoryPage }
-  , ptr_{ memoryPage_->ptr() == nullptr ? nullptr : reinterpret_cast<std::byte*>(memoryPage_->ptr()) + offset }
-  , offset_{ offset }
-  , size_{ size }
-{
-}
-
-template<typename MemoryPage>
-Arena<MemoryPage>::AllocatedMemory::AllocatedMemory(Arena<MemoryPage>::AllocatedMemory&& allocatedMemory) noexcept
-  : memoryPage_{ allocatedMemory.memoryPage_ }
-  , ptr_{ allocatedMemory.ptr_ }
-  , offset_{ allocatedMemory.offset_ }
-  , size_{ allocatedMemory.size_ }
-{
-    allocatedMemory.memoryPage_ = nullptr;
-    allocatedMemory.ptr_ = nullptr;
-    allocatedMemory.offset_ = 0;
-    allocatedMemory.size_ = 0;
-}
-
-template<typename MemoryPage>
-Arena<MemoryPage>::AllocatedMemory::~AllocatedMemory()
-{
-    if (memoryPage_ != nullptr) {
-        memoryPage_->free(*this);
-    }
-}
-
-template<typename MemoryPage>
-auto Arena<MemoryPage>::AllocatedMemory::operator=(Arena<MemoryPage>::AllocatedMemory&& rhs) noexcept
-  -> Arena<MemoryPage>::AllocatedMemory&
-{
-    memoryPage_ = rhs.memoryPage_;
-    ptr_ = rhs.ptr_;
-    offset_ = rhs.offset_;
-    size_ = rhs.size_;
-
-    rhs.memoryPage_ = nullptr;
-    rhs.ptr_ = nullptr;
-    rhs.offset_ = 0;
-    rhs.size_ = 0;
-
-    return *this;
-}
-
-template<typename MemoryPage>
-template<typename DataType>
-auto Arena<MemoryPage>::AllocatedMemory::view(size_t count,
-                                              size_t offset /* = 0*/,
-                                              size_t stride /* = sizeof(DataType)*/) -> buffers::BufferView<DataType>
 {
     return buffers::BufferView<DataType>{ ptr(), offset, count, stride };
 }
