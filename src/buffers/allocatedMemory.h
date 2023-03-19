@@ -16,13 +16,13 @@ concept MemoryPageConcept = requires(T&& t) {
                                     } -> std::same_as<void*>;
                             };
 
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 class Arena;
 
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 class Ring;
 
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 class AllocatedMemory
 {
 public:
@@ -31,7 +31,8 @@ public:
 
     AllocatedMemory();
 
-    AllocatedMemory(MemoryPage& memoryPage, size_t offset, size_t size);
+    AllocatedMemory(MemoryPage& memoryPage, size_t offset, size_t size)
+        requires MemoryPageConcept<MemoryPage>;
 
     AllocatedMemory(AllocatedMemory const&) = delete;
 
@@ -65,7 +66,7 @@ private:
     size_t size_;
 };
 
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 AllocatedMemory<MemoryPage>::AllocatedMemory()
   : memoryPage_{ nullptr }
   , ptr_{ nullptr }
@@ -74,8 +75,9 @@ AllocatedMemory<MemoryPage>::AllocatedMemory()
 {
 }
 
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 AllocatedMemory<MemoryPage>::AllocatedMemory(MemoryPage& memoryPage, size_t offset, size_t size)
+    requires MemoryPageConcept<MemoryPage>
   : memoryPage_{ &memoryPage }
   , ptr_{ memoryPage_->ptr() == nullptr ? nullptr : reinterpret_cast<std::byte*>(memoryPage_->ptr()) + offset }
   , offset_{ offset }
@@ -83,7 +85,7 @@ AllocatedMemory<MemoryPage>::AllocatedMemory(MemoryPage& memoryPage, size_t offs
 {
 }
 
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 AllocatedMemory<MemoryPage>::AllocatedMemory(AllocatedMemory&& allocatedMemory) noexcept
   : memoryPage_{ allocatedMemory.memoryPage_ }
   , ptr_{ allocatedMemory.ptr_ }
@@ -96,7 +98,7 @@ AllocatedMemory<MemoryPage>::AllocatedMemory(AllocatedMemory&& allocatedMemory) 
     allocatedMemory.size_ = 0;
 }
 
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 AllocatedMemory<MemoryPage>::~AllocatedMemory()
 {
     if (memoryPage_ != nullptr) {
@@ -104,7 +106,7 @@ AllocatedMemory<MemoryPage>::~AllocatedMemory()
     }
 }
 
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 auto AllocatedMemory<MemoryPage>::operator=(AllocatedMemory&& rhs) noexcept -> AllocatedMemory&
 {
     memoryPage_ = rhs.memoryPage_;
@@ -120,7 +122,7 @@ auto AllocatedMemory<MemoryPage>::operator=(AllocatedMemory&& rhs) noexcept -> A
     return *this;
 }
 
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 template<typename DataType>
 auto AllocatedMemory<MemoryPage>::view(size_t count, size_t offset /* = 0*/, size_t stride /* = sizeof(DataType)*/)
   -> buffers::BufferView<DataType>

@@ -12,7 +12,7 @@
 #include <deque>
 
 namespace cyclonite::buffers {
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 class Arena
 {
 public:
@@ -48,7 +48,7 @@ protected:
     std::deque<std::pair<size_t, size_t>> freeRanges_;
 };
 
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 Arena<MemoryPage>::Arena(size_t size)
   : size_{ size }
   , freeRanges_{}
@@ -57,7 +57,7 @@ Arena<MemoryPage>::Arena(size_t size)
 }
 
 // calls in strand always
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 auto Arena<MemoryPage>::alloc(size_t size) -> AllocatedMemory<MemoryPage>
 {
 
@@ -89,7 +89,7 @@ auto Arena<MemoryPage>::alloc(size_t size) -> AllocatedMemory<MemoryPage>
     return AllocatedMemory<MemoryPage>{ *(static_cast<MemoryPage*>(this)), rangeOffset, rangeSize };
 }
 
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 void Arena<MemoryPage>::free(AllocatedMemory<MemoryPage> const& allocatedMemory)
 {
     auto offset = allocatedMemory.offset();
@@ -142,25 +142,25 @@ void Arena<MemoryPage>::free(AllocatedMemory<MemoryPage> const& allocatedMemory)
     }
 }
 
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 auto Arena<MemoryPage>::ptr() const -> void const*
 {
     return static_cast<MemoryPage const*>(this)->ptr();
 }
 
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 auto Arena<MemoryPage>::ptr() -> void*
 {
     return static_cast<MemoryPage const*>(this)->ptr();
 }
 
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 auto Arena<MemoryPage>::maxAvailableRange() const -> size_t
 {
     return freeRanges_.empty() ? 0 : static_cast<size_t>(freeRanges_.back().second);
 }
 
-template<MemoryPageConcept MemoryPage>
+template<typename MemoryPage>
 template<typename DataType>
 auto Arena<MemoryPage>::view(size_t count, size_t offset /* = 0*/, size_t stride /* = sizeof(DataType)*/)
   -> buffers::BufferView<DataType>
