@@ -27,6 +27,7 @@ set(PUBLIC_HEADERS
     src/render/technique.h
     src/render/batch.h
     src/render/drawCommands.h
+    src/render/constantBufferManager.h
     src/compositor/nodeAsset.h
     src/animations/animation.h
     src/animations/sampler.h

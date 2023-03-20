@@ -5,6 +5,7 @@
 #ifndef CYCLONITE_BUFFER_H
 #define CYCLONITE_BUFFER_H
 
+#include "buffers/allocatedMemory.h"
 #include "memoryPage.h"
 #include <array>
 #include <variant>
@@ -24,12 +25,15 @@ public:
 
     [[nodiscard]] auto handle() const -> VkBuffer { return static_cast<VkBuffer>(vkBuffer_); }
 
-    [[nodiscard]] auto allocatedMemory() const -> MemoryPage::AllocatedMemory const& { return allocatedMemory_; }
+    [[nodiscard]] auto allocatedMemory() const -> buffers::AllocatedMemory<MemoryPage> const&
+    {
+        return allocatedMemory_;
+    }
 
-    auto allocatedMemory() -> MemoryPage::AllocatedMemory& { return allocatedMemory_; }
+    auto allocatedMemory() -> buffers::AllocatedMemory<MemoryPage>& { return allocatedMemory_; }
 
 private:
-    MemoryPage::AllocatedMemory allocatedMemory_;
+    buffers::AllocatedMemory<MemoryPage> allocatedMemory_;
     Handle<VkBuffer> vkBuffer_;
 };
 }
