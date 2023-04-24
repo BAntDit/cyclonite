@@ -26,6 +26,8 @@ public:
     struct Capabilities
     {
         std::vector<std::pair<uint16_t, uint16_t>> displayResolutions;
+        VkDeviceSize minUniformBufferOffsetAlignment;
+        VkDeviceSize minStorageBufferOffsetAlignment;
     };
 
 public:

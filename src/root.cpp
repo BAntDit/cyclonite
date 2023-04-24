@@ -120,6 +120,9 @@ void Root::init(uint32_t deviceId)
             auto&& physicalDevice = physicalDeviceList_[i];
 
             try {
+                capabilities_.minUniformBufferOffsetAlignment = properties.limits.minUniformBufferOffsetAlignment;
+                capabilities_.minStorageBufferOffsetAlignment = properties.limits.minStorageBufferOffsetAlignment;
+
                 vulkanDevice_ = std::make_unique<vulkan::Device>(
                   taskManager_, vulkanInstance_->handle(), physicalDevice, properties, requiredExtensions);
             } catch (const std::exception& e) {

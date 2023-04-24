@@ -133,6 +133,7 @@ set(SOURCES
     src/baseRenderTarget.cpp
     src/render/material.cpp
     src/render/technique.cpp
+    src/render/constantBufferManager.cpp
     src/frameBufferRenderTarget.cpp
     src/surfaceRenderTarget.cpp
     src/animations/animation.cpp

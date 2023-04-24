@@ -3,19 +3,23 @@
 //
 
 #include "buffers/ring.h"
-#include "vulkan/buffer.h"
 #include "shaderResource.h"
+#include "vulkan/buffer.h"
 #include <vector>
 
 #ifndef CYCLONITE_UNIFORMSTAGING_H
 #define CYCLONITE_UNIFORMSTAGING_H
+
+namespace cyclonite {
+class Root;
+}
 
 namespace cyclonite::render {
 class ConstantBufferManager : public buffers::Ring<ConstantBufferManager>
 {
 public:
     // TODO::
-    ConstantBufferManager(size_t size, size_t frameCount);
+    ConstantBufferManager(Root& root, size_t size);
 
     void beginFrame(size_t index, VkFence);
 
