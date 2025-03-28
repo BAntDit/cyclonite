@@ -7,6 +7,7 @@
 
 #include "typedefs.h"
 #include <atomic>
+#include <functional>
 
 namespace cyclonite::multithreading {
 class Task;

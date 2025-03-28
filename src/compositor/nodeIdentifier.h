@@ -7,6 +7,7 @@
 
 #include <atomic>
 #include <limits>
+#include <string>
 
 namespace cyclonite::compositor {
 class NodeIdentifier

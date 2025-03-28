@@ -282,6 +282,10 @@ find_package(enttx REQUIRED)
 
 find_package(easy-mp REQUIRED)
 
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)
+endif()
+
 find_package(Boost REQUIRED COMPONENTS
     system
     program_options
