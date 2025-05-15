@@ -19,6 +19,7 @@ class CycloniteRecipe(ConanFile):
         self.requires("gtest/[~1.16]")
         self.requires("metrix/[~1.5]")
         self.requires("taskweaver/[~0.3]")
+        self.requires("enttx/4.0.4.0")
         self.requires("glm/1.0.1")
         self.requires("sdl/3.2.6")
         self.requires("vulkan-validationlayers/[~1.3]")
@@ -57,5 +58,12 @@ class CycloniteRecipe(ConanFile):
         cmake = CMake(self)
         cmake.install()
 
+    def package_info(self):
+        self.cpp_info.set_property("cmake_file_name", "cyclonite")
+        self.cpp_info.set_property("cmake_target_name", "cyclonite::cyclonite")
 
+        self.cpp_info.libs = ["cyclonite"]
+
+        if self.settings.os in ["Linux", "FreeBSD"]:
+            self.cpp_info.system_libs = ["pthread"]
 
