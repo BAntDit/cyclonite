@@ -101,15 +101,22 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     VERSION_TWEAK=${PROJECT_VERSION_TWEAK}
 )
 
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)
+endif()
+
 find_package(Threads REQUIRED)
 target_link_libraries(${PROJECT_NAME} Threads::Threads)
+
+find_package(TaskWeaver REQUIRED)
+target_link_libraries(${PROJECT_NAME} TaskWeaver::TaskWeaver)
 
 find_package(glm REQUIRED)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_ENABLE_EXPERIMENTAL)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_FORCE_RADIANS)
 target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_FORCE_DEPTH_ZERO_TO_ONE)
 
-target_link_libraries(${PROJECT_NAME} glm)
+target_link_libraries(${PROJECT_NAME} glm::glm)
 if (ENABLE_SIMD_AVX2)
     target_compile_definitions(${PROJECT_NAME} PUBLIC GLM_FORCE_AVX2)
 elseif(ENABLE_SIMD_AVX)
@@ -118,29 +125,21 @@ elseif(DISABLE_SIMD)
     target_compile_definitions(${PROJECT_NAME} PUBLIC GLM_FORCE_PURE)
 endif()
 
-target_link_libraries(${PROJECT_NAME} SDL2)
+find_package(SDL3 REQUIRED CONFIG)
+target_link_libraries(${PROJECT_NAME} SDL3::SDL3)
 
 find_package(enttx REQUIRED)
 
 find_package(metrix REQUIRED)
 
-if(POLICY CMP0167)
-    cmake_policy(SET CMP0167 NEW)
-endif()
+find_package(vulkan-validationlayers REQUIRED CONFIG)
+target_link_libraries(${PROJECT_NAME} vulkan-validationlayers::vulkan-validationlayers)
 
-find_package(Boost REQUIRED COMPONENTS
-    system
-    program_options
-)
+find_package(VulkanLoader REQUIRED CONFIG)
+target_link_libraries(${PROJECT_NAME} Vulkan::Loader)
 
-target_link_libraries(${PROJECT_NAME}
-    Boost::boost
-    Boost::system
-    Boost::program_options
-)
-
-find_package(Vulkan REQUIRED)
-target_link_libraries(${PROJECT_NAME} Vulkan::Vulkan)
+find_package(Boost REQUIRED)
+target_link_libraries(${PROJECT_NAME} boost::boost)
 
 set(ALL_SOURCES_FOR_STYLE_CORRECTION ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
 file(GLOB_RECURSE ALL_EXAMPLES_SOURCES_FOR_STYLE_CORRECTION RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "examples/*.cpp")
@@ -155,19 +154,19 @@ list(
 include(ClangFormat.cmake)
 CODE_STYLE_CORRECTION("${ALL_SOURCES_FOR_STYLE_CORRECTION}")
 
-include(SubDirectoryList.cmake)
+#include(SubDirectoryList.cmake)
 
-SUBDIRLIST(EXANPLEDIRS "${CMAKE_CURRENT_SOURCE_DIR}/examples")
-foreach(example ${EXANPLEDIRS})
-    add_subdirectory("examples/${example}")
-endforeach()
+#SUBDIRLIST(EXANPLEDIRS "${CMAKE_CURRENT_SOURCE_DIR}/examples")
+#foreach(example ${EXANPLEDIRS})
+#   add_subdirectory("examples/${example}")
+#endforeach()
 
-option(TESTS "whether needs to build tests" ON)
+#option(TESTS "whether needs to build tests" ON)
 
-if (TESTS)
-    find_package(GTest REQUIRED)
+#if (TESTS)
+#    find_package(GTest REQUIRED)
 
-    enable_testing()
+#   enable_testing()
 
-    add_subdirectory("tests")
-endif()
+#    add_subdirectory("tests")
+#endif()
