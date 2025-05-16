@@ -31,7 +31,7 @@ public:
 
     auto operator=(SDLWindow const&) -> SDLWindow& = delete;
 
-    auto operator=(SDLWindow &&) -> SDLWindow& = default;
+    auto operator=(SDLWindow&&) -> SDLWindow& = default;
 
     template<typename T>
     auto get() const -> T;

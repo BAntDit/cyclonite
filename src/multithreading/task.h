@@ -13,11 +13,10 @@ namespace cyclonite::multithreading {
 class Task;
 
 template<typename F>
-concept TaskFunctor = requires(F&& f)
-{
-    // !std::is_same_v<std::decay_t<F>, Task> &&
-    std::invoke(std::forward<F>(f));
-};
+concept TaskFunctor = requires(F&& f) {
+                          // !std::is_same_v<std::decay_t<F>, Task> &&
+                          std::invoke(std::forward<F>(f));
+                      };
 
 class alignas(hardware_constructive_interference_size) Task
 {
@@ -40,11 +39,13 @@ class alignas(hardware_constructive_interference_size) Task
     {
         explicit functor_t(F const& f)
           : f_(f)
-        {}
+        {
+        }
 
         explicit functor_t(F&& f)
           : f_(std::move(f))
-        {}
+        {
+        }
 
         void invoke() override { f_(); };
 

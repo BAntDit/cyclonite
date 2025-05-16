@@ -7,5 +7,6 @@
 namespace cyclonite::vulkan {
 BaseSurface::BaseSurface(VkInstance vkInstance)
   : vkSurfaceKHR_{ vkInstance, vkDestroySurfaceKHR }
-{}
+{
+}
 }

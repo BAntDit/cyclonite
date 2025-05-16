@@ -25,7 +25,7 @@ public:
 
     auto operator=(RenderSystem const&) -> RenderSystem& = delete;
 
-    auto operator=(RenderSystem &&) -> RenderSystem& = default;
+    auto operator=(RenderSystem&&) -> RenderSystem& = default;
 
     void init(multithreading::TaskManager& taskManager, vulkan::Device& device);
 
@@ -53,7 +53,7 @@ void RenderSystem::update(SystemManager& systemManager, EntityManager& entityMan
 
         assert(device_ != nullptr);
 
-        auto writeCommandsTask = [& device = *device_, &node = node]() -> void { node.writeFrameCommands(device); };
+        auto writeCommandsTask = [&device = *device_, &node = node]() -> void { node.writeFrameCommands(device); };
 
         if (multithreading::Render::isInRenderThread()) {
             writeCommandsTask();

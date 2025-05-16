@@ -46,7 +46,7 @@ public:
 
         auto operator=(Iterator const&) -> Iterator& = default;
 
-        auto operator=(Iterator &&) -> Iterator& = default;
+        auto operator=(Iterator&&) -> Iterator& = default;
 
         auto operator==(Iterator const&) const -> bool = default;
 
@@ -55,8 +55,8 @@ public:
         auto operator*() -> reference { return *(base_ + index_); }
         [[nodiscard]] auto operator*() const -> reference { return *(base_ + index_); }
 
-        auto operator-> () -> pointer { return base_ + index_; }
-        [[nodiscard]] auto operator-> () const -> pointer { return base_ + index_; }
+        auto operator->() -> pointer { return base_ + index_; }
+        [[nodiscard]] auto operator->() const -> pointer { return base_ + index_; }
 
         auto operator[](difference_type index) -> reference { return *(base_ + index); }
         [[nodiscard]] auto operator[](difference_type index) const -> reference { return *(base_ + index); }
@@ -103,7 +103,7 @@ public:
 
         auto operator=(ConstIterator const&) -> ConstIterator& = default;
 
-        auto operator=(ConstIterator &&) -> ConstIterator& = default;
+        auto operator=(ConstIterator&&) -> ConstIterator& = default;
 
         auto operator==(ConstIterator const&) const -> bool = default;
 
@@ -111,7 +111,7 @@ public:
 
         [[nodiscard]] auto operator*() const -> reference { return *(base_ + index_); }
 
-        [[nodiscard]] auto operator-> () const -> pointer { return base_ + index_; }
+        [[nodiscard]] auto operator->() const -> pointer { return base_ + index_; }
 
         [[nodiscard]] auto operator[](difference_type index) const -> reference { return *(base_ + index); }
 

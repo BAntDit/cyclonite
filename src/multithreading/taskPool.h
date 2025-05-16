@@ -27,7 +27,7 @@ public:
 
     auto operator=(TaskPool const&) -> TaskPool& = delete;
 
-    auto operator=(TaskPool &&) -> TaskPool& = default;
+    auto operator=(TaskPool&&) -> TaskPool& = default;
 
     auto writeableTask() -> Task*;
 

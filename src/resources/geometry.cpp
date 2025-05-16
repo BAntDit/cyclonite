@@ -16,7 +16,8 @@ Geometry::Geometry(uint32_t vertexCount,
   , indexCount_{ indexCount }
   , vertices_{ std::move(vertices) }
   , indices_{ std::move(indices) }
-{}
+{
+}
 
 auto Geometry::vertices() -> buffers::BufferView<vertex_t>
 {

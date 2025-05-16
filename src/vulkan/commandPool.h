@@ -29,7 +29,7 @@ public:
 
     auto operator=(CommandPool const&) -> CommandPool& = delete;
 
-    auto operator=(CommandPool &&) -> CommandPool& = default;
+    auto operator=(CommandPool&&) -> CommandPool& = default;
 
     template<typename AllocationCallback, template<typename, typename> typename BufferSet, typename Container>
     auto allocCommandBuffers(BufferSet<CommandPool, Container>&& commandBufferSet, AllocationCallback&& callback)
@@ -121,7 +121,7 @@ auto CommandPool::releaseCommandBuffers(BufferSet<CommandPool, Container>& comma
   std::is_same_v<std::decay_t<BufferSet<CommandPool, Container>>, CommandBufferSet<CommandPool, Container>>,
   void>
 {
-    auto releaseCommandsTask = [& commandPools = this->commandPools_,
+    auto releaseCommandsTask = [&commandPools = this->commandPools_,
                                 queueFamilyIndex = commandBufferSet.queueFamilyIndex(),
                                 flags = commandBufferSet.flags(),
                                 &src = commandBufferSet.commandBuffers_]() -> void {

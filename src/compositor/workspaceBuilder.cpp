@@ -22,7 +22,8 @@ Workspace::Builder::Builder(resources::ResourceManager& resourceManager,
   , graphicNodes_{}
   , logicNodeCount_{ 0 }
   , graphicNodeCount_{ 0 }
-{}
+{
+}
 
 auto Workspace::Builder::nodeCount(bool isLogic) const -> uint8_t
 {

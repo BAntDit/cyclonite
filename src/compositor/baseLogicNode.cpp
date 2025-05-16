@@ -9,5 +9,6 @@ BaseLogicNode::BaseLogicNode(resources::ResourceManager& resourceManager,
                              std::string_view name,
                              uint64_t typeId) noexcept
   : Node{ resourceManager, name, typeId }
-{}
+{
+}
 }

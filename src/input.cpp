@@ -13,7 +13,8 @@ Input::Input()
   , mouseButtonUp{}
   , mouseMotion{}
   , mouseWheel{}
-{}
+{
+}
 
 void Input::pollEvent()
 {

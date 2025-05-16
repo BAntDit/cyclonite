@@ -38,7 +38,7 @@ public:
     auto setRenderTargetDepthProperties(render_target_output<type_list<render_target_candidate_t<format>...>,
                                                              RenderTargetOutputSemantic::UNDEFINED,
                                                              IsPublic,
-                                                             Tiling> &&) -> Builder&;
+                                                             Tiling>&&) -> Builder&;
 
     template<typename... RenderTargetColorOutput>
     auto setRenderTargetColorProperties(RenderTargetColorOutput&&...)
@@ -156,7 +156,8 @@ BaseGraphicsNode::Builder<Config>::Builder(vulkan::Device& device,
   , renderPasses_{}
   , vkRenderPass_{ device.handle(), vkDestroyRenderPass }
   , renderTarget_{}
-{}
+{
+}
 
 template<NodeConfig Config>
 auto BaseGraphicsNode::Builder<Config>::setName(std::string_view name) -> Builder&
@@ -223,7 +224,7 @@ auto BaseGraphicsNode::Builder<Config>::setRenderTargetDepthProperties(
   render_target_output<type_list<render_target_candidate_t<format>...>,
                        RenderTargetOutputSemantic::UNDEFINED,
                        IsPublic,
-                       Tiling> &&) -> Builder&
+                       Tiling>&&) -> Builder&
 {
     // TODO:: public depth (make possible to access depth outside of the node)
 

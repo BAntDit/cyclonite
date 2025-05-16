@@ -37,7 +37,7 @@ public:
 
     auto operator=(Surface const&) -> Surface& = delete;
 
-    auto operator=(Surface &&) -> Surface& = default;
+    auto operator=(Surface&&) -> Surface& = default;
 
     [[nodiscard]] auto handle() const -> VkSurfaceKHR { return platformSurface_.handle(); }
 

@@ -27,7 +27,7 @@ public:
 
     auto operator=(Render const&) -> Render& = delete;
 
-    auto operator=(Render &&) -> Render& = delete;
+    auto operator=(Render&&) -> Render& = delete;
 
     void operator()();
 

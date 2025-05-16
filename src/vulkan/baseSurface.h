@@ -21,7 +21,7 @@ public:
 
     auto operator=(BaseSurface const&) -> BaseSurface& = delete;
 
-    auto operator=(BaseSurface &&) -> BaseSurface& = default;
+    auto operator=(BaseSurface&&) -> BaseSurface& = default;
 
     [[nodiscard]] auto handle() const -> VkSurfaceKHR { return static_cast<VkSurfaceKHR>(vkSurfaceKHR_); }
 

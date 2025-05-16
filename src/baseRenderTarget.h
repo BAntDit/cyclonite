@@ -35,7 +35,7 @@ public:
 
     auto operator=(BaseRenderTarget const&) -> BaseRenderTarget& = delete;
 
-    auto operator=(BaseRenderTarget &&) -> BaseRenderTarget& = default;
+    auto operator=(BaseRenderTarget&&) -> BaseRenderTarget& = default;
 
     [[nodiscard]] auto width() const -> uint32_t { return extent_.width; }
 

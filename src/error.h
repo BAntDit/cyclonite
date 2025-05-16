@@ -14,7 +14,8 @@ struct Error : std::runtime_error
 
     explicit Error(std::string const& what)
       : std::runtime_error(what)
-    {}
+    {
+    }
 };
 }
 

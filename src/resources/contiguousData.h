@@ -51,7 +51,7 @@ public:
 
         auto operator*() const -> DataType const&;
 
-        auto operator-> () const -> pointer;
+        auto operator->() const -> pointer;
 
         [[nodiscard]] auto ptr() const -> pointer;
 
@@ -101,7 +101,8 @@ ContiguousData<DataType>::ContiguousData(size_t dataCount) noexcept
   : resources::Resource{ dataCount * sizeof(DataType) }
   , data_{ nullptr }
   , count_{ dataCount }
-{}
+{
+}
 
 template<typename DataType>
 void ContiguousData<DataType>::handleDynamicDataAllocation()
@@ -219,7 +220,7 @@ auto ContiguousData<DataType>::Iterator::operator*() const -> DataType const&
 }
 
 template<typename DataType>
-auto ContiguousData<DataType>::Iterator::operator-> () const -> DataType*
+auto ContiguousData<DataType>::Iterator::operator->() const -> DataType*
 {
     return data_ + index_;
 }

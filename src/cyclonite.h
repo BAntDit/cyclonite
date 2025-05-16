@@ -10,4 +10,4 @@
 #include "hash.h"
 #include "root.h"
 
-#endif //CYCLONITE_CYCLONITE_H
+#endif // CYCLONITE_CYCLONITE_H

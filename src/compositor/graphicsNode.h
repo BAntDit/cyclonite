@@ -55,7 +55,7 @@ public:
 
     ~GraphicsNode() = default;
 
-    auto operator=(GraphicsNode &&) -> GraphicsNode& = default;
+    auto operator=(GraphicsNode&&) -> GraphicsNode& = default;
 
     auto operator=(GraphicsNode const&) -> GraphicsNode& = delete;
 
@@ -153,8 +153,7 @@ auto GraphicsNode<Config>::syncFrame(vulkan::Device& device, uint64_t frameNumbe
 }
 
 template<NodeConfig Config>
-auto GraphicsNode<Config>::begin([[maybe_unused]] vulkan::Device& device)
-  -> std::pair<VkSemaphore, size_t>
+auto GraphicsNode<Config>::begin([[maybe_unused]] vulkan::Device& device) -> std::pair<VkSemaphore, size_t>
 {
     assert(multithreading::Render::isInRenderThread());
 

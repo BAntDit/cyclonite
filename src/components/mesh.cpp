@@ -8,12 +8,14 @@ namespace cyclonite::components {
 Mesh::Mesh() noexcept
   : baseSubMesh_{ nullptr }
   , subMeshCount_{ 0 }
-{}
+{
+}
 
 Mesh::Mesh(SubMesh* baseSubMesh, uint16_t subMeshCount) noexcept
   : baseSubMesh_{ baseSubMesh }
   , subMeshCount_{ subMeshCount }
-{}
+{
+}
 
 auto Mesh::getSubMesh(uint16_t index) -> SubMesh&
 {

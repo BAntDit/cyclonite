@@ -26,7 +26,7 @@ public:
 
     auto operator=(ShaderModule const&) -> ShaderModule& = delete;
 
-    auto operator=(ShaderModule &&) -> ShaderModule& = default;
+    auto operator=(ShaderModule&&) -> ShaderModule& = default;
 
     [[nodiscard]] auto constantSize() const -> uint32_t { return constantSize_; }
 

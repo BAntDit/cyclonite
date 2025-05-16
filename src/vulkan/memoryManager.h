@@ -30,7 +30,8 @@ private:
         MemoryType(VkMemoryPropertyFlags flags, VkDeviceSize _pageSize)
           : propertyFlags{ flags }
           , pageSize{ _pageSize }
-        {}
+        {
+        }
 
         [[nodiscard]] auto isHostVisible() const -> bool
         {

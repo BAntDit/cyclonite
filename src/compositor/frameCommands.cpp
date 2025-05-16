@@ -46,7 +46,8 @@ FrameCommands::FrameCommands() noexcept
   , uniforms_{}
   , commandCount_{}
   , graphicsCommands_{}
-{}
+{
+}
 
 FrameCommands::FrameCommands(size_t bufferIndex) noexcept
   : FrameCommands()

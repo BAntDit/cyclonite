@@ -22,7 +22,7 @@ public:
 
     auto operator=(Input const&) -> Input& = delete;
 
-    auto operator=(Input &&) -> Input& = delete;
+    auto operator=(Input&&) -> Input& = delete;
 
     void pollEvent();
 

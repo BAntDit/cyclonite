@@ -22,7 +22,8 @@ Workspace::Workspace() noexcept
   , submitCount_{ 0 }
   , frameFences_{}
   , lastTimeUpdate_{ std::chrono::high_resolution_clock::now() }
-{}
+{
+}
 
 void Workspace::render(vulkan::Device& device)
 {
@@ -73,7 +74,7 @@ void Workspace::render(vulkan::Device& device)
         // it's going to be not trivial thing to execute gfx node in the parallel
         // but let's try
         auto future = std::shared_future<void>{ multithreading::Worker::threadWorker().submitTask(
-          [& graphicsNodes = graphicsNodes_,                   // read only
+          [&graphicsNodes = graphicsNodes_,                    // read only
              & idToGraphicsNodeIndex = idToGraphicsNodeIndex_, // read only
            frameNumber = frameNumber_,                         // read only
            node = node,                                        // just copy interface
@@ -88,9 +89,7 @@ void Workspace::render(vulkan::Device& device)
               // node::begin modifies frame buffer index and have to be in the render thread
               // to avoid data races
               auto beginFuture = multithreading::Worker::threadWorker().taskManager().submitRenderTask(
-                [&node, &device]() -> std::pair<VkSemaphore, size_t> {
-                    return node.begin(device);
-                });
+                [&node, &device]() -> std::pair<VkSemaphore, size_t> { return node.begin(device); });
               auto [renderTargetReadySemaphore, commandIndex] = beginFuture.get();
 
               if (renderTargetReadySemaphore != VK_NULL_HANDLE) { // to waiting for acquired image or frame buffer
@@ -177,7 +176,7 @@ void Workspace::render(vulkan::Device& device)
 
 auto Workspace::syncFrame(vulkan::Device& device) -> VkFence
 {
-    auto frameSyncTask = [& fences = frameFences_,
+    auto frameSyncTask = [&fences = frameFences_,
                           &nodes = graphicsNodes_,
                           nodeCount = graphicsNodeCount_,
                           frameNumber = frameNumber_,

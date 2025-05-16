@@ -112,7 +112,8 @@ Image::Image(cyclonite::vulkan::Device& device,
            VK_IMAGE_LAYOUT_UNDEFINED,
            0,
            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT }
-{}
+{
+}
 
 Image::Image(VkImage vkImage, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling)
   : width_{ width }

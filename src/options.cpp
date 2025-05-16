@@ -16,7 +16,8 @@ Options::Options(int argc, const char* argv[]) noexcept
   : argc_{ argc }
   , argv_{ argv }
   , variables_{}
-{}
+{
+}
 
 auto Options::has(std::string const& optionName) const -> bool
 {

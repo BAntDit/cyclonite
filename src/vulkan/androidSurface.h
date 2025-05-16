@@ -21,7 +21,7 @@ public:
 
     auto operator=(AndroidSurface const&) -> AndroidSurface& = delete;
 
-    auto operator=(AndroidSurface &&) -> AndroidSurface& = default;
+    auto operator=(AndroidSurface&&) -> AndroidSurface& = default;
 
     ~AndroidSurface() = default;
 };

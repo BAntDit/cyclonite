@@ -18,7 +18,8 @@ struct OutOfMemory : Error
 
     explicit OutOfMemory(VkDeviceSize size)
       : Error("device have no enough memory to allocate: " + std::to_string(size) + " bytes")
-    {}
+    {
+    }
 };
 
 class Device;

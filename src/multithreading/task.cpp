@@ -10,7 +10,8 @@ Task::Task()
   : storage_{}
   , functor_{ nullptr }
   , pending_{ false }
-{}
+{
+}
 
 Task::Task(Task&& task) noexcept
   : storage_{}

@@ -17,9 +17,11 @@ WindowProperties::WindowProperties(std::string const& title,
   , width{ width }
   , height{ height }
   , fullscreen{ fullscreen }
-{}
+{
+}
 
 WindowProperties::WindowProperties() noexcept
   : WindowProperties{ "", 0, 0, 512, 512, false }
-{}
+{
+}
 }

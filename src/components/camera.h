@@ -19,7 +19,8 @@ struct Camera
           , yFov{ fov }
           , zNear{ near }
           , zFar{ far }
-        {}
+        {
+        }
 
         real aspect;
         real yFov;
@@ -34,7 +35,8 @@ struct Camera
           , yMag{ yMagnification }
           , zNear{ near }
           , zFar{ far }
-        {}
+        {
+        }
 
         real xMag;
         real yMag;

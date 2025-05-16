@@ -29,7 +29,7 @@ public:
 
     auto operator=(UniformSystem const&) -> UniformSystem& = delete;
 
-    auto operator=(UniformSystem &&) -> UniformSystem& = default;
+    auto operator=(UniformSystem&&) -> UniformSystem& = default;
 
     void init(multithreading::TaskManager& taskManager,
               resources::ResourceManager& resourceManager,

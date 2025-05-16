@@ -9,7 +9,8 @@ namespace cyclonite::components {
 Animator::Animator(AnimationChannel& baseChannel, size_t channelCount)
   : baseChannel_{ &baseChannel }
   , channelCount_{ channelCount }
-{}
+{
+}
 
 auto Animator::getChannel(size_t channelIndex) const -> AnimationChannel const&
 {

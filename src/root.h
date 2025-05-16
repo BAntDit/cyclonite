@@ -39,7 +39,7 @@ public:
 
     auto operator=(Root const&) -> Root& = delete;
 
-    auto operator=(Root &&) -> Root& = delete;
+    auto operator=(Root&&) -> Root& = delete;
 
     void init();
 

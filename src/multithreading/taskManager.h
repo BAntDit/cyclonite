@@ -32,7 +32,7 @@ public:
 
     auto operator=(TaskManager const&) -> TaskManager& = delete;
 
-    auto operator=(TaskManager &&) -> TaskManager& = delete;
+    auto operator=(TaskManager&&) -> TaskManager& = delete;
 
     [[nodiscard]] auto keepAlive() const -> bool { return alive_.load(std::memory_order_relaxed); }
 

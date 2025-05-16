@@ -12,7 +12,8 @@ ResourceManager::ResourceManager() noexcept
   , freeItems_{}
   , buffers_{}
   , freeRanges_{}
-{}
+{
+}
 
 auto ResourceManager::allocResource(Resource::ResourceTag tag, size_t size) -> Resource::Id
 {

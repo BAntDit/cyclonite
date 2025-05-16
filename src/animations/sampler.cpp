@@ -16,7 +16,8 @@ Sampler::Sampler() noexcept
   , rawValue_{}
   , interpolationType_{ InterpolationType::STEP }
   , componentCount_{ 0 }
-{}
+{
+}
 
 Sampler::Sampler(resources::ResourceManager& resourceManager,
                  interpolator_func_t interpolator,
@@ -41,7 +42,8 @@ Sampler::Sampler(resources::ResourceManager& resourceManager,
   , rawValue_{}
   , interpolationType_{ interpolationType }
   , componentCount_{ static_cast<uint8_t>(componentCount) }
-{}
+{
+}
 
 void Sampler::update(real playtime)
 {
