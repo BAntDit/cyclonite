@@ -1,0 +1,15 @@
+
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(Threads REQUIRED)
+find_dependency(TaskWeaver REQUIRED)
+find_dependency(glm REQUIRED)
+find_dependency(SDL3 REQUIRED CONFIG)
+find_dependency(enttx REQUIRED)
+find_dependency(metrix REQUIRED)
+find_dependency(vulkan-validationlayers REQUIRED)
+find_dependency(VulkanLoader REQUIRED)
+find_dependency(Boost REQUIRED)
+
+include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")

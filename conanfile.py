@@ -5,6 +5,8 @@ from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
 class CycloniteRecipe(ConanFile):
     name = "cyclonite"
     version = "0.4.0.0"
+    url = "https://github.com/BAntDit/cyclonite"
+    description = "Cyclonite is a graphics engine."
 
     settings = "os", "compiler", "arch", "build_type"
 
