@@ -14,6 +14,7 @@ class CycloniteRecipe(ConanFile):
 
     def build_requirements(self):
         self.tool_requires("cmake/[>=3.10]")
+        self.tool_requires("glslang/[~11.7]")
         if self.settings.compiler != "msvc":
             self.tool_requires("ninja/[>=1.11.0]")
 

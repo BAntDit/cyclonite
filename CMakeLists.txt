@@ -29,6 +29,7 @@ add_library(${PROJECT_NAME} SHARED
 )
 
 find_program(GLSLANG_VALIDATOR glslangValidator)
+message(STATUS "Found glslangValidator: ${GLSLANG_VALIDATOR}")
 
 foreach(source ${SHADER_SOURCES})
     get_filename_component(dir "${source}" DIRECTORY)
