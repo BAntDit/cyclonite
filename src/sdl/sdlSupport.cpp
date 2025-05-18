@@ -18,22 +18,25 @@ SDLSupport::~SDLSupport()
     SDL_Quit();
 }
 
-void SDLSupport::storeDisplayResolutions(std::vector<std::pair<uint16_t, uint16_t>>& displayREsoltions,
-                                         int displayIndex)
+void SDLSupport::storeDisplayResolutions(std::vector<std::pair<uint16_t, uint16_t>>& displayResolutions,
+                                         SDL_DisplayID displayId)
 {
-    auto countDisplayModes = SDL_GetNumDisplayModes(displayIndex);
+    auto displayModeCount = int32_t{0};
+    auto** displayModes = SDL_GetFullscreenDisplayModes(displayId, &displayModeCount);
 
-    displayREsoltions.reserve(countDisplayModes);
+    if (displayModes != nullptr && displayModeCount > 0) {
+        displayResolutions.reserve(displayModeCount);
 
-    for (auto i = 0; i < countDisplayModes; i++) {
-        SDL_DisplayMode displayMode = {};
+        for (auto i = 0; i < displayModeCount; i++) {
+            auto const& displayMode = *(displayModes[i]);
 
-        SDL_GetDisplayMode(displayIndex, i, &displayMode);
+            auto width = static_cast<uint16_t>(displayMode.w);
+            auto height = static_cast<uint16_t>(displayMode.h);
 
-        auto width = static_cast<uint16_t>(displayMode.w);
-        auto height = static_cast<uint16_t>(displayMode.h);
-
-        displayREsoltions.emplace_back(width, height);
+            displayResolutions.emplace_back(width, height);
+        }
+    } else {
+        throw std::runtime_error("could not get available display modes");
     }
 }
 }
