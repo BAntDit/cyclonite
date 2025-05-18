@@ -11,7 +11,7 @@ namespace cyclonite::vulkan {
 class BaseSurface
 {
 public:
-    BaseSurface(VkInstance vkInstance);
+    explicit BaseSurface(VkInstance vkInstance);
 
     BaseSurface(BaseSurface const&) = delete;
 
