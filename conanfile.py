@@ -1,12 +1,21 @@
 
 from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
+from conan.errors import ConanInvalidConfiguration
 
 class CycloniteRecipe(ConanFile):
     name = "cyclonite"
     version = "0.4.0.0"
     url = "https://github.com/BAntDit/cyclonite"
     description = "Cyclonite is a graphics engine."
+
+    options = {
+        "platform": ["x11", "wayland", "xcb", "mir", "windows", "android", "auto"],  # Let users choose
+    }
+
+    default_options = {
+        "platform": "auto"
+    }
 
     settings = "os", "compiler", "arch", "build_type"
 
@@ -48,6 +57,23 @@ class CycloniteRecipe(ConanFile):
             tc.generator = "Visual Studio"
         else:
             tc.generator = "Ninja"
+
+        if self.options.platform != "auto":
+            if self.options.platform == "x11":
+                tc.variables["VK_USE_PLATFORM_XLIB_KHR"] = True
+            elif self.options.platform == "wayland":
+                tc.variables["VK_USE_PLATFORM_WAYLAND_KHR"] = True
+            elif self.options.platform == "xcb":
+                tc.variables["VK_USE_PLATFORM_XCB_KHR"] = True
+            elif self.options.platform == "mir":
+                tc.variables["VK_USE_PLATFORM_MIR_KHR"] = True
+            elif self.options.platform == "android":
+                tc.variables["VK_USE_PLATFORM_ANDROID_KHR"] = True
+            elif self.options.platform == "windows":
+                tc.variables["VK_USE_PLATFORM_WIN32_KHR"] = True
+            else:
+                raise ConanInvalidConfiguration("Unexpected platform name.")
+
 
         tc.variables["REQUIRED_CXX_STANDARD"] = "20"
         tc.generate()
