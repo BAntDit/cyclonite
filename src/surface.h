@@ -55,7 +55,7 @@ private:
 };
 
 template<typename... SurfaceArgs>
-static auto _createSurface(VkInstance vkInstance, sdl::SDLWindow const& window, easy_mp::type_list<SurfaceArgs...>)
+static auto _createSurface(VkInstance vkInstance, sdl::SDLWindow const& window, metrix::type_list<SurfaceArgs...>)
   -> vulkan::platform_surface_t
 {
     return vulkan::platform_surface_t{ vkInstance, window.get<SurfaceArgs>()... };

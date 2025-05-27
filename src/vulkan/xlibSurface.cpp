@@ -8,7 +8,7 @@
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
 
 namespace cyclonite::vulkan {
-XlibSurface::XlibSurface(VkInstance vkInstance, Display* display, Window const& window)
+XlibSurface::XlibSurface(VkInstance vkInstance, Display* display, Window window)
   : BaseSurface{ vkInstance }
 {
     VkXlibSurfaceCreateInfoKHR vkXlibSurfaceCreateInfoKHR = {};

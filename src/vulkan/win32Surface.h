@@ -9,6 +9,7 @@
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
 #include "baseSurface.h"
+#include <metrix/type_list.h>
 
 namespace cyclonite::vulkan {
 class Win32Surface : public BaseSurface
@@ -29,7 +30,7 @@ public:
 
 using platform_surface_t = Win32Surface;
 
-using platform_surface_argument_type_list_t = easy_mp::type_list<HINSTANCE, HWND>;
+using platform_surface_argument_type_list_t = metrix::type_list<HINSTANCE, HWND>;
 }
 
 #endif

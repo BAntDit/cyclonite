@@ -9,13 +9,9 @@ Surface::Surface(vulkan::Device const& device, WindowProperties const& windowPro
   : capabilities_{}
   , extent_{}
   , window_{ windowProperties.title,
-             windowProperties.left,
-             windowProperties.top,
              windowProperties.width,
              windowProperties.height,
-             static_cast<uint32_t>(windowProperties.fullscreen
-                                     ? SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS
-                                     : SDL_WINDOW_SHOWN) }
+             static_cast<uint32_t>(windowProperties.fullscreen ? SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS : 0) }
   , platformSurface_{
       _createSurface(device.vulkanInstance(), window_, vulkan::platform_surface_argument_type_list_t{})
   }

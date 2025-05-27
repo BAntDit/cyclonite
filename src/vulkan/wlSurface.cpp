@@ -3,6 +3,7 @@
 //
 
 #include "wlSurface.h"
+#include <stdexcept>
 
 #if defined(VK_USE_PLATFORM_WAYLAND_KHR)
 namespace cyclonite::vulkan {

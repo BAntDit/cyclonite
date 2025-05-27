@@ -5,8 +5,8 @@
 #ifndef CYCLONITE_SDLWINDOW_H
 #define CYCLONITE_SDLWINDOW_H
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_syswm.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_video.h>
 #include <cassert>
 #include <functional>
 #include <memory>
@@ -16,12 +16,7 @@ namespace cyclonite::sdl {
 class SDLWindow
 {
 public:
-    SDLWindow(std::string const& title,
-              unsigned int x = SDL_WINDOWPOS_UNDEFINED,
-              unsigned int y = SDL_WINDOWPOS_UNDEFINED,
-              unsigned int w = 512,
-              unsigned int h = 512,
-              uint32_t flags = SDL_WINDOW_SHOWN);
+    SDLWindow(std::string const& title, unsigned int w = 512, unsigned int h = 512, uint32_t flags = 0);
 
     SDLWindow(SDLWindow const&) = delete;
 
@@ -37,7 +32,6 @@ public:
     auto get() const -> T;
 
 private:
-    SDL_SysWMinfo sysWMinfo_;
     std::unique_ptr<SDL_Window, std::function<void(SDL_Window*)>> sdlWindowPtr_;
 };
 }

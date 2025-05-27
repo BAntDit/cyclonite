@@ -9,14 +9,14 @@
 
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
 #include "baseSurface.h"
-#include <easy-mp/type_list.h>
+#include <metrix/type_list.h>
 #include <vulkan/vulkan_xlib.h>
 
 namespace cyclonite::vulkan {
 class XlibSurface : public BaseSurface
 {
 public:
-    XlibSurface(VkInstance vkInstance, Display* display, Window const& window);
+    XlibSurface(VkInstance vkInstance, Display* display, Window window);
 
     XlibSurface(XlibSurface const&) = delete;
 
@@ -31,7 +31,7 @@ public:
 
 using platform_surface_t = XlibSurface;
 
-using platform_surface_argument_type_list_t = easy_mp::type_list<Display*, Window const&>;
+using platform_surface_argument_type_list_t = metrix::type_list<Display*, Window>;
 }
 #endif
 

@@ -3,6 +3,7 @@
 //
 
 #include "androidSurface.h"
+#include <stdexcept>
 
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
 

@@ -6,6 +6,7 @@
 #define CYCLONITE_ANDROIDSURFACE_H
 
 #include "platform.h"
+#include <metrix/type_list.h>
 
 #if defined(VK_USE_PLATFORM_ANDROID_KHR)
 #include "baseSurface.h"
@@ -28,7 +29,7 @@ public:
 
 using platform_surface_t = AndroidSurface;
 
-using platform_surface_argument_type_list_t = easy_mp::type_list<ANativeWindow*>;
+using platform_surface_argument_type_list_t = metrix::type_list<ANativeWindow*>;
 }
 #endif
 

@@ -3,6 +3,7 @@
 //
 
 #include "win32Surface.h"
+#include <stdexcept>
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
 

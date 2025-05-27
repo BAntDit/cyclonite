@@ -36,7 +36,7 @@ cyclonite::resources::Resource::ResourceTag TestResource::tag{};
 
 void ResourceManagementTestFixture::SetUp()
 {
-    resourceManager_ = std::make_unique<cyclonite::resources::ResourceManager>(128);
+    resourceManager_ = std::make_unique<cyclonite::resources::ResourceManager>();
     resourceManager_->template registerResources(cyclonite::resources::resource_reg_info_t<TestResource, 10, 512>{});
 }
 

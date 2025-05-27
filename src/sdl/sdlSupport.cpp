@@ -21,7 +21,7 @@ SDLSupport::~SDLSupport()
 void SDLSupport::storeDisplayResolutions(std::vector<std::pair<uint16_t, uint16_t>>& displayResolutions,
                                          SDL_DisplayID displayId)
 {
-    auto displayModeCount = int32_t{0};
+    auto displayModeCount = int32_t{ 0 };
     auto** displayModes = SDL_GetFullscreenDisplayModes(displayId, &displayModeCount);
 
     if (displayModes != nullptr && displayModeCount > 0) {
