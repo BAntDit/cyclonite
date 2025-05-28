@@ -9,19 +9,17 @@
 #include "uuids.h"
 #include "vulkan/imageView.h"
 #include "vulkan/sharedHandle.h"
-#include <easy-mp/containers.h>
-#include <easy-mp/enum.h>
-#include <easy-mp/type_list.h>
+#include <metrix/containers.h>
+#include <metrix/enum.h>
+#include <metrix/type_list.h>
 
 namespace cyclonite::compositor {
-using namespace easy_mp;
-
 struct Link
 {
     uint64_t nodeId;
     VkSampler sampler;
-    std::array<VkImageView, value_cast(RenderTargetOutputSemantic::COUNT)> views;
-    std::array<RenderTargetOutputSemantic, value_cast(RenderTargetOutputSemantic::COUNT)> semantics;
+    std::array<VkImageView, metrix::value_cast(RenderTargetOutputSemantic::COUNT)> views;
+    std::array<RenderTargetOutputSemantic, metrix::value_cast(RenderTargetOutputSemantic::COUNT)> semantics;
 };
 
 class Links
@@ -180,7 +178,8 @@ public:
 
 private:
     template<size_t maxSize>
-    using image_io = to_variant_t<typename concat<type_list<std::monostate>, array_list_t<Link, maxSize>>::type>;
+    using image_io = metrix::to_variant_t<
+      typename concat<metrix::type_list<std::monostate>, metrix::array_list_t<Link, maxSize>>::type>;
 
     static constexpr size_t maxInputCount = 64;
 

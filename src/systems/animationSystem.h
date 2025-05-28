@@ -10,12 +10,10 @@
 #include "multithreading/taskManager.h"
 #include "resources/resourceManager.h"
 #include "updateStages.h"
-#include <easy-mp/enum.h>
 #include <enttx/enttx.h>
+#include <metrix/enum.h>
 
 namespace cyclonite::systems {
-using namespace easy_mp;
-
 class AnimationSystem : public enttx::BaseSystem<AnimationSystem>
 {
 public:

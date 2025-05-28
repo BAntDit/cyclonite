@@ -27,7 +27,8 @@ Controller::Controller() noexcept
   , azimuth_{ 0.f }
   , polar_{}
   , target_{ 0.f }
-{}
+{
+}
 
 void Controller::init(cyclonite::Input& input, uint32_t width, uint32_t height)
 {

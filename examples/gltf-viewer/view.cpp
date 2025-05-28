@@ -8,11 +8,12 @@
 
 namespace examples::viewer {
 using namespace cyclonite;
-using namespace easy_mp;
+using namespace metrix;
 
 View::View() noexcept
   : workspace_{ nullptr }
-{}
+{
+}
 
 void View::init(cyclonite::multithreading::TaskManager& taskManager,
                 cyclonite::vulkan::Device& device,

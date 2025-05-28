@@ -14,9 +14,10 @@
 #include "vulkan/commandBufferSet.h"
 #include "vulkan/commandPool.h"
 #include "vulkan/device.h"
-#include <easy-mp/enum.h>
 #include <enttx/enttx.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <metrix/containers.h>
+#include <metrix/enum.h>
 
 namespace cyclonite {
 class Root;
@@ -27,14 +28,12 @@ class ResourceManager;
 }
 
 namespace cyclonite::systems {
-using namespace easy_mp;
-
 class MeshSystem : public enttx::BaseSystem<MeshSystem>
 {
 public:
     using transfer_commands_t = vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 3>>;
 
-    using tag_t = easy_mp::type_list<components::Mesh>;
+    using tag_t = metrix::type_list<components::Mesh>;
 
     MeshSystem() = default;
 
@@ -52,7 +51,7 @@ public:
 
     template<typename EntityManager, typename Geometries>
     auto createMesh(EntityManager& entityManager, enttx::Entity entity, Geometries&& geometries)
-      -> std::enable_if_t<is_contiguous_v<Geometries> || std::is_same_v<uint64_t, std::decay_t<Geometries>>,
+      -> std::enable_if_t<metrix::is_contiguous_v<Geometries> || std::is_same_v<uint64_t, std::decay_t<Geometries>>,
                           components::Mesh&>;
 
     // TODO:: delete Mesh
@@ -111,12 +110,12 @@ private:
 
 template<typename EntityManager, typename Geometries>
 auto MeshSystem::createMesh(EntityManager& entityManager, enttx::Entity entity, Geometries&& geometries)
-  -> std::enable_if_t<is_contiguous_v<Geometries> || std::is_same_v<uint64_t, std::decay_t<Geometries>>,
+  -> std::enable_if_t<metrix::is_contiguous_v<Geometries> || std::is_same_v<uint64_t, std::decay_t<Geometries>>,
                       components::Mesh&>
 {
     auto subMeshCount = uint16_t{ 0 };
     auto geometryIdentifiers = std::add_pointer_t<uint64_t>{ nullptr };
-    if constexpr (is_contiguous_v<Geometries>) {
+    if constexpr (metrix::is_contiguous_v<Geometries>) {
         assert(std::size(geometries) < std::numeric_limits<uint16_t>::max());
         subMeshCount = static_cast<uint16_t>(std::size(geometries));
         geometryIdentifiers = std::data(geometries);
@@ -138,7 +137,7 @@ auto MeshSystem::createMesh(EntityManager& entityManager, enttx::Entity entity, 
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
 void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
-    if constexpr (STAGE == value_cast(UpdateStage::EARLY_UPDATE)) {
+    if constexpr (STAGE == metrix::value_cast(UpdateStage::EARLY_UPDATE)) {
         {
             auto view = entityManager.template getView<components::Mesh>();
 
@@ -221,13 +220,13 @@ void MeshSystem::update(SystemManager& systemManager, EntityManager& entityManag
         }
     }
 
-    if constexpr (STAGE == value_cast(UpdateStage::LATE_UPDATE)) {
+    if constexpr (STAGE == metrix::value_cast(UpdateStage::LATE_UPDATE)) {
         for (auto&& command : commands_) {
             command.instanceCount = 0;
         }
     }
 
-    if constexpr (STAGE == value_cast(UpdateStage::TRANSFER_STAGE)) {
+    if constexpr (STAGE == metrix::value_cast(UpdateStage::TRANSFER_STAGE)) {
         auto&& [node, signalCount, frameNumber, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
 
         auto& frame = node.getCurrentFrame();

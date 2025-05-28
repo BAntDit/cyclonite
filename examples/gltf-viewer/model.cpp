@@ -14,7 +14,8 @@ using namespace cyclonite;
 
 Model::Model() noexcept
   : workspace_{ nullptr }
-{}
+{
+}
 
 void Model::init(cyclonite::Root& root,
                  std::string const& path,

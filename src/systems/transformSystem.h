@@ -8,14 +8,15 @@
 #include "../components/transform.h"
 #include "resources/staging.h"
 #include "updateStages.h"
-#include <easy-mp/enum.h>
 #include <enttx/enttx.h>
+#include <metrix/enum.h>
+#include <metrix/type_list.h>
 
 namespace cyclonite::systems {
 class TransformSystem : public enttx::BaseSystem<TransformSystem>
 {
 public:
-    using tag_t = easy_mp::type_list<components::Transform>;
+    using tag_t = metrix::type_list<components::Transform>;
 
     TransformSystem() = default;
 
@@ -42,15 +43,13 @@ private:
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
 void TransformSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
-    using namespace easy_mp;
-
     (void)systemManager;
 
     auto&& [node, frameNumber, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
     (void)node;
     (void)dt;
 
-    if constexpr (STAGE == value_cast(UpdateStage::EARLY_UPDATE)) {
+    if constexpr (STAGE == metrix::value_cast(UpdateStage::EARLY_UPDATE)) {
         auto& transforms = entityManager.template getStorage<components::Transform>();
 
         for (auto& transform : transforms) {

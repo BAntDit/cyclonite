@@ -11,12 +11,13 @@ Basic::Basic()
   , entities_{}
   , systems_{ &entities_ }
   , cameraEntity_{}
-{}
+{
+}
 
 auto Basic::init(cyclonite::Options const& options) -> Basic&
 {
     using namespace cyclonite;
-    using namespace easy_mp;
+    using namespace metrix;
 
     root_->init(options);
     root_->input().keyDown += cyclonite::Event<SDL_Keycode, uint16_t>::EventHandler(this, &Basic::onKeyDown);

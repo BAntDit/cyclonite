@@ -8,11 +8,11 @@
 #include "resources/contiguousData.h"
 #include "sampler.h"
 #include <bitset>
-#include <easy-mp/enum.h>
 #include <future>
 #include <glm/gtc/type_ptr.hpp>
+#include <metrix/enum.h>
 
-using namespace easy_mp;
+using namespace metrix;
 
 namespace cyclonite::multithreading {
 class TaskManager;

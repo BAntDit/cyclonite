@@ -12,12 +12,10 @@
 #include "node.h"
 #include "passType.h"
 #include "surfaceRenderTarget.h"
-#include <easy-mp/type_list.h>
+#include <metrix/type_list.h>
 #include <vector>
 
 namespace cyclonite::compositor {
-using namespace easy_mp;
-
 template<VkFormat format>
 using render_target_candidate_t = std::integral_constant<VkFormat, format>;
 
@@ -28,7 +26,7 @@ template<typename Properties,
 struct render_target_output;
 
 template<RenderTargetOutputSemantic Semantic, VkImageTiling Tiling, VkFormat... format, bool IsPublic>
-struct render_target_output<type_list<render_target_candidate_t<format>...>, Semantic, IsPublic, Tiling>
+struct render_target_output<metrix::type_list<render_target_candidate_t<format>...>, Semantic, IsPublic, Tiling>
 {
     constexpr static std::array<VkFormat, sizeof...(format)> format_candidate_array_v = { format... };
 
@@ -51,8 +49,8 @@ template<typename ColorSpace, typename PresentMode>
 struct surface_parameters;
 
 template<VkColorSpaceKHR... colorSpace, VkPresentModeKHR... presentMode>
-struct surface_parameters<type_list<color_space_candidate_t<colorSpace>...>,
-                          type_list<present_mode_candidate_t<presentMode>...>>
+struct surface_parameters<metrix::type_list<color_space_candidate_t<colorSpace>...>,
+                          metrix::type_list<present_mode_candidate_t<presentMode>...>>
 {
     constexpr static std::array<VkColorSpaceKHR, sizeof...(colorSpace)> color_space_candidate_array_v = {
         colorSpace...
@@ -137,7 +135,7 @@ protected:
 
 private:
     uint32_t swapChainLength_;
-    std::bitset<value_cast(RenderTargetOutputSemantic::COUNT)> publicSemanticBits_;
+    std::bitset<metrix::value_cast(RenderTargetOutputSemantic::COUNT)> publicSemanticBits_;
 };
 
 template<typename RenderTargetType>

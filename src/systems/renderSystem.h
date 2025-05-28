@@ -8,8 +8,8 @@
 #include "multithreading/taskManager.h"
 #include "updateStages.h"
 #include "vulkan/device.h"
-#include <easy-mp/enum.h>
 #include <enttx/enttx.h>
+#include <metrix/enum.h>
 
 namespace cyclonite::systems {
 class RenderSystem : public enttx::BaseSystem<RenderSystem>
@@ -42,7 +42,7 @@ private:
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
 void RenderSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
-    using namespace easy_mp;
+    using namespace metrix;
 
     if constexpr (STAGE == value_cast(UpdateStage::RENDERING)) {
         auto&& [node, semaphoreCount, frameNumber, dt] = std::forward_as_tuple(std::forward<Args>(args)...);

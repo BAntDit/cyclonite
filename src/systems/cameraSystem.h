@@ -13,10 +13,11 @@
 #include "vulkan/commandBufferSet.h"
 #include "vulkan/commandPool.h"
 #include <components/transform.h>
-#include <easy-mp/enum.h>
 #include <enttx/enttx.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <metrix/enum.h>
+#include <metrix/type_list.h>
 
 namespace cyclonite::systems {
 class CameraSystem : public enttx::BaseSystem<CameraSystem>
@@ -24,7 +25,7 @@ class CameraSystem : public enttx::BaseSystem<CameraSystem>
 public:
     using transfer_commands_t = vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>;
 
-    using tag_t = easy_mp::type_list<components::Camera>;
+    using tag_t = metrix::type_list<components::Camera>;
 
     CameraSystem() = default;
 
@@ -63,11 +64,9 @@ private:
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
 void CameraSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
-    using namespace easy_mp;
-
     ((void)args, ...);
 
-    if constexpr (STAGE == value_cast(UpdateStage::LATE_UPDATE)) {
+    if constexpr (STAGE == metrix::value_cast(UpdateStage::LATE_UPDATE)) {
         auto [transform, camera] = std::as_const(entityManager)
                                      .template getComponents<components::Transform, components::Camera>(renderCamera());
 

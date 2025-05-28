@@ -235,7 +235,8 @@ public:
           : position{ p }
           , scale{ s }
           , rotation{ r }
-        {}
+        {
+        }
 
         vec3 position;
         vec3 scale;
@@ -584,7 +585,7 @@ void Reader::read(std::istream& stream, F&& f)
                 auto inputOffset = inputBufferView.byteOffset + inputAccessor.byteOffset;
 
                 assert(!inputAccessor.normalized);
-                assert(static_cast<int32_t>(inputAccessor.componentType) == easy_mp::value_cast(ComponentType::FLOAT));
+                assert(static_cast<int32_t>(inputAccessor.componentType) == metrix::value_cast(ComponentType::FLOAT));
                 assert(inputAccessor.type == "SCALAR");
 
                 auto inputStride =

@@ -7,14 +7,14 @@
 
 #include "baseCommandBufferSet.h"
 #include <cassert>
-#include <easy-mp/containers.h>
+#include <metrix/containers.h>
 #include <thread>
 
 namespace cyclonite::vulkan {
 template<typename CommandPool, typename Container>
 class CommandBufferSet final : public BaseCommandBufferSet
 {
-    static_assert(easy_mp::is_contiguous_v<Container> &&
+    static_assert(metrix::is_contiguous_v<Container> &&
                   std::is_same_v<typename Container::value_type, VkCommandBuffer>);
 
 public:

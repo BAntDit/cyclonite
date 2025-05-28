@@ -10,8 +10,8 @@
 #include "resources/staging.h"
 #include "updateStages.h"
 #include "vulkan/commandPool.h"
-#include <easy-mp/enum.h>
 #include <enttx/enttx.h>
+#include <metrix/enum.h>
 
 namespace cyclonite::systems {
 class UniformSystem : public enttx::BaseSystem<UniformSystem>
@@ -65,14 +65,12 @@ private:
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
 void UniformSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
 {
-    using namespace easy_mp;
-
     (void)entityManager;
     (void)systemManager;
 
     ((void)args, ...);
 
-    if constexpr (STAGE == value_cast(UpdateStage::TRANSFER_STAGE)) {
+    if constexpr (STAGE == metrix::value_cast(UpdateStage::TRANSFER_STAGE)) {
         auto&& [node, signalCount, frameNumber, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
 
         auto& frame = node.getCurrentFrame();
