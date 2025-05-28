@@ -46,7 +46,7 @@ void AnimationSystem::update(SystemManager& systemManager, EntityManager& entity
     auto&& [node, frameNumber, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
     (void)node;
 
-    if constexpr (STAGE == value_cast(UpdateStage::EARLY_UPDATE)) {
+    if constexpr (STAGE == metrix::value_cast(UpdateStage::EARLY_UPDATE)) {
         for (auto& animation : resourceManager_->template resourceList<animations::Animation>()) {
             if (animation.lastFrameUpdate() != frameNumber)
                 animation.beginUpdate(dt);

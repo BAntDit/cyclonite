@@ -44,7 +44,7 @@ void RenderSystem::update(SystemManager& systemManager, EntityManager& entityMan
 {
     using namespace metrix;
 
-    if constexpr (STAGE == value_cast(UpdateStage::RENDERING)) {
+    if constexpr (STAGE == metrix::value_cast(UpdateStage::RENDERING)) {
         auto&& [node, semaphoreCount, frameNumber, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
 
         (void)semaphoreCount;

@@ -36,7 +36,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         -pedantic
         -Wall
         -Wextra
-        -Wfatal-errors
+        #-Wfatal-errors
     )
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${PROJECT_NAME} PRIVATE
@@ -58,5 +58,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_ENABLE_EXPERIMENTAL)
 target_link_libraries(${PROJECT_NAME} glm::glm)
 
 target_link_libraries(${PROJECT_NAME} SDL3::SDL3)
+
+target_link_libraries(${PROJECT_NAME} enttx::enttx)
 
 find_package(nlohmann_json REQUIRED)

@@ -179,7 +179,7 @@ public:
 private:
     template<size_t maxSize>
     using image_io = metrix::to_variant_t<
-      typename concat<metrix::type_list<std::monostate>, metrix::array_list_t<Link, maxSize>>::type>;
+      typename metrix::concat<metrix::type_list<std::monostate>, metrix::array_list_t<Link, maxSize>>::type>;
 
     static constexpr size_t maxInputCount = 64;
 
@@ -219,7 +219,7 @@ auto Links::create(vulkan::Device& device) -> Links
                 throw std::runtime_error("could not create link sampler");
             }
         }
-        for (auto i = size_t{ 0 }; i < value_cast(RenderTargetOutputSemantic::COUNT); i++) {
+        for (auto i = size_t{ 0 }; i < metrix::value_cast(RenderTargetOutputSemantic::COUNT); i++) {
             views[i] = VK_NULL_HANDLE;
             semantics[i] = RenderTargetOutputSemantic::INVALID;
         }

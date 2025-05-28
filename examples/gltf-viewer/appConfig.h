@@ -9,29 +9,29 @@
 
 namespace examples::viewer {
 using main_component_config_t =
-  cyclonite::component_config_t<type_list<cyclonite::components::Transform,
-                                          cyclonite::components::Mesh,
-                                          cyclonite::components::Camera,
-                                          cyclonite::components::Animator>,
-                                type_list<cyclonite::components::TransformStorage<32, 1>,
-                                          cyclonite::components::MeshStorage<1024>,
-                                          enttx::ComponentStorage<1, 1, cyclonite::components::Camera>,
-                                          cyclonite::components::AnimatorStorage>>;
+  cyclonite::component_config_t<metrix::type_list<cyclonite::components::Transform,
+                                                  cyclonite::components::Mesh,
+                                                  cyclonite::components::Camera,
+                                                  cyclonite::components::Animator>,
+                                metrix::type_list<cyclonite::components::TransformStorage<32, 1>,
+                                                  cyclonite::components::MeshStorage<1024>,
+                                                  enttx::ComponentStorage<1, 1, cyclonite::components::Camera>,
+                                                  cyclonite::components::AnimatorStorage>>;
 
-using empty_component_config_t = cyclonite::component_config_t<type_list<>, type_list<>>;
+using empty_component_config_t = cyclonite::component_config_t<metrix::type_list<>, metrix::type_list<>>;
 
-using animation_systems_t = cyclonite::systems_config_t<value_cast(cyclonite::systems::AnimationStage::COUNT),
+using animation_systems_t = cyclonite::systems_config_t<metrix::value_cast(cyclonite::systems::AnimationStage::COUNT),
                                                         cyclonite::systems::AnimationSystem,
                                                         cyclonite::systems::TransformSystem>;
 
-using g_buffer_node_systems_t = cyclonite::systems_config_t<value_cast(cyclonite::systems::UpdateStage::COUNT),
+using g_buffer_node_systems_t = cyclonite::systems_config_t<metrix::value_cast(cyclonite::systems::UpdateStage::COUNT),
                                                             cyclonite::systems::CameraSystem,
                                                             cyclonite::systems::MeshSystem,
                                                             cyclonite::systems::UniformSystem,
                                                             cyclonite::systems::RenderSystem>;
 
-using surface_node_systems_t =
-  cyclonite::systems_config_t<value_cast(cyclonite::systems::UpdateStage::COUNT), cyclonite::systems::RenderSystem>;
+using surface_node_systems_t = cyclonite::systems_config_t<metrix::value_cast(cyclonite::systems::UpdateStage::COUNT),
+                                                           cyclonite::systems::RenderSystem>;
 
 struct MainNodeConfig : public cyclonite::Config<main_component_config_t, animation_systems_t>
 {

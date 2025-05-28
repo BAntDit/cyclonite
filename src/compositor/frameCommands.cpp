@@ -179,7 +179,7 @@ void FrameCommands::update(vulkan::Device& device,
             for (auto i = size_t{ 0 }, count = links.size(); i < count; i++) {
                 auto&& [idx, sampler, views, semantics] = links.get(i);
 
-                for (auto j = size_t{ 0 }; j < value_cast(RenderTargetOutputSemantic::COUNT); j++) {
+                for (auto j = size_t{ 0 }; j < metrix::value_cast(RenderTargetOutputSemantic::COUNT); j++) {
                     auto semantic = semantics[j];
 
                     if (semantic == RenderTargetOutputSemantic::INVALID)

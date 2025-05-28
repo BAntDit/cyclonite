@@ -69,7 +69,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         -pedantic
         -Wall
         -Wextra
-        -Wfatal-errors
+        #-Wfatal-errors
     )
 
     if (ENABLE_SIMD_AVX2)

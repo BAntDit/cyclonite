@@ -5,10 +5,10 @@
 #ifndef CYCLONITE_CONFIG_H
 #define CYCLONITE_CONFIG_H
 
-#include <easy-mp/enum.h>
-#include <easy-mp/type_list.h>
 #include <enttx/componentStorage.h>
 #include <enttx/enttx.h>
+#include <metrix/enum.h>
+#include <metrix/type_list.h>
 
 #include "components/animator.h"
 #include "components/animatorStorage.h"
@@ -30,7 +30,7 @@ template<typename ComponentList, typename StorageList>
 using component_config_t = enttx::EntityManagerConfig<ComponentList, StorageList>;
 
 template<size_t updateStageCount, typename... System>
-using systems_config_t = enttx::SystemManagerConfig<updateStageCount, type_list<System...>>;
+using systems_config_t = enttx::SystemManagerConfig<updateStageCount, metrix::type_list<System...>>;
 
 namespace internal {
 template<typename T, template<typename, typename> typename Spec>
@@ -38,7 +38,7 @@ struct is_component_config_specialization : std::false_type
 {};
 
 template<typename... C, typename... S, template<typename, typename> typename Spec>
-struct is_component_config_specialization<Spec<type_list<C...>, type_list<S...>>, Spec> : std::true_type
+struct is_component_config_specialization<Spec<metrix::type_list<C...>, metrix::type_list<S...>>, Spec> : std::true_type
 {};
 
 // enttx::EntityManagerConfig instead of component_config_t according to paragraph 14.5.7/2 of the C++ Standard
@@ -54,7 +54,7 @@ struct is_systems_config_specialization : std::false_type
 {};
 
 template<size_t stageCount, typename... Systems, template<size_t, typename> typename Spec>
-struct is_systems_config_specialization<Spec<stageCount, type_list<Systems...>>, Spec> : std::true_type
+struct is_systems_config_specialization<Spec<stageCount, metrix::type_list<Systems...>>, Spec> : std::true_type
 {};
 
 // enttx::SystemManagerConfig instead of systems_config_t according to paragraph 14.5.7/2 of the C++ Standard
@@ -72,18 +72,18 @@ concept ComponentConfig = internal::is_component_config_specialization_v<T>;
 template<typename T>
 concept SystemsConfig = internal::is_systems_config_specialization_v<T>;
 
-using default_component_config_t =
-  component_config_t<type_list<components::Transform, components::Mesh, components::Camera, components::Animator>,
-                     type_list<components::TransformStorage<32, 1>,
-                               components::MeshStorage<1024>,
-                               enttx::ComponentStorage<1, 1, components::Camera>,
-                               components::AnimatorStorage>>;
+using default_component_config_t = component_config_t<
+  metrix::type_list<components::Transform, components::Mesh, components::Camera, components::Animator>,
+  metrix::type_list<components::TransformStorage<32, 1>,
+                    components::MeshStorage<1024>,
+                    enttx::ComponentStorage<1, 1, components::Camera>,
+                    components::AnimatorStorage>>;
 // test:
 static_assert(internal::is_component_config_specialization_v<default_component_config_t>);
 
 using default_systems_config_t = systems_config_t<
-  value_cast(systems::UpdateStage::COUNT),
-  type_list<systems::AnimationSystem, systems::TransformSystem, systems::CameraSystem, systems::MeshSystem>>;
+  metrix::value_cast(systems::UpdateStage::COUNT),
+  metrix::type_list<systems::AnimationSystem, systems::TransformSystem, systems::CameraSystem, systems::MeshSystem>>;
 
 // test:
 static_assert(internal::is_systems_config_specialization_v<default_systems_config_t>);
