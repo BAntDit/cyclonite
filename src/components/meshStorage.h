@@ -8,6 +8,7 @@
 #include "mesh.h"
 #include <enttx/enttx.h>
 #include <set>
+#include <stdexcept>
 
 namespace cyclonite::components {
 template<size_t MAX_SUBMESH_COUNT>
