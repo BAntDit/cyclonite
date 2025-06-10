@@ -8,6 +8,7 @@
 #include "typedefs.h"
 #include <atomic>
 #include <functional>
+#include <array>
 
 namespace cyclonite::multithreading {
 class Task;

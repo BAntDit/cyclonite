@@ -39,15 +39,15 @@ public:
     [[nodiscard]] auto workerCount() const -> uint32_t { return workerCount_; }
 
     template<TaskFunctor F>
-    auto start(F&& f) -> std::future<std::result_of_t<F()>>;
+    auto start(F&& f) -> std::future<std::invoke_result_t<F>>;
 
     void stop();
 
     template<TaskFunctor F>
-    auto submitRenderTask(F&& f) -> std::future<std::result_of_t<F()>>;
+    auto submitRenderTask(F&& f) -> std::future<std::invoke_result_t<F>>;
 
     template<TaskFunctor F>
-    auto submitTask(F&& f) -> std::future<std::result_of_t<F()>>;
+    auto submitTask(F&& f) -> std::future<std::invoke_result_t<F>>;
 
     auto getLastException() -> std::exception_ptr;
 
@@ -72,7 +72,7 @@ private:
 };
 
 template<TaskFunctor F>
-auto TaskManager::submitRenderTask(F&& f) -> std::future<std::result_of_t<F()>>
+auto TaskManager::submitRenderTask(F&& f) -> std::future<std::invoke_result_t<F>>
 {
     assert(!Render::isInRenderThread());
     assert(Worker::isInWorkerThread());
@@ -81,7 +81,7 @@ auto TaskManager::submitRenderTask(F&& f) -> std::future<std::result_of_t<F()>>
 }
 
 template<TaskFunctor F>
-auto TaskManager::start(F&& f) -> std::future<std::result_of_t<F()>>
+auto TaskManager::start(F&& f) -> std::future<std::invoke_result_t<F>>
 {
     auto const firstWorkerThread = size_t{ 1 };
 
@@ -93,7 +93,7 @@ auto TaskManager::start(F&& f) -> std::future<std::result_of_t<F()>>
 }
 
 template<TaskFunctor F>
-auto TaskManager::submitTask(F&& f) -> std::future<std::result_of_t<F()>>
+auto TaskManager::submitTask(F&& f) -> std::future<std::invoke_result_t<F>>
 {
     return workers_[0].submitTask(std::forward<F>(f));
 }

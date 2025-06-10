@@ -38,13 +38,13 @@ public:
     void operator()();
 
     template<TaskFunctor F>
-    auto operator()(F&& f) -> std::future<std::result_of_t<F()>>;
+    auto operator()(F&& f) -> std::future<std::invoke_result_t<F>>;
 
     template<TaskFunctor F>
-    auto submitTask(F&& f) -> std::future<std::result_of_t<F()>>;
+    auto submitTask(F&& f) -> std::future<std::invoke_result_t<F>>;
 
     template<TaskFunctor F>
-    auto submitRenderTask(F&& f) -> std::future<std::result_of_t<F()>>;
+    auto submitRenderTask(F&& f) -> std::future<std::invoke_result_t<F>>;
 
     [[nodiscard]] auto threadId() const -> std::thread::id { return threadId_; }
 
@@ -86,11 +86,11 @@ private:
 };
 
 template<TaskFunctor F>
-auto Worker::submitTask(F&& f) -> std::future<std::result_of_t<F()>>
+auto Worker::submitTask(F&& f) -> std::future<std::invoke_result_t<F>>
 {
     assert(canSubmit());
 
-    using result_type_t = std::result_of_t<F()>;
+    using result_type_t = std::invoke_result_t<F>;
 
     Task* task = nullptr;
     while ((task = pool().writeableTask(), task == nullptr))
@@ -107,11 +107,11 @@ auto Worker::submitTask(F&& f) -> std::future<std::result_of_t<F()>>
 }
 
 template<TaskFunctor F>
-auto Worker::submitRenderTask(F&& f) -> std::future<std::result_of_t<F()>>
+auto Worker::submitRenderTask(F&& f) -> std::future<std::invoke_result_t<F>>
 {
     assert(canSubmit());
 
-    using result_type_t = std::result_of_t<F()>;
+    using result_type_t = std::invoke_result_t<F>;
 
     Task* task = nullptr;
     while ((task = pool().writeableTask(), task == nullptr))
@@ -128,7 +128,7 @@ auto Worker::submitRenderTask(F&& f) -> std::future<std::result_of_t<F()>>
 }
 
 template<TaskFunctor F>
-auto Worker::operator()(F&& f) -> std::future<std::result_of_t<F()>>
+auto Worker::operator()(F&& f) -> std::future<std::invoke_result_t<F>>
 {
     _setThreadWorkerPtr();
 
@@ -141,7 +141,7 @@ auto Worker::operator()(F&& f) -> std::future<std::result_of_t<F()>>
     }
 #endif
 
-    using result_type_t = std::result_of_t<F()>;
+    using result_type_t = std::invoke_result_t<F>;
 
     auto&& task = std::packaged_task<result_type_t()>{ std::forward<F>(f) };
     auto future = task.get_future();
