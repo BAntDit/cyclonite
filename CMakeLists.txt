@@ -150,6 +150,7 @@ find_package(SDL3 REQUIRED CONFIG)
 target_link_libraries(${PROJECT_NAME} SDL3::SDL3)
 
 find_package(enttx REQUIRED)
+target_link_libraries(${PROJECT_NAME} enttx::enttx)
 
 find_package(metrix REQUIRED)
 
