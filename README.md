@@ -5,6 +5,10 @@ Cyclonite is a graphics engine I mostly use for my own experiments.
 
 ![s1.png](./examples/gltf-viewer/screenshots/s1.png)
 
+## Build dependencies
+[CONAN](https://conan.io/) - The open source, decentralized and multi-platform package
+manager to create and share all your native binaries.
+
 ## Dependencies
 - [GLM](https://github.com/g-truc/glm) - header only C++ mathematics library for graphics software.
 - [SDL2](https://github.com/libsdl-org) - Simple DirectMedia Layer is a cross-platform development library designed to provide low level access to audio, keyboard, mouse, joystick, and graphics hardware.
