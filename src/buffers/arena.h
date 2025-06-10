@@ -88,7 +88,7 @@ Arena<MemoryPage>::Arena(size_t size)
   : size_{ size }
   , freeRanges_{}
 {
-    freeRanges_.template emplace_back(std::pair{ size_t{ 0 }, size });
+    freeRanges_.emplace_back(std::pair{ size_t{ 0 }, size });
 }
 
 // calls in strand always
