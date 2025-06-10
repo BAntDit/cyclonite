@@ -8,7 +8,7 @@
 namespace cyclonite::sdl {
 SDLSupport::SDLSupport()
 {
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
         throw std::runtime_error("could not initialize SDL video subsystem");
     }
 }
