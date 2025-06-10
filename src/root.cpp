@@ -97,11 +97,11 @@ void Root::init()
 void Root::init(uint32_t deviceId)
 {
     {
-        // every time use first display at least for now
+        // every time use primary display at least for now
         // multi display support later, okay?
-        int displayIndex = 0;
+        auto displayId = SDL_GetPrimaryDisplay();
 
-        sdlSupport_.storeDisplayResolutions(capabilities_.displayResolutions, displayIndex);
+        sdlSupport_.storeDisplayResolutions(capabilities_.displayResolutions, displayId);
     }
 
     {
