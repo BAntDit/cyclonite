@@ -5,7 +5,7 @@ from conan.errors import ConanInvalidConfiguration
 
 class CycloniteRecipe(ConanFile):
     name = "cyclonite"
-    version = "0.4.0.0"
+    version = "0.5.0.0"
     url = "https://github.com/BAntDit/cyclonite"
     description = "Cyclonite is a graphics engine."
 

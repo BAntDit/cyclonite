@@ -1,3 +1,20 @@
+## 0.5.0 (2025-06-10)
+
+### Feat
+
+- migrate to Conan for dependency management
+- **sdl**: sdl2 upgraded to sdl3
+- target platform now is installation option.
+
+### Refactor
+
+- **sdl**: surface creation refactoring with respect to SDL3 changes.
+
+### Fix
+
+- **vulkan**: baseSurface now has explicit constructor
+- **sdl**: available resolutions detection is refactored with respect to SDL3 api
+
 ## 0.4.0 (2023-01-05)
 
 ### Feat
@@ -7,16 +24,16 @@
 - **resources**: adds ability to load resource using a custom loader
 - **compositor**: adds node config concept and traits
 
+### Refactor
+
+- **multithreading**: deprecated std::aligned_storage is replaced with byte array.
+
 ### Fix
 
 - **multithreading**: fixes data races on attempt to submit a render task.
 - fixes an issue when Clang compiler can not deduce config alias types.
 - **vulkan**: fixes wrong android platform surface alias.
 - **compositor**: fixes an issue when shader modules are got destroyed just after render pass creation.
-
-### Refactor
-
-- **multithreading**: deprecated std::aligned_storage is replaced with byte array.
 
 ## 0.3.0 (2022-11-07)
 
