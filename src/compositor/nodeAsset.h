@@ -7,7 +7,7 @@
 
 #include "config.h"
 #include "resources/resource.h"
-#include <easy-mp/type_list.h>
+#include <metrix/type_list.h>
 #include <enttx/enttx.h>
 
 namespace cyclonite::compositor {

@@ -30,6 +30,11 @@ auto Workspace::Builder::nodeCount(bool isLogic) const -> uint8_t
     return isLogic ? logicNodeCount_ : graphicNodeCount_;
 }
 
+auto Workspace::Builder::nodeCount(bool isLogic) -> uint8_t&
+{
+    return isLogic ? logicNodeCount_ : graphicNodeCount_;
+}
+
 auto Workspace::Builder::nodeOffset(bool isLogic, size_t index) const -> size_t
 {
     assert((isLogic && index < logicNodeOffsets_.size()) || (!isLogic && index < graphicNodeOffsets_.size()));
@@ -45,11 +50,6 @@ auto Workspace::Builder::nodeSize(bool isLogic, size_t index) const -> size_t
 auto Workspace::Builder::nodeStorage(bool isLogic) const -> std::byte const*
 {
     return isLogic ? logicNodeStorage_.data() : graphicNodeStorage_.data();
-}
-
-auto Workspace::Builder::nodeCount(bool isLogic) -> uint8_t&
-{
-    return isLogic ? logicNodeCount_ : graphicNodeCount_;
 }
 
 auto Workspace::Builder::nodeOffset(bool isLogic, size_t index) -> size_t&

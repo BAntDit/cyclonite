@@ -48,7 +48,7 @@ public:
 
         template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
         auto createNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if_t<
-          std::is_same_v<node_t<Config>, std::decay_t<std::result_of_t<NodeFactory(node_builder_t<Config>&&)>>>,
+          std::is_same_v<node_t<Config>, std::decay_t<std::invoke_result_t<NodeFactory, node_builder_t<Config>&&>>>,
           Builder&>;
 
         auto build() -> Workspace;
@@ -64,14 +64,14 @@ public:
         auto createLogicNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if_t<
           config_traits::is_logic_node_v<Config> &&
             std::is_same_v<LogicNode<Config>,
-                           std::decay_t<std::result_of_t<NodeFactory(BaseLogicNode::Builder<Config>&&)>>>,
+                           std::decay_t<std::invoke_result_t<NodeFactory, BaseLogicNode::Builder<Config>&&>>>,
           Builder&>;
 
         template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
         auto createGraphicsNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if_t<
           config_traits::is_graphics_node_v<Config> &&
             std::is_same_v<GraphicsNode<Config>,
-                           std::decay_t<std::result_of_t<NodeFactory(BaseGraphicsNode::Builder<Config>&&)>>>,
+                           std::decay_t<std::invoke_result_t<NodeFactory, BaseGraphicsNode::Builder<Config>&&>>>,
           Builder&>;
 
         [[nodiscard]] auto nodeCount(bool isLogic) const -> uint8_t;
@@ -158,7 +158,7 @@ auto Workspace::Builder::allocateNodeMemory()
 
 template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
 auto Workspace::Builder::createNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if_t<
-  std::is_same_v<node_t<Config>, std::decay_t<std::result_of_t<NodeFactory(node_builder_t<Config>&&)>>>,
+  std::is_same_v<node_t<Config>, std::decay_t<std::invoke_result_t<NodeFactory, node_builder_t<Config>&&>>>,
   Builder&>
 {
     if constexpr (config_traits::is_logic_node_v<Config>) {
@@ -176,8 +176,9 @@ auto Workspace::Builder::createNode(type_pair<Config, NodeTypeId>, NodeFactory&&
 template<NodeConfig Config, typename NodeTypeId, typename NodeFactory>
 auto Workspace::Builder::createLogicNode(type_pair<Config, NodeTypeId>, NodeFactory&& nodeFactory) -> std::enable_if_t<
   config_traits::is_logic_node_v<Config> &&
-    std::is_same_v<LogicNode<Config>, std::decay_t<std::result_of_t<NodeFactory(BaseLogicNode::Builder<Config>&&)>>>,
-  Builder&>
+    std::is_same_v<LogicNode<Config>,
+                   std::decay_t<std::invoke_result_t<NodeFactory, BaseLogicNode::Builder<Config>&&>>>,
+  Workspace::Builder&>
 {
     logicNodes_.emplace_back(LogicNodeInterface{
       new (allocateNodeMemory<Config>()) LogicNode<Config>{ nodeFactory(BaseLogicNode::Builder<Config>{
@@ -195,8 +196,8 @@ auto Workspace::Builder::createGraphicsNode(type_pair<Config, NodeTypeId>, NodeF
   -> std::enable_if_t<
     config_traits::is_graphics_node_v<Config> &&
       std::is_same_v<GraphicsNode<Config>,
-                     std::decay_t<std::result_of_t<NodeFactory(BaseGraphicsNode::Builder<Config>&&)>>>,
-    Builder&>
+                     std::decay_t<std::invoke_result_t<NodeFactory, BaseGraphicsNode::Builder<Config>&&>>>,
+    Workspace::Builder&>
 {
     graphicNodes_.emplace_back(GraphicsNodeInterface{
       new (allocateNodeMemory<Config>()) GraphicsNode<Config>{ nodeFactory(BaseGraphicsNode::Builder<Config>{
