@@ -34,13 +34,14 @@ class CycloniteRecipe(ConanFile):
         self.requires("enttx/4.0.4.0")
         self.requires("glm/1.0.1")
         self.requires("sdl/3.2.6")
-        self.requires("vulkan-validationlayers/[~1.3]")
-        self.requires("vulkan-loader/1.3.239.0")
-        self.requires("vulkan-headers/[~1.3]", override=True)
-        self.requires("glslang/[~11.7]")
-        self.requires("spirv-tools/[~1.3]", override=True)
-        self.requires("spirv-headers/[~1.3]", override=True)
+        self.requires("vulkan-validationlayers/1.3.243.0")
+        self.requires("vulkan-loader/1.3.243.0")
+        self.requires("vulkan-headers/1.3.243.0")
+        self.requires("glslang/1.3.243.0")
+        self.requires("spirv-tools/1.3.243.0")
+        self.requires("spirv-headers/1.3.243.0")
         self.requires("boost/1.87.0")
+        self.requires("nlohmann_json/3.12.0")
 
     def configure(self):
         self.settings.compiler.cppstd = "20"
@@ -54,7 +55,7 @@ class CycloniteRecipe(ConanFile):
         tc = CMakeToolchain(self)
 
         if self.settings.compiler == "msvc":
-            tc.generator = "Visual Studio"
+            tc.generator = "Visual Studio 17 2022"
         else:
             tc.generator = "Ninja"
 
