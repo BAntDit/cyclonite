@@ -8,6 +8,7 @@
 #include "buffers/bufferView.h"
 #include "resources/resource.h"
 #include "typedefs.h"
+#include <array>
 
 namespace cyclonite::resources {
 class ResourceManager;
