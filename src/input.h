@@ -6,7 +6,7 @@
 #define CYCLONITE_INPUT_H
 
 #include "event.h"
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 namespace cyclonite {
 class Input
