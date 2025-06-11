@@ -10,7 +10,15 @@ class CycloniteRecipe(ConanFile):
     description = "Cyclonite is a graphics engine."
 
     options = {
-        "platform": ["x11", "wayland", "xcb", "mir", "windows", "android", "auto"],  # Let users choose
+        "platform": [
+            "linux-x11",
+            "linux-wayland",
+            "linux-xcb",
+            "linux-mir",
+            "windows",
+            "android",
+            "auto"
+        ],  # Let users choose
     }
 
     default_options = {
@@ -19,7 +27,7 @@ class CycloniteRecipe(ConanFile):
 
     settings = "os", "compiler", "arch", "build_type"
 
-    export_sources = "CMakeLists.txt", "*.cmake", ".clang-format", ".md", "src/*.h", "tests/*.h", "cmake/*"
+    export_sources = "CMakeLists.txt", "*.cmake", ".clang-format", ".md", "src/*", "tests/*", "examples/*", "cmake/*"
 
     def build_requirements(self):
         self.tool_requires("cmake/[>=3.10]")
@@ -60,18 +68,18 @@ class CycloniteRecipe(ConanFile):
             tc.generator = "Ninja"
 
         if self.options.platform != "auto":
-            if self.options.platform == "x11":
-                tc.variables["VK_USE_PLATFORM_XLIB_KHR"] = True
-            elif self.options.platform == "wayland":
-                tc.variables["VK_USE_PLATFORM_WAYLAND_KHR"] = True
+            if self.options.platform == "linux-x11":
+                tc.variables["PLATFORM_LINUX_X11"] = True
+            elif self.options.platform == "linux-wayland":
+                tc.variables["PLATFORM_LINUX_WAYLAND"] = True
             elif self.options.platform == "xcb":
-                tc.variables["VK_USE_PLATFORM_XCB_KHR"] = True
+                tc.variables["PLATFORM_LINUX_XCB"] = True
             elif self.options.platform == "mir":
-                tc.variables["VK_USE_PLATFORM_MIR_KHR"] = True
+                tc.variables["PLATFORM_LINUX_MIR"] = True
             elif self.options.platform == "android":
-                tc.variables["VK_USE_PLATFORM_ANDROID_KHR"] = True
+                tc.variables["PLATFORM_ANDROID"] = True
             elif self.options.platform == "windows":
-                tc.variables["VK_USE_PLATFORM_WIN32_KHR"] = True
+                tc.variables["PLATFORM_WINDOWS"] = True
             else:
                 raise ConanInvalidConfiguration("Unexpected platform name.")
 
