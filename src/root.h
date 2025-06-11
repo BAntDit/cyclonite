@@ -11,7 +11,6 @@
 #include "multithreading/taskManager.h"
 #include "platform.h"
 #include "resources/resourceManager.h"
-#include "sdl/sdlSupport.h"
 #include "surface.h"
 #include "vulkan/device.h"
 #include "vulkan/instance.h"
@@ -43,7 +42,7 @@ public:
 
     void init();
 
-    void init(uint32_t deviceId);
+    void init(uint32_t const deviceId);
 
     [[nodiscard]] auto getDeviceCount() const -> size_t { return physicalDeviceList_.size(); }
 
@@ -72,13 +71,12 @@ public:
     template<typename WorkspaceFactory>
     auto createWorkspace(WorkspaceFactory&& workspaceFactory) -> std::shared_ptr<compositor::Workspace> const&;
 
-    void dispose();
+    void reset();
 
 private:
     Capabilities capabilities_;
     std::unique_ptr<resources::ResourceManager> resourceManager_;
     multithreading::TaskManager taskManager_;
-    sdl::SDLSupport sdlSupport_;
     std::unique_ptr<vulkan::Instance> vulkanInstance_;
     std::vector<VkPhysicalDevice> physicalDeviceList_;
     std::unordered_map<std::string, VkPhysicalDeviceProperties> physicalDevicePropertiesMap_;

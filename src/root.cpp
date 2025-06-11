@@ -3,13 +3,14 @@
 //
 
 #include "root.h"
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_video.h>
 
 namespace cyclonite {
 Root::Root()
   : capabilities_{}
   , resourceManager_{ std::make_unique<resources::ResourceManager>() }
   , taskManager_{}
-  , sdlSupport_{}
   , vulkanInstance_
 {
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
@@ -94,14 +95,34 @@ void Root::init()
     init(getDeviceId());
 }
 
-void Root::init(uint32_t deviceId)
+void Root::init(uint32_t const deviceId)
 {
-    {
-        // every time use primary display at least for now
-        // multi display support later, okay?
-        auto displayId = SDL_GetPrimaryDisplay();
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
+        throw std::runtime_error("SDL: could not initialize SDL video subsystem");
+    }
 
-        sdlSupport_.storeDisplayResolutions(capabilities_.displayResolutions, displayId);
+    {
+        auto const displayId = SDL_GetPrimaryDisplay();
+        auto displayModeCount = int32_t{ 0 };
+
+        if (auto** displayModes = SDL_GetFullscreenDisplayModes(displayId, &displayModeCount);
+            displayModes != nullptr && displayModeCount > 0) {
+            auto displayResolutions = std::vector<std::pair<uint16_t, uint16_t>>{};
+            displayResolutions.reserve(displayModeCount);
+
+            for (auto i = 0; i < displayModeCount; i++) {
+                auto const& displayMode = *(displayModes[i]);
+
+                auto width = static_cast<uint16_t>(displayMode.w);
+                auto height = static_cast<uint16_t>(displayMode.h);
+
+                displayResolutions.emplace_back(width, height);
+            }
+
+            std::swap(displayResolutions, capabilities_.displayResolutions);
+        } else {
+            throw std::runtime_error("SDL: could not get available display modes");
+        }
     }
 
     {
@@ -171,7 +192,7 @@ auto Root::resourceManager() const -> resources::ResourceManager const&
     return *resourceManager_;
 }
 
-void Root::dispose()
+void Root::reset()
 {
     auto disposeTask = [this]() -> void {
         workspaces_.clear();
@@ -181,6 +202,8 @@ void Root::dispose()
     };
 
     taskManager_.submitTask(disposeTask).get();
+
+    SDL_Quit();
 
     taskManager_.stop();
 }

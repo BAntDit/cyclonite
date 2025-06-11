@@ -163,7 +163,7 @@ void Viewer::done()
 
     view_->dispose();
     model_->dispose();
-    root_->dispose();
+    root_->reset();
 }
 }
 
