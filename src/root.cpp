@@ -9,9 +9,9 @@
 namespace cyclonite {
 Root::Root()
   : capabilities_{}
-  , resourceManager_{ std::make_unique<resources::ResourceManager>() }
-  , taskManager_{}
-  , vulkanInstance_
+  , resourceManager_{}
+  , taskManager_{}  // TODO:: move to initialization after migration to TaskWeaver
+  , vulkanInstance_ // TODO:: move to initialization after refactoring
 {
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
 #if !defined(NDEBUG)
@@ -95,8 +95,9 @@ void Root::init()
     init(getDeviceId());
 }
 
-void Root::init(uint32_t const deviceId)
+void Root::init(uint32_t deviceId)
 {
+    // SDL initialization:
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         throw std::runtime_error("SDL: could not initialize SDL video subsystem");
     }
@@ -124,6 +125,9 @@ void Root::init(uint32_t const deviceId)
             throw std::runtime_error("SDL: could not get available display modes");
         }
     }
+
+    // resource manager initialization
+    resourceManager_ = std::make_unique<resources::ResourceManager>();
 
     {
         std::vector<const char*> requiredExtensions = {};

@@ -42,7 +42,7 @@ public:
 
     void init();
 
-    void init(uint32_t const deviceId);
+    void init(uint32_t deviceId);
 
     [[nodiscard]] auto getDeviceCount() const -> size_t { return physicalDeviceList_.size(); }
 
