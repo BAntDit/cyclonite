@@ -7,10 +7,10 @@
 
 #include "passType.h"
 #include "vulkan/handle.h"
+#include <array>
 #include <bitset>
 #include <iterator>
 #include <type_traits>
-#include <array>
 
 namespace cyclonite::compositor {
 namespace internal {

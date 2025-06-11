@@ -6,9 +6,9 @@
 #define CYCLONITE_TASK_H
 
 #include "typedefs.h"
+#include <array>
 #include <atomic>
 #include <functional>
-#include <array>
 
 namespace cyclonite::multithreading {
 class Task;

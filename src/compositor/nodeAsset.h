@@ -7,8 +7,8 @@
 
 #include "config.h"
 #include "resources/resource.h"
-#include <metrix/type_list.h>
 #include <enttx/enttx.h>
+#include <metrix/type_list.h>
 
 namespace cyclonite::compositor {
 namespace internal {
