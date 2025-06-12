@@ -5,11 +5,12 @@
 #ifndef CYCLONITE_VULKAN_HANDLE_H
 #define CYCLONITE_VULKAN_HANDLE_H
 
+#if defined(GFX_DRIVER_VULKAN)
 #include <cassert>
 #include <functional>
 #include <vulkan/vulkan.h>
 
-namespace cyclonite::vulkan {
+namespace cyclonite::gfx::vulkan {
 template<typename T>
 class Handle
 {
@@ -104,4 +105,5 @@ private:
 };
 }
 
+#endif // GFX_DRIVER_VULKAN
 #endif // CYCLONITE_VULKAN_HANDLE_H

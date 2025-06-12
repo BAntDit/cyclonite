@@ -69,7 +69,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         -pedantic
         -Wall
         -Wextra
-        #-Wfatal-errors
+        -Wfatal-errors
     )
 
     if (ENABLE_SIMD_AVX2)
@@ -127,6 +127,14 @@ elseif(${PLATFORM_WINDOWS})
     add_compile_definitions(NOMINMAX)
     target_compile_definitions(${PROJECT_NAME} PUBLIC PLATFORM_WINDOWS=1)
     target_compile_definitions(${PROJECT_NAME} PUBLIC VK_USE_PLATFORM_WIN32_KHR=1)
+endif()
+
+if (${GAPI_VULKAN})
+    message("-- gapi: vulkan")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC GFX_DRIVER_VULKAN=1)
+elseif(${GAPI_D3D12})
+    message("-- gapi: d3d12")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC GFX_DRIVER_D3D12=1)
 endif()
 
 if(POLICY CMP0167)

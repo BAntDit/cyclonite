@@ -19,10 +19,15 @@ class CycloniteRecipe(ConanFile):
             "android",
             "auto"
         ],  # Let users choose
+        "gapi": [
+            "vulkan",
+            "d3d12"
+        ]
     }
 
     default_options = {
-        "platform": "auto"
+        "platform": "auto",
+        "gapi": "vulkan"
     }
 
     settings = "os", "compiler", "arch", "build_type"
@@ -82,6 +87,13 @@ class CycloniteRecipe(ConanFile):
                 tc.variables["PLATFORM_WINDOWS"] = True
             else:
                 raise ConanInvalidConfiguration("Unexpected platform name.")
+
+        if self.options.gapi == "vulkan":
+            tc.variables["GAPI_VULKAN"] = True
+        elif self.options.gapi == "d3d12":
+            tc.variables["GAPI_D3D12"] = True
+        else:
+            raise ConanInvalidConfiguration("Unsupported graphics API.")
 
 
         tc.variables["REQUIRED_CXX_STANDARD"] = "20"
