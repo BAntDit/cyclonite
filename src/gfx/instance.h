@@ -1,13 +1,13 @@
 //
-// Created by anton on 6/11/25.
+// Created by anton on 6/12/25.
 //
 
-#ifndef GFX_SURFACE_H
-#define GFX_SURFACE_H
+#ifndef GFX_INSTANCE_H
+#define GFX_INSTANCE_H
 
-#include "interfaces/surfaceInterface.h"
+#include "interfaces/instanceInterface.h"
 #if defined(GFX_DRIVER_VULKAN)
-#include "vulkan/vkSurface.h"
+#include "vulkan/vkInstance.h"
 #elif defined(GFX_DRIVER_D3D12)
 // TODO:: d3d12 not implemented
 #else
@@ -16,7 +16,7 @@
 
 namespace cyclonite::gfx {
 #if defined(GFX_DRIVER_VULKAN)
-using Surface = interfaces::SurfaceInterface<vulkan::Surface>;
+using Instance = interfaces::InstanceInterface<vulkan::Instance>;
 #elif defined(GFX_DRIVER_D3D12)
 // TODO:: impl
 #else
@@ -24,4 +24,4 @@ using Surface = interfaces::SurfaceInterface<vulkan::Surface>;
 #endif
 }
 
-#endif // GFX_SURFACE_H
+#endif // GFX_INSTANCE_H

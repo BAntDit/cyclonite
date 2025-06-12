@@ -2,16 +2,14 @@
 // Created by bantdit on 9/1/19.
 //
 
-#ifndef CYCLONITE_INSTANCE_H
-#define CYCLONITE_INSTANCE_H
+#ifndef GFX_VK_INSTANCE_H
+#define GFX_VK_INSTANCE_H
 
 #include "handle.h"
 #include <array>
-#include <cstdint>
-#include <iostream>
-#include <sstream>
+#include <stdexcept>
 
-namespace cyclonite::vulkan {
+namespace cyclonite::gfx::vulkan {
 class Instance
 {
 public:
@@ -86,7 +84,7 @@ void Instance::testLayers(std::array<char const*, N> const& reqLayers)
         while (it != availableLayers.cend()) {
             if (0 == strcmp((*layerIt), (*it).layerName))
                 break;
-            it++;
+            ++it;
         }
 
         if (it == availableLayers.cend())
@@ -120,7 +118,7 @@ void Instance::testExtensions(std::array<char const*, N> const& reqExtensions)
         while (it != availableExtensions.cend()) {
             if (0 == strcmp((*extIt), (*it).extensionName))
                 break;
-            it++;
+            ++it;
         }
 
         if (it == availableExtensions.cend()) {
@@ -130,4 +128,4 @@ void Instance::testExtensions(std::array<char const*, N> const& reqExtensions)
 }
 }
 
-#endif // CYCLONITE_INSTANCE_H
+#endif // GFX_VK_INSTANCE_H
