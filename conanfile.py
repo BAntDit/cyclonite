@@ -47,12 +47,15 @@ class CycloniteRecipe(ConanFile):
         self.requires("enttx/4.0.4.0")
         self.requires("glm/1.0.1")
         self.requires("sdl/3.2.6")
-        self.requires("vulkan-validationlayers/1.3.243.0")
-        self.requires("vulkan-loader/1.3.243.0")
-        self.requires("vulkan-headers/1.3.243.0")
-        self.requires("glslang/1.3.243.0")
-        self.requires("spirv-tools/1.3.243.0")
-        self.requires("spirv-headers/1.3.243.0")
+
+        if self.options.gapi == "vulkan":
+            self.requires("vulkan-validationlayers/1.3.243.0")
+            self.requires("vulkan-loader/1.3.243.0")
+            self.requires("vulkan-headers/1.3.243.0")
+            self.requires("glslang/1.3.243.0")
+            self.requires("spirv-tools/1.3.243.0")
+            self.requires("spirv-headers/1.3.243.0")
+
         self.requires("boost/1.87.0")
         self.requires("nlohmann_json/3.12.0")
 
