@@ -77,9 +77,9 @@ class CycloniteRecipe(ConanFile):
                 tc.variables["PLATFORM_LINUX_X11"] = True
             elif self.options.platform == "linux-wayland":
                 tc.variables["PLATFORM_LINUX_WAYLAND"] = True
-            elif self.options.platform == "xcb":
+            elif self.options.platform == "linux-xcb":
                 tc.variables["PLATFORM_LINUX_XCB"] = True
-            elif self.options.platform == "mir":
+            elif self.options.platform == "linux-mir":
                 tc.variables["PLATFORM_LINUX_MIR"] = True
             elif self.options.platform == "android":
                 tc.variables["PLATFORM_ANDROID"] = True
