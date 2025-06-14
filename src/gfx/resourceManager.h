@@ -5,9 +5,10 @@
 #ifndef GFX_RESOURCE_MANAGER_H
 #define GFX_RESOURCE_MANAGER_H
 
-#include "resourceConcept.h"
+#include "resourceTypeList.h"
 #include <array>
 #include <numeric>
+#include <vector>
 
 namespace cyclonite::gfx {
 namespace internal {
@@ -53,12 +54,12 @@ class ResourceManager
 
     using resource_block_t = struct
     {
-        alignas(resource_meta_t::uniform_align_v) std::byte bytes[resource_meta_t::uniform_size_v];
+        alignas(resource_meta_t::uniform_align_v) std::byte bytes[resource_meta_t::uniform_size_v] = {};
     };
 
     using resource_storage_t = struct
     {
-        std::array<resource_block_t, resource_meta_t::resource_type_count_v> resources;
+        std::array<std::vector<resource_block_t>, resource_meta_t::resource_type_count_v> resources = {};
     };
 
 private:
