@@ -6,13 +6,11 @@
 #define GFX_RESOURCE_REF_H
 
 #include "resourceManager.h"
-#include <cstdint>
 #include <limits>
 
 namespace cyclonite::gfx {
 class ResourceRef
 {
-public:
     struct Id
     {
         explicit Id(uint64_t id) noexcept
@@ -45,7 +43,29 @@ public:
     };
 
 public:
+    friend class ResourceManager;
+
+    [[nodiscard]] auto id() const -> uint64_t { return id_; }
+
+    [[nodiscard]] auto valid() const -> bool;
+
+    template<typename T>
+    [[nodiscard]] auto as() const -> T const&
+        requires(resource_type_list_t::has_type<T>::value);
+
+    template<typename T>
+    [[nodiscard]] auto as() -> T&
+        requires(resource_type_list_t::has_type<T>::value);
+
+    auto retain() -> uint64_t;
+
+    auto release() -> uint64_t;
+
+    [[nodiscard]] auto refCount() const -> uint64_t;
+
 private:
+    explicit ResourceRef(ResourceManager* resourceManager);
+
     Id id_;
     ResourceManager* resourceManager_;
 };

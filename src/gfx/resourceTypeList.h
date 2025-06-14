@@ -10,7 +10,7 @@
 #include <metrix/type_list.h>
 
 namespace cyclonite::gfx {
-using resource_type_list_t = metrix::type_list<type_traits::platform_implementation_t<gfx::Surface>>;
+using resource_type_list_t = metrix::type_list<gfx::Surface>;
 }
 
 #endif // GFX_RESOURCE_TYPE_LIST_H
