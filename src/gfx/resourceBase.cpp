@@ -50,9 +50,4 @@ auto ResourceBase::release() -> uint64_t
     assert(count > 0);
     return count - 1;
 }
-
-auto ResourceBase::valid() const -> bool
-{
-    return resourceManager_->isResourceValid(resourceId_);
-}
 }

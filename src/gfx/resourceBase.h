@@ -9,7 +9,6 @@
 #include "resourceId.h"
 #include <atomic>
 #include <concepts>
-#include <cstdint>
 
 namespace cyclonite::gfx {
 class ResourceManager;
@@ -32,8 +31,6 @@ public:
     [[nodiscard]] auto refCount() const -> uint64_t { return refCount_.load(std::memory_order_acquire); }
 
     [[nodiscard]] auto resourceId() const -> ResourceId { return resourceId_; }
-
-    [[nodiscard]] auto valid() const -> bool;
 
     template<typename T>
     [[nodiscard]] auto as() -> T& requires(std::derived_from<type_traits::platform_implementation_t<T>, ResourceBase>) {

@@ -23,6 +23,10 @@ public:
 
     [[nodiscard]] auto refCount() const -> uint64_t;
 
+    auto retain() -> uint64_t;
+
+    auto release() -> uint64_t;
+
     template<typename T>
     [[nodiscard]] auto as() const -> T const&
         requires(resource_type_list_t::has_type<T>::value);
