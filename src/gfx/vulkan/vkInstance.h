@@ -5,6 +5,7 @@
 #ifndef GFX_VK_INSTANCE_H
 #define GFX_VK_INSTANCE_H
 
+#include "gfx/resourceManager.h"
 #include "handle.h"
 #include <array>
 #include <stdexcept>
@@ -43,11 +44,13 @@ private:
 
 private:
     Handle<VkInstance> vkInstance_;
+    ResourceManager resourceManager_;
 };
 
 template<size_t N, size_t M>
 Instance::Instance(std::array<char const*, N> const& reqLayers, std::array<char const*, M> const& reqExtensions)
   : vkInstance_{ vkDestroyInstance }
+  , resourceManager_{}
 {
     testLayers(reqLayers);
 

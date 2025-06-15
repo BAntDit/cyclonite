@@ -5,7 +5,7 @@
 #ifndef GFX_RESOURCE_MANAGER_H
 #define GFX_RESOURCE_MANAGER_H
 
-#include "resourceTypeList.h"
+#include "resourceRef.h"
 #include <array>
 #include <numeric>
 #include <vector>
@@ -83,11 +83,63 @@ class ResourceManager
         std::array<std::vector<uint32_t>, resource_meta_t::resource_type_count_v> freeIndices = {};
     };
 
+public:
+    friend class ResourceBase;
+
+    ResourceManager() = default;
+
+    ResourceManager(ResourceManager const&) = delete;
+
+    ResourceManager(ResourceManager&&) = default;
+
+    ~ResourceManager();
+
+    auto operator=(ResourceManager const&) -> ResourceManager& = delete;
+
+    auto operator=(ResourceManager&&) -> ResourceManager& = default;
+
+    template<typename ResourceType, typename... Args>
+    auto allocResource(Args&&... args) -> ResourceRef
+        requires(resource_type_list_t::has_type<ResourceType>::value);
+
+    void gc(bool clearAll = false);
+
+    [[nodiscard]] auto isResourceValid(ResourceId id) const -> bool;
+
 private:
+    void releaseResourceImmediate(ResourceId id);
+
+    void releaseResourceDeferred(ResourceId id);
+
+    auto alloc(uint16_t type) -> std::pair<uint32_t, uint32_t>;
+
     std::vector<resource_block_header_t> headers_;
     std::vector<uint32_t> emptyHeaders_;
     resource_storage_t storage_;
 };
+
+template<typename ResourceType, typename... Args>
+auto ResourceManager::allocResource(Args&&... args) -> ResourceRef
+    requires(resource_type_list_t::has_type<ResourceType>::value)
+{
+    auto type = resource_meta_t::type_index_v<ResourceType>();
+    auto [headerIndex, blockIndex] = alloc(type);
+
+    auto& header = headers_[headerIndex];
+    header.type = type;
+    header.index = blockIndex;
+    header.deleter = [](void* ptr) -> void {
+        auto* p = std::launder(reinterpret_cast<ResourceType*>(ptr));
+        std::destroy_at(p);
+    };
+
+    auto resourceId = ResourceId{ headerIndex, header.version };
+
+    auto* memory = storage_.resources[type][blockIndex].bytes;
+    auto* r = new (memory) ResourceType(this, resourceId, std::forward<Args>(args)...);
+
+    return ResourceRef{ resourceId, r };
+}
 }
 
 #endif // GFX_RESOURCE_MANAGER_H

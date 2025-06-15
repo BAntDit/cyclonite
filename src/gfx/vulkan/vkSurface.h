@@ -5,7 +5,7 @@
 #ifndef GFX_VK_SURFACE_H
 #define GFX_VK_SURFACE_H
 
-#include "gfx/resource.h"
+#include "gfx/resourceBase.h"
 
 #if defined(GFX_DRIVER_VULKAN)
 
@@ -16,7 +16,7 @@
 #include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan {
-class Surface : public ResourceBase<vulkan::Surface>
+class Surface : public ResourceBase
 {
 public:
     // Surface(vulkan::Device const& device, WindowProperties const& windowProperties);
@@ -28,8 +28,6 @@ public:
     [[nodiscard]] auto height() const -> uint32_t { return extent_.height; }
 
 private:
-    void reset() {}
-
     VkExtent2D extent_;
     std::unique_ptr<SDL_Window, std::function<void(SDL_Window*)>> sdlWindowPtr_;
 };
