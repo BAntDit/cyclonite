@@ -5,6 +5,8 @@
 #ifndef GFX_VK_INSTANCE_H
 #define GFX_VK_INSTANCE_H
 
+#if defined(GFX_DRIVER_VULKAN)
+
 #include "gfx/resourceManager.h"
 #include "handle.h"
 #include <array>
@@ -131,4 +133,5 @@ void Instance::testExtensions(std::array<char const*, N> const& reqExtensions)
 }
 }
 
+#endif // GFX_DRIVER_VULKAN
 #endif // GFX_VK_INSTANCE_H

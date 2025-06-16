@@ -2,8 +2,8 @@
 // Created by anton on 6/12/25.
 //
 
-#ifndef GFX_INSTANCE_INTERFACE_H
-#define GFX_INSTANCE_INTERFACE_H
+#ifndef GFX_INTERFACES_INSTANCE_H
+#define GFX_INTERFACES_INSTANCE_H
 
 #include <concepts>
 
@@ -16,4 +16,4 @@ class InstanceInterface : private InstanceImplementation
 {};
 }
 
-#endif // GFX_INSTANCE_INTERFACE_H
+#endif // GFX_INTERFACES_INSTANCE_H

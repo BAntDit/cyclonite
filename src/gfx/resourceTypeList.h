@@ -6,11 +6,12 @@
 #define GFX_RESOURCE_TYPE_LIST_H
 
 #include "common.h"
+#include "device.h"
 #include "surface.h"
 #include <metrix/type_list.h>
 
 namespace cyclonite::gfx {
-using resource_type_list_t = metrix::type_list<gfx::Surface>;
+using resource_type_list_t = metrix::type_list<gfx::Device, gfx::Surface>;
 }
 
 #endif // GFX_RESOURCE_TYPE_LIST_H

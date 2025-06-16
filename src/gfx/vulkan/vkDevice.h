@@ -5,15 +5,15 @@
 #ifndef CYCLONITE_DEVICE_H
 #define CYCLONITE_DEVICE_H
 
-#include "../multithreading/taskManager.h"
-#include "commandPool.h"
+#if defined(GFX_DRIVER_VULKAN)
+
+#include "gfx/resourceBase.h"
 #include "handle.h"
-#include "memoryManager.h"
+// #include "../../vulkan/commandPool.h"
 #include <memory>
 
-namespace cyclonite::vulkan {
-
-class Device
+namespace cyclonite::gfx::vulkan {
+class Device : public ResourceBase
 {
 public:
     struct Capabilities
@@ -29,22 +29,12 @@ public:
     };
 
 public:
-    Device(multithreading::TaskManager& taskManager,
-           VkInstance vkInstance,
+    Device(VkInstance vkInstance,
            VkPhysicalDevice const& vkPhysicalDevice,
            VkPhysicalDeviceProperties const& physicalDeviceProperties,
            std::vector<const char*> const& requiredExtensions);
 
-    Device(Device const&) = delete;
-
-    Device(Device&&) = default;
-
     ~Device() = default;
-
-public:
-    auto operator=(Device const&) -> Device& = delete;
-
-    auto operator=(Device&&) -> Device& = default;
 
 public:
     [[nodiscard]] auto vulkanInstance() const -> VkInstance { return vkInstance_; }
@@ -73,15 +63,15 @@ public:
 
     [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
 
-    [[nodiscard]] auto memoryManager() const -> MemoryManager const& { return *memoryManager_; }
+    //[[nodiscard]] auto memoryManager() const -> MemoryManager const& { return *memoryManager_; }
 
-    [[nodiscard]] auto memoryManager() -> MemoryManager& { return *memoryManager_; }
+    //[[nodiscard]] auto memoryManager() -> MemoryManager& { return *memoryManager_; }
 
     [[nodiscard]] auto queueFamilyIndices() const -> std::vector<uint32_t> const& { return queueFamilyIndices_; }
 
-    [[nodiscard]] auto commandPool() -> CommandPool& { return *commandPool_; }
+    //[[nodiscard]] auto commandPool() -> CommandPool& { return *commandPool_; }
 
-    [[nodiscard]] auto commandPoolPtr() -> std::shared_ptr<CommandPool>& { return commandPool_; }
+    //[[nodiscard]] auto commandPoolPtr() -> std::shared_ptr<CommandPool>& { return commandPool_; }
 
 private:
     Capabilities capabilities_;
@@ -96,9 +86,11 @@ private:
     Handle<VkDevice> vkDevice_;
     std::vector<uint32_t> queueFamilyIndices_;
     std::vector<Handle<VkQueue>> vkQueues_;
-    std::unique_ptr<MemoryManager> memoryManager_;
-    std::shared_ptr<CommandPool> commandPool_;
+    // std::unique_ptr<MemoryManager> memoryManager_;
+    // std::shared_ptr<CommandPool> commandPool_;
 };
 }
+
+#endif // GFX_DRIVER_VULKAN
 
 #endif // CYCLONITE_DEVICE_H
