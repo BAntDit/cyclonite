@@ -107,6 +107,19 @@ void Instance::createInstance(uint32_t layerCount,
 
         throw std::runtime_error("vulkan instance creation failed"); // and no one knows why
     }
+
+    uint32_t physicalDeviceCount = 0;
+    if (vkEnumeratePhysicalDevices(static_cast<VkInstance>(vkInstance_), &physicalDeviceCount, VK_NULL_HANDLE) !=
+        VK_SUCCESS) {
+        throw std::runtime_error("could not enumerate physical devices");
+    }
+
+    physicalDeviceList_.resize(physicalDeviceCount);
+
+    if (vkEnumeratePhysicalDevices(
+          static_cast<VkInstance>(vkInstance_), &physicalDeviceCount, physicalDeviceList_.data()) != VK_SUCCESS) {
+        throw std::runtime_error("could not get physical devices");
+    }
 }
 
 auto Instance::createDevice(uint32_t deviceId /* = std::numeric_limits<uint32_t>::max()*/) -> gfx::ResourceRef

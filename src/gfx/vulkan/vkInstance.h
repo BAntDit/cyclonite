@@ -31,6 +31,8 @@ public:
 
     [[nodiscard]] auto handle() const -> VkInstance { return static_cast<VkInstance>(vkInstance_); }
 
+    [[nodiscard]] auto physicalDeviceCount() const -> uint32_t { return physicalDeviceList_.size(); }
+
     [[nodiscard]] auto createDevice(uint32_t deviceId = std::numeric_limits<uint32_t>::max()) -> gfx::ResourceRef;
 
 private:
