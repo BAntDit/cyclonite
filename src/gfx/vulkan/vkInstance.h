@@ -29,8 +29,9 @@ public:
 
     auto operator=(Instance&&) -> Instance& = default;
 
-public:
     [[nodiscard]] auto handle() const -> VkInstance { return static_cast<VkInstance>(vkInstance_); }
+
+    [[nodiscard]] auto createDevice(uint32_t deviceId = std::numeric_limits<uint32_t>::max()) -> gfx::ResourceRef;
 
 private:
     template<size_t N>
@@ -45,13 +46,15 @@ private:
                         char const* const* extensionNames);
 
 private:
+    std::vector<VkPhysicalDevice> physicalDeviceList_;
     Handle<VkInstance> vkInstance_;
     ResourceManager resourceManager_;
 };
 
 template<size_t N, size_t M>
 Instance::Instance(std::array<char const*, N> const& reqLayers, std::array<char const*, M> const& reqExtensions)
-  : vkInstance_{ vkDestroyInstance }
+  : physicalDeviceList_{}
+  , vkInstance_{ vkDestroyInstance }
   , resourceManager_{}
 {
     testLayers(reqLayers);
