@@ -8,8 +8,12 @@
 #include "resourceBase.h"
 #include "resourceId.h"
 #include "resourceTypeList.h"
+#include <concepts>
 
 namespace cyclonite::gfx {
+template<typename T>
+concept ResourceConcept = resource_type_list_t::has_type<T>::value && std::derived_from<T, ResourceBase>;
+
 class ResourceManager;
 
 class ResourceRef
@@ -21,28 +25,38 @@ public:
 
     [[nodiscard]] auto valid() const -> bool;
 
-    [[nodiscard]] auto refCount() const -> uint64_t;
+    [[nodiscard]] auto refCount() const -> uint64_t { return resource_->refCount(); }
 
-    auto retain() -> uint64_t;
+    auto retain() -> uint64_t { return resource_->retain(); }
 
-    auto release() -> uint64_t;
+    auto release() -> uint64_t { return resource_->release(); }
 
-    template<typename T>
-    [[nodiscard]] auto as() const -> T const&
-        requires(resource_type_list_t::has_type<T>::value);
+    [[nodiscard]] auto resourceBase() const -> ResourceBase* { return resource_; }
 
-    template<typename T>
-    [[nodiscard]] auto as() -> T&
-        requires(resource_type_list_t::has_type<T>::value);
+    template<ResourceConcept R>
+    [[nodiscard]] auto as() const -> R const&;
+
+    template<ResourceConcept R>
+    [[nodiscard]] auto as() -> R&;
 
 private:
-    ResourceRef(ResourceId id, ResourceBase* resource)
-      : id_{ id }
-      , resource_{ resource } {};
+    ResourceRef(ResourceId id, ResourceBase* resource);
 
     ResourceId id_;
     ResourceBase* resource_;
 };
+
+template<ResourceConcept R>
+auto ResourceRef::as() const -> R const&
+{
+    return static_cast<R const&>(*resource_);
+}
+
+template<ResourceConcept R>
+auto ResourceRef::as() -> R&
+{
+    return static_cast<R&>(*resource_);
+}
 }
 
 #endif // GFX_RESOURCE_REF_H

@@ -3,11 +3,15 @@
 //
 
 #include "resourceRef.h"
+#include "resourceManager.h"
 
 namespace cyclonite::gfx {
+ResourceRef::ResourceRef(ResourceId id, ResourceBase* resource)
+  : id_{ id }
+  , resource_{ resource } {};
+
 auto ResourceRef::valid() const -> bool
 {
-    // TODO:: return false
-    return false;
+    return resource_->resourceManager_->isResourceValid(id_);
 }
 }

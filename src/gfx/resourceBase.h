@@ -13,8 +13,12 @@
 namespace cyclonite::gfx {
 class ResourceManager;
 
+class ResourceRef;
+
 class ResourceBase
 {
+    friend class ResourceRef;
+
 public:
     ResourceBase(ResourceManager* resourceManager, ResourceId resourceId, bool deferredRelease);
 
