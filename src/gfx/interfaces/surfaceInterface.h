@@ -23,6 +23,7 @@ class SurfaceInterface : private PlatformImplementation
 {
 public:
     using PlatformImplementation::height;
+    using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::width;
 };
 }

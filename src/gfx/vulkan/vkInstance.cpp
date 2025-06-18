@@ -122,14 +122,44 @@ void Instance::createInstance(uint32_t layerCount,
     }
 }
 
+auto Instance::chooseBestPhysicalDevice() const -> size_t
+{
+    // TODO:: implementation required
+    return size_t{ 0 };
+}
+
 auto Instance::createDevice(uint32_t deviceId /* = std::numeric_limits<uint32_t>::max()*/) -> gfx::ResourceRef
 {
+    auto result = gfx::ResourceRef{};
+
     std::vector<const char*> requiredExtensions = {};
 
 #if defined(VK_USE_PLATFORM_XLIB_KHR) || defined(VK_USE_PLATFORM_WAYLAND_KHR) || (VK_USE_PLATFORM_WIN32_KHR) ||        \
   defined(VK_USE_PLATFORM_ANDROID_KHR)
     requiredExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 #endif
+
+    if (deviceId == std::numeric_limits<uint32_t>::max()) {
+        deviceId = chooseBestPhysicalDevice();
+    }
+
+    for (size_t i = 0, count = physicalDeviceCount(); i < count; i++) {
+        auto physicalDevice = physicalDeviceList_[i];
+        auto physicalDeviceProperties = VkPhysicalDeviceProperties{};
+        vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
+
+        if (physicalDeviceProperties.deviceID == deviceId) {
+            result = resourceManager_.allocResource<gfx::Device>(
+              static_cast<VkInstance>(vkInstance_), physicalDevice, physicalDeviceProperties, requiredExtensions);
+            break;
+        }
+    }
+
+    if (!result.valid()) {
+        throw std::runtime_error("no suitable physical device to create graphics device over");
+    }
+
+    return result;
 }
 }
 

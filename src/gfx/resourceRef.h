@@ -21,6 +21,8 @@ class ResourceRef
 public:
     friend class ResourceManager;
 
+    ResourceRef() = default;
+
     [[nodiscard]] auto id() const -> ResourceId { return id_; }
 
     [[nodiscard]] auto valid() const -> bool;

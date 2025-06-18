@@ -12,6 +12,10 @@
 // #include "../../vulkan/commandPool.h"
 #include <memory>
 
+namespace cyclonite::gfx {
+class ResourceManager;
+}
+
 namespace cyclonite::gfx::vulkan {
 class Device : public ResourceBase
 {
@@ -28,22 +32,19 @@ public:
         size_t maxColorAttachments;
     };
 
-public:
-    Device(VkInstance vkInstance,
-           VkPhysicalDevice const& vkPhysicalDevice,
+    Device(ResourceManager* resourceManager,
+           VkInstance vkInstance,
+           VkPhysicalDevice vkPhysicalDevice,
            VkPhysicalDeviceProperties const& physicalDeviceProperties,
            std::vector<const char*> const& requiredExtensions);
 
     ~Device() = default;
 
-public:
     [[nodiscard]] auto vulkanInstance() const -> VkInstance { return vkInstance_; }
 
     [[nodiscard]] auto physicalDevice() const -> VkPhysicalDevice { return vkPhysicalDevice_; }
 
     [[nodiscard]] auto handle() const -> VkDevice { return static_cast<VkDevice>(vkDevice_); }
-
-    [[nodiscard]] auto id() const -> uint32_t { return id_; }
 
     [[nodiscard]] auto name() const -> std::string const& { return name_; }
 
@@ -77,7 +78,6 @@ private:
     Capabilities capabilities_;
     VkInstance vkInstance_;
     VkPhysicalDevice vkPhysicalDevice_;
-    uint32_t id_;
     std::string name_;
     std::string vendor_;
     size_t graphicsQueueIndex_;

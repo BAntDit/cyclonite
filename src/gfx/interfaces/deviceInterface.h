@@ -11,7 +11,9 @@ concept DeviceConcept = requires(T t) {};
 
 template<DeviceConcept PlatformImplementation>
 class DeviceInterface : private PlatformImplementation
-{};
+{
+    using PlatformImplementation::PlatformImplementation;
+};
 }
 
 #endif // GFX_INTERFACES_DEVICE_H

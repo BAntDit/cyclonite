@@ -47,6 +47,8 @@ private:
                         uint32_t extensionCount,
                         char const* const* extensionNames);
 
+    [[nodiscard]] auto chooseBestPhysicalDevice() const -> size_t;
+
 private:
     std::vector<VkPhysicalDevice> physicalDeviceList_;
     Handle<VkInstance> vkInstance_;
