@@ -5,96 +5,253 @@
 #ifndef RINGBUFFER_H
 #define RINGBUFFER_H
 
-#include <cstddef>
-#include <list>
-#include <limits>
+#include "bufferView.h"
 #include <cassert>
+#include <concepts>
+#include <cstddef>
+#include <deque>
+#include <limits>
+#include <type_traits>
 
 namespace cyclonite::core {
+// for case when we do not need to store any data
+// but only manage a range with circular buffer maner
 template<size_t Size>
 class RingRange
 {
 public:
+    constexpr static size_t invalid_offset_v = std::numeric_limits<size_t>::max();
+
     RingRange() = default;
-
-    [[nodiscard]] auto freeSize() const -> size_t { return Size - (writeOffset_ - readOffset_); }
-
-    [[nodiscard]] auto contiguousFreeSize() const -> size_t;
 
     [[nodiscard]] auto readableSize() const -> size_t { return writeOffset_ - readOffset_; }
 
-    // TODO:: force shift and expected offset
-    auto reserveRange(size_t size) -> size_t;
+    [[nodiscard]] auto freeSize() const -> size_t { return Size - readableSize(); }
 
-    void popRange();
+    [[nodiscard]] auto contiguousFreeSize() const -> size_t;
+
+    [[nodiscard]] auto empty() const -> bool { return readableSize() == 0; }
+
+    [[nodiscard]] auto expectedOffset(size_t size, bool forceShiftToBegin = false) const -> std::pair<size_t, size_t>;
+
+    auto reserveRange(size_t size, bool forceShiftToBegin = false) -> size_t;
+
+    auto popRange() -> std::pair<size_t, size_t>;
 
 private:
     void avoidOverflow();
 
     [[nodiscard]] auto writeOffset() const -> size_t { return writeOffset_ % Size; }
 
-    [[nodiscard]] auto readOffset() const -> size_t { return writeOffset_ % Size; }
+    [[nodiscard]] auto readOffset() const -> size_t { return readOffset_ % Size; }
 
     size_t writeOffset_;
     size_t readOffset_;
-    std::list<size_t> reservations_;
+    std::deque<size_t> reservations_;
 };
-// TODO:: to inl
-template<size_t Size>
-auto RingRange<Size>::contiguousFreeSize() const -> size_t
+#include "ringRange.inl"
+
+// allow to bind reserved ranges with some conditions (with a fence, for example)
+template<size_t Size, typename ConditionValueType>
+class ConditionalRingRange : protected RingRange<Size>
 {
-    return freeSize() == 0 ? 0 : (writeOffset() >= readOffset() ? Size - writeOffset() : readOffset() - writeOffset());
-}
+public:
+    ConditionalRingRange() = default;
 
-template<size_t Size>
-auto RingRange<Size>::reserveRange(size_t size) -> size_t
+    using RingRange<Size>::readableSize;
+
+    using RingRange<Size>::freeSize;
+
+    using RingRange<Size>::contiguousFreeSize;
+
+    using RingRange<Size>::empty;
+
+    using RingRange<Size>::expectedOffset;
+
+    template<typename ConditionType>
+        requires std::is_same_v<ConditionValueType, std::decay_t<ConditionType>>
+    auto reserveRange(ConditionType&& condition, size_t size, bool forceShiftToBegin = false) -> size_t;
+
+    template<typename ConditionType, typename Pred>
+        requires(std::is_same_v<ConditionValueType, std::decay_t<ConditionType>> &&
+                 std::invocable<Pred, ConditionType &&> &&
+                 std::is_same_v<bool, std::invoke_result_t<Pred, ConditionType &&>>)
+    auto popRange(Pred&& predicate, ConditionType&& condition) -> std::pair<size_t, size_t>;
+
+protected:
+    std::deque<ConditionValueType> conditions_;
+};
+#include "conditionalRingRange.inl"
+
+namespace internal {
+// mixins
+template<typename ElementType,
+         size_t Size,
+         bool hasExternalBuffer,
+         template<typename, size_t, bool>
+         class RingBufferType>
+class elements_ring_range_t : protected RingRange<Size>
 {
-    auto offset = std::numeric_limits<size_t>::max();
+    using element_type_t = ElementType;
+    using element_type_ptr_t = std::add_pointer_t<ElementType>;
+    using return_type_t =
+      std::conditional_t<std::is_same_v<element_type_t, std::byte>, size_t, BufferView<element_type_t>>;
+    using ring_buffer_t = RingBufferType<element_type_t, Size, hasExternalBuffer>;
+    using ring_buffer_ptr_t = std::add_pointer_t<ring_buffer_t>;
 
-    if (contiguousFreeSize() >= size) {
-        if ((std::numeric_limits<size_t>::max() - writeOffset_) < size) {
-            avoidOverflow();
-        }
-        offset = writeOffset();
-        writeOffset_ += size;
-        reservations_.emplace_back(size);
-    } else if (freeSize() >= size && readOffset() >= size) {
-        assert(readOffset() >= writeOffset());
-        if (auto d = Size - writeOffset(); (std::numeric_limits<size_t>::max() - writeOffset_) < d) {
-            avoidOverflow();
-        }
-        writeOffset_ += d;
-        assert(writeOffset() == 0);
+public:
+    using RingRange<Size>::readableSize;
 
-        if ((std::numeric_limits<size_t>::max() - writeOffset_) < size) {
-            avoidOverflow();
-        }
+    using RingRange<Size>::freeSize;
 
-        offset = writeOffset();
-        writeOffset_ += size;
-        reservations_.emplace_back(size + d);
+    using RingRange<Size>::contiguousFreeSize;
+
+    using RingRange<Size>::empty;
+
+    auto reserveToWrite(size_t count) -> return_type_t;
+
+    auto pop() -> return_type_t;
+
+protected:
+    template<typename T>
+        requires(std::is_member_function_pointer_v<decltype(&T::data)> &&
+                   []<typename Ret>(Ret (T::*)()) constexpr -> bool {
+                    return std::is_same_v<element_type_t, Ret>;
+                }(&T::data))
+    auto getData(T&& t) -> element_type_ptr_t
+    {
+        return t.data();
     }
 
-    return offset;
+    elements_ring_range_t() = default;
+};
+
+template<size_t Size, bool hasExternalBuffer, template<typename, size_t, bool> class RingBufferType>
+class bytes_ring_range_t : protected elements_ring_range_t<std::byte, Size, RingBufferType>
+{
+    using element_type_t = std::byte;
+    using element_type_ptr_t = std::add_pointer_t<std::byte>;
+    using ring_buffer_t = RingBufferType<element_type_t, Size, hasExternalBuffer>;
+    using ring_buffer_ptr_t = std::add_pointer_t<ring_buffer_t>;
+
+public:
+    using RingRange<Size>::readableSize;
+
+    using RingRange<Size>::freeSize;
+
+    using RingRange<Size>::contiguousFreeSize;
+
+    using RingRange<Size>::empty;
+
+    using elements_ring_range_t<std::byte, Size, hasExternalBuffer, RingBufferType>::pop;
+
+    template<typename DataType>
+    auto reserveToWrite(size_t count) -> BufferView<DataType>;
+
+protected:
+    bytes_ring_range_t() = default;
+
+    template<typename DataType>
+    auto reserveAlignedRange([[maybe_unused]] size_t offset,
+                             size_t count,
+                             size_t alignedByteCount,
+                             std::byte* alignedPtr) -> std::add_pointer_t<DataType>;
+};
+
+template<typename ElementType,
+         typename ConditionValueType,
+         size_t Size,
+         bool hasExternalBuffer,
+         template<typename, typename, size_t, bool>
+         class RingBufferType>
+class conditional_elements_ring_range_t : protected ConditionalRingRange<Size, ConditionValueType>
+{
+    using conditional_type_t = ConditionValueType;
+    using element_type_t = ElementType;
+    using element_type_ptr_t = std::add_pointer_t<ElementType>;
+    using return_type_t =
+      std::conditional_t<std::is_same_v<ElementType, std::byte>, size_t, BufferView<element_type_t>>;
+    using ring_buffer_t = RingBufferType<ElementType, ConditionValueType, Size, hasExternalBuffer>;
+    using ring_buffer_ptr_t = std::add_pointer_t<ring_buffer_t>;
+
+public:
+    template<typename ConditionType>
+        requires std::is_same_v<ConditionValueType, std::decay_t<ConditionType>>
+    auto reserveToWrite(ConditionType&& condition, size_t count) -> return_type_t;
+
+    template<typename ConditionType, typename Pred>
+        requires(std::is_same_v<ConditionValueType, std::decay_t<ConditionType>> &&
+                 std::invocable<Pred, ConditionType &&> &&
+                 std::is_same_v<bool, std::invoke_result_t<Pred, ConditionType &&>>)
+    auto pop(Pred&& predicate) -> return_type_t;
+
+    auto forcePop() -> return_type_t;
+
+    using RingRange<Size>::readableSize;
+
+    using RingRange<Size>::freeSize;
+
+    using RingRange<Size>::contiguousFreeSize;
+
+    using RingRange<Size>::empty;
+
+protected:
+    using ConditionalRingRange<Size, ConditionValueType>::popRange;
+
+    conditional_elements_ring_range_t() = default;
+};
+
+template<typename ConditionValueType,
+         size_t Size,
+         bool hasExternalBuffer,
+         template<typename, typename, size_t, bool>
+         class RingBufferType>
+class conditional_bytes_ring_range_t
+  : protected conditional_elements_ring_range_t<std::byte, ConditionValueType, Size, hasExternalBuffer, RingBufferType>
+{
+    using conditional_type_t = ConditionValueType;
+    using element_type_t = std::byte;
+    using element_type_ptr_t = std::add_pointer_t<ElementType>;
+    using ring_buffer_t = RingBufferType<element_type_t, conditional_type_t, Size, hasExternalBuffer>;
+    using ring_buffer_ptr_t = std::add_pointer_t<ring_buffer_t>;
+
+public:
+    template<typename ConditionType, typename DataType>
+        requires std::is_same_v<ConditionValueType, std::decay_t<ConditionType>>
+    auto reserveToWrite(ConditionType&& condition, size_t count) -> BufferView<DataType>;
+
+    template<typename ConditionType>
+        requires std::is_same_v<ConditionValueType, std::decay_t<ConditionType>>
+    auto reserveToWrite(ConditionType&& condition, size_t align, size_t count) -> BufferView<std::byte>;
+
+    using conditional_elements_ring_range_t<std::byte, ConditionValueType, Size, hasExternalBuffer, RingBufferType>::
+      pop;
+
+    using conditional_elements_ring_range_t<std::byte, ConditionValueType, Size, hasExternalBuffer, RingBufferType>::
+      forcePop;
+
+    using RingRange<Size>::readableSize;
+
+    using RingRange<Size>::freeSize;
+
+    using RingRange<Size>::contiguousFreeSize;
+
+    using RingRange<Size>::empty;
+
+protected:
+    conditional_bytes_ring_range_t() = default;
+
+    template<typename DataType, typename ConditionalType>
+        requires std::is_same_v<ConditionValueType, std::decay_t<ConditionType>>
+    auto reserveAlignedRange([[maybe_unused]] size_t offset,
+                             size_t count,
+                             size_t alignedByteCount,
+                             ConditionalType&& condition,
+                             std::byte* alignedPtr) -> std::add_pointer_t<DataType>;
+};
+#include "ringBufferMixins.inl"
 }
 
-template<size_t Size>
-void RingRange<Size>::popRange() {
-    assert(!reservations_.empty());
-
-    auto size = reservations_.back();
-    reservations_.pop_back();
-
-    assert(size <= readableSize());
-    readOffset_ += size;
-}
-
-template<size_t Size>
-void RingRange<Size>::avoidOverflow() {
-    auto reserved = writeOffset_ - readOffset_;
-    readOffset_ = readOffset();
-    writeOffset_ = readOffset_ + reserved;
-}
 }
 
 #endif // RINGBUFFER_H

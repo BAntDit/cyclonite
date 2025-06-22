@@ -1,18 +1,18 @@
 template<typename DataType>
 BufferView<DataType>::BufferView()
   : ptr_{ nullptr }
-, stride_{ 0 }
-, count_{ 0 }
-, offset_{ std::numeric_limits<size_t>::max() }
+  , stride_{ 0 }
+  , count_{ 0 }
+  , offset_{ std::numeric_limits<size_t>::max() }
 {
 }
 
 template<typename DataType>
 BufferView<DataType>::BufferView(DataType* ptr, size_t offset, size_t count, size_t stride /* = sizeof(DataType)*/)
   : ptr_{ ptr }
-, stride_{ stride }
-, count_{ count }
-, offset_{ stride }
+  , stride_{ stride }
+  , count_{ count }
+  , offset_{ stride }
 {
 }
 
