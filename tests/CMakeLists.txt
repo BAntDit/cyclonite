@@ -3,10 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 project("cyclonite.test")
 
 set(SOURCES
-    resourceManagementTest.cpp
-    resourceManagementTests.h
-    taskManagerTest.cpp
-    taskManagerTest.h)
+    ringBufferTests.cpp)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
