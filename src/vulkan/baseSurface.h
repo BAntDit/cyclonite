@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_BASESURFACE_H
 #define CYCLONITE_BASESURFACE_H
 
-#include "handle.h"
+#include "../gfx/vulkan/handle.h"
 
 namespace cyclonite::vulkan {
 class BaseSurface
@@ -26,7 +26,7 @@ public:
     [[nodiscard]] auto handle() const -> VkSurfaceKHR { return static_cast<VkSurfaceKHR>(vkSurfaceKHR_); }
 
 protected:
-    Handle<VkSurfaceKHR> vkSurfaceKHR_;
+    gfx::vulkan::Handle<VkSurfaceKHR> vkSurfaceKHR_;
 };
 }
 

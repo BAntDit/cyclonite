@@ -2,7 +2,7 @@
 // Created by bantdit on 9/5/19.
 //
 
-#include "device.h"
+#include "../gfx/vulkan/vkDevice.h"
 #include "internal/deviceCreationFunctions.h"
 #include <boost/cstdfloat.hpp>
 

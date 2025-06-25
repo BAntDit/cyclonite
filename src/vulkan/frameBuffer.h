@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_FRAMEBUFFER_H
 #define CYCLONITE_FRAMEBUFFER_H
 
-#include "device.h"
+#include "../gfx/vulkan/vkDevice.h"
 #include "imageView.h"
 #include <metrix/type_list.h>
 
@@ -109,7 +109,7 @@ private:
 private:
     std::optional<vulkan::ImageView> depthStencilAttachments_;
     attachment_list_t colorAttachments_;
-    vulkan::Handle<VkFramebuffer> vkFrameBuffer_;
+    gfx::vulkan::Handle<VkFramebuffer> vkFrameBuffer_;
 };
 
 template<size_t colorAttachmentsCount>

@@ -5,8 +5,8 @@
 #ifndef CYCLONITE_SURFACE_H
 #define CYCLONITE_SURFACE_H
 
+#include "gfx/vulkan/vkDevice.h"
 #include "sdl/sdlWindow.h"
-#include "vulkan/device.h"
 #include "vulkan/imageView.h"
 #include "vulkan/platformSurface.h"
 #include "windowProperties.h"

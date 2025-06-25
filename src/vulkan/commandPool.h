@@ -5,10 +5,10 @@
 #ifndef CYCLONITE_COMMANDPOOL_H
 #define CYCLONITE_COMMANDPOOL_H
 
+#include "../gfx/vulkan/handle.h"
 #include "../hash.h"
 #include "../multithreading/taskManager.h"
 #include "commandBufferSet.h"
-#include "handle.h"
 #include <metrix/containers.h>
 #include <thread>
 #include <unordered_map>
@@ -46,7 +46,7 @@ public:
 private:
     using queue_family_index_t = uint32_t;
     using pool_key_t = std::tuple<queue_family_index_t, VkCommandPoolCreateFlags>;
-    using command_pool_t = std::tuple<vulkan::Handle<VkCommandPool>, std::vector<VkCommandBuffer>>;
+    using command_pool_t = std::tuple<gfx::vulkan::Handle<VkCommandPool>, std::vector<VkCommandBuffer>>;
 
     VkDevice vkDevice_;
     std::unordered_map<pool_key_t, command_pool_t, hash> commandPools_;

@@ -5,9 +5,9 @@
 #ifndef CYCLONITE_MEMORYPAGE_H
 #define CYCLONITE_MEMORYPAGE_H
 
+#include "../gfx/vulkan/handle.h"
 #include "buffers/arena.h"
 #include "error.h"
-#include "handle.h"
 #include "multithreading/taskManager.h"
 #include <deque>
 
@@ -60,7 +60,7 @@ private:
     multithreading::TaskManager* taskManager_;
     VkDevice vkDevice_;
     bool hostVisible_;
-    Handle<VkDeviceMemory> vkDeviceMemory_;
+    gfx::vulkan::Handle<VkDeviceMemory> vkDeviceMemory_;
     void* ptr_;
 };
 }

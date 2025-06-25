@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_IMAGE_H
 #define CYCLONITE_IMAGE_H
 
-#include "handle.h"
+#include "../gfx/vulkan/handle.h"
 #include "memoryPage.h"
 #include <variant>
 
@@ -101,7 +101,7 @@ private:
     VkImageCreateFlags imageCreateFlags_;
 
     MemoryPage::AllocatedMemory allocatedMemory_;
-    Handle<VkImage> vkImage_;
+    gfx::vulkan::Handle<VkImage> vkImage_;
 };
 
 using ImagePtr = std::shared_ptr<Image>;

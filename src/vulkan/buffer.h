@@ -30,7 +30,7 @@ public:
 
 private:
     MemoryPage::AllocatedMemory allocatedMemory_;
-    Handle<VkBuffer> vkBuffer_;
+    gfx::vulkan::Handle<VkBuffer> vkBuffer_;
 };
 }
 

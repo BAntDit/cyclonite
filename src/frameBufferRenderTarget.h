@@ -58,7 +58,7 @@ public:
     void _createSignal(vulkan::Device const& device);
 
 private:
-    std::array<vulkan::Handle<VkSemaphore>, 2> accessSemaphores_;
+    std::array<gfx::vulkan::Handle<VkSemaphore>, 2> accessSemaphores_;
 };
 
 inline auto getImageView(vulkan::Device& device,
@@ -131,7 +131,7 @@ FrameBufferRenderTarget::FrameBufferRenderTarget(
       getColorAttachments(std::make_index_sequence<_colorAttachmentCount>{}, device, width, height, 0, images));
 
     for (auto i = size_t{ 0 }, count = accessSemaphores_.size(); i < count; i++) {
-        accessSemaphores_[i] = vulkan::Handle<VkSemaphore>{ device.handle(), vkDestroySemaphore };
+        accessSemaphores_[i] = gfx::vulkan::Handle<VkSemaphore>{ device.handle(), vkDestroySemaphore };
     }
 }
 
@@ -167,7 +167,7 @@ FrameBufferRenderTarget::FrameBufferRenderTarget(
       getColorAttachments(std::make_index_sequence<_colorAttachmentCount>{}, device, width, height, 0, images));
 
     for (auto i = size_t{ 0 }, count = accessSemaphores_.size(); i < count; i++) {
-        accessSemaphores_[i] = vulkan::Handle<VkSemaphore>{ device.handle(), vkDestroySemaphore };
+        accessSemaphores_[i] = gfx::vulkan::Handle<VkSemaphore>{ device.handle(), vkDestroySemaphore };
     }
 }
 }

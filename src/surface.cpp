@@ -13,13 +13,13 @@ Surface::Surface(vulkan::Device const& device, WindowProperties const& windowPro
              windowProperties.height,
              static_cast<uint32_t>(windowProperties.fullscreen ? SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS : 0) }
   , platformSurface_{
-      _createSurface(device.vulkanInstance(), window_, vulkan::platform_surface_argument_type_list_t{})
+      _createSurface(/*device.vulkanInstance()*/VK_NULL_HANDLE, window_, vulkan::platform_surface_argument_type_list_t{})
   }
 {
     VkBool32 presentationSupport = VK_FALSE;
 
     if (auto result = vkGetPhysicalDeviceSurfaceSupportKHR(
-          device.physicalDevice(), device.graphicsQueueFamilyIndex(), platformSurface_.handle(), &presentationSupport);
+          /*device.physicalDevice()*/VK_NULL_HANDLE, 0/*device.graphicsQueueFamilyIndex()*/, platformSurface_.handle(), &presentationSupport);
         result != VK_SUCCESS) {
         if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
             throw std::runtime_error("device has no enough memory to test surface support");

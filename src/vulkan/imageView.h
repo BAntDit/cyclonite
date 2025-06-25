@@ -57,7 +57,7 @@ public:
 
 private:
     ImagePtr imagePtr_;
-    Handle<VkImageView> vkImageView_;
+    gfx::vulkan::Handle<VkImageView> vkImageView_;
     VkImageViewType vkImageViewType_;
 };
 

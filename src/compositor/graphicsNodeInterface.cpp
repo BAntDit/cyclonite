@@ -4,7 +4,7 @@
 
 #include "graphicsNodeInterface.h"
 #include "baseGraphicsNode.h"
-#include "vulkan/device.h"
+#include "gfx/device.h"
 
 namespace cyclonite::compositor {
 GraphicsNodeInterface::GraphicsNodeInterface(void* node,

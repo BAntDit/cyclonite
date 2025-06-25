@@ -7,13 +7,13 @@
 
 #include "compositor/workspace.h"
 #include "config.h"
+#include "gfx/vulkan/vkDevice.h"
+#include "gfx/vulkan/vkInstance.h"
 #include "input.h"
 #include "multithreading/taskManager.h"
 #include "platform.h"
 #include "resources/resourceManager.h"
 #include "surface.h"
-#include "vulkan/device.h"
-#include "vulkan/instance.h"
 
 #include <iostream>
 #include <memory>
@@ -78,7 +78,7 @@ private:
     std::unique_ptr<resources::ResourceManager> resourceManager_;
     multithreading::TaskManager taskManager_;
     std::unique_ptr<vulkan::Instance> vulkanInstance_;
-    std::vector<VkPhysicalDevice> physicalDeviceList_;
+    // std::vector<VkPhysicalDevice> physicalDeviceList_;
     std::unordered_map<std::string, VkPhysicalDeviceProperties> physicalDevicePropertiesMap_;
     std::unique_ptr<vulkan::Device> vulkanDevice_;
     std::vector<std::shared_ptr<compositor::Workspace>> workspaces_;

@@ -15,7 +15,7 @@ public:
     SurfaceRenderTarget(vulkan::Device& device,
                         VkRenderPass vkRenderPass,
                         Surface& surface,
-                        vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
+                        gfx::vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
                         VkFormat depthStencilFormat,
                         VkFormat surfaceFormat,
                         RenderTargetOutputSemantic outputSemantic);
@@ -23,7 +23,7 @@ public:
     SurfaceRenderTarget(vulkan::Device& device,
                         VkRenderPass vkRenderPass,
                         Surface& surface,
-                        vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
+                        gfx::vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
                         VkFormat surfaceFormat,
                         RenderTargetOutputSemantic outputSemantic);
 

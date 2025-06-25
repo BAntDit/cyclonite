@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_SHADERMODULE_H
 #define CYCLONITE_SHADERMODULE_H
 
-#include "device.h"
+#include "../gfx/vulkan/vkDevice.h"
 
 namespace cyclonite::vulkan {
 class ShaderModule

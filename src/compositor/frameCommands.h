@@ -5,8 +5,8 @@
 #ifndef CYCLONITE_FRAMECOMMANDS_H
 #define CYCLONITE_FRAMECOMMANDS_H
 
+#include "../gfx/vulkan/vkDevice.h"
 #include "vulkan/buffer.h"
-#include "vulkan/device.h"
 
 namespace cyclonite {
 class BaseRenderTarget;

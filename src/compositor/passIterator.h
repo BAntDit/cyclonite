@@ -5,8 +5,8 @@
 #ifndef CYCLONITE_PASSITERATOR_H
 #define CYCLONITE_PASSITERATOR_H
 
+#include "../gfx/vulkan/handle.h"
 #include "passType.h"
-#include "vulkan/handle.h"
 #include <array>
 #include <bitset>
 #include <iterator>
@@ -56,10 +56,10 @@ public:
     PassIterator(uint32_t passCount,
                  uint32_t cursor,
                  PassType* passType,
-                 vulkan::Handle<VkDescriptorPool>* baseDescriptorPool,
-                 vulkan::Handle<VkDescriptorSetLayout>* baseDescriptorSetLayout,
-                 vulkan::Handle<VkPipelineLayout>* basePipelineLayout,
-                 vulkan::Handle<VkPipeline>* basePipeline,
+                 gfx::vulkan::Handle<VkDescriptorPool>* baseDescriptorPool,
+                 gfx::vulkan::Handle<VkDescriptorSetLayout>* baseDescriptorSetLayout,
+                 gfx::vulkan::Handle<VkPipelineLayout>* basePipelineLayout,
+                 gfx::vulkan::Handle<VkPipeline>* basePipeline,
                  VkDescriptorSet* baseDescriptorSet,
                  std::bitset<bitCount> const& descriptorExpirationBits) noexcept;
 
@@ -83,10 +83,10 @@ private:
     size_t count_;
     size_t cursor_;
     PassType* basePassType_;
-    vulkan::Handle<VkDescriptorPool>* baseDescriptorPool_;
-    vulkan::Handle<VkDescriptorSetLayout>* baseDescriptorSetLayout_;
-    vulkan::Handle<VkPipelineLayout>* basePipelineLayout_;
-    vulkan::Handle<VkPipeline>* basePipeline_;
+    gfx::vulkan::Handle<VkDescriptorPool>* baseDescriptorPool_;
+    gfx::vulkan::Handle<VkDescriptorSetLayout>* baseDescriptorSetLayout_;
+    gfx::vulkan::Handle<VkPipelineLayout>* basePipelineLayout_;
+    gfx::vulkan::Handle<VkPipeline>* basePipeline_;
     VkDescriptorSet* baseDescriptorSet_;
 };
 
@@ -94,10 +94,10 @@ template<size_t bitCount>
 PassIterator::PassIterator(uint32_t passCount,
                            uint32_t cursor,
                            PassType* passType,
-                           vulkan::Handle<VkDescriptorPool>* baseDescriptorPool,
-                           vulkan::Handle<VkDescriptorSetLayout>* baseDescriptorSetLayout,
-                           vulkan::Handle<VkPipelineLayout>* basePipelineLayout,
-                           vulkan::Handle<VkPipeline>* basePipeline,
+                           gfx::vulkan::Handle<VkDescriptorPool>* baseDescriptorPool,
+                           gfx::vulkan::Handle<VkDescriptorSetLayout>* baseDescriptorSetLayout,
+                           gfx::vulkan::Handle<VkPipelineLayout>* basePipelineLayout,
+                           gfx::vulkan::Handle<VkPipeline>* basePipeline,
                            VkDescriptorSet* baseDescriptorSet,
                            std::bitset<bitCount> const& descriptorExpirationBits) noexcept
   : bitsWrapper_(descriptorExpirationBits)

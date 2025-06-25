@@ -3,7 +3,6 @@
 //
 
 #include "cameraSystem.h"
-#include "vulkan/device.h"
 
 namespace cyclonite::systems {
 void CameraSystem::init() {}

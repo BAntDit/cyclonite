@@ -58,7 +58,7 @@ private:
     VkQueue vkTransferQueue_;
     resources::Resource::Id uniforms_;
     std::shared_ptr<vulkan::Buffer> gpuUniforms_;
-    std::vector<vulkan::Handle<VkSemaphore>> transferSemaphores_;
+    std::vector<gfx::vulkan::Handle<VkSemaphore>> transferSemaphores_;
     std::unique_ptr<transfer_commands_t> transferCommands_;
 };
 

@@ -5,6 +5,7 @@
 #ifndef CYCLONITE_MESHSYSTEM_H
 #define CYCLONITE_MESHSYSTEM_H
 
+#include "../gfx/vulkan/vkDevice.h"
 #include "components/mesh.h"
 #include "components/transform.h"
 #include "resources/resourceManager.h"
@@ -13,7 +14,6 @@
 #include "vulkan/buffer.h"
 #include "vulkan/commandBufferSet.h"
 #include "vulkan/commandPool.h"
-#include "vulkan/device.h"
 #include <enttx/enttx.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <metrix/containers.h>
@@ -103,7 +103,7 @@ private:
     resources::Resource::Id vertexBuffer_;
     std::shared_ptr<vulkan::Buffer> gpuVertexBuffer_;
 
-    std::vector<vulkan::Handle<VkSemaphore>> transferSemaphores_;
+    std::vector<gfx::vulkan::Handle<VkSemaphore>> transferSemaphores_;
     std::unique_ptr<transfer_commands_t> transferCommands_;
     bool verticesUpdateRequired_;
 };

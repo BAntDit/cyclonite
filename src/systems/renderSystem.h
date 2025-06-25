@@ -5,9 +5,9 @@
 #ifndef CYCLONITE_RENDERSYSTEM_H
 #define CYCLONITE_RENDERSYSTEM_H
 
+#include "../gfx/device.h"
 #include "multithreading/taskManager.h"
 #include "updateStages.h"
-#include "vulkan/device.h"
 #include <enttx/enttx.h>
 #include <metrix/enum.h>
 
@@ -27,7 +27,7 @@ public:
 
     auto operator=(RenderSystem&&) -> RenderSystem& = default;
 
-    void init(multithreading::TaskManager& taskManager, vulkan::Device& device);
+    void init(multithreading::TaskManager& taskManager, gfx::Device& device);
 
     template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
     void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
@@ -36,7 +36,7 @@ public:
 
 private:
     multithreading::TaskManager* taskManager_;
-    vulkan::Device* device_;
+    gfx::Device* device_;
 };
 
 template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
