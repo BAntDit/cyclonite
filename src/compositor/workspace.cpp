@@ -197,12 +197,12 @@ auto Workspace::syncFrame(vulkan::Device& device) -> VkFence
             auto const& fence = fences[fenceIdx];
 
             if (auto result =
-                  vkWaitForFences(device.handle(), 1, &fence, VK_FALSE, std::numeric_limits<uint64_t>::max());
+                  vkWaitForFences(VK_NULL_HANDLE/*device.handle()*/, 1, &fence, VK_FALSE, std::numeric_limits<uint64_t>::max());
                 result != VK_SUCCESS) {
                 throw std::runtime_error("can not sync frame");
             }
 
-            if (auto result = vkResetFences(device.handle(), 1, &fence); result != VK_SUCCESS) {
+            if (auto result = vkResetFences(VK_NULL_HANDLE/*device.handle()*/, 1, &fence); result != VK_SUCCESS) {
                 throw std::runtime_error("can not reset frame sync fence");
             }
 
@@ -234,7 +234,7 @@ void Workspace::endFrame(vulkan::Device& device, VkFence fence)
                          submitCount = submitCount_,
                          graphicsNodeCount = graphicsNodeCount_,
                          fence]() -> void {
-        if (auto result = vkQueueSubmit(device.graphicsQueue(), submitCount, submits.data(), fence);
+        if (auto result = vkQueueSubmit(VK_NULL_HANDLE/*device.graphicsQueue()*/, submitCount, submits.data(), fence);
             result != VK_SUCCESS) {
             throw std::runtime_error{ "submit commands failed" };
         }

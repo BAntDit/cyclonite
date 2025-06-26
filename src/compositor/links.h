@@ -194,7 +194,7 @@ auto Links::create(vulkan::Device& device) -> Links
 
     Links links;
     links.links_ = std::conditional_t<linkCount != 0, std::array<Link, linkCount>, std::monostate>{};
-    links.vkDevice_ = device.handle();
+    links.vkDevice_ = VK_NULL_HANDLE; // device.handle();
 
     for (auto& [nodeId, sampler, views, semantics] : links) {
         nodeId = std::numeric_limits<size_t>::max();
@@ -215,7 +215,8 @@ auto Links::create(vulkan::Device& device) -> Links
             samplerInfo.maxLod = 1.f;
             samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
-            if (auto result = vkCreateSampler(device.handle(), &samplerInfo, nullptr, &sampler); result != VK_SUCCESS) {
+            if (auto result = vkCreateSampler(/*device.handle()*/ VK_NULL_HANDLE, &samplerInfo, nullptr, &sampler);
+                result != VK_SUCCESS) {
                 throw std::runtime_error("could not create link sampler");
             }
         }

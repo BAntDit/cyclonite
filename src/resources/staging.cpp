@@ -15,7 +15,7 @@ Staging::Staging(vulkan::Device& device, VkBufferUsageFlags usageFlags, VkDevice
              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
              usageFlags,
              size,
-             std::array<uint32_t, 1>{ 0/*device.hostTransferQueueFamilyIndex()*/ } }
+             std::array<uint32_t, 1>{ 0 /*device.hostTransferQueueFamilyIndex()*/ } }
 {
 }
 

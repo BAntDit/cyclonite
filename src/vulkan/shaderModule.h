@@ -11,12 +11,12 @@ namespace cyclonite::vulkan {
 class ShaderModule
 {
 public:
-    ShaderModule(Device const& device,
-                 std::vector<uint32_t> const& code,
-                 VkShaderStageFlags stageFlags,
-                 std::string const& entryPointName = "main",
-                 uint32_t constantOffset = 0,
-                 uint32_t constantSize = 0);
+    ShaderModule(); /*Device const& device,
+                  std::vector<uint32_t> const& code,
+                  VkShaderStageFlags stageFlags,
+                  std::string const& entryPointName = "main",
+                  uint32_t constantOffset = 0,
+                  uint32_t constantSize = 0);*/
 
     ShaderModule(ShaderModule const&) = delete;
 
@@ -44,11 +44,11 @@ public:
     [[nodiscard]] auto entryPointName() const -> std::string const& { return entryPointName_; }
 
 private:
-    Handle<VkShaderModule> vkShaderModule_;
+    gfx::vulkan::Handle<VkShaderModule> vkShaderModule_;
     VkShaderStageFlags stageFlags_;
     uint32_t constantSize_;
     uint32_t constantOffset_;
-    Handle<VkDescriptorSetLayout> vkDescriptorSetLayout_;
+    gfx::vulkan::Handle<VkDescriptorSetLayout> vkDescriptorSetLayout_;
     std::string entryPointName_;
 };
 }

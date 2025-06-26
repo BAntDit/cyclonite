@@ -7,7 +7,7 @@
 #include <boost/cstdfloat.hpp>
 
 namespace cyclonite::vulkan {
-Device::Device(multithreading::TaskManager& taskManager,
+/*Device::Device(multithreading::TaskManager& taskManager,
                VkInstance vkInstance,
                VkPhysicalDevice const& vkPhysicalDevice,
                VkPhysicalDeviceProperties const& physicalDeviceProperties,
@@ -165,5 +165,5 @@ Device::Capabilities::Capabilities(VkPhysicalDeviceLimits const& vkPhysicalDevic
   , maxPushConstantsSize{ vkPhysicalDeviceLimits.maxPushConstantsSize }
   , maxColorAttachments{ vkPhysicalDeviceLimits.maxColorAttachments }
 {
-}
+}*/
 }

@@ -26,10 +26,10 @@ extern void createPass(vulkan::Device& device,
                        std::unique_ptr<vulkan::ShaderModule>& fragmentSceneShader,
                        std::unique_ptr<vulkan::ShaderModule>& vertexScreenShader,
                        std::unique_ptr<vulkan::ShaderModule>& fragmentScreenShader,
-                       vulkan::Handle<VkDescriptorPool>& outDescriptorPool,
-                       vulkan::Handle<VkDescriptorSetLayout>& outDescriptorSetLayout,
-                       vulkan::Handle<VkPipelineLayout>& outPipelineLayout,
-                       vulkan::Handle<VkPipeline>& outPipeline);
+                       gfx::vulkan::Handle<VkDescriptorPool>& outDescriptorPool,
+                       gfx::vulkan::Handle<VkDescriptorSetLayout>& outDescriptorSetLayout,
+                       gfx::vulkan::Handle<VkPipelineLayout>& outPipelineLayout,
+                       gfx::vulkan::Handle<VkPipeline>& outPipeline);
 
 /**
  * Graphics node class
@@ -103,10 +103,10 @@ private:
     std::array<PassType, config_traits::pass_count_v<Config>> passTypes_;
 
     // material
-    std::array<vulkan::Handle<VkDescriptorPool>, config_traits::pass_count_v<Config>> passDescriptorPool_;
-    std::array<vulkan::Handle<VkDescriptorSetLayout>, config_traits::pass_count_v<Config>> passDescriptorSetLayout_;
-    std::array<vulkan::Handle<VkPipelineLayout>, config_traits::pass_count_v<Config>> passPipelineLayout_;
-    std::array<vulkan::Handle<VkPipeline>, config_traits::pass_count_v<Config>> passPipeline_;
+    std::array<gfx::vulkan::Handle<VkDescriptorPool>, config_traits::pass_count_v<Config>> passDescriptorPool_;
+    std::array<gfx::vulkan::Handle<VkDescriptorSetLayout>, config_traits::pass_count_v<Config>> passDescriptorSetLayout_;
+    std::array<gfx::vulkan::Handle<VkPipelineLayout>, config_traits::pass_count_v<Config>> passPipelineLayout_;
+    std::array<gfx::vulkan::Handle<VkPipeline>, config_traits::pass_count_v<Config>> passPipeline_;
     std::array<VkDescriptorSet, config_traits::pass_count_v<Config>> descriptorSets_;
     std::bitset<config_traits::pass_count_v<Config>> descriptorSetExpirationBits_;
 };

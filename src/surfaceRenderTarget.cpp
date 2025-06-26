@@ -8,7 +8,7 @@ namespace cyclonite {
 SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
                                          VkRenderPass vkRenderPass,
                                          Surface& surface,
-                                         vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
+                                         gfx::vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
                                          VkFormat depthStencilFormat,
                                          VkFormat surfaceFormat,
                                          RenderTargetOutputSemantic outputSemantic)
@@ -21,11 +21,11 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
     outputSemantics_[outputSemantic] = 0;
 
     uint32_t bufferCount = 0;
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &bufferCount, nullptr);
+    vkGetSwapchainImagesKHR(VK_NULL_HANDLE/*device.handle()*/, static_cast<VkSwapchainKHR>(vkSwapChain_), &bufferCount, nullptr);
 
     std::vector<VkImage> vkImages(bufferCount, VK_NULL_HANDLE);
 
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &bufferCount, vkImages.data());
+    vkGetSwapchainImagesKHR(VK_NULL_HANDLE/*device.handle()*/, static_cast<VkSwapchainKHR>(vkSwapChain_), &bufferCount, vkImages.data());
 
     frameBuffers_.reserve(bufferCount);
 
@@ -55,10 +55,10 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
             vulkan::ImageView{ device, std::make_shared<vulkan::Image>(vkImage, width(), height(), surfaceFormat) } });
 
         if (auto result =
-              vkCreateSemaphore(device.handle(),
+              vkCreateSemaphore(VK_NULL_HANDLE, // device.handle(),
                                 &semaphoreCreateInfo,
                                 nullptr,
-                                &imageAvailableSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
+                                &imageAvailableSemaphores_.emplace_back(VK_NULL_HANDLE/*device.handle()*/, vkDestroySemaphore));
             result != VK_SUCCESS) {
             throw std::runtime_error("could not create image available semaphore.");
         }
@@ -68,7 +68,7 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
 SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
                                          VkRenderPass vkRenderPass,
                                          Surface& surface,
-                                         vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
+                                         gfx::vulkan::Handle<VkSwapchainKHR>& vkSwapChain,
                                          VkFormat surfaceFormat,
                                          RenderTargetOutputSemantic outputSemantic)
   : BaseRenderTarget(surface.width(), surface.height())
@@ -81,11 +81,11 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
     outputSemantics_[outputSemantic] = 0;
 
     uint32_t bufferCount = 0;
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &bufferCount, nullptr);
+    vkGetSwapchainImagesKHR(VK_NULL_HANDLE/*device.handle()*/, static_cast<VkSwapchainKHR>(vkSwapChain_), &bufferCount, nullptr);
 
     std::vector<VkImage> vkImages(bufferCount, VK_NULL_HANDLE);
 
-    vkGetSwapchainImagesKHR(device.handle(), static_cast<VkSwapchainKHR>(vkSwapChain_), &bufferCount, vkImages.data());
+    vkGetSwapchainImagesKHR(VK_NULL_HANDLE/*device.handle()*/, static_cast<VkSwapchainKHR>(vkSwapChain_), &bufferCount, vkImages.data());
 
     frameBuffers_.reserve(bufferCount);
 
@@ -105,19 +105,19 @@ SurfaceRenderTarget::SurfaceRenderTarget(vulkan::Device& device,
             vulkan::ImageView{ device, std::make_shared<vulkan::Image>(vkImage, width(), height(), surfaceFormat) } });
 
         if (auto result =
-              vkCreateSemaphore(device.handle(),
+              vkCreateSemaphore(VK_NULL_HANDLE, // device.handle(),
                                 &semaphoreCreateInfo,
                                 nullptr,
-                                &imageAvailableSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
+                                &imageAvailableSemaphores_.emplace_back(VK_NULL_HANDLE/*device.handle()*/, vkDestroySemaphore));
             result != VK_SUCCESS) {
             throw std::runtime_error("could not create image available semaphore.");
         }
 
         if (auto result =
-              vkCreateSemaphore(device.handle(),
+              vkCreateSemaphore(VK_NULL_HANDLE, // device.handle(),
                                 &semaphoreCreateInfo,
                                 nullptr,
-                                &imageReadyToBePresentedSemaphore_.emplace_back(device.handle(), vkDestroySemaphore));
+                                &imageReadyToBePresentedSemaphore_.emplace_back(VK_NULL_HANDLE/*device.handle()*/, vkDestroySemaphore));
             result != VK_SUCCESS) {
             throw std::runtime_error("could not create image ready semaphore.");
         }
@@ -129,7 +129,7 @@ auto SurfaceRenderTarget::acquireBackBufferIndex(vulkan::Device const& device, u
 {
     auto wait = static_cast<VkSemaphore>(imageAvailableSemaphores_[frameIndex]);
 
-    vkAcquireNextImageKHR(device.handle(),
+    vkAcquireNextImageKHR(VK_NULL_HANDLE, // device.handle(),
                           static_cast<VkSwapchainKHR>(vkSwapChain_),
                           std::numeric_limits<uint64_t>::max(),
                           wait,
@@ -151,7 +151,7 @@ void SurfaceRenderTarget::swapBuffers(vulkan::Device const& device)
     // image at currentFrameImageIndex gets available after signal
     presentInfo.pImageIndices = &currentImageIndex_;
 
-    vkQueuePresentKHR(device.graphicsQueue(), &presentInfo);
+    vkQueuePresentKHR(VK_NULL_HANDLE/*device.graphicsQueue()*/, &presentInfo);
 }
 
 auto SurfaceRenderTarget::wait(uint32_t frameIndex) const -> VkSemaphore

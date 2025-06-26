@@ -127,7 +127,7 @@ public:
 protected:
     VkSubmitInfo submit_;
     render_target_t renderTarget_;
-    vulkan::Handle<VkRenderPass> vkRenderPass_;
+    gfx::vulkan::Handle<VkRenderPass> vkRenderPass_;
     std::vector<FrameCommands> frameCommands_;
     Links inputs_;
     uint32_t frameIndex_;

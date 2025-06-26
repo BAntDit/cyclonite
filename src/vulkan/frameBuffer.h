@@ -121,10 +121,10 @@ FrameBuffer::FrameBuffer(vulkan::Device const& device,
                          std::array<vulkan::ImageView, colorAttachmentsCount>&& attachments)
   : depthStencilAttachments_{ std::move(depthStencilAttachment) }
   , colorAttachments_(std::move(attachments))
-  , vkFrameBuffer_{ device.handle(), vkDestroyFramebuffer }
+  , vkFrameBuffer_{ /*device.handle()*/ VK_NULL_HANDLE, vkDestroyFramebuffer }
 {
-    assert(colorAttachmentsCount <=
-           std::min(device.capabilities().maxColorAttachments, attachment_list_traits::max_available_attachments_v));
+    assert(colorAttachmentsCount <= std::min(/*device.capabilities().maxColorAttachments*/ size_t{ 1 },
+                                             attachment_list_traits::max_available_attachments_v));
 
     assert(depthStencilAttachments_ || colorAttachmentsCount > 0);
 
@@ -163,7 +163,8 @@ FrameBuffer::FrameBuffer(vulkan::Device const& device,
       },
       vkAttachments);
 
-    if (auto result = vkCreateFramebuffer(device.handle(), &framebufferInfo, nullptr, &vkFrameBuffer_);
+    if (auto result =
+          vkCreateFramebuffer(/*device.handle()*/ VK_NULL_HANDLE, &framebufferInfo, nullptr, &vkFrameBuffer_);
         result != VK_SUCCESS) {
         if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
             throw std::runtime_error("failed to create framebuffer: out of host memory");

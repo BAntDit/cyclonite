@@ -15,7 +15,7 @@ std::vector<uint32_t> const defaultFragmentShaderCode = {
 */
 
 namespace cyclonite::systems {
-void RenderSystem::init(multithreading::TaskManager& taskManager, vulkan::Device& device)
+void RenderSystem::init(multithreading::TaskManager& taskManager, gfx::Device& device)
 {
     taskManager_ = &taskManager;
     device_ = &device;
@@ -26,7 +26,7 @@ void RenderSystem::finish()
     assert(taskManager_ != nullptr);
     assert(device_ != nullptr);
 
-    auto gfxStop = taskManager_->submitRenderTask([queue = device_->graphicsQueue()]() -> void {
+    auto gfxStop = taskManager_->submitRenderTask([queue = VK_NULL_HANDLE /*device_->graphicsQueue()*/]() -> void {
         if (auto result = vkQueueWaitIdle(queue); result != VK_SUCCESS) {
             if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
                 throw std::runtime_error("could not wait until graphics queue gets idle, out of host memory");
@@ -42,21 +42,22 @@ void RenderSystem::finish()
         }
     });
 
-    auto transferStop = taskManager_->submitRenderTask([queue = device_->hostTransferQueue()]() -> void {
-        if (auto result = vkQueueWaitIdle(queue); result != VK_SUCCESS) {
-            if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
-                throw std::runtime_error("could not wait until transfer queue gets idle, out of host memory");
-            }
+    auto transferStop =
+      taskManager_->submitRenderTask([queue = VK_NULL_HANDLE /*device_->hostTransferQueue()*/]() -> void {
+          if (auto result = vkQueueWaitIdle(queue); result != VK_SUCCESS) {
+              if (result == VK_ERROR_OUT_OF_HOST_MEMORY) {
+                  throw std::runtime_error("could not wait until transfer queue gets idle, out of host memory");
+              }
 
-            if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
-                throw std::runtime_error("could not wait until transfer queue gets idle, out of device memory");
-            }
+              if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+                  throw std::runtime_error("could not wait until transfer queue gets idle, out of device memory");
+              }
 
-            if (result == VK_ERROR_DEVICE_LOST) {
-                throw std::runtime_error("could not wait until transfer queue gets idle, device lost");
-            }
-        }
-    });
+              if (result == VK_ERROR_DEVICE_LOST) {
+                  throw std::runtime_error("could not wait until transfer queue gets idle, device lost");
+              }
+          }
+      });
 
     transferStop.get();
     gfxStop.get();

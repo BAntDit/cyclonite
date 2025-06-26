@@ -3,8 +3,8 @@
 //
 
 #include "uniformSystem.h"
+#include "gfx/device.h"
 #include "resources/resourceManager.h"
-#include "vulkan/device.h"
 #include <glm/gtc/type_ptr.hpp>
 
 namespace cyclonite::systems {
@@ -29,7 +29,7 @@ void UniformSystem::_init(resources::ResourceManager& resourceManager, vulkan::D
 {
     devicePtr_ = &device;
     resourceManager_ = &resourceManager;
-    vkTransferQueue_ = device.hostTransferQueue();
+    vkTransferQueue_ = VK_NULL_HANDLE; // device.hostTransferQueue();
 
     uniforms_ =
       resourceManager_->template create<resources::Staging>(device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(mat4) * 3);
@@ -39,7 +39,8 @@ void UniformSystem::_init(resources::ResourceManager& resourceManager, vulkan::D
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
       VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
       sizeof(mat4) * 3,
-      std::array{ device.hostTransferQueueFamilyIndex(), device.graphicsQueueFamilyIndex() });
+      std::array{ uint32_t{ 0 },
+                  uint32_t{ 0 } } /*device.hostTransferQueueFamilyIndex(), device.graphicsQueueFamilyIndex() }*/);
 
     transferSemaphores_.reserve(swapChainLength);
 
@@ -47,19 +48,19 @@ void UniformSystem::_init(resources::ResourceManager& resourceManager, vulkan::D
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
     for (size_t i = 0; i < swapChainLength; i++) {
-        if (auto result = vkCreateSemaphore(device.handle(),
-                                            &semaphoreCreateInfo,
-                                            nullptr,
-                                            &transferSemaphores_.emplace_back(device.handle(), vkDestroySemaphore));
+        if (auto result = vkCreateSemaphore(
+              VK_NULL_HANDLE, // device.handle(),
+              &semaphoreCreateInfo,
+              nullptr,
+              &transferSemaphores_.emplace_back(VK_NULL_HANDLE /*device.handle()*/, vkDestroySemaphore));
             result != VK_SUCCESS) {
             throw std::runtime_error("could not create transfer synchronization semaphore");
         }
     }
 
-    transferCommands_ = std::make_unique<vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>>(
-      device.commandPool().allocCommandBuffers(
-        vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>{
-          device.hostTransferQueueFamilyIndex(),
+    /*transferCommands_ = std::make_unique<vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer,
+      1>>>( device.commandPool().allocCommandBuffers( vulkan::CommandBufferSet<vulkan::CommandPool,
+      std::array<VkCommandBuffer, 1>>{ uint32_t{0}, // device.hostTransferQueueFamilyIndex(),
           VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
           std::array<VkCommandBuffer, 1>{} },
         [&, this](std::array<VkCommandBuffer, 1>& transferCommandBuffers) -> void {
@@ -86,7 +87,7 @@ void UniformSystem::_init(resources::ResourceManager& resourceManager, vulkan::D
             if (auto result = vkEndCommandBuffer(transferCommandBuffer); result != VK_SUCCESS) {
                 throw std::runtime_error("could not write uniforms transfer commands");
             }
-        }));
+        }));*/
 }
 
 void UniformSystem::setViewMatrix(mat4& viewMatrix)

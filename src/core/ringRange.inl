@@ -35,7 +35,8 @@ auto RingRange<Size>::expectedOffset(size_t size, bool forceShiftToBegin /* = fa
         } else if (freeSize() > size && readOffset() >= size) {
             auto tempWriteOffset = writeOffset_;
             auto tempReadOffset = readOffset_;
-            if (auto d = Size - (tempWriteOffset % Size); (std::numeric_limits<size_t>::max() - tempWriteOffset) < d) {
+            auto d = Size - (tempWriteOffset % Size);
+            if ((std::numeric_limits<size_t>::max() - tempWriteOffset) < d) {
                 nooverflow(tempWriteOffset, tempReadOffset);
             }
 

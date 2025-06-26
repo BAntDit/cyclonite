@@ -107,7 +107,7 @@ private:
       to_variant_t<typename concat<type_list<std::monostate>, array_list_t<VkAttachmentReference, maxSize>>::type>;
 
     using surface_properties_t =
-      std::optional<std::tuple<Surface, vulkan::Handle<VkSwapchainKHR>, VkPresentModeKHR, VkColorSpaceKHR>>;
+      std::optional<std::tuple<Surface, gfx::vulkan::Handle<VkSwapchainKHR>, VkPresentModeKHR, VkColorSpaceKHR>>;
 
     using render_pass_properties_t = std::tuple<PassType, attachment_ref_array_t<32>, attachment_ref_array_t<32>, bool>;
 
@@ -127,7 +127,7 @@ private:
     surface_properties_t surfaceProps_;
     std::vector<VkSubpassDependency> passDependencies_;
     std::vector<render_pass_properties_t> renderPasses_;
-    vulkan::Handle<VkRenderPass> vkRenderPass_;
+    gfx::vulkan::Handle<VkRenderPass> vkRenderPass_;
     render_target_t renderTarget_;
 };
 
@@ -356,7 +356,7 @@ auto BaseGraphicsNode::Builder<Config>::setSurface(
     swapChainCreateInfoKHR.clipped = VK_TRUE;
     swapChainCreateInfoKHR.oldSwapchain = VK_NULL_HANDLE;
 
-    auto vkSwapChain = vulkan::Handle<VkSwapchainKHR>{ device_->handle(), vkDestroySwapchainKHR };
+    auto vkSwapChain = gfx::vulkan::Handle<VkSwapchainKHR>{ device_->handle(), vkDestroySwapchainKHR };
 
     if (auto result = vkCreateSwapchainKHR(device_->handle(), &swapChainCreateInfoKHR, nullptr, &vkSwapChain);
         result != VK_SUCCESS) {

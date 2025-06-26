@@ -20,10 +20,10 @@ void createPass(vulkan::Device& device,
                 std::unique_ptr<vulkan::ShaderModule>& fragmentSceneShader,
                 std::unique_ptr<vulkan::ShaderModule>& vertexScreenShader,
                 std::unique_ptr<vulkan::ShaderModule>& fragmentScreenShader,
-                vulkan::Handle<VkDescriptorPool>& outDescriptorPool,
-                vulkan::Handle<VkDescriptorSetLayout>& outDescriptorSetLayout,
-                vulkan::Handle<VkPipelineLayout>& outPipelineLayout,
-                vulkan::Handle<VkPipeline>& outPipeline)
+                gfx::vulkan::Handle<VkDescriptorPool>& outDescriptorPool,
+                gfx::vulkan::Handle<VkDescriptorSetLayout>& outDescriptorSetLayout,
+                gfx::vulkan::Handle<VkPipelineLayout>& outPipelineLayout,
+                gfx::vulkan::Handle<VkPipeline>& outPipeline)
 {
     // pass type
     outPassType = inPassType;
@@ -35,7 +35,7 @@ void createPass(vulkan::Device& device,
 
     // descriptor pool
     {
-        outDescriptorPool = vulkan::Handle<VkDescriptorPool>{ device.handle(), vkDestroyDescriptorPool };
+        outDescriptorPool = gfx::vulkan::Handle<VkDescriptorPool>{ VK_NULL_HANDLE /*device.handle()*/, vkDestroyDescriptorPool };
 
         const auto maxSets = commandBufferCount;
 
@@ -71,7 +71,7 @@ void createPass(vulkan::Device& device,
         descriptorPoolCreateInfo.pPoolSizes = poolSizes.data();
 
         if (auto result =
-              vkCreateDescriptorPool(device.handle(), &descriptorPoolCreateInfo, nullptr, &outDescriptorPool);
+              vkCreateDescriptorPool(VK_NULL_HANDLE/*device.handle()*/, &descriptorPoolCreateInfo, nullptr, &outDescriptorPool);
             result != VK_SUCCESS) {
             throw std::runtime_error("could not create descriptor pool");
         }
@@ -79,7 +79,7 @@ void createPass(vulkan::Device& device,
 
     // DUMMY PIPELINE, just for now
     {
-        if (inPassType == PassType::SCENE) {
+        /*if (inPassType == PassType::SCENE) {
             if (!vertexSceneShader)
                 vertexSceneShader = std::make_unique<vulkan::ShaderModule>(
                   device,
@@ -103,7 +103,7 @@ void createPass(vulkan::Device& device,
                   device,
                   shaders::getShader(shaders::ShaderType::SCREEN_G_BUFFER_DEBUG_FRAGMENT_SHADER),
                   VK_SHADER_STAGE_FRAGMENT_BIT);
-        }
+        }*/
 
         VkPipelineShaderStageCreateInfo vertexShaderStageInfo = {};
         vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -244,10 +244,10 @@ void createPass(vulkan::Device& device,
         descriptorSetLayout.bindingCount = static_cast<uint32_t>(descriptorCount);
         descriptorSetLayout.pBindings = bindings.data();
 
-        outDescriptorSetLayout = vulkan::Handle<VkDescriptorSetLayout>{ device.handle(), vkDestroyDescriptorSetLayout };
+        outDescriptorSetLayout = gfx::vulkan::Handle<VkDescriptorSetLayout>{ VK_NULL_HANDLE/*device.handle()*/, vkDestroyDescriptorSetLayout };
 
         if (auto result =
-              vkCreateDescriptorSetLayout(device.handle(), &descriptorSetLayout, nullptr, &outDescriptorSetLayout);
+              vkCreateDescriptorSetLayout(VK_NULL_HANDLE/*device.handle()*/, &descriptorSetLayout, nullptr, &outDescriptorSetLayout);
             result != VK_SUCCESS) {
             throw std::runtime_error("could not create descriptor set layout");
         }
@@ -257,10 +257,10 @@ void createPass(vulkan::Device& device,
         pipelineLayoutCreateInfo.setLayoutCount = 1;
         pipelineLayoutCreateInfo.pSetLayouts = &std::as_const(outDescriptorSetLayout);
 
-        outPipelineLayout = vulkan::Handle<VkPipelineLayout>{ device.handle(), vkDestroyPipelineLayout };
+        outPipelineLayout = gfx::vulkan::Handle<VkPipelineLayout>{ VK_NULL_HANDLE/*device.handle()*/, vkDestroyPipelineLayout };
 
         if (auto result =
-              vkCreatePipelineLayout(device.handle(), &pipelineLayoutCreateInfo, nullptr, &outPipelineLayout);
+              vkCreatePipelineLayout(VK_NULL_HANDLE/*device.handle()*/, &pipelineLayoutCreateInfo, nullptr, &outPipelineLayout);
             result != VK_SUCCESS) {
             throw std::runtime_error("could not create graphics pipeline layout");
         }
@@ -296,10 +296,10 @@ void createPass(vulkan::Device& device,
             graphicsPipelineCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
         }
 
-        outPipeline = vulkan::Handle<VkPipeline>{ device.handle(), vkDestroyPipeline };
+        outPipeline = gfx::vulkan::Handle<VkPipeline>{ VK_NULL_HANDLE/*device.handle()*/, vkDestroyPipeline };
 
         if (auto result = vkCreateGraphicsPipelines(
-              device.handle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &outPipeline);
+              VK_NULL_HANDLE/*device.handle()*/, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &outPipeline);
             result != VK_SUCCESS) {
             throw std::runtime_error("could not create graphics pipeline");
         }

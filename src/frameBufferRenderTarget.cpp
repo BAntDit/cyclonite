@@ -27,7 +27,8 @@ FrameBufferRenderTarget::FrameBufferRenderTarget(vulkan::Device& device,
                    VK_IMAGE_ASPECT_DEPTH_BIT));
 
     for (auto i = size_t{ 0 }, count = accessSemaphores_.size(); i < count; i++) {
-        accessSemaphores_[i] = gfx::vulkan::Handle<VkSemaphore>{ /*device.handle()*/VK_NULL_HANDLE, vkDestroySemaphore };
+        accessSemaphores_[i] =
+          gfx::vulkan::Handle<VkSemaphore>{ /*device.handle()*/ VK_NULL_HANDLE, vkDestroySemaphore };
     }
 }
 
@@ -60,7 +61,8 @@ void FrameBufferRenderTarget::_createSignal(vulkan::Device const& device)
     auto semaphoreCreateInfo = VkSemaphoreCreateInfo{};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-    if (auto result = vkCreateSemaphore(device.handle(), &semaphoreCreateInfo, nullptr, &accessSemaphores_[1]);
+    if (auto result =
+          vkCreateSemaphore(/*device.handle()*/ VK_NULL_HANDLE, &semaphoreCreateInfo, nullptr, &accessSemaphores_[1]);
         result != VK_SUCCESS) {
         throw std::runtime_error("could not create image available semaphore.");
     }

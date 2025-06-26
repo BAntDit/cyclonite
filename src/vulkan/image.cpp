@@ -3,7 +3,7 @@
 //
 
 #include "image.h"
-#include "device.h"
+#include "gfx/device.h"
 #include "internal/fillImageCreationInfo.h"
 #include "memoryManager.h"
 
@@ -34,7 +34,7 @@ Image::Image(Device& device,
   , usage_{ imageUsageFlags }
   , imageCreateFlags_{ imageCreateFlags }
   , allocatedMemory_{}
-  , vkImage_{ device.handle(), vkDestroyImage }
+  , vkImage_{ VK_NULL_HANDLE /*device.handle()*/, vkDestroyImage }
 {
     // TODO:: validate parameters
 
@@ -55,7 +55,7 @@ Image::Image(Device& device,
                                     imageInitialLayout,
                                     ownerQueueFamilyIndices);
 
-    if (auto result = vkCreateImage(device.handle(), &imageCreateInfo, nullptr, &vkImage_); result != VK_SUCCESS) {
+    if (auto result = vkCreateImage(VK_NULL_HANDLE/*device.handle()*/, &imageCreateInfo, nullptr, &vkImage_); result != VK_SUCCESS) {
         if (result == VK_ERROR_OUT_OF_HOST_MEMORY)
             throw std::runtime_error("not enough RAM to create image");
 
@@ -67,12 +67,13 @@ Image::Image(Device& device,
 
     {
         VkMemoryRequirements memoryRequirements = {};
-        vkGetImageMemoryRequirements(device.handle(), static_cast<VkImage>(vkImage_), &memoryRequirements);
+        vkGetImageMemoryRequirements(
+          VK_NULL_HANDLE /*device.handle()*/, static_cast<VkImage>(vkImage_), &memoryRequirements);
 
-        allocatedMemory_ = device.memoryManager().alloc(memoryRequirements, memoryPropertyFlags);
+        // allocatedMemory_ = device.memoryManager().alloc(memoryRequirements, memoryPropertyFlags);
     }
 
-    if (auto result = vkBindImageMemory(device.handle(),
+    if (auto result = vkBindImageMemory(VK_NULL_HANDLE, // device.handle(),
                                         static_cast<VkImage>(vkImage_),
                                         allocatedMemory_.memoryPage().handle(),
                                         static_cast<VkDeviceSize>(allocatedMemory_.offset()));
@@ -98,7 +99,7 @@ Image::Image(cyclonite::vulkan::Device& device,
              VkImageUsageFlags imageUsageFlags,
              VkImageType imageType)
   : Image{ device,
-           std::array<uint32_t, 1>{ device.graphicsQueueFamilyIndex() },
+           std::array<uint32_t, 1>{ uint32_t{ 0 } }, // device.graphicsQueueFamilyIndex() },
            width,
            height,
            depth,

@@ -3,7 +3,7 @@
 //
 
 #include "memoryPage.h"
-#include "device.h"
+#include "gfx/device.h"
 #include "memoryManager.h"
 
 namespace cyclonite::vulkan {
@@ -16,9 +16,9 @@ MemoryPage::MemoryPage(multithreading::TaskManager& taskManager,
                        private_tag)
   : Arena<MemoryPage>{ static_cast<size_t>(pageSize) }
   , taskManager_{ &taskManager }
-  , vkDevice_{ device.handle() }
+  , vkDevice_{ VK_NULL_HANDLE/*device.handle()*/ }
   , hostVisible_{ hostVisible }
-  , vkDeviceMemory_{ device.handle(), vkFreeMemory }
+  , vkDeviceMemory_{ VK_NULL_HANDLE/*device.handle()*/, vkFreeMemory }
   , ptr_{ nullptr }
 {
     VkMemoryAllocateInfo memoryAllocateInfo = {};
@@ -27,7 +27,7 @@ MemoryPage::MemoryPage(multithreading::TaskManager& taskManager,
     memoryAllocateInfo.allocationSize = static_cast<VkDeviceSize>(size_);
     memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
 
-    if (auto result = vkAllocateMemory(device.handle(), &memoryAllocateInfo, nullptr, &vkDeviceMemory_);
+    if (auto result = vkAllocateMemory(VK_NULL_HANDLE/*device.handle()*/, &memoryAllocateInfo, nullptr, &vkDeviceMemory_);
         result != VK_SUCCESS) {
         if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY)
             throw OutOfMemory(pageSize);
@@ -42,7 +42,7 @@ MemoryPage::MemoryPage(multithreading::TaskManager& taskManager,
     }
 
     if (hostVisible_) {
-        assert(0 == pageSize % device.capabilities().minMemoryMapAlignment);
+        // assert(0 == pageSize % device.capabilities().minMemoryMapAlignment);
 
         if (auto result = vkMapMemory(vkDevice_, handle(), 0, VK_WHOLE_SIZE, 0, &ptr_); result != VK_SUCCESS) {
             if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {

@@ -133,7 +133,7 @@ private:
 
     uint32_t submitCount_;
 
-    std::vector<vulkan::Handle<VkFence>> frameFences_;
+    std::vector<gfx::vulkan::Handle<VkFence>> frameFences_;
 
     std::chrono::time_point<std::chrono::high_resolution_clock> lastTimeUpdate_;
 };

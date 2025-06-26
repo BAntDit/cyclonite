@@ -3,7 +3,7 @@
 //
 
 #include "memoryManager.h"
-#include "device.h"
+#include "gfx/device.h"
 
 namespace cyclonite::vulkan {
 MemoryManager::MemoryManager(multithreading::TaskManager& taskManager, vulkan::Device const& device)
@@ -13,7 +13,7 @@ MemoryManager::MemoryManager(multithreading::TaskManager& taskManager, vulkan::D
   , memoryTypes_{}
 {
     VkPhysicalDeviceMemoryProperties physicalDeviceMemoryProperties = {};
-    vkGetPhysicalDeviceMemoryProperties(device_->physicalDevice(), &physicalDeviceMemoryProperties);
+    vkGetPhysicalDeviceMemoryProperties(VK_NULL_HANDLE/*device_->physicalDevice()*/, &physicalDeviceMemoryProperties);
 
     VkDeviceSize streamingMemoryPageSize = 64 * 1024 * 1024;
     VkDeviceSize stagingMemoryPageSize = 64 * 1024 * 1024;

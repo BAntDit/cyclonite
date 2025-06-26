@@ -3,7 +3,7 @@
 //
 
 #include "imageView.h"
-#include "device.h"
+#include "gfx/device.h"
 #include "internal/imageHelpers.h"
 
 namespace cyclonite::vulkan {
@@ -16,7 +16,7 @@ ImageView::ImageView(Device const& device,
                      uint32_t baseArrayLayer,
                      uint32_t layerCount)
   : imagePtr_{ image }
-  , vkImageView_{ device.handle(), vkDestroyImageView }
+  , vkImageView_{ VK_NULL_HANDLE /*device.handle()*/, vkDestroyImageView }
   , vkImageViewType_{ imageViewType }
 {
     assert(image->type() == internal::viewTypeToImageType(imageViewType));
@@ -60,7 +60,7 @@ ImageView::ImageView(Device const& device,
     imageViewCreateInfo.subresourceRange.baseArrayLayer = baseArrayLayer;
     imageViewCreateInfo.subresourceRange.layerCount = layerCount;
 
-    if (auto result = vkCreateImageView(device.handle(), &imageViewCreateInfo, nullptr, &vkImageView_);
+    if (auto result = vkCreateImageView(VK_NULL_HANDLE/*device.handle()*/, &imageViewCreateInfo, nullptr, &vkImageView_);
         result != VK_SUCCESS) {
         if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
             throw std::runtime_error("not enough device memory to create image view");
@@ -104,7 +104,7 @@ ImageView::ImageView(Device& device,
                                        VK_IMAGE_LAYOUT_UNDEFINED,
                                        imageCreateFlags,
                                        memoryPropertiesFlags) }
-  , vkImageView_{ device.handle(), vkDestroyImageView }
+  , vkImageView_{ VK_NULL_HANDLE/*device.handle()*/, vkDestroyImageView }
   , vkImageViewType_{ imageViewType }
 {
     assert(imageViewType != VK_IMAGE_VIEW_TYPE_1D || (width >= 1 && height == 1 && depth == 1 && arrayLayerCount == 1));
@@ -139,7 +139,7 @@ ImageView::ImageView(Device& device,
     imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
     imageViewCreateInfo.subresourceRange.layerCount = arrayLayerCount;
 
-    if (auto result = vkCreateImageView(device.handle(), &imageViewCreateInfo, nullptr, &vkImageView_);
+    if (auto result = vkCreateImageView(VK_NULL_HANDLE/*device.handle()*/, &imageViewCreateInfo, nullptr, &vkImageView_);
         result != VK_SUCCESS) {
         if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
             throw std::runtime_error("not enough device memory to create image view");

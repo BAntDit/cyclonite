@@ -127,7 +127,7 @@ protected:
 };
 
 template<size_t Size, bool hasExternalBuffer, template<typename, size_t, bool> class RingBufferType>
-class bytes_ring_range_t : protected elements_ring_range_t<std::byte, Size, RingBufferType>
+class bytes_ring_range_t : protected elements_ring_range_t<std::byte, Size, hasExternalBuffer, RingBufferType>
 {
     using element_type_t = std::byte;
     using element_type_ptr_t = std::add_pointer_t<std::byte>;
@@ -211,7 +211,7 @@ class conditional_bytes_ring_range_t
 {
     using conditional_type_t = ConditionValueType;
     using element_type_t = std::byte;
-    using element_type_ptr_t = std::add_pointer_t<ElementType>;
+    using element_type_ptr_t = std::add_pointer_t<std::byte>;
     using ring_buffer_t = RingBufferType<element_type_t, conditional_type_t, Size, hasExternalBuffer>;
     using ring_buffer_ptr_t = std::add_pointer_t<ring_buffer_t>;
 
@@ -241,12 +241,12 @@ public:
 protected:
     conditional_bytes_ring_range_t() = default;
 
-    template<typename DataType, typename ConditionalType>
+    template<typename DataType, typename ConditionType>
         requires std::is_same_v<ConditionValueType, std::decay_t<ConditionType>>
     auto reserveAlignedRange([[maybe_unused]] size_t offset,
                              size_t count,
                              size_t alignedByteCount,
-                             ConditionalType&& condition,
+                             ConditionType&& condition,
                              std::byte* alignedPtr) -> std::add_pointer_t<DataType>;
 };
 #include "ringBufferMixins.inl"

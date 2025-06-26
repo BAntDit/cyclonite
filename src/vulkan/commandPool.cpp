@@ -3,17 +3,18 @@
 //
 
 #include "commandPool.h"
-#include "device.h"
+#include "gfx/device.h"
 
 namespace cyclonite::vulkan {
 CommandPool::CommandPool(vulkan::Device const& device)
-  : vkDevice_{ device.handle() }
+  : vkDevice_{ VK_NULL_HANDLE } // device.handle() }
   , commandPools_{}
 {
     auto createPool = [&, this](uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags) -> void {
         auto [it, success] =
           commandPools_.emplace(std::make_tuple(queueFamilyIndex, flags),
-                                std::make_tuple(Handle<VkCommandPool>{ device.handle(), vkDestroyCommandPool },
+                                std::make_tuple(gfx::vulkan::Handle<VkCommandPool>{ VK_NULL_HANDLE /*device.handle()*/,
+                                                                                    vkDestroyCommandPool },
                                                 std::vector<VkCommandBuffer>{}));
 
         assert(success);
@@ -29,13 +30,15 @@ CommandPool::CommandPool(vulkan::Device const& device)
         commandPoolCreateInfo.flags = flags;
         commandPoolCreateInfo.queueFamilyIndex = queueFamilyIndex;
 
-        if (auto result = vkCreateCommandPool(device.handle(), &commandPoolCreateInfo, nullptr, &pool);
+        if (auto result =
+              vkCreateCommandPool(/*device.handle()*/ VK_NULL_HANDLE, &commandPoolCreateInfo, nullptr, &pool);
             result != VK_SUCCESS) {
             throw std::runtime_error("could not create command pool");
         }
     };
 
-    for (auto& queueFamilyIndex : device.queueFamilyIndices()) {
+    std::vector<uint32_t> tmp = {};
+    for (auto& queueFamilyIndex : tmp /*device.queueFamilyIndices()*/) {
         createPool(queueFamilyIndex, 0);
 
         createPool(queueFamilyIndex,

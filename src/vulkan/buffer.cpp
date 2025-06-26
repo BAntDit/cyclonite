@@ -3,7 +3,7 @@
 //
 
 #include "buffer.h"
-#include "device.h"
+#include "gfx/device.h"
 #include "internal/fillBufferCreationInfo.h"
 #include "memoryManager.h"
 
@@ -14,13 +14,14 @@ Buffer::Buffer(Device& device,
                VkDeviceSize size,
                owner_queue_family_indices_t ownerQueueFamilyIndices)
   : allocatedMemory_{}
-  , vkBuffer_{ device.handle(), vkDestroyBuffer }
+  , vkBuffer_{ VK_NULL_HANDLE /*device.handle()*/, vkDestroyBuffer }
 {
     VkBufferCreateInfo bufferCreateInfo = {};
 
     internal::fillBufferCreationInfo(bufferCreateInfo, usageFlags, size, ownerQueueFamilyIndices);
 
-    if (auto result = vkCreateBuffer(device.handle(), &bufferCreateInfo, nullptr, &vkBuffer_); result != VK_SUCCESS) {
+    if (auto result = vkCreateBuffer(VK_NULL_HANDLE /*device.handle()*/, &bufferCreateInfo, nullptr, &vkBuffer_);
+        result != VK_SUCCESS) {
         if (result == VK_ERROR_OUT_OF_HOST_MEMORY)
             throw std::runtime_error("not enough RAM to create buffer");
 
@@ -32,12 +33,12 @@ Buffer::Buffer(Device& device,
 
     {
         VkMemoryRequirements memoryRequirements = {};
-        vkGetBufferMemoryRequirements(device.handle(), static_cast<VkBuffer>(vkBuffer_), &memoryRequirements);
+        vkGetBufferMemoryRequirements(VK_NULL_HANDLE/*device.handle()*/, static_cast<VkBuffer>(vkBuffer_), &memoryRequirements);
 
-        allocatedMemory_ = device.memoryManager().alloc(memoryRequirements, memoryPropertyFlags);
+        // allocatedMemory_ = device.memoryManager().alloc(memoryRequirements, memoryPropertyFlags);
     }
 
-    if (auto result = vkBindBufferMemory(device.handle(),
+    if (auto result = vkBindBufferMemory(VK_NULL_HANDLE, // device.handle(),
                                          static_cast<VkBuffer>(vkBuffer_),
                                          allocatedMemory_.memoryPage().handle(),
                                          allocatedMemory_.offset());

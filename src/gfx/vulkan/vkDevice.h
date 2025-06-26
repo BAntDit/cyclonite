@@ -33,6 +33,7 @@ public:
     };
 
     Device(ResourceManager* resourceManager,
+           ResourceId resourceId,
            VkInstance vkInstance,
            VkPhysicalDevice vkPhysicalDevice,
            VkPhysicalDeviceProperties const& physicalDeviceProperties,
@@ -62,7 +63,7 @@ public:
 
     [[nodiscard]] auto hostTransferQueueFamilyIndex() const -> uint32_t;
 
-    [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
+    // [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
 
     //[[nodiscard]] auto memoryManager() const -> MemoryManager const& { return *memoryManager_; }
 
@@ -75,7 +76,7 @@ public:
     //[[nodiscard]] auto commandPoolPtr() -> std::shared_ptr<CommandPool>& { return commandPool_; }
 
 private:
-    Capabilities capabilities_;
+    // Capabilities capabilities_;
     VkInstance vkInstance_;
     VkPhysicalDevice vkPhysicalDevice_;
     std::string name_;

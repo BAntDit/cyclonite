@@ -119,9 +119,8 @@ auto conditional_elements_ring_range_t<ElementType, ConditionValueType, Size, ha
         return offset;
     } else {
         auto* rb = static_cast<ring_buffer_ptr_t>(this);
-        auto* ptr = (offset != RingRange<Size, InternalSize>::invalid_offset_v)
-                      ? getData(rb) + offset
-                      : std::add_pointer_t<element_type_t>{ nullptr };
+        auto* ptr = (offset != RingRange<Size>::invalid_offset_v) ? getData(rb) + offset
+                                                                  : std::add_pointer_t<element_type_t>{ nullptr };
 
         return return_type_t{ ptr, count, offset };
     }
@@ -194,13 +193,13 @@ template<typename ConditionValueType,
          bool hasExternalBuffer,
          template<typename, typename, size_t, bool>
          class RingBufferType>
-template<typename DataType, typename ConditionalType>
+template<typename DataType, typename ConditionType>
     requires std::is_same_v<ConditionValueType, std::decay_t<ConditionType>>
 auto conditional_bytes_ring_range_t<ConditionValueType, Size, hasExternalBuffer, RingBufferType>::reserveAlignedRange(
   [[maybe_unused]] size_t offset,
   size_t count,
   size_t alignedByteCount,
-  conditional_type_t const& condition,
+  ConditionType&& condition,
   std::byte* alignedPtr) -> std::add_pointer_t<DataType>
 {
     auto* ptr = std::add_pointer_t<DataType>{ nullptr };
@@ -208,7 +207,7 @@ auto conditional_bytes_ring_range_t<ConditionValueType, Size, hasExternalBuffer,
     auto alignedSize = size + alignedByteCount;
 
     if (auto alignedOffset = ConditionalRingRange<Size, ConditionValueType>::reserveRange(condition, alignedSize);
-        alignedOffset != RingRange<Size, InternalSize>::invalid_offset_v) {
+        alignedOffset != RingRange<Size>::invalid_offset_v) {
         assert(alignedOffset == offset);
         ptr = reinterpret_cast<DataType*>(alignedPtr);
 

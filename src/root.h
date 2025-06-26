@@ -44,7 +44,7 @@ public:
 
     void init(uint32_t deviceId);
 
-    [[nodiscard]] auto getDeviceCount() const -> size_t { return physicalDeviceList_.size(); }
+    // [[nodiscard]] auto getDeviceCount() const -> size_t { return physicalDeviceList_.size(); }
 
     [[nodiscard]] auto getDeviceId(size_t deviceIndex = 0) const -> uint32_t;
 
@@ -77,7 +77,7 @@ private:
     Capabilities capabilities_;
     std::unique_ptr<resources::ResourceManager> resourceManager_;
     multithreading::TaskManager taskManager_;
-    std::unique_ptr<vulkan::Instance> vulkanInstance_;
+    std::unique_ptr<gfx::Instance> vulkanInstance_;
     // std::vector<VkPhysicalDevice> physicalDeviceList_;
     std::unordered_map<std::string, VkPhysicalDeviceProperties> physicalDevicePropertiesMap_;
     std::unique_ptr<vulkan::Device> vulkanDevice_;
