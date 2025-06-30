@@ -246,7 +246,7 @@ auto conditional_bytes_ring_range_t<ConditionValueType, Size, hasExternalBuffer,
             ptr = reserveAlignedRange<DataType>(offset, count, diff, condition, alignedPtr);
         } else if (auto [offset2, available2] = RingRange<Size>::expectedRange(size, true);
                    offset2 != RingRange<Size>::invalid_offset_v) {
-            basePtr = reinterpret_cast<void*>(rb->data() + offset2);
+            basePtr = reinterpret_cast<void*>(getData(*rb) + offset2);
             space = available2;
             if (auto* alignedPtr = reinterpret_cast<std::byte*>(std::align(alignof(DataType), size, basePtr, space));
                 alignedPtr != nullptr) {
@@ -254,6 +254,49 @@ auto conditional_bytes_ring_range_t<ConditionValueType, Size, hasExternalBuffer,
                 auto diff = available2 - space;
                 viewOffset = offset2 + diff;
                 ptr = reserveAlignedRange<DataType>(offset2, count, diff, condition, alignedPtr);
+            }
+        }
+    }
+
+    return BufferView{ ptr, count, viewOffset };
+}
+
+template<typename ConditionValueType,
+         size_t Size,
+         bool hasExternalBuffer,
+         template<typename, typename, size_t, bool>
+         class RingBufferType>
+template<typename ConditionType>
+    requires std::is_same_v<ConditionValueType, std::decay_t<ConditionType>>
+auto conditional_bytes_ring_range_t<ConditionValueType, Size, hasExternalBuffer, RingBufferType>::reserveToWrite(
+  ConditionType&& condition,
+  size_t align,
+  size_t count) -> BufferView<std::byte>
+{
+    auto* rb = static_cast<ring_buffer_ptr_t>(this);
+    auto* ptr = std::add_pointer_t<std::byte>{ nullptr };
+    auto size = count;
+    auto viewOffset = RingRange<Size>::invalid_offset_v;
+
+    if (auto [offset, available] = RingRange<Size>::expectedRange(size); offset != RingRange<Size>::invalid_offset_v) {
+        auto* basePtr = reinterpret_cast<void*>(getData(*rb) + offset);
+        auto space = available;
+        if (auto* alignedPtr = reinterpret_cast<std::byte*>(std::align(align, size, basePtr, space));
+            alignedPtr != nullptr) {
+            assert(available >= space);
+            auto diff = available - space;
+            viewOffset = offset + diff;
+            ptr = reserveAlignedRange<std::byte>(offset, count, diff, condition, alignedPtr);
+        } else if (auto [offset2, available2] = RingRange<Size>::expectedRange(size, true);
+                   offset2 != RingRange<Size>::invalid_offset_v) {
+            basePtr = reinterpret_cast<void*>(getData(*rb) + offset2);
+            space = available2;
+            if (auto* alignedPtr = reinterpret_cast<std::byte*>(std::align(align, size, basePtr, space));
+                alignedPtr != nullptr) {
+                assert(available2 >= space);
+                auto diff = available2 - space;
+                viewOffset = offset2 + diff;
+                ptr = reserveAlignedRange<std::byte>(offset2, count, diff, condition, alignedPtr);
             }
         }
     }

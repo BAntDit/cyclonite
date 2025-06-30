@@ -252,6 +252,86 @@ protected:
 #include "ringBufferMixins.inl"
 }
 
+// circular buffer
+// common template
+template<typename DataType, size_t Size, bool hasExternalBuffer = false>
+class RingBuffer;
+
+// partial specialization #1: RingBuffer around byte array
+// allow to present reserved range with a view of necessary type
+template<size_t Size>
+class RingBuffer<std::byte, Size, false> : public internal::bytes_ring_range_t<Size, false, RingBuffer>
+{
+    friend class internal::bytes_ring_range_t<Size, false, RingBuffer>;
+
+public:
+    RingBuffer() = default;
+
+    [[nodiscard]] auto data() const -> std::byte const* { return buffer_.data(); }
+    [[nodiscard]] auto data() -> std::byte* { return buffer_.data(); }
+
+private:
+    std::array<std::byte, Size> buffer_;
+};
+
+// partial specialization #2: RingBuffer around array of custom (default constructable) type
+// allow to iterate over reserved memory
+template<typename ElementType, size_t Size>
+class RingBuffer<ElementType, Size, false>
+  : public internal::elements_ring_range_t<ElementType, Size, false, RingBuffer>
+{
+    friend class internal::elements_ring_range_t<ElementType, Size, false, RingBuffer>;
+
+    using element_type_t = ElementType;
+    using element_type_ptr_t = std::add_pointer_t<element_type_t>;
+
+public:
+    RingBuffer() = default;
+
+    [[nodiscard]] auto data() const -> element_type_t const* { return elements_.data(); }
+    [[nodiscard]] auto data() -> element_type_ptr_t { return elements_.data(); }
+
+private:
+    std::array<element_type_t, Size> elements_;
+};
+
+// partial specialization #3: RingBuffer around external byte array
+// allow to present reserved range with a view of necessary type
+template<size_t Size>
+class RingBuffer<std::byte, Size, true> : public internal::bytes_ring_range_t<Size, true, RingBuffer>
+{
+    friend class internal::bytes_ring_range_t<Size, true, RingBuffer>;
+
+public:
+    explicit RingBuffer(std::byte* buffer);
+
+    [[nodiscard]] auto data() const -> std::byte const* { return buffer_; }
+    [[nodiscard]] auto data() -> std::byte* { return buffer_; }
+
+private:
+    std::byte* buffer_;
+};
+
+// partial specialization #4: RingBuffer around external array of custom (default constructable) type
+// allow to iterate over reserved memory
+template<typename ElementType, size_t Size>
+class RingBuffer<ElementType, Size, true> : public internal::elements_ring_range_t<ElementType, Size, true, RingBuffer>
+{
+    friend class internal::elements_ring_range_t<ElementType, Size, true, RingBuffer>;
+
+    using element_type_t = ElementType;
+    using element_type_ptr_t = std::add_pointer_t<element_type_t>;
+
+public:
+    explicit RingBuffer(element_type_ptr_t elements);
+
+    [[nodiscard]] auto data() const -> element_type_t const* { return elements_; }
+    [[nodiscard]] auto data() -> element_type_ptr_t { return elements_; }
+
+private:
+    element_type_ptr_t elements_;
+};
+#include "ringBuffer.inl" // TODO:: add tests
 }
 
 #endif // RINGBUFFER_H
