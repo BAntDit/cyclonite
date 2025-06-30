@@ -70,14 +70,13 @@ public:
     using RingRange<Size>::expectedOffset;
 
     template<typename ConditionType>
-        requires std::is_same_v<ConditionValueType, std::decay_t<ConditionType>>
+        requires std::is_nothrow_convertible_v<ConditionValueType, std::decay_t<ConditionType>>
     auto reserveRange(ConditionType&& condition, size_t size, bool forceShiftToBegin = false) -> size_t;
 
-    template<typename ConditionType, typename Pred>
-        requires(std::is_same_v<ConditionValueType, std::decay_t<ConditionType>> &&
-                 std::invocable<Pred, ConditionType &&> &&
-                 std::is_same_v<bool, std::invoke_result_t<Pred, ConditionType &&>>)
-    auto popRange(Pred&& predicate, ConditionType&& condition) -> std::pair<size_t, size_t>;
+    template<typename Pred>
+        requires(std::invocable<Pred, ConditionValueType const&> &&
+                 std::is_same_v<bool, std::invoke_result_t<Pred, ConditionValueType const&>>)
+    auto popRange(Pred&& predicate) -> std::pair<size_t, size_t>;
 
 protected:
     std::deque<ConditionValueType> conditions_;

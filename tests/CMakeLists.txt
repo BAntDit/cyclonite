@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 3.10)
 project("cyclonite.test")
 
 set(SOURCES
-    ringBufferTests.cpp)
+    ringRangeTests.cpp
+    conditionalRingRangeTests.cpp)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
