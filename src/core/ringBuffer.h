@@ -12,6 +12,7 @@
 #include <deque>
 #include <limits>
 #include <type_traits>
+#include <utility>
 
 namespace cyclonite::core {
 // for case when we do not need to store any data

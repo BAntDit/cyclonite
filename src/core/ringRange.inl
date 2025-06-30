@@ -1,6 +1,3 @@
-
-#include <utility>
-
 template<size_t Size>
 auto RingRange<Size>::expectedOffset(size_t size, bool forceShiftToBegin /* = false*/) const
   -> std::pair<size_t, size_t>
@@ -31,7 +28,7 @@ auto RingRange<Size>::expectedOffset(size_t size, bool forceShiftToBegin /* = fa
             }
 
             available = avail(tempWriteOffset, tempReadOffset);
-            expected = tempWriteOffset;
+            expected = tempWriteOffset % Size;
         } else if (freeSize() > size && readOffset() >= size) {
             auto tempWriteOffset = writeOffset_;
             auto tempReadOffset = readOffset_;
@@ -48,7 +45,7 @@ auto RingRange<Size>::expectedOffset(size_t size, bool forceShiftToBegin /* = fa
             }
 
             available = avail(tempWriteOffset, tempReadOffset);
-            expected = tempWriteOffset;
+            expected = tempWriteOffset % Size;
         }
     }
 
