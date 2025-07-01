@@ -332,6 +332,109 @@ private:
     element_type_ptr_t elements_;
 };
 #include "ringBuffer.inl" // TODO:: add tests
+
+// conditinal circular byte buffer
+// allow to present reserved range with a view of necessary type
+// and allow to bind reserved ranges with some conditions (with a fence, for example)
+template<typename T,
+         typename ConditionValueType,
+         size_t Size,
+         bool hasExternalBuffer = false>
+class ConditionalRingBuffer;
+
+// partial specialization #1: ConditionalRingBuffer around byte array
+template<typename ConditionValueType, size_t Size>
+class ConditionalRingBuffer<std::byte, ConditionValueType, Size>
+  : public internal::
+      conditional_bytes_ring_range_t<ConditionValueType, Size, false, ConditionalRingBuffer>
+{
+    friend class internal::
+      conditional_bytes_ring_range_t<ConditionValueType, Size, false, ConditionalRingBuffer>;
+
+public:
+    ConditionalRingBuffer() = default;
+
+    [[nodiscard]] auto data() -> std::byte* { return buffer_.data(); }
+    [[nodiscard]] auto data() const -> std::byte const* { return buffer_.data(); }
+
+private:
+    std::array<std::byte, Size> buffer_;
+};
+
+// partial specialization #2: ConditionalRingBuffer around external byte array
+template<typename ConditionValueType, size_t Size>
+class ConditionalRingBuffer<std::byte, ConditionValueType, Size, true>
+  : public internal::conditional_bytes_ring_range_t<ConditionValueType, Size, true, ConditionalRingBuffer>
+{
+    friend class internal::
+      conditional_bytes_ring_range_t<ConditionValueType, Size, true, ConditionalRingBuffer>;
+
+public:
+    explicit ConditionalRingBuffer(std::byte* buffer);
+
+    [[nodiscard]] auto data() const -> std::byte const* { return buffer_; }
+    [[nodiscard]] auto data() -> std::byte* { return buffer_; }
+
+private:
+    std::byte* buffer_;
+};
+
+// partial specialization #3: ConditionalRingBuffer around array of custom (default constractable) type
+template<typename ElementType, typename ConditionValueType, size_t Size>
+class ConditionalRingBuffer<ElementType, ConditionValueType, Size>
+  : public internal::conditional_elements_ring_range_t<ElementType,
+                                                       ConditionValueType,
+                                                       Size,
+                                                       false,
+                                                       ConditionalRingBuffer>
+{
+    friend class internal::conditional_elements_ring_range_t<ElementType,
+                                                             ConditionValueType,
+                                                             Size,
+                                                             false,
+                                                             ConditionalRingBuffer>;
+
+    using element_type_t = ElementType;
+    using element_type_ptr_t = std::add_pointer_t<element_type_t>;
+
+public:
+    ConditionalRingBuffer() = default;
+
+    [[nodiscard]] auto data() const -> element_type_t const* { return elements_.data(); }
+    [[nodiscard]] auto data() -> element_type_ptr_t { return elements_.data(); }
+
+private:
+    std::array<element_type_t, Size> elements_;
+};
+
+// partial specialization #4: ConditionalRingBuffer around external array of custom (default constractable) type
+template<typename ElementType, typename ConditionValueType, size_t Size>
+class ConditionalRingBuffer<ElementType, ConditionValueType, Size, true>
+  : public internal::conditional_elements_ring_range_t<ElementType,
+                                                       ConditionValueType,
+                                                       Size,
+                                                       true,
+                                                       ConditionalRingBuffer>
+{
+    friend class internal::conditional_elements_ring_range_t<ElementType,
+                                                             ConditionValueType,
+                                                             Size,
+                                                             true,
+                                                             ConditionalRingBuffer>;
+
+    using element_type_t = ElementType;
+    using element_type_ptr_t = std::add_pointer_t<element_type_t>;
+
+public:
+    explicit ConditionalRingBuffer(element_type_ptr_t elements);
+
+    [[nodiscard]] auto data() const -> element_type_t const* { return elements_; }
+    [[nodiscard]] auto data() -> element_type_ptr_t { return elements_; }
+
+private:
+    element_type_ptr_t elements_;
+};
+#include "conditionalRingBuffer.inl"
 }
 
 #endif // RINGBUFFER_H
