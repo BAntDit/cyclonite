@@ -2,10 +2,11 @@
 // Created by anton on 6/24/25.
 //
 
-#include <gtest/gtest.h>
 #include <core/ringBuffer.h>
+#include <gtest/gtest.h>
 
-TEST(RingRangeTest, InitialState) {
+TEST(RingRangeTest, InitialState)
+{
     auto ringRange = cyclonite::core::RingRange<10>{};
 
     EXPECT_EQ(ringRange.readableSize(), 0);
@@ -13,7 +14,8 @@ TEST(RingRangeTest, InitialState) {
     EXPECT_TRUE(ringRange.empty());
 }
 
-TEST(RingRangeTest, BasicReservation) {
+TEST(RingRangeTest, BasicReservation)
+{
     auto ringRange = cyclonite::core::RingRange<10>{};
 
     auto offset = ringRange.reserveRange(3);
@@ -24,7 +26,8 @@ TEST(RingRangeTest, BasicReservation) {
     EXPECT_FALSE(ringRange.empty());
 }
 
-TEST(RingRangeTest, ContiguousFreeSpace) {
+TEST(RingRangeTest, ContiguousFreeSpace)
+{
     auto ringRange = cyclonite::core::RingRange<10>{};
 
     EXPECT_EQ(ringRange.contiguousFreeSize(), 10);
@@ -36,7 +39,8 @@ TEST(RingRangeTest, ContiguousFreeSpace) {
     EXPECT_EQ(ringRange.contiguousFreeSize(), 0);
 }
 
-TEST(RingRangeTest, WrapAroundBehavior) {
+TEST(RingRangeTest, WrapAroundBehavior)
+{
     auto ringRange = cyclonite::core::RingRange<10>{};
 
     // Fill whole range completely
@@ -53,7 +57,8 @@ TEST(RingRangeTest, WrapAroundBehavior) {
     EXPECT_EQ(ringRange.contiguousFreeSize(), 6);
 }
 
-TEST(RingRangeTest, ExpectedOffsetCalculation) {
+TEST(RingRangeTest, ExpectedOffsetCalculation)
+{
     auto ringRange = cyclonite::core::RingRange<10>{};
 
     {
@@ -80,7 +85,8 @@ TEST(RingRangeTest, ExpectedOffsetCalculation) {
     }
 }
 
-TEST(RingRangeTest, ForceShiftToBegin) {
+TEST(RingRangeTest, ForceShiftToBegin)
+{
     auto ringRange = cyclonite::core::RingRange<10>{};
 
     // Fill partially
@@ -97,7 +103,6 @@ TEST(RingRangeTest, ForceShiftToBegin) {
         EXPECT_EQ(available, 3);
     }
 
-
     // Check with forceShiftToBegin
     {
         auto [offset, available] = ringRange.expectedOffset(1, true);
@@ -106,7 +111,8 @@ TEST(RingRangeTest, ForceShiftToBegin) {
     }
 }
 
-TEST(RingRangeTest, PopRangeBehavior) {
+TEST(RingRangeTest, PopRangeBehavior)
+{
     auto ringRange = cyclonite::core::RingRange<10>{};
 
     // Reserve multiple ranges
@@ -131,7 +137,8 @@ TEST(RingRangeTest, PopRangeBehavior) {
     EXPECT_TRUE(ringRange.empty());
 }
 
-TEST(RingRangeTest, FullBufferHandling) {
+TEST(RingRangeTest, FullBufferHandling)
+{
     auto ringRange = cyclonite::core::RingRange<5>{};
 
     // Fill completely
@@ -147,11 +154,12 @@ TEST(RingRangeTest, FullBufferHandling) {
     EXPECT_NE(ringRange.reserveRange(1), cyclonite::core::RingRange<5>::invalid_offset_v);
 }
 
-TEST(RingRangeTest, EdgeCaseSizes) {
+TEST(RingRangeTest, EdgeCaseSizes)
+{
     auto ringRange = cyclonite::core::RingRange<10>{};
 
     // Reserve exactly the buffer size
-    EXPECT_NE(ringRange.reserveRange(10),  cyclonite::core::RingRange<10>::invalid_offset_v);
+    EXPECT_NE(ringRange.reserveRange(10), cyclonite::core::RingRange<10>::invalid_offset_v);
     EXPECT_EQ(ringRange.freeSize(), 0);
 
     // Try to reserve zero bytes
@@ -161,7 +169,8 @@ TEST(RingRangeTest, EdgeCaseSizes) {
     EXPECT_EQ(ringRange.reserveRange(11), cyclonite::core::RingRange<10>::invalid_offset_v);
 }
 
-TEST(RingRangeTest, MultipleReservePopCycles) {
+TEST(RingRangeTest, MultipleReservePopCycles)
+{
     auto ringRange = cyclonite::core::RingRange<8>{};
 
     // Cycle 1

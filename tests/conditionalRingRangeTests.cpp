@@ -6,11 +6,12 @@
 // Created by anton on 6/24/25.
 //
 
-#include <gtest/gtest.h>
 #include <core/ringBuffer.h>
 #include <cstdint>
+#include <gtest/gtest.h>
 
-TEST(ConditionalRingRangeTest, BasicReservation) {
+TEST(ConditionalRingRangeTest, BasicReservation)
+{
     auto ringRange = cyclonite::core::ConditionalRingRange<10, uint32_t>{};
 
     auto offset = ringRange.reserveRange(100, 3);
@@ -21,7 +22,8 @@ TEST(ConditionalRingRangeTest, BasicReservation) {
     EXPECT_FALSE(ringRange.empty());
 }
 
-TEST(ConditionalRingRangeTest, PopRangeBehavior) {
+TEST(ConditionalRingRangeTest, PopRangeBehavior)
+{
     auto ringRange = cyclonite::core::ConditionalRingRange<10, uint32_t>{};
 
     // Reserve multiple ranges
@@ -30,18 +32,14 @@ TEST(ConditionalRingRangeTest, PopRangeBehavior) {
 
     // first in, first out
     {
-        auto [offset, size] = ringRange.popRange([](uint32_t v) -> bool {
-            return v <=  100;
-        });
+        auto [offset, size] = ringRange.popRange([](uint32_t v) -> bool { return v <= 100; });
         EXPECT_EQ(offset, 0);
         EXPECT_EQ(size, 3);
     }
 
     // Next pop should get the second reservation
     {
-        auto [offset, size] = ringRange.popRange([](auto v) -> bool {
-            return v <= 101;
-        });
+        auto [offset, size] = ringRange.popRange([](auto v) -> bool { return v <= 101; });
         EXPECT_EQ(offset, 3);
         EXPECT_EQ(size, 4);
     }
@@ -50,7 +48,8 @@ TEST(ConditionalRingRangeTest, PopRangeBehavior) {
     EXPECT_TRUE(ringRange.empty());
 }
 
-TEST(ConditionalRingRangeTest, MultipleReservePopCycles) {
+TEST(ConditionalRingRangeTest, MultipleReservePopCycles)
+{
     auto ringRange = cyclonite::core::ConditionalRingRange<8, uint32_t>{};
 
     // Cycle 1

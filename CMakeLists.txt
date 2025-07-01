@@ -223,6 +223,8 @@ install(FILES
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
 )
 
+option(TESTS "whether needs to build tests" ON)
+
 set(ALL_SOURCES_FOR_STYLE_CORRECTION ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES} ${INL_FILES})
 file(GLOB_RECURSE ALL_EXAMPLES_SOURCES_FOR_STYLE_CORRECTION "examples/*.cpp")
 file(GLOB_RECURSE ALL_EXAMPLES_HEADERS_FOR_STYLE_CORRECTION "examples/*.h")
@@ -232,6 +234,17 @@ list(
         ${ALL_EXAMPLES_SOURCES_FOR_STYLE_CORRECTION}
         ${ALL_EXAMPLES_HEADERS_FOR_STYLE_CORRECTION}
 )
+
+if (TESTS)
+    file(GLOB_RECURSE ALL_TESTS_SOURCES_FOR_STYLE_CORRECTION "tests/*.cpp")
+    file(GLOB_RECURSE ALL_TESTS_HEADERS_FOR_STYLE_CORRECTION "tests/*.h")
+
+    list(
+    APPEND ALL_SOURCES_FOR_STYLE_CORRECTION
+        ${ALL_TESTS_SOURCES_FOR_STYLE_CORRECTION}
+        ${ALL_TESTS_HEADERS_FOR_STYLE_CORRECTION}
+    )
+endif()
 
 include(ClangFormat.cmake)
 CODE_STYLE_CORRECTION("${ALL_SOURCES_FOR_STYLE_CORRECTION}")
@@ -243,12 +256,10 @@ foreach(example ${EXANPLEDIRS})
   add_subdirectory("examples/${example}")
 endforeach()
 
-option(TESTS "whether needs to build tests" ON)
-
 if (TESTS)
     find_package(GTest REQUIRED)
 
-   enable_testing()
+    enable_testing()
 
     add_subdirectory("tests")
 endif()
