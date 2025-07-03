@@ -12,7 +12,7 @@ BufferView<DataType>::BufferView(DataType* ptr, size_t offset, size_t count, siz
   : ptr_{ ptr }
   , stride_{ stride }
   , count_{ count }
-  , offset_{ stride }
+  , offset_{ offset }
 {
 }
 

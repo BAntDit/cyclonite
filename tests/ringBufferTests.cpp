@@ -4,6 +4,8 @@
 
 #include "ringBufferTests.h"
 
+#include <cstring>
+
 // Tests for internal byte buffer
 TEST_F(ByteRingBufferTest, InitialState)
 {
@@ -96,7 +98,10 @@ TEST_F(ExternalByteRingBufferTest, DataAccess)
 
     auto view = buffer_.reserveToWrite<int>(1);
     view.data()[0] = 42;
-    EXPECT_EQ(externalBuffer_.data()[0], 42);
+
+    auto dst = uint32_t{ 0 };
+    std::memcpy(&dst, externalBuffer_.data(), sizeof(uint32_t));
+    EXPECT_EQ(dst, 42);
 }
 
 // Tests for external typed buffer

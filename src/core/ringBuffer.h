@@ -113,16 +113,6 @@ public:
     auto pop() -> return_type_t;
 
 protected:
-    template<typename T>
-        requires(std::is_member_function_pointer_v<decltype(&T::data)> &&
-                   []<typename Ret>(Ret (T::*)()) constexpr -> bool {
-                    return std::is_same_v<element_type_t, Ret>;
-                }(&T::data))
-    auto getData(T&& t) -> element_type_ptr_t
-    {
-        return t.data();
-    }
-
     elements_ring_range_t() = default;
 };
 
@@ -336,20 +326,15 @@ private:
 // conditinal circular byte buffer
 // allow to present reserved range with a view of necessary type
 // and allow to bind reserved ranges with some conditions (with a fence, for example)
-template<typename T,
-         typename ConditionValueType,
-         size_t Size,
-         bool hasExternalBuffer = false>
+template<typename T, typename ConditionValueType, size_t Size, bool hasExternalBuffer = false>
 class ConditionalRingBuffer;
 
 // partial specialization #1: ConditionalRingBuffer around byte array
 template<typename ConditionValueType, size_t Size>
 class ConditionalRingBuffer<std::byte, ConditionValueType, Size>
-  : public internal::
-      conditional_bytes_ring_range_t<ConditionValueType, Size, false, ConditionalRingBuffer>
+  : public internal::conditional_bytes_ring_range_t<ConditionValueType, Size, false, ConditionalRingBuffer>
 {
-    friend class internal::
-      conditional_bytes_ring_range_t<ConditionValueType, Size, false, ConditionalRingBuffer>;
+    friend class internal::conditional_bytes_ring_range_t<ConditionValueType, Size, false, ConditionalRingBuffer>;
 
 public:
     ConditionalRingBuffer() = default;
@@ -366,8 +351,7 @@ template<typename ConditionValueType, size_t Size>
 class ConditionalRingBuffer<std::byte, ConditionValueType, Size, true>
   : public internal::conditional_bytes_ring_range_t<ConditionValueType, Size, true, ConditionalRingBuffer>
 {
-    friend class internal::
-      conditional_bytes_ring_range_t<ConditionValueType, Size, true, ConditionalRingBuffer>;
+    friend class internal::conditional_bytes_ring_range_t<ConditionValueType, Size, true, ConditionalRingBuffer>;
 
 public:
     explicit ConditionalRingBuffer(std::byte* buffer);
@@ -382,17 +366,11 @@ private:
 // partial specialization #3: ConditionalRingBuffer around array of custom (default constractable) type
 template<typename ElementType, typename ConditionValueType, size_t Size>
 class ConditionalRingBuffer<ElementType, ConditionValueType, Size>
-  : public internal::conditional_elements_ring_range_t<ElementType,
-                                                       ConditionValueType,
-                                                       Size,
-                                                       false,
-                                                       ConditionalRingBuffer>
+  : public internal::
+      conditional_elements_ring_range_t<ElementType, ConditionValueType, Size, false, ConditionalRingBuffer>
 {
-    friend class internal::conditional_elements_ring_range_t<ElementType,
-                                                             ConditionValueType,
-                                                             Size,
-                                                             false,
-                                                             ConditionalRingBuffer>;
+    friend class internal::
+      conditional_elements_ring_range_t<ElementType, ConditionValueType, Size, false, ConditionalRingBuffer>;
 
     using element_type_t = ElementType;
     using element_type_ptr_t = std::add_pointer_t<element_type_t>;
@@ -410,17 +388,11 @@ private:
 // partial specialization #4: ConditionalRingBuffer around external array of custom (default constractable) type
 template<typename ElementType, typename ConditionValueType, size_t Size>
 class ConditionalRingBuffer<ElementType, ConditionValueType, Size, true>
-  : public internal::conditional_elements_ring_range_t<ElementType,
-                                                       ConditionValueType,
-                                                       Size,
-                                                       true,
-                                                       ConditionalRingBuffer>
+  : public internal::
+      conditional_elements_ring_range_t<ElementType, ConditionValueType, Size, true, ConditionalRingBuffer>
 {
-    friend class internal::conditional_elements_ring_range_t<ElementType,
-                                                             ConditionValueType,
-                                                             Size,
-                                                             true,
-                                                             ConditionalRingBuffer>;
+    friend class internal::
+      conditional_elements_ring_range_t<ElementType, ConditionValueType, Size, true, ConditionalRingBuffer>;
 
     using element_type_t = ElementType;
     using element_type_ptr_t = std::add_pointer_t<element_type_t>;
