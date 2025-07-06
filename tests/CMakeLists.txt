@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.10)
 project("cyclonite.test")
 
 set(SOURCES
-    ringBufferTests.h
     ringBufferTests.cpp
     ringRangeTests.cpp
     conditionalRingRangeTests.cpp)

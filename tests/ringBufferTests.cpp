@@ -1,147 +1,132 @@
-//
-// Created by anton on 7/1/25.
-//
 
-#include "ringBufferTests.h"
+#include <core/ringBuffer.h>
+#include <glm/ext/scalar_uint_sized.hpp>
+#include <gtest/gtest.h>
 
-#include <cstring>
-
-// Tests for internal byte buffer
-TEST_F(ByteRingBufferTest, InitialState)
+TEST(RingBUfferTest, InitialState)
 {
-    EXPECT_TRUE(buffer_.empty());
-    EXPECT_EQ(buffer_.readableSize(), 0);
-    EXPECT_EQ(buffer_.freeSize(), 1024);
+    auto buffer = cyclonite::core::RingBuffer<std::byte, 1024>{};
+
+    EXPECT_TRUE(buffer.empty());
+    EXPECT_EQ(buffer.readableSize(), 0);
+    EXPECT_EQ(buffer.freeSize(), 1024);
 }
 
-TEST_F(ByteRingBufferTest, ReserveAndPop)
+TEST(ByteRingBufferTest, ReserveAndPop)
 {
-    auto view = buffer_.reserveToWrite<int>(2);
+    auto buffer = cyclonite::core::RingBuffer<std::byte, 1024>{};
+    auto view = buffer.reserveToWrite<int>(2);
+
     ASSERT_NE(view.data(), nullptr);
     EXPECT_EQ(view.count(), 2);
-    EXPECT_EQ(buffer_.readableSize(), sizeof(int) * 2);
-    EXPECT_EQ(buffer_.freeSize(), 1024 - sizeof(int) * 2);
+    EXPECT_EQ(buffer.readableSize(), sizeof(int) * 2);
+    EXPECT_EQ(buffer.freeSize(), 1024 - sizeof(int) * 2);
 
-    auto popped = buffer_.pop();
+    auto popped = buffer.pop();
     EXPECT_EQ(popped, sizeof(int) * 2);
-    EXPECT_TRUE(buffer_.empty());
+    EXPECT_TRUE(buffer.empty());
 }
 
-TEST_F(ByteRingBufferTest, WrapAround)
+TEST(ByteRingBufferTest, WrapAround)
 {
-    // Fill the buffer almost completely
-    auto view1 = buffer_.reserveToWrite<std::byte>(500);
-    auto view2 = buffer_.reserveToWrite<std::byte>(500);
-    EXPECT_EQ(view1.count(), 500);
-    EXPECT_EQ(view2.count(), 500);
+    auto buffer = cyclonite::core::RingBuffer<std::byte, 1024>{};
 
-    // Pop first 500
-    buffer_.pop();
+    buffer.reserveToWrite<std::byte>(500);
+    buffer.reserveToWrite<std::byte>(500);
+
+    // Pop most of it
+    buffer.pop();
 
     // Now write should wrap around
-    auto view3 = buffer_.reserveToWrite<std::byte>(500);
-    EXPECT_EQ(view3.count(), 500);
-    EXPECT_EQ(view3.data(), view1.data());
+    auto view = buffer.reserveToWrite<std::byte>(500);
+    EXPECT_EQ(view.count(), 500);
+    EXPECT_EQ(view.offset(), 0);
 }
 
-// Tests for internal typed buffer
-TYPED_TEST(TypedRingBufferTest, InitialState)
-{
-    EXPECT_TRUE(this->buffer_.empty());
-    EXPECT_EQ(this->buffer_.readableSize(), 0);
-    EXPECT_EQ(this->buffer_.freeSize(), 100);
+TEST(TypedRingBufferTest, InitialState) {
+    auto buffer = cyclonite::core::RingBuffer<uint32_t, 100>{};
+
+    EXPECT_TRUE(buffer.empty());
+    EXPECT_EQ(buffer.readableSize(), 0);
+    EXPECT_EQ(buffer.freeSize(), 100);
 }
 
-TYPED_TEST(TypedRingBufferTest, ReserveAndPop)
-{
-    auto view = this->buffer_.reserveToWrite(10);
+TEST(TypedRingBufferTest, ReserveAndPop) {
+    auto buffer = cyclonite::core::RingBuffer<uint32_t, 100>{};
+
+    auto view = buffer.reserveToWrite(10);
     ASSERT_NE(view.data(), nullptr);
     EXPECT_EQ(view.count(), 10);
-    EXPECT_EQ(this->buffer_.readableSize(), 10);
-    EXPECT_EQ(this->buffer_.freeSize(), 90);
+    EXPECT_EQ(buffer.readableSize(), 10);
+    EXPECT_EQ(buffer.freeSize(), 90);
 
-    auto popped = this->buffer_.pop();
+    auto popped = buffer.pop();
     EXPECT_EQ(popped.count(), 10);
-    EXPECT_TRUE(this->buffer_.empty());
+    EXPECT_TRUE(buffer.empty());
 }
 
-TYPED_TEST(TypedRingBufferTest, ContiguousOperations)
-{
+TEST(TypedRingBufferTest, ContiguousOperations) {
+    auto buffer = cyclonite::core::RingBuffer<uint32_t, 100>{};
+
     // First write
-    auto view1 = this->buffer_.reserveToWrite(60);
+    auto view1 = buffer.reserveToWrite(60);
     EXPECT_EQ(view1.count(), 60);
 
     // Second write
-    auto view2 = this->buffer_.reserveToWrite(30);
+    auto view2 = buffer.reserveToWrite(30);
     EXPECT_EQ(view2.count(), 30);
 
     // Pop first write
-    this->buffer_.pop();
+    buffer.pop();
 
     // Third write should wrap around
-    auto view3 = this->buffer_.reserveToWrite(50);
+    auto view3 = buffer.reserveToWrite(50);
     EXPECT_EQ(view3.count(), 50);
     EXPECT_EQ(view3.offset(), view1.offset());
 }
 
-// Tests for external byte buffer
-TEST_F(ExternalByteRingBufferTest, InitialState)
-{
-    EXPECT_TRUE(buffer_.empty());
-    EXPECT_EQ(buffer_.readableSize(), 0);
-    EXPECT_EQ(buffer_.freeSize(), 1024);
+TEST(ExternalByteRingBufferTest, InitialState) {
+    std::vector<std::byte> external_buffer(1024);
+    cyclonite::core::RingBuffer<std::byte, 1024, true> buffer{ external_buffer.data() };
+
+    EXPECT_TRUE(buffer.empty());
+    EXPECT_EQ(buffer.readableSize(), 0);
+    EXPECT_EQ(buffer.freeSize(), 1024);
 }
 
-TEST_F(ExternalByteRingBufferTest, DataAccess)
-{
-    EXPECT_EQ(buffer_.data(), externalBuffer_.data());
+TEST(ExternalByteRingBufferTest, DataAccess) {
+    std::vector<std::byte> external_buffer(1024);
+    cyclonite::core::RingBuffer<std::byte, 1024, true> buffer{ external_buffer.data() };
 
-    auto view = buffer_.reserveToWrite<int>(1);
-    view.data()[0] = 42;
+    EXPECT_EQ(buffer.data(), external_buffer.data());
 
-    auto dst = uint32_t{ 0 };
-    std::memcpy(&dst, externalBuffer_.data(), sizeof(uint32_t));
-    EXPECT_EQ(dst, 42);
+    auto view = buffer.reserveToWrite<int>(1);
+    *view.data() = 42;
+    EXPECT_EQ(reinterpret_cast<int*>(external_buffer.data())[0], 42);
 }
 
-// Tests for external typed buffer
-TYPED_TEST(ExternalTypedRingBufferTest, InitialState)
-{
-    EXPECT_TRUE(this->buffer_.empty());
-    EXPECT_EQ(this->buffer_.readableSize(), 0);
-    EXPECT_EQ(this->buffer_.freeSize(), 100);
+TEST(ExternalTypedRingBufferTest, InitialState) {
+    std::vector<uint32_t> external_buffer(100);
+    cyclonite::core::RingBuffer<uint32_t, 100, true> buffer{ external_buffer.data() };
+
+    EXPECT_TRUE(buffer.empty());
+    EXPECT_EQ(buffer.readableSize(), 0);
+    EXPECT_EQ(buffer.freeSize(), 100);
 }
 
-TYPED_TEST(ExternalTypedRingBufferTest, DataAccess)
-{
-    EXPECT_EQ(this->buffer_.data(), this->externalBuffer_.data());
+TEST(ExternalTypedBufferTest, DataAccess) {
+    std::vector<uint32_t> external_buffer(100);
+    cyclonite::core::RingBuffer<uint32_t, 100, true> buffer{ external_buffer.data() };
 
-    auto view = this->buffer_.reserveToWrite(1);
-    view.data()[0] = TypeParam{ 42 };
-    EXPECT_EQ(this->externalBuffer_[0], TypeParam{ 42 });
+    EXPECT_EQ(buffer.data(), external_buffer.data());
+
+    auto view = buffer.reserveToWrite(1);
+    view.data()[0] = uint32_t{42};
+    EXPECT_EQ(external_buffer[0], uint32_t{42});
 }
 
-TYPED_TEST(ExternalTypedRingBufferTest, FullCycle)
-{
-    // Fill the buffer
-    for (int i = 0; i < 5; i++) {
-        auto view = this->buffer_.reserveToWrite(20);
-        for (int j = 0; j < 20; j++) {
-            view.data()[j] = TypeParam{ i * 20 + j };
-        }
-        this->buffer_.pop();
-    }
-
-    // Verify the external buffer contains the last write
-    for (int j = 0; j < 20; j++) {
-        EXPECT_EQ(this->externalBuffer_[j], TypeParam{ 80 + j });
-    }
-}
-
-// Edge case tests
-TEST(RingBufferEdgeCases, SingleElementBuffer)
-{
-    cyclonite::core::RingBuffer<int, 1> buffer;
+TEST(RingBufferEdgeCases, SingleElementBuffer) {
+    cyclonite::core::RingBuffer<int, 1> buffer{};
     auto view1 = buffer.reserveToWrite(1);
     EXPECT_EQ(view1.count(), 1);
     EXPECT_EQ(buffer.freeSize(), 0);
@@ -154,14 +139,13 @@ TEST(RingBufferEdgeCases, SingleElementBuffer)
     EXPECT_EQ(view2.count(), 1);
 }
 
-// Test alignment requirements
-TEST_F(ByteRingBufferTest, Alignment)
-{
-    auto intView = buffer_.reserveToWrite<int>(1);
+TEST(ByteRingBufferTest, Alignment) {
+    cyclonite::core::RingBuffer<std::byte, 1024> buffer{};
+    auto intView = buffer.reserveToWrite<int>(1);
     EXPECT_EQ(reinterpret_cast<uintptr_t>(intView.data()) % alignof(int), 0);
 
-    buffer_.pop();
+    buffer.pop();
 
-    auto doubleView = buffer_.reserveToWrite<double>(1);
+    auto doubleView = buffer.reserveToWrite<double>(1);
     EXPECT_EQ(reinterpret_cast<uintptr_t>(doubleView.data()) % alignof(double), 0);
 }

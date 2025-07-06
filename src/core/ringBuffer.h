@@ -13,6 +13,7 @@
 #include <limits>
 #include <type_traits>
 #include <utility>
+#include <array>
 
 namespace cyclonite::core {
 // for case when we do not need to store any data
