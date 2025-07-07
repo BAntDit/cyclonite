@@ -140,11 +140,8 @@ auto conditional_elements_ring_range_t<ElementType, ConditionValueType, Size, ha
     auto offset = RingRange<Size>::invalid_offset_v;
     auto count = size_t{ 0 };
 
-    auto& conditions = ConditionalRingRange<Size, ConditionValueType>::conditions_;
-    if (predicate(conditions.back())) {
-        conditions.pop_back();
-
-        auto [ofs, cnt] = RingRange<Size>::popRange();
+    auto [ofs, cnt] = ConditionalRingRange<Size, ConditionValueType>::popRange(std::forward<Pred>(predicate));
+    if (ofs != RingRange<Size>::invalid_offset_v) {
         offset = ofs;
         count = cnt;
 
