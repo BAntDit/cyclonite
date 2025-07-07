@@ -6,6 +6,7 @@
 #define RINGBUFFER_H
 
 #include "bufferView.h"
+#include <array>
 #include <cassert>
 #include <concepts>
 #include <cstddef>
@@ -13,7 +14,6 @@
 #include <limits>
 #include <type_traits>
 #include <utility>
-#include <array>
 
 namespace cyclonite::core {
 // for case when we do not need to store any data
@@ -167,13 +167,12 @@ class conditional_elements_ring_range_t : protected ConditionalRingRange<Size, C
 
 public:
     template<typename ConditionType>
-        requires std::is_same_v<ConditionValueType, std::decay_t<ConditionType>>
+        requires std::is_nothrow_convertible_v<ConditionValueType, std::decay_t<ConditionType>>
     auto reserveToWrite(ConditionType&& condition, size_t count) -> return_type_t;
 
-    template<typename ConditionType, typename Pred>
-        requires(std::is_same_v<ConditionValueType, std::decay_t<ConditionType>> &&
-                 std::invocable<Pred, ConditionType &&> &&
-                 std::is_same_v<bool, std::invoke_result_t<Pred, ConditionType &&>>)
+    template<typename Pred>
+        requires(std::invocable<Pred, ConditionValueType const&> &&
+                 std::is_same_v<bool, std::invoke_result_t<Pred, ConditionValueType const&>>)
     auto pop(Pred&& predicate) -> return_type_t;
 
     auto forcePop() -> return_type_t;
@@ -207,12 +206,12 @@ class conditional_bytes_ring_range_t
     using ring_buffer_ptr_t = std::add_pointer_t<ring_buffer_t>;
 
 public:
-    template<typename ConditionType, typename DataType>
-        requires std::is_same_v<ConditionValueType, std::decay_t<ConditionType>>
+    template<typename DataType, typename ConditionType>
+        requires std::is_nothrow_convertible_v<ConditionValueType, std::decay_t<ConditionType>>
     auto reserveToWrite(ConditionType&& condition, size_t count) -> BufferView<DataType>;
 
     template<typename ConditionType>
-        requires std::is_same_v<ConditionValueType, std::decay_t<ConditionType>>
+        requires std::is_nothrow_convertible_v<ConditionValueType, std::decay_t<ConditionType>>
     auto reserveToWrite(ConditionType&& condition, size_t align, size_t count) -> BufferView<std::byte>;
 
     using conditional_elements_ring_range_t<std::byte, ConditionValueType, Size, hasExternalBuffer, RingBufferType>::
@@ -233,7 +232,7 @@ protected:
     conditional_bytes_ring_range_t() = default;
 
     template<typename DataType, typename ConditionType>
-        requires std::is_same_v<ConditionValueType, std::decay_t<ConditionType>>
+        requires std::is_nothrow_convertible_v<ConditionValueType, std::decay_t<ConditionType>>
     auto reserveAlignedRange([[maybe_unused]] size_t offset,
                              size_t count,
                              size_t alignedByteCount,
