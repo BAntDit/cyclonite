@@ -5,6 +5,7 @@ project("cyclonite.test")
 set(SOURCES
     ringBufferTests.cpp
     ringRangeTests.cpp
+    conditionalRingBufferTests.cpp
     conditionalRingRangeTests.cpp)
 
 add_executable(${PROJECT_NAME} ${SOURCES})

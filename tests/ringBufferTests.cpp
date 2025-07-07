@@ -43,7 +43,8 @@ TEST(ByteRingBufferTest, WrapAround)
     EXPECT_EQ(view.offset(), 0);
 }
 
-TEST(TypedRingBufferTest, InitialState) {
+TEST(TypedRingBufferTest, InitialState)
+{
     auto buffer = cyclonite::core::RingBuffer<uint32_t, 100>{};
 
     EXPECT_TRUE(buffer.empty());
@@ -51,7 +52,8 @@ TEST(TypedRingBufferTest, InitialState) {
     EXPECT_EQ(buffer.freeSize(), 100);
 }
 
-TEST(TypedRingBufferTest, ReserveAndPop) {
+TEST(TypedRingBufferTest, ReserveAndPop)
+{
     auto buffer = cyclonite::core::RingBuffer<uint32_t, 100>{};
 
     auto view = buffer.reserveToWrite(10);
@@ -65,7 +67,8 @@ TEST(TypedRingBufferTest, ReserveAndPop) {
     EXPECT_TRUE(buffer.empty());
 }
 
-TEST(TypedRingBufferTest, ContiguousOperations) {
+TEST(TypedRingBufferTest, ContiguousOperations)
+{
     auto buffer = cyclonite::core::RingBuffer<uint32_t, 100>{};
 
     // First write
@@ -85,7 +88,8 @@ TEST(TypedRingBufferTest, ContiguousOperations) {
     EXPECT_EQ(view3.offset(), view1.offset());
 }
 
-TEST(ExternalByteRingBufferTest, InitialState) {
+TEST(ExternalByteRingBufferTest, InitialState)
+{
     std::vector<std::byte> external_buffer(1024);
     cyclonite::core::RingBuffer<std::byte, 1024, true> buffer{ external_buffer.data() };
 
@@ -94,7 +98,8 @@ TEST(ExternalByteRingBufferTest, InitialState) {
     EXPECT_EQ(buffer.freeSize(), 1024);
 }
 
-TEST(ExternalByteRingBufferTest, DataAccess) {
+TEST(ExternalByteRingBufferTest, DataAccess)
+{
     std::vector<std::byte> external_buffer(1024);
     cyclonite::core::RingBuffer<std::byte, 1024, true> buffer{ external_buffer.data() };
 
@@ -105,7 +110,8 @@ TEST(ExternalByteRingBufferTest, DataAccess) {
     EXPECT_EQ(reinterpret_cast<int*>(external_buffer.data())[0], 42);
 }
 
-TEST(ExternalTypedRingBufferTest, InitialState) {
+TEST(ExternalTypedRingBufferTest, InitialState)
+{
     std::vector<uint32_t> external_buffer(100);
     cyclonite::core::RingBuffer<uint32_t, 100, true> buffer{ external_buffer.data() };
 
@@ -114,18 +120,20 @@ TEST(ExternalTypedRingBufferTest, InitialState) {
     EXPECT_EQ(buffer.freeSize(), 100);
 }
 
-TEST(ExternalTypedBufferTest, DataAccess) {
+TEST(ExternalTypedBufferTest, DataAccess)
+{
     std::vector<uint32_t> external_buffer(100);
     cyclonite::core::RingBuffer<uint32_t, 100, true> buffer{ external_buffer.data() };
 
     EXPECT_EQ(buffer.data(), external_buffer.data());
 
     auto view = buffer.reserveToWrite(1);
-    view.data()[0] = uint32_t{42};
-    EXPECT_EQ(external_buffer[0], uint32_t{42});
+    view.data()[0] = uint32_t{ 42 };
+    EXPECT_EQ(external_buffer[0], uint32_t{ 42 });
 }
 
-TEST(RingBufferEdgeCases, SingleElementBuffer) {
+TEST(RingBufferEdgeCases, SingleElementBuffer)
+{
     cyclonite::core::RingBuffer<int, 1> buffer{};
     auto view1 = buffer.reserveToWrite(1);
     EXPECT_EQ(view1.count(), 1);
@@ -139,7 +147,8 @@ TEST(RingBufferEdgeCases, SingleElementBuffer) {
     EXPECT_EQ(view2.count(), 1);
 }
 
-TEST(ByteRingBufferTest, Alignment) {
+TEST(ByteRingBufferTest, Alignment)
+{
     cyclonite::core::RingBuffer<std::byte, 1024> buffer{};
     auto intView = buffer.reserveToWrite<int>(1);
     EXPECT_EQ(reinterpret_cast<uintptr_t>(intView.data()) % alignof(int), 0);
