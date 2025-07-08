@@ -45,11 +45,6 @@ struct SurfaceNodeConfig : public cyclonite::Config<empty_component_config_t, su
 {
     constexpr static auto is_surface_node_v = true;
 };
-
-using node_type_register_t =
-  cyclonite::compositor::node_type_register<cyclonite::compositor::LogicNode<MainNodeConfig>,
-                                            cyclonite::compositor::GraphicsNode<GBufferNodeConfig>,
-                                            cyclonite::compositor::GraphicsNode<SurfaceNodeConfig>>;
 }
 
 #endif // EX_CYCLONITE_CONFIG_H

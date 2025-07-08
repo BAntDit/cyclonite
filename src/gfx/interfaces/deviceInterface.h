@@ -5,8 +5,6 @@
 #ifndef GFX_INTERFACES_DEVICE_H
 #define GFX_INTERFACES_DEVICE_H
 
-#include <string>
-
 namespace cyclonite::gfx::interfaces {
 template<typename T>
 concept DeviceConcept = true;
@@ -14,6 +12,7 @@ concept DeviceConcept = true;
 template<DeviceConcept PlatformImplementation>
 class DeviceInterface : private PlatformImplementation
 {
+public:
     using PlatformImplementation::PlatformImplementation;
 };
 }

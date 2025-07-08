@@ -149,8 +149,8 @@ auto Instance::createDevice(uint32_t deviceId /* = std::numeric_limits<uint32_t>
         vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 
         if (physicalDeviceProperties.deviceID == deviceId) {
-            result = resourceManager_.allocResource<gfx::Device>(
-              static_cast<VkInstance>(vkInstance_), physicalDevice, physicalDeviceProperties, requiredExtensions);
+            // result = resourceManager_.allocResource<gfx::Device>(
+            //  static_cast<VkInstance>(vkInstance_), physicalDevice, physicalDeviceProperties, requiredExtensions);
             break;
         }
     }

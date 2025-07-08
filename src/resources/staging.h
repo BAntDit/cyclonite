@@ -7,7 +7,7 @@
 
 #include "buffers/arena.h"
 #include "resource.h"
-#include "vulkan/buffer.h"
+// #include "vulkan/buffer.h"
 
 namespace cyclonite::resources {
 class Staging
@@ -15,20 +15,20 @@ class Staging
   , public buffers::Arena<Staging>
 {
 public:
-    Staging(vulkan::Device& device, VkBufferUsageFlags usageFlags, VkDeviceSize size);
+    // Staging(vulkan::Device& device, VkBufferUsageFlags usageFlags, VkDeviceSize size);
 
     ~Staging() = default;
 
-    [[nodiscard]] auto ptr() const -> void const*;
+    // [[nodiscard]] auto ptr() const -> void const*;
 
-    [[nodiscard]] auto ptr() -> void*;
+    // [[nodiscard]] auto ptr() -> void*;
 
-    [[nodiscard]] auto handle() const -> VkBuffer { return buffer_.handle(); }
+    // [[nodiscard]] auto handle() const -> VkBuffer { return buffer_.handle(); }
 
     [[nodiscard]] auto instance_tag() const -> ResourceTag const& override { return tag; }
 
 private:
-    vulkan::Buffer buffer_;
+    // vulkan::Buffer buffer_;
 
 private:
     static ResourceTag tag;

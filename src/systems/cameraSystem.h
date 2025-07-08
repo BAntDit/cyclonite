@@ -10,8 +10,6 @@
 #include "transformSystem.h"
 #include "uniformSystem.h"
 #include "updateStages.h"
-#include "vulkan/commandBufferSet.h"
-#include "vulkan/commandPool.h"
 #include <components/transform.h>
 #include <enttx/enttx.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -23,8 +21,6 @@ namespace cyclonite::systems {
 class CameraSystem : public enttx::BaseSystem<CameraSystem>
 {
 public:
-    using transfer_commands_t = vulkan::CommandBufferSet<vulkan::CommandPool, std::array<VkCommandBuffer, 1>>;
-
     using tag_t = metrix::type_list<components::Camera>;
 
     CameraSystem() = default;

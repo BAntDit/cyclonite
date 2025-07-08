@@ -26,29 +26,6 @@ auto Basic::init(cyclonite::Options const& options) -> Basic&
 
     auto& renderSystem = systems_.get<systems::RenderSystem>();
 
-    {
-        Options::WindowProperties windowProperties{};
-
-        windowProperties.title = "basic.example";
-        windowProperties.fullscreen = false;
-        windowProperties.left = 0; // SDL_WINDOWPOS_UNDEFINED;
-        windowProperties.top = 0;  // SDL_WINDOWPOS_UNDEFINED;
-        windowProperties.width = 512;
-        windowProperties.height = 512;
-
-        renderSystem.init(
-          root_->taskManager(),
-          root_->device(),
-          windowProperties,
-          render_target_output<type_list<render_target_output_candidate<VK_FORMAT_D32_SFLOAT>>>{},
-          render_target_output<
-            type_list<render_target_output_candidate<VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR>>,
-            RenderTargetOutputSemantic::DEFAULT>{},
-          VkClearDepthStencilValue{ 1.0f, 0 },
-          VkClearColorValue{ { 0.0f, 0.0f, 0.0f, 1.0f } },
-          std::array{ VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_FIFO_KHR });
-    }
-
     auto& transformSystem = systems_.get<systems::TransformSystem>();
     transformSystem.init(128);
 

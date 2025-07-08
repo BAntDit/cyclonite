@@ -5,15 +5,10 @@
 #ifndef CYCLONITE_ROOT_H
 #define CYCLONITE_ROOT_H
 
-#include "compositor/workspace.h"
 #include "config.h"
-#include "gfx/vulkan/vkDevice.h"
-#include "gfx/vulkan/vkInstance.h"
+#include "gfx/instance.h"
 #include "input.h"
 #include "multithreading/taskManager.h"
-#include "platform.h"
-#include "resources/resourceManager.h"
-#include "surface.h"
 
 #include <iostream>
 #include <memory>
@@ -46,50 +41,18 @@ public:
 
     // [[nodiscard]] auto getDeviceCount() const -> size_t { return physicalDeviceList_.size(); }
 
-    [[nodiscard]] auto getDeviceId(size_t deviceIndex = 0) const -> uint32_t;
-
-    [[nodiscard]] auto getDeviceId(std::string const& deviceName) const -> uint32_t;
-
     [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
 
     [[nodiscard]] auto input() const -> Input const& { return input_; }
 
     [[nodiscard]] auto input() -> Input& { return input_; }
 
-    [[nodiscard]] auto device() const -> vulkan::Device const& { return *vulkanDevice_; }
-
-    [[nodiscard]] auto device() -> vulkan::Device& { return *vulkanDevice_; }
-
-    [[nodiscard]] auto taskManager() -> multithreading::TaskManager& { return taskManager_; }
-
-    [[nodiscard]] auto taskManager() const -> multithreading::TaskManager const& { return taskManager_; }
-
-    [[nodiscard]] auto resourceManager() -> resources::ResourceManager&;
-
-    [[nodiscard]] auto resourceManager() const -> resources::ResourceManager const&;
-
-    template<typename WorkspaceFactory>
-    auto createWorkspace(WorkspaceFactory&& workspaceFactory) -> std::shared_ptr<compositor::Workspace> const&;
-
     void reset();
 
 private:
     Capabilities capabilities_;
-    std::unique_ptr<resources::ResourceManager> resourceManager_;
-    multithreading::TaskManager taskManager_;
     std::unique_ptr<gfx::Instance> vulkanInstance_;
-    // std::vector<VkPhysicalDevice> physicalDeviceList_;
-    std::unordered_map<std::string, VkPhysicalDeviceProperties> physicalDevicePropertiesMap_;
-    std::unique_ptr<vulkan::Device> vulkanDevice_;
-    std::vector<std::shared_ptr<compositor::Workspace>> workspaces_;
     Input input_;
 };
-
-template<typename WorkspaceFactory>
-auto Root::createWorkspace(WorkspaceFactory&& workspaceFactory) -> std::shared_ptr<compositor::Workspace> const&
-{
-    return workspaces_.emplace_back(std::make_shared<compositor::Workspace>(
-      workspaceFactory(compositor::Workspace::Builder{ *resourceManager_, *vulkanDevice_ })));
-}
 }
 #endif // CYCLONITE_ROOT_H
