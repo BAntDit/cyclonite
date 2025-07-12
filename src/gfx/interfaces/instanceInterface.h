@@ -5,7 +5,6 @@
 #ifndef GFX_INTERFACES_INSTANCE_H
 #define GFX_INTERFACES_INSTANCE_H
 
-#include "gfx/resourceRef.h"
 #include <concepts>
 #include <utility>
 
