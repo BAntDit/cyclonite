@@ -31,7 +31,7 @@ public:
 
     [[nodiscard]] auto physicalDeviceCount() const -> uint32_t { return physicalDeviceList_.size(); }
 
-    [[nodiscard]] auto createDevice(uint32_t deviceId = std::numeric_limits<uint32_t>::max()) -> gfx::ResourceRef;
+    [[nodiscard]] auto createDevice(uint32_t deviceId = std::numeric_limits<uint32_t>::max()) -> core::ResourceRef;
 
 private:
     [[nodiscard]] auto chooseBestPhysicalDevice() const -> size_t;
@@ -39,7 +39,7 @@ private:
 private:
     std::vector<VkPhysicalDevice> physicalDeviceList_;
     Handle<VkInstance> vkInstance_;
-    ResourceManager resourceManager_;
+    resource_manager_t resourceManager_;
 };
 }
 

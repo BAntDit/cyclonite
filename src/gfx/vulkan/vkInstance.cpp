@@ -3,10 +3,11 @@
 //
 
 #include "vkInstance.h"
+#include <array>
 #include <iostream>
 #include <sstream>
-#include <array>
 #include <stdexcept>
+#include <string.h>
 
 #if defined(GFX_DRIVER_VULKAN)
 

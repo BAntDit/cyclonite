@@ -8,10 +8,12 @@
 #include "resourceRef.h"
 #include <array>
 #include <concepts>
+#include <type_traits>
 #include <deque>
 #include <metrix/type_list.h>
 #include <numeric>
 #include <vector>
+#include <cassert>
 
 namespace cyclonite::core {
 class ResourceManagerBase
@@ -45,20 +47,28 @@ namespace internal {
 template<size_t TypeAlign, size_t... TypeAligns>
 inline constexpr auto get_uniform_align() -> size_t
 {
-    auto result = TypeAlign;
-    return ((result = std::lcm(result, TypeAligns)), ...);
+    if constexpr (sizeof...(TypeAligns) > 0) {
+        auto result = TypeAlign;
+        return ((result = std::lcm(result, TypeAligns)), ...);
+    } else {
+        return TypeAlign;
+    }
 }
 
 template<size_t TypeSize, size_t... TypeSizes>
 inline constexpr auto get_uniform_size() -> size_t
 {
-    auto result = TypeSize;
-    return ((result = std::max(result, TypeSizes)), ...);
+    if constexpr (sizeof...(TypeSizes) > 0) {
+        auto result = TypeSize;
+        return ((result = std::max(result, TypeSizes)), ...);
+    } else {
+        return TypeSize;
+    }
 }
 }
 
 template<typename T>
-concept ResourceConcept = std::derived_from<T, ResourceBase>;
+concept ResourceConcept = std::is_base_of_v<ResourceBase, T>;
 
 template<ResourceConcept... ResourceTypes>
 class ResourceManager final : public ResourceManagerBase

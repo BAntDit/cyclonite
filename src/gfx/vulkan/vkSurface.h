@@ -5,7 +5,7 @@
 #ifndef GFX_VK_SURFACE_H
 #define GFX_VK_SURFACE_H
 
-#include "gfx/resourceBase.h"
+#include "../../core/resourceBase.h"
 
 #if defined(GFX_DRIVER_VULKAN)
 

@@ -7,9 +7,8 @@
 
 #if defined(GFX_DRIVER_VULKAN)
 
-#include "gfx/resourceBase.h"
+#include "core/resourceBase.h"
 #include "handle.h"
-// #include "../../vulkan/commandPool.h"
 #include <memory>
 
 namespace cyclonite::gfx {
@@ -17,7 +16,7 @@ class ResourceManager;
 }
 
 namespace cyclonite::gfx::vulkan {
-class Device : public ResourceBase
+class Device : public core::ResourceBase
 {
 public:
     struct Capabilities
@@ -32,8 +31,8 @@ public:
         size_t maxColorAttachments;
     };
 
-    Device(ResourceManager* resourceManager,
-           ResourceId resourceId,
+    Device(core::ResourceManagerBase* resourceManager,
+           core::ResourceId resourceId,
            VkInstance vkInstance,
            VkPhysicalDevice vkPhysicalDevice,
            VkPhysicalDeviceProperties const& physicalDeviceProperties,
