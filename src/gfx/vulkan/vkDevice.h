@@ -10,6 +10,7 @@
 #include "core/resourceBase.h"
 #include "handle.h"
 #include <memory>
+#include <string_view>
 
 namespace cyclonite::gfx {
 class ResourceManager;
@@ -19,18 +20,6 @@ namespace cyclonite::gfx::vulkan {
 class Device : public core::ResourceBase
 {
 public:
-    struct Capabilities
-    {
-        explicit Capabilities(VkPhysicalDeviceLimits const& vkPhysicalDeviceLimits);
-
-        size_t minMemoryMapAlignment;
-        size_t minStorageBufferOffsetAlignment;
-        size_t minUniformBufferOffsetAlignment;
-        size_t minTexelBufferOffsetAlignment;
-        uint32_t maxPushConstantsSize;
-        size_t maxColorAttachments;
-    };
-
     Device(core::ResourceManagerBase* resourceManager,
            core::ResourceId resourceId,
            VkInstance vkInstance,
@@ -46,9 +35,9 @@ public:
 
     [[nodiscard]] auto handle() const -> VkDevice { return static_cast<VkDevice>(vkDevice_); }
 
-    [[nodiscard]] auto name() const -> std::string const& { return name_; }
+    [[nodiscard]] auto name() const -> std::string_view { return name_; }
 
-    [[nodiscard]] auto vendor() const -> std::string const& { return vendor_; }
+    [[nodiscard]] auto vendor() const -> std::string_view { return vendor_; }
 
     [[nodiscard]] auto graphicsQueue() const -> VkQueue;
 
@@ -61,8 +50,6 @@ public:
     [[nodiscard]] auto computeQueueFamilyIndex() const -> uint32_t;
 
     [[nodiscard]] auto hostTransferQueueFamilyIndex() const -> uint32_t;
-
-    // [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
 
     //[[nodiscard]] auto memoryManager() const -> MemoryManager const& { return *memoryManager_; }
 
@@ -77,7 +64,6 @@ public:
     using core::ResourceBase::resourceBase;
 
 private:
-    // Capabilities capabilities_;
     VkInstance vkInstance_;
     VkPhysicalDevice vkPhysicalDevice_;
     std::string name_;
