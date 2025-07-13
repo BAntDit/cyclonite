@@ -5,13 +5,12 @@
 #ifndef GFX_RESOURCE_BASE_H
 #define GFX_RESOURCE_BASE_H
 
-#include "common.h"
 #include "resourceId.h"
 #include <atomic>
 #include <concepts>
 
-namespace cyclonite::gfx {
-class ResourceManager;
+namespace cyclonite::core {
+class ResourceManagerBase;
 
 class ResourceRef;
 
@@ -20,7 +19,7 @@ class ResourceBase
     friend class ResourceRef;
 
 public:
-    ResourceBase(ResourceManager* resourceManager, ResourceId resourceId, bool deferredRelease);
+    ResourceBase(ResourceManagerBase* resourceManager, ResourceId resourceId, bool deferredRelease);
 
     ResourceBase(ResourceBase const&) = delete;
     ResourceBase(ResourceBase&&) = delete;
@@ -37,20 +36,18 @@ public:
     [[nodiscard]] auto resourceId() const -> ResourceId { return resourceId_; }
 
     template<typename T>
-    [[nodiscard]] auto as() -> T& requires(std::derived_from<type_traits::platform_implementation_t<T>, ResourceBase>) {
-                                      return static_cast<T&>(*this);
-                                  }
+    [[nodiscard]] auto as() -> T& requires(std::derived_from<T, ResourceBase>) { return static_cast<T&>(*this); }
 
     template<typename T>
     [[nodiscard]] auto as() const -> T const&
-        requires(std::derived_from<type_traits::platform_implementation_t<T>, ResourceBase>)
+        requires(std::derived_from<T, ResourceBase>)
     {
         return static_cast<T const&>(*this);
     }
 
 private:
     std::atomic<uint64_t> refCount_;
-    ResourceManager* resourceManager_;
+    ResourceManagerBase* resourceManager_;
     ResourceId resourceId_;
     bool deferredRelease_;
 };

@@ -6,8 +6,8 @@
 #include "resourceManager.h"
 #include <cassert>
 
-namespace cyclonite::gfx {
-ResourceBase::ResourceBase(ResourceManager* resourceManager, ResourceId resourceId, bool deferredRelease)
+namespace cyclonite::core {
+ResourceBase::ResourceBase(ResourceManagerBase* resourceManager, ResourceId resourceId, bool deferredRelease)
   : refCount_{ 1 }
   , resourceManager_{ resourceManager }
   , resourceId_{ resourceId }

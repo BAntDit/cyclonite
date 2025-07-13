@@ -5,7 +5,7 @@
 #include "resourceRef.h"
 #include "resourceManager.h"
 
-namespace cyclonite::gfx {
+namespace cyclonite::core {
 ResourceRef::ResourceRef(ResourceId id, ResourceBase* resource)
   : id_{ id }
   , resource_{ resource } {};

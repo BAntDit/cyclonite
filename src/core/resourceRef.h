@@ -7,19 +7,14 @@
 
 #include "resourceBase.h"
 #include "resourceId.h"
-#include "resourceTypeList.h"
-#include <concepts>
 
-namespace cyclonite::gfx {
-template<typename T>
-concept ResourceConcept = resource_type_list_t::has_type<T>::value && std::derived_from<T, ResourceBase>;
-
-class ResourceManager;
+namespace cyclonite::core {
+class ResourceManagerBase;
 
 class ResourceRef
 {
 public:
-    friend class ResourceManager;
+    friend class ResourceManagerBase;
 
     ResourceRef() = default;
 
@@ -35,11 +30,17 @@ public:
 
     [[nodiscard]] auto resourceBase() const -> ResourceBase* { return resource_; }
 
-    template<ResourceConcept R>
-    [[nodiscard]] auto as() const -> R const&;
+    template<typename R>
+    [[nodiscard]] auto as() const -> R const&
+    {
+        return resource_->as<R>();
+    }
 
-    template<ResourceConcept R>
-    [[nodiscard]] auto as() -> R&;
+    template<typename R>
+    [[nodiscard]] auto as() -> R&
+    {
+        return resource_->as<R>();
+    }
 
 private:
     ResourceRef(ResourceId id, ResourceBase* resource);
@@ -47,18 +48,6 @@ private:
     ResourceId id_;
     ResourceBase* resource_;
 };
-
-template<ResourceConcept R>
-auto ResourceRef::as() const -> R const&
-{
-    return static_cast<R const&>(*resource_);
-}
-
-template<ResourceConcept R>
-auto ResourceRef::as() -> R&
-{
-    return static_cast<R&>(*resource_);
-}
 }
 
 #endif // GFX_RESOURCE_REF_H

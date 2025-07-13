@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <limits>
 
-namespace cyclonite::gfx {
+namespace cyclonite::core {
 struct ResourceId
 {
     explicit ResourceId(uint64_t id) noexcept
