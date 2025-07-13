@@ -4,10 +4,10 @@
 
 #include "vkInstance.h"
 #include <array>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
-#include <string.h>
 
 #if defined(GFX_DRIVER_VULKAN)
 
@@ -249,15 +249,42 @@ Instance::Instance(std::string_view applicationName)
     }
 }
 
-auto Instance::chooseBestPhysicalDevice() const -> size_t
+auto Instance::chooseBestPhysicalDevice() const -> uint32_t
 {
-    // TODO:: implementation required
-    return size_t{ 0 };
+    auto result = std::numeric_limits<uint32_t>::max();
+
+    for (auto physicalDevice : physicalDeviceList_) {
+        auto props = VkPhysicalDeviceProperties{};
+        vkGetPhysicalDeviceProperties(physicalDevice, &props);
+
+        if (props.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+            result = props.deviceID;
+            break;
+        }
+    }
+
+    if (result == std::numeric_limits<uint32_t>::max()) {
+        for (auto physicalDevice : physicalDeviceList_) {
+            auto props = VkPhysicalDeviceProperties{};
+            vkGetPhysicalDeviceProperties(physicalDevice, &props);
+
+            if (props.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
+                result = props.deviceID;
+                break;
+            }
+        }
+    }
+
+    if (result == std::numeric_limits<uint32_t>::max()) {
+        throw std::runtime_error("could not find GPU device");
+    }
+
+    return result;
 }
 
-auto Instance::createDevice(uint32_t deviceId /* = std::numeric_limits<uint32_t>::max()*/) -> gfx::ResourceRef
+auto Instance::createDevice(uint32_t deviceId /* = std::numeric_limits<uint32_t>::max()*/) -> core::ResourceRef
 {
-    auto result = gfx::ResourceRef{};
+    auto result = core::ResourceRef{};
 
     std::vector<const char*> requiredExtensions = {};
 
@@ -276,8 +303,8 @@ auto Instance::createDevice(uint32_t deviceId /* = std::numeric_limits<uint32_t>
         vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 
         if (physicalDeviceProperties.deviceID == deviceId) {
-            // result = resourceManager_.allocResource<gfx::Device>(
-            //  static_cast<VkInstance>(vkInstance_), physicalDevice, physicalDeviceProperties, requiredExtensions);
+            result = resourceManager_.allocResource<gfx::Device>(
+              static_cast<VkInstance>(vkInstance_), physicalDevice, physicalDeviceProperties, requiredExtensions);
             break;
         }
     }

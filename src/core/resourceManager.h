@@ -7,13 +7,13 @@
 
 #include "resourceRef.h"
 #include <array>
+#include <cassert>
 #include <concepts>
-#include <type_traits>
 #include <deque>
 #include <metrix/type_list.h>
 #include <numeric>
+#include <type_traits>
 #include <vector>
-#include <cassert>
 
 namespace cyclonite::core {
 class ResourceManagerBase
@@ -34,6 +34,11 @@ public:
     [[nodiscard]] auto lastCompletedCurrentFrame() const -> uint_fast64_t { return lastCompletedFrame_; }
 
 protected:
+    [[nodiscard]] auto createResourceRef(ResourceId id, ResourceBase* resource) -> ResourceRef
+    {
+        return ResourceRef{ id, resource };
+    }
+
     virtual void releaseResourceImmediate(ResourceId id) = 0;
 
     virtual void releaseResourceDeferred(ResourceId id) = 0;
@@ -240,7 +245,7 @@ auto ResourceManager<ResourceTypes...>::allocResource(Args&&... args) -> Resourc
     auto* memory = storage_.resources[type][blockIndex].bytes;
     auto* r = new (memory) ResourceType(this, resourceId, std::forward<Args>(args)...);
 
-    return ResourceRef{ resourceId, r };
+    return createResourceRef(resourceId, r->resourceBase());
 }
 
 template<ResourceConcept... ResourceTypes>

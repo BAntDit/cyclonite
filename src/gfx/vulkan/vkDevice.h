@@ -74,6 +74,8 @@ public:
 
     //[[nodiscard]] auto commandPoolPtr() -> std::shared_ptr<CommandPool>& { return commandPool_; }
 
+    using core::ResourceBase::resourceBase;
+
 private:
     // Capabilities capabilities_;
     VkInstance vkInstance_;

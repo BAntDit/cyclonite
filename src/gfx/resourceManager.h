@@ -8,9 +8,8 @@
 #include "core/resourceManager.h"
 #include "device.h"
 
-namespace cyclonite::gfx
-{
+namespace cyclonite::gfx {
 using resource_manager_t = core::ResourceManager<gfx::Device>;
 }
 
-#endif //CYCLONITE_RESOURCEMANAGER_H
+#endif // CYCLONITE_RESOURCEMANAGER_H

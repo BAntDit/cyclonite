@@ -34,7 +34,7 @@ public:
     [[nodiscard]] auto createDevice(uint32_t deviceId = std::numeric_limits<uint32_t>::max()) -> core::ResourceRef;
 
 private:
-    [[nodiscard]] auto chooseBestPhysicalDevice() const -> size_t;
+    [[nodiscard]] auto chooseBestPhysicalDevice() const -> uint32_t;
 
 private:
     std::vector<VkPhysicalDevice> physicalDeviceList_;

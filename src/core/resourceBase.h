@@ -18,6 +18,8 @@ class ResourceBase
 {
     friend class ResourceRef;
 
+    friend class ResourceManagerBase;
+
 public:
     ResourceBase(ResourceManagerBase* resourceManager, ResourceId resourceId, bool deferredRelease);
 
@@ -44,6 +46,9 @@ public:
     {
         return static_cast<T const&>(*this);
     }
+
+protected:
+    [[nodiscard]] auto resourceBase() -> ResourceBase* { return this; }
 
 private:
     std::atomic<uint64_t> refCount_;
