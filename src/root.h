@@ -12,6 +12,7 @@
 
 #include <iostream>
 #include <memory>
+#include <string_view>
 
 namespace cyclonite {
 class Root
@@ -35,11 +36,9 @@ public:
 
     auto operator=(Root&&) -> Root& = delete;
 
-    void init();
+    void init(std::string_view appName);
 
-    void init(uint32_t deviceId);
-
-    // [[nodiscard]] auto getDeviceCount() const -> size_t { return physicalDeviceList_.size(); }
+    void init(std::string_view appName, uint32_t deviceId);
 
     [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
 

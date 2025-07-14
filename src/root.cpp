@@ -10,52 +10,16 @@ namespace cyclonite {
 Root::Root()
   : capabilities_{}
   , vulkanInstance_{}
-  /*, vulkanInstance_ // TODO:: move to initialization after refactoring
-{
-#if defined(VK_USE_PLATFORM_XLIB_KHR)
-#if !defined(NDEBUG)
-    std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_KHRONOS_validation" },
-                                       std::array<char const*, 3>{
-VK_EXT_DEBUG_REPORT_EXTENSION_NAME, VK_KHR_SURFACE_EXTENSION_NAME,
-                                                                   VK_KHR_XLIB_SURFACE_EXTENSION_NAME
-}) #else std::make_unique<vulkan::Instance>( std::array<char const*, 0>{}, std::array<char const*,
-2>{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_XLIB_SURFACE_EXTENSION_NAME }) #endif #elif
-defined(VK_USE_PLATFORM_WAYLAND_KHR) #if !defined(NDEBUG)
-    std::make_unique<vulkan::Instance>(std::array<char const*, 1>{
-"VK_LAYER_LUNARG_standard_validation" }, std::array<char const*, 3>{
-VK_EXT_DEBUG_REPORT_EXTENSION_NAME, VK_KHR_SURFACE_EXTENSION_NAME,
-                                                                   VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME
-}) #else std::make_unique<vulkan::Instance>( std::array<char const*, 0>{}, std::array<char const*,
-2>{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME }) #endif #elif
-defined(VK_USE_PLATFORM_WIN32_KHR) #if !defined(NDEBUG)
-    std::make_unique<vulkan::Instance>(std::array<char const*, 1>{
-"VK_LAYER_LUNARG_standard_validation" }, std::array<char const*, 3>{
-VK_EXT_DEBUG_REPORT_EXTENSION_NAME, VK_KHR_SURFACE_EXTENSION_NAME,
-                                                                   VK_KHR_WIN32_SURFACE_EXTENSION_NAME
-}) #else std::make_unique<vulkan::Instance>( std::array<char const*, 0>{}, std::array<char const*,
-2>{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME }) #endif #elif
-defined(VK_USE_PLATFORM_ANDROID_KHR) #if !defined(NDEBUG)
-    std::make_unique<vulkan::Instance>(std::array<char const*, 1>{
-"VK_LAYER_LUNARG_standard_validation" }, std::array<char const*, 3>{
-VK_EXT_DEBUG_REPORT_EXTENSION_NAME, VK_KHR_SURFACE_EXTENSION_NAME,
-                                                                   VK_KHR_ANDROID_SURFACE_EXTENSION_NAME
-}) #else std::make_unique<vulkan::Instance>( std::array<char const*, 0>{}, std::array<char const*,
-2>{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_ANDROID_SURFACE_EXTENSION_NAME }) #endif #else #if
-!defined(NDEBUG) std::make_unique<vulkan::Instance>(std::array<char const*, 1>{
-"VK_LAYER_LUNARG_standard_validation" }, std::array<char const*, 1>{
-VK_EXT_DEBUG_REPORT_EXTENSION_NAME }) #else std::make_unique<vulkan::Instance>(std::array<char
-const*, 0>{}, std::array<char const*, 0>{}) #endif #endif
-}*/
   , input_{}
 {
 }
 
-void Root::init()
+void Root::init(std::string_view appName)
 {
-    init(0);
+    init(appName, std::numeric_limits<uint32_t>::max());
 }
 
-void Root::init(uint32_t deviceId)
+void Root::init(std::string_view appName, uint32_t deviceId)
 {
     // SDL initialization:
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -84,6 +48,10 @@ void Root::init(uint32_t deviceId)
         } else {
             throw std::runtime_error("SDL: could not get available display modes");
         }
+    }
+
+    if (!(vulkanInstance_ = std::make_unique<gfx::Instance>(appName))) {
+        throw std::runtime_error("gfx:: could not create gfx-instance");
     }
 }
 
