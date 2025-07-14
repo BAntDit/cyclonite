@@ -39,28 +39,6 @@ public:
 
     [[nodiscard]] auto vendor() const -> std::string_view { return vendor_; }
 
-    [[nodiscard]] auto graphicsQueue() const -> VkQueue;
-
-    [[nodiscard]] auto computeQueue() const -> VkQueue;
-
-    [[nodiscard]] auto hostTransferQueue() const -> VkQueue;
-
-    [[nodiscard]] auto graphicsQueueFamilyIndex() const -> uint32_t;
-
-    [[nodiscard]] auto computeQueueFamilyIndex() const -> uint32_t;
-
-    [[nodiscard]] auto hostTransferQueueFamilyIndex() const -> uint32_t;
-
-    //[[nodiscard]] auto memoryManager() const -> MemoryManager const& { return *memoryManager_; }
-
-    //[[nodiscard]] auto memoryManager() -> MemoryManager& { return *memoryManager_; }
-
-    [[nodiscard]] auto queueFamilyIndices() const -> std::vector<uint32_t> const& { return queueFamilyIndices_; }
-
-    //[[nodiscard]] auto commandPool() -> CommandPool& { return *commandPool_; }
-
-    //[[nodiscard]] auto commandPoolPtr() -> std::shared_ptr<CommandPool>& { return commandPool_; }
-
     using core::ResourceBase::resourceBase;
 
 private:
@@ -68,14 +46,7 @@ private:
     VkPhysicalDevice vkPhysicalDevice_;
     std::string name_;
     std::string vendor_;
-    size_t graphicsQueueIndex_;
-    size_t computeQueueIndex_;
-    size_t deviceHostTransferQueueIndex_;
     Handle<VkDevice> vkDevice_;
-    std::vector<uint32_t> queueFamilyIndices_;
-    std::vector<Handle<VkQueue>> vkQueues_;
-    // std::unique_ptr<MemoryManager> memoryManager_;
-    // std::shared_ptr<CommandPool> commandPool_;
 };
 }
 

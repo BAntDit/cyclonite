@@ -15,18 +15,24 @@ class ResourceBase;
 namespace cyclonite::gfx::interfaces {
 template<typename T>
 concept DeviceConcept = requires(T t) {
-    { t.resourceBase() } -> std::same_as<core::ResourceBase*>;
-    { t.name() } -> std::same_as<std::string_view>;
-    { t.vendor() } -> std::same_as<std::string_view>;
-};
+                            {
+                                t.resourceBase()
+                                } -> std::same_as<core::ResourceBase*>;
+                            {
+                                t.name()
+                                } -> std::same_as<std::string_view>;
+                            {
+                                t.vendor()
+                                } -> std::same_as<std::string_view>;
+                        };
 
 template<DeviceConcept PlatformImplementation>
 class DeviceInterface : private PlatformImplementation
 {
 public:
+    using PlatformImplementation::name;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::resourceBase;
-    using PlatformImplementation::name;
     using PlatformImplementation::vendor;
 };
 }
