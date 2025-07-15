@@ -7,6 +7,7 @@
 
 #include <concepts>
 #include <string_view>
+#include "gfx/common.h"
 
 namespace cyclonite::core {
 class ResourceBase;
@@ -23,7 +24,7 @@ concept DeviceConcept = requires(T t) {
                                 } -> std::same_as<std::string_view>;
                             {
                                 t.vendor()
-                                } -> std::same_as<std::string_view>;
+                                } -> std::same_as<DeviceVendor>;
                         };
 
 template<DeviceConcept PlatformImplementation>

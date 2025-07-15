@@ -8,6 +8,7 @@
 #if defined(GFX_DRIVER_VULKAN)
 
 #include "core/resourceBase.h"
+#include "gfx/common.h"
 #include "handle.h"
 #include <memory>
 #include <string_view>
@@ -37,7 +38,7 @@ public:
 
     [[nodiscard]] auto name() const -> std::string_view { return name_; }
 
-    [[nodiscard]] auto vendor() const -> std::string_view { return vendor_; }
+    [[nodiscard]] auto vendor() const -> DeviceVendor { return vendor_; }
 
     using core::ResourceBase::resourceBase;
 
@@ -45,7 +46,8 @@ private:
     VkInstance vkInstance_;
     VkPhysicalDevice vkPhysicalDevice_;
     std::string name_;
-    std::string vendor_;
+    DeviceVendor vendor_;
+    DeviceLimits limits_;
     Handle<VkDevice> vkDevice_;
 };
 }
