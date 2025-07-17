@@ -151,6 +151,10 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     auto familyPropertiesList = std::vector<VkQueueFamilyProperties>(familyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice_, &familyCount, familyPropertiesList.data());
 
+    auto graphicsQueueFamilyIndex = uint32_t{ 0 };
+    auto graphicsQueueIndex = uint32_t{ 0 };
+
+    /*
     auto graphicsQueueRequirements = std::array{ std::pair{ VK_QUEUE_GRAPHICS_BIT, QueueFlagRequirements::Required },
                                                  std::pair{ VK_QUEUE_TRANSFER_BIT, QueueFlagRequirements::Required },
                                                  std::pair{ VK_QUEUE_COMPUTE_BIT, QueueFlagRequirements::Optional },
@@ -171,7 +175,7 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     if (transferQueueFamilyIndex == std::numeric_limits<uint32_t>::max()) {
         throw std::runtime_error("gfx:: could not found valid transfer queue family index for device: " + name_);
     }
-
+    */
     // to refactor with array of { flag, option }
     /*auto graphicsQueueFamilyIndex =
       getBestQueueFamilyIndex(familyPropertiesList, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT);
@@ -182,5 +186,21 @@ Device::Device(core::ResourceManagerBase* resourceManager,
 
     auto computeQueueFamilyIndex =
       getBestQueueFamilyIndex(familyPropertiesList, VK_QUEUE_COMPUTE_BIT, uint_fast8_t{ 1 });*/
+
+    auto features = VkPhysicalDeviceFeatures{};
+
+    // turn off unused features (for now)
+    features.robustBufferAccess = VK_FALSE;
+    features.shaderFloat64 = VK_FALSE;
+    features.shaderInt64 = VK_FALSE;
+    features.inheritedQueries = VK_FALSE;
+
+    auto deviceInfo = VkDeviceCreateInfo{};
+    deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    // deviceInfo.queueCreateInfoCount = static_cast<uint32_t>(deviceQueuesCreateInfo.size());
+    // deviceInfo.pQueueCreateInfos = deviceQueuesCreateInfo.data();
+    deviceInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
+    deviceInfo.ppEnabledExtensionNames = requiredExtensions.data();
+    deviceInfo.pEnabledFeatures = &features;
 }
 }
