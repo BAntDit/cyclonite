@@ -170,6 +170,11 @@ public:
 
     auto remove(iterator_t it) -> iterator_t;
 
+    template<typename ValueType, typename... KeyN>
+    auto add(ValueType&& value, KeyN&&... keyN)
+      -> std::pair<iterator_t, bool> requires(std::is_convertible_v<std::decay_t<ValueType>, DataType> &&
+                                              (std::is_convertible_v<std::decay_t<KeyN>, Key> && ...));
+
     using internal::HashTableData<DataType, TableSize, Key...>::clear;
 
     using internal::HashTableData<DataType, TableSize, Key...>::capacity;
@@ -183,8 +188,15 @@ private:
     template<typename... KeyN, size_t... I>
     [[nodiscard]] auto findEntry(std::index_sequence<I...>, KeyN&&... keyN) const -> size_t;
 
+    [[nodiscard]] auto newEntry(size_t originalEntry) const -> size_t;
+
+    template<typename... KeyN>
+    [[nodiscard]] auto removeEntry(KeyN&&... keyN) -> size_t;
+
     template<size_t... I>
     [[nodiscard]] auto getOriginalEntry(key_type const& k, std::index_sequence<I...>) const -> size_t;
+
+    void removeEntryInternal(size_t originalEntry, size_t entry);
 };
 
 template<typename DataType, size_t TableSize, typename... Key>
@@ -298,11 +310,66 @@ auto StaticHashTable<DataType, TableSize, Key...>::findEntry(std::index_sequence
 }
 
 template<typename DataType, size_t TableSize, typename... Key>
+auto StaticHashTable<DataType, TableSize, Key...>::newEntry(size_t originalEntry) const -> size_t
+{
+    auto entryCount = table_data_t::hashEntryCounts()[originalEntry];
+    auto currentEntry = originalEntry;
+
+    bool found = false;
+
+    // find the last one element hashed to originalEntry
+    // or free element after original
+    while (entryCount > 0) {
+        auto hashEntry = table_data_t::originalHashEntries()[currentEntry++ % capacity()];
+        if (hashEntry == originalEntry) {
+            entryCount--;
+        } else if (hashEntry == table_data_t::invalid_hash_entry_v) {
+            found = true;
+            break;
+        }
+
+        assert(currentEntry < capacity());
+    }
+
+    // and the first free after
+    while (!found && currentEntry < capacity()) {
+        found = (table_data_t::originalHashEntries()[currentEntry % capacity()] == table_data_t::invalid_hash_entry_v);
+        if (!found)
+            currentEntry++;
+    }
+
+    return found ? currentEntry % capacity() : table_data_t::invalid_hash_entry_v;
+}
+
+template<typename DataType, size_t TableSize, typename... Key>
+template<typename... KeyN>
+auto StaticHashTable<DataType, TableSize, Key...>::removeEntry(KeyN&&... keyN) -> size_t
+{
+    const auto originalEntry = normalizedHash(std::forward<KeyN>(keyN)...);
+    auto entry = findEntry(std::make_index_sequence<sizeof...(KeyN)>{}, std::forward<KeyN>(keyN)...);
+
+    removeEntryInternal(originalEntry, entry);
+
+    return entry;
+}
+
+template<typename DataType, size_t TableSize, typename... Key>
 template<size_t... I>
 auto StaticHashTable<DataType, TableSize, Key...>::getOriginalEntry(key_type const& k, std::index_sequence<I...>) const
   -> size_t
 {
     return normalizedHash(std::get<I>(k)...);
+}
+
+template<typename DataType, size_t TableSize, typename... Key>
+void StaticHashTable<DataType, TableSize, Key...>::removeEntryInternal(size_t originalEntry, size_t entry)
+{
+    if (entry != table_data_t::invalid_hash_entry_v) {
+        assert(table_data_t::hashEntryCounts()[originalEntry] > 0);
+        table_data_t::originalHashEntries()[entry] = table_data_t::invalid_hash_entry_v;
+        table_data_t::hashEntryCounts()[originalEntry]--;
+        table_data_t::decreaseEntryCount();
+    }
 }
 
 template<typename DataType, size_t TableSize, typename... Key>
@@ -338,6 +405,41 @@ auto StaticHashTable<DataType, TableSize, Key...>::at(KeyN&&... keyN)
   -> DataType* requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...)
 {
     return const_cast<DataType*>(std::as_const(*this).at(std::forward<KeyN>(keyN)...));
+}
+
+template<typename DataType, size_t TableSize, typename... Key>
+template<typename... KeyN>
+auto StaticHashTable<DataType, TableSize, Key...>::remove(KeyN&&... keyN) -> iterator_t
+  requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...)
+{
+    auto entry = removeEntry(std::forward<KeyN>(keyN)...);
+    return (entry != table_data_t::invalid_hash_entry_v) ? iterator_t{ this, entry++ } : end();
+}
+
+template<typename DataType, size_t TableSize, typename... Key>
+auto StaticHashTable<DataType, TableSize, Key...>::remove(const_iterator_t it) -> const_iterator_t
+{
+    assert(it != cend());
+
+    const auto originalEntry = getOriginalEntry((*it).first, std::make_index_sequence<sizeof...(Key)>{});
+    auto entry = it.index();
+
+    removeEntryInternal(originalEntry, entry);
+
+    return (entry != table_data_t::invalid_hash_entry_v) ? const_iterator_t{ this, entry++ } : cend();
+}
+
+template<typename DataType, size_t TableSize, typename... Key>
+auto StaticHashTable<DataType, TableSize, Key...>::remove(iterator_t it) -> iterator_t
+{
+    assert(it != end());
+
+    const auto originalEntry = getOriginalEntry((*it).first, std::make_index_sequence<sizeof...(Key)>{});
+    auto entry = it.index();
+
+    removeEntryInternal(originalEntry, entry);
+
+    return (entry != table_data_t::invalid_hash_entry_v) ? iterator_t{ this, entry++ } : end();
 }
 }
 
