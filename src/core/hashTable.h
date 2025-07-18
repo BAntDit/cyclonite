@@ -57,9 +57,9 @@ public:
     void increaseEntryCount() { actualSize_++; }
     void decreaseEntryCount() { actualSize_--; }
 
-private:
     void destroyEntryData(size_t index);
 
+private:
     std::array<value_type, TableSize> data_;
     std::array<uint32_t, TableSize> hashEntryCount_;
     std::array<size_t, TableSize> originalHashEntry_;
@@ -79,8 +79,10 @@ HashTableData<DataType, TableSize, Key...>::HashTableData() noexcept
 template<HashTableDataConcept DataType, size_t TableSize, HashTableKeyConcept... Key>
 void HashTableData<DataType, TableSize, Key...>::clear()
 {
+    for (auto i = size_t{ 0 }; i < TableSize; i++) {
+        destroyEntryData(i);
+    }
     hashEntryCount_.fill(0);
-    originalHashEntry_.fill(invalid_hash_entry_v);
     actualSize_ = 0;
 }
 
@@ -425,7 +427,7 @@ void StaticHashTable<DataType, TableSize, Key...>::removeEntryInternal(size_t or
 {
     if (entry != table_data_t::invalid_hash_entry_v) {
         assert(table_data_t::hashEntryCounts()[originalEntry] > 0);
-        table_data_t::originalHashEntries()[entry] = table_data_t::invalid_hash_entry_v;
+        table_data_t::destroyEntryData(entry);
         table_data_t::hashEntryCounts()[originalEntry]--;
         table_data_t::decreaseEntryCount();
     }
