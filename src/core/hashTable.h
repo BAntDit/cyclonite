@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <new>
 #include <type_traits>
 #include <utility>
@@ -56,8 +57,9 @@ public:
     void increaseEntryCount() { actualSize_++; }
     void decreaseEntryCount() { actualSize_--; }
 
-    // TODO:: adds data destruction (if it's not trivially destructible)
 private:
+    void destroyEntryData(size_t index);
+
     std::array<value_type, TableSize> data_;
     std::array<uint32_t, TableSize> hashEntryCount_;
     std::array<size_t, TableSize> originalHashEntry_;
@@ -80,6 +82,35 @@ void HashTableData<DataType, TableSize, Key...>::clear()
     hashEntryCount_.fill(0);
     originalHashEntry_.fill(invalid_hash_entry_v);
     actualSize_ = 0;
+}
+
+template<HashTableDataConcept DataType, size_t TableSize, HashTableKeyConcept... Key>
+void HashTableData<DataType, TableSize, Key...>::destroyEntryData(size_t index)
+{
+    assert(index < TableSize);
+
+    auto destroy_keys_f = []<size_t... I>(std::index_sequence<I...>, auto&& tuple)->void
+    {
+        auto destroy_key_f = [](auto&& key) -> void {
+            if constexpr (!std::is_trivially_destructible_v<std::decay_t<decltype(key)>>) {
+                std::destroy_at(&key);
+            }
+        };
+
+        (destroy_key_f(std::get<I>(tuple)), ...);
+    };
+
+    if (auto entry = originalHashEntry_[index]; entry != invalid_hash_entry_v) {
+        auto& [keys, value] = data_[index];
+
+        destroy_keys_f(std::make_index_sequence<sizeof...(Key)>{}, keys);
+
+        if constexpr (!std::is_trivially_destructible_v<DataType>) {
+            std::destroy_at(&value);
+        } 
+
+        originalHashEntry_[index] = invalid_hash_entry_v;
+    }
 }
 } // internal
 
@@ -153,12 +184,11 @@ public:
     [[nodiscard]] auto cend() const -> const_iterator_t { return const_iterator_t{ this, size_t{ 0 } }; }
 
     template<typename... KeyN>
-    [[nodiscard]] auto find(KeyN&&... keyN) -> iterator_t
-        requires(std::is_convertible_v<std::decay_t<KeyN>, Key> && ...);
+    [[nodiscard]] auto find(KeyN&&... keyN) -> iterator_t requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...);
 
     template<typename... KeyN>
     [[nodiscard]] auto find(KeyN&&... keyN) const -> const_iterator_t
-        requires(std::is_convertible_v<std::decay_t<KeyN>, Key> && ...);
+      requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...);
 
     template<typename... KeyN>
     [[nodiscard]] auto at(KeyN&&... keyN) const
@@ -168,17 +198,16 @@ public:
     [[nodiscard]] auto at(KeyN&&... keyN) -> DataType* requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...);
 
     template<typename... KeyN>
-    auto remove(KeyN&&... keyN) -> iterator_t
-        requires(std::is_convertible_v<std::decay_t<KeyN>, Key> && ...);
+    auto remove(KeyN&&... keyN) -> iterator_t requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...);
 
     auto remove(const_iterator_t it) -> const_iterator_t;
 
     auto remove(iterator_t it) -> iterator_t;
 
     template<typename ValueType, typename... KeyN>
-    auto add(ValueType&& value, KeyN&&... keyN) -> std::pair<iterator_t, bool>
-        requires(std::is_convertible_v<std::decay_t<ValueType>, DataType> &&
-                 (std::is_convertible_v<std::decay_t<KeyN>, Key> && ...));
+    auto add(ValueType&& value, KeyN&&... keyN)
+      -> std::pair<iterator_t, bool> requires(std::is_convertible_v<std::decay_t<ValueType>, DataType> &&
+                                              (std::is_convertible_v<std::decay_t<KeyN>, Key> && ...));
 
     using internal::HashTableData<DataType, TableSize, Key...>::clear;
 
@@ -212,8 +241,7 @@ template<bool IsConstant>
 StaticHashTable<DataType, TableSize, Key...>::Iterator<IsConstant>::Iterator()
   : hashTableData_{ nullptr }
   , index_{ std::numeric_limits<size_t>::max() }
-{
-}
+{}
 
 template<typename DataType, size_t TableSize, typename... Key>
 template<bool IsConstant>
@@ -406,7 +434,7 @@ void StaticHashTable<DataType, TableSize, Key...>::removeEntryInternal(size_t or
 template<typename DataType, size_t TableSize, typename... Key>
 template<typename... KeyN>
 auto StaticHashTable<DataType, TableSize, Key...>::find(KeyN&&... keyN) -> iterator_t
-    requires(std::is_convertible_v<std::decay_t<KeyN>, Key> && ...)
+  requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...)
 {
     auto entry = findEntry(std::make_index_sequence<sizeof...(KeyN)>{}, std::forward<KeyN>(keyN)...);
     return (entry == table_data_t::invalid_hash_entry_v) ? end() : iterator_t{ this, entry };
@@ -415,7 +443,7 @@ auto StaticHashTable<DataType, TableSize, Key...>::find(KeyN&&... keyN) -> itera
 template<typename DataType, size_t TableSize, typename... Key>
 template<typename... KeyN>
 auto StaticHashTable<DataType, TableSize, Key...>::find(KeyN&&... keyN) const -> const_iterator_t
-    requires(std::is_convertible_v<std::decay_t<KeyN>, Key> && ...)
+  requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...)
 {
     auto entry = findEntry(std::make_index_sequence<sizeof...(KeyN)>{}, std::forward<KeyN>(keyN)...);
     return (entry == table_data_t::invalid_hash_entry_v) ? cend() : const_iterator_t{ this, entry };
@@ -424,24 +452,24 @@ auto StaticHashTable<DataType, TableSize, Key...>::find(KeyN&&... keyN) const ->
 template<typename DataType, size_t TableSize, typename... Key>
 template<typename... KeyN>
 auto StaticHashTable<DataType, TableSize, Key...>::at(KeyN&&... keyN) const
-  -> DataType const* requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...) {
-                         auto entry =
-                           findEntry(std::make_index_sequence<sizeof...(KeyN)>{}, std::forward<KeyN>(keyN)...);
-                         return (entry == table_data_t::invalid_hash_entry_v) ? nullptr
-                                                                              : &table_data_t::data()[entry].second;
-                     }
+  -> DataType const* requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...)
+{
+    auto entry = findEntry(std::make_index_sequence<sizeof...(KeyN)>{}, std::forward<KeyN>(keyN)...);
+    return (entry == table_data_t::invalid_hash_entry_v) ? nullptr : &table_data_t::data()[entry].second;
+}
 
 template<typename DataType, size_t TableSize, typename... Key>
 template<typename... KeyN>
 auto StaticHashTable<DataType, TableSize, Key...>::at(KeyN&&... keyN)
-  -> DataType* requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...) {
-                   return const_cast<DataType*>(std::as_const(*this).at(std::forward<KeyN>(keyN)...));
-               }
+  -> DataType* requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...)
+{
+    return const_cast<DataType*>(std::as_const(*this).at(std::forward<KeyN>(keyN)...));
+}
 
 template<typename DataType, size_t TableSize, typename... Key>
 template<typename... KeyN>
 auto StaticHashTable<DataType, TableSize, Key...>::remove(KeyN&&... keyN) -> iterator_t
-    requires(std::is_convertible_v<std::decay_t<KeyN>, Key> && ...)
+  requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...)
 {
     auto entry = removeEntry(std::forward<KeyN>(keyN)...);
     return (entry != table_data_t::invalid_hash_entry_v) ? iterator_t{ this, entry++ } : end();
@@ -475,9 +503,9 @@ auto StaticHashTable<DataType, TableSize, Key...>::remove(iterator_t it) -> iter
 
 template<typename DataType, size_t TableSize, typename... Key>
 template<typename ValueType, typename... KeyN>
-auto StaticHashTable<DataType, TableSize, Key...>::add(ValueType&& value, KeyN&&... keyN) -> std::pair<iterator_t, bool>
-    requires(std::is_convertible_v<std::decay_t<ValueType>, DataType> &&
-             (std::is_convertible_v<std::decay_t<KeyN>, Key> && ...))
+auto StaticHashTable<DataType, TableSize, Key...>::add(ValueType&& value, KeyN&&... keyN)
+  -> std::pair<iterator_t, bool> requires(std::is_convertible_v<std::decay_t<ValueType>, DataType> &&
+                                          (std::is_convertible_v<std::decay_t<KeyN>, Key> && ...))
 {
     auto it = end();
     auto added = false;
