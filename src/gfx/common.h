@@ -23,6 +23,8 @@ using platform_implementation_t = typename get_platform_implementation<GfxType>:
 struct DeviceLimits
 {
     bool supportCompute;
+    bool dedicatedTransferQueue;
+    bool dedicatedComputeQueue;
 };
 
 enum class DeviceVendor: uint32_t
