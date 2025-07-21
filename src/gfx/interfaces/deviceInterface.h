@@ -5,9 +5,9 @@
 #ifndef GFX_INTERFACES_DEVICE_H
 #define GFX_INTERFACES_DEVICE_H
 
+#include "gfx/common.h"
 #include <concepts>
 #include <string_view>
-#include "gfx/common.h"
 
 namespace cyclonite::core {
 class ResourceBase;

@@ -3,11 +3,14 @@
 //
 
 #include "vkDevice.h"
+#include "core/hashTable.h"
 #include <array>
 #include <cstring>
-#include <stdexcept>
-#include <utility>
+#include <limits>
 #include <metrix/enum.h>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
 
 namespace cyclonite::gfx::vulkan {
 namespace {
@@ -29,11 +32,10 @@ auto testRequiredDeviceExtensions(VkPhysicalDevice physicalDevice, std::vector<c
         }
     }
 
-    for (auto extIt = requiredExtensions.cbegin(); extIt != requiredExtensions.cend(); ++extIt) {
+    for (auto* reqExtName : requiredExtensions) {
         auto it = availableExtensionList.cbegin();
-
         while (it != availableExtensionList.cend()) {
-            if (0 == strcmp((*extIt), (*it).extensionName))
+            if (0 == strcmp(reqExtName, (*it).extensionName))
                 break;
             it++;
         }
@@ -46,11 +48,11 @@ auto testRequiredDeviceExtensions(VkPhysicalDevice physicalDevice, std::vector<c
     return true;
 }
 
-auto getVendoById(uint32_t id) -> DeviceVendor {
+auto getVendorById(uint32_t id) -> DeviceVendor
+{
     auto result = DeviceVendor::Unknown;
-    
-    switch (id) 
-    { 
+
+    switch (id) {
         case metrix::value_cast(DeviceVendor::AMD):
             result = DeviceVendor::AMD;
             break;
@@ -93,6 +95,83 @@ auto getVendoById(uint32_t id) -> DeviceVendor {
 
     return result;
 }
+
+using queue_family_flag_req_t = core::StaticHashTable<uint32_t, 32, uint32_t>;
+
+enum class QueueSelectionPolicy : uint32_t
+{
+    Required,
+    BetterInclude,
+    BetterExclude
+};
+
+template<size_t N>
+auto getBestQueueFamilyIndex(std::vector<VkQueueFamilyProperties> const& familyProperties,
+                             queue_family_flag_req_t& usage,
+                             std::array<std::pair<VkQueueFlagBits, QueueSelectionPolicy>, N>&& requirements)
+  -> std::tuple<uint32_t, uint32_t, VkQueueFlags>
+{
+    auto flags = VkQueueFlags{};
+    auto queueFamilyIndex = std::numeric_limits<uint32_t>::max();
+    auto queueIndex = uint32_t{ 0 };
+
+    auto bestCapabilityCount = uint32_t{ 0 };
+
+    for (auto i = uint32_t{ 0 }, count = static_cast<uint32_t>(familyProperties.size()); i < count; i++) {
+        auto&& properties = familyProperties[i];
+
+        auto it = usage.find(i);
+        if (it != usage.end()) {
+            auto [_, v] = *it;
+            if (v >= properties.queueCount) {
+                continue;
+            }
+        }
+
+        flags = VkQueueFlags{};
+        auto lastCapabilityCount = uint32_t{ 0 };
+        auto skipFamily = false;
+        for (auto&& [flag, policy] : requirements) {
+            if (policy == QueueSelectionPolicy::Required && ((properties.queueFlags & flag) == 0)) {
+                skipFamily = true;
+                break;
+            } else {
+                flags = flags | flag;
+                lastCapabilityCount++;
+            }
+
+            if (policy == QueueSelectionPolicy::BetterInclude && ((properties.queueFlags & flag) != 0)) {
+                lastCapabilityCount++;
+                flags = flags | flag;
+            }
+
+            if (policy == QueueSelectionPolicy::BetterExclude && ((properties.queueFlags & flag) == 0)) {
+                lastCapabilityCount++;
+            }
+        }
+
+        if (skipFamily)
+            continue;
+
+        if (lastCapabilityCount > bestCapabilityCount) {
+            bestCapabilityCount = lastCapabilityCount;
+            queueFamilyIndex = i;
+        }
+    }
+
+    if (queueFamilyIndex != std::numeric_limits<uint32_t>::max()) {
+        auto it = usage.find(queueFamilyIndex);
+        if (it == usage.end()) {
+            usage.add(queueIndex + 1, queueFamilyIndex);
+        } else {
+            auto& [_, v] = *it;
+            assert(v < familyProperties[queueFamilyIndex].queueCount);
+            queueIndex = v++;
+        }
+    }
+
+    return std::tuple{ queueFamilyIndex, queueIndex, flags };
+}
 }
 
 Device::Device(core::ResourceManagerBase* resourceManager,
@@ -105,7 +184,7 @@ Device::Device(core::ResourceManagerBase* resourceManager,
   , vkInstance_{ vkInstance }
   , vkPhysicalDevice_{ vkPhysicalDevice }
   , name_{ physicalDeviceProperties.deviceName }
-  , vendor_{ getVendoById(physicalDeviceProperties.deviceID) }
+  , vendor_{ getVendorById(physicalDeviceProperties.deviceID) }
   , limits_{}
   , vkDevice_{}
 {
@@ -119,85 +198,31 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     auto familyPropertiesList = std::vector<VkQueueFamilyProperties>(familyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice_, &familyCount, familyPropertiesList.data());
 
-    auto queueFamilyCount = uint32_t{ 0 };
-    auto graphicsQueueFamilyIndex = std::numeric_limits<uint32_t>::max();
-    auto graphicsQueueIndex = std::numeric_limits<uint32_t>::max();
-    
-    {
-        auto bestCapabilityCount = uint32_t{ 0 };
-        
-        for (auto i = size_t{ 0 }, count = familyPropertiesList.size(); i < count; i++) {
-            auto lastCapabilityCount = uint32_t{ 0 };
-            auto& properties = familyPropertiesList[i];
-            auto requiredFlags = (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT);
-            
-            if ((properties.queueFlags & requiredFlags) == requiredFlags) {
-                lastCapabilityCount++;
-            } else {
-                continue;
-            }
+    auto familyQueueUsages = queue_family_flag_req_t{};
 
-            if ((properties.queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
-                lastCapabilityCount++;
-            }
+    auto [graphicsQueueFamilyIndex, graphicsQueueIndex, graphicsQueueFlags] =
+      getBestQueueFamilyIndex(familyPropertiesList,
+                              familyQueueUsages,
+                              std::array{ std::pair{ VK_QUEUE_GRAPHICS_BIT, QueueSelectionPolicy::Required },
+                                          std::pair{ VK_QUEUE_TRANSFER_BIT, QueueSelectionPolicy::Required },
+                                          std::pair{ VK_QUEUE_COMPUTE_BIT, QueueSelectionPolicy::BetterInclude } });
 
-            if (lastCapabilityCount > bestCapabilityCount) {
-                graphicsQueueFamilyIndex = i;
-                bestCapabilityCount = lastCapabilityCount;
-            }
-        }
+    auto [transferQueueFamilyIndex, transferQueueIndex, transferQueueFlags] =
+      getBestQueueFamilyIndex(familyPropertiesList,
+                              familyQueueUsages,
+                              std::array{ std::pair{ VK_QUEUE_GRAPHICS_BIT, QueueSelectionPolicy::BetterExclude },
+                                          std::pair{ VK_QUEUE_TRANSFER_BIT, QueueSelectionPolicy::Required },
+                                          std::pair{ VK_QUEUE_COMPUTE_BIT, QueueSelectionPolicy::BetterExclude } });
 
-        if (graphicsQueueFamilyIndex == std::numeric_limits<uint32_t>::max()) {
-            throw std::runtime_error("gfx:: could not found valid graphics queue family index for device: " + name_);
-        } else {
-            graphicsQueueIndex = 0;
-            queueFamilyCount++;
-        }
-    }
+    auto [computeQueueFamilyIndex, computeQueueIndex, computeQueueFlags] =
+      getBestQueueFamilyIndex(familyPropertiesList,
+                              familyQueueUsages,
+                              std::array{ std::pair{ VK_QUEUE_GRAPHICS_BIT, QueueSelectionPolicy::BetterExclude },
+                                          std::pair{ VK_QUEUE_TRANSFER_BIT, QueueSelectionPolicy::BetterInclude },
+                                          std::pair{ VK_QUEUE_COMPUTE_BIT, QueueSelectionPolicy::Required } });
 
-    auto transferQueueFamilyIndex = std::numeric_limits<uint32_t>::max();
-    auto transferQueueIndex = std::numeric_limits<uint32_t>::max();
 
-    {
-        auto bestCapabilityCount = uint32_t{ 0 };
 
-        for (auto i = size_t{ 0 }, count = familyPropertiesList.size(); i < count; i++) {
-        
-        }
-    }
-
-    /*
-    auto graphicsQueueRequirements = std::array{ std::pair{ VK_QUEUE_GRAPHICS_BIT, QueueFlagRequirements::Required },
-                                                 std::pair{ VK_QUEUE_TRANSFER_BIT, QueueFlagRequirements::Required },
-                                                 std::pair{ VK_QUEUE_COMPUTE_BIT, QueueFlagRequirements::Optional },
-                                                 std::pair{ VK_QUEUE_SPARSE_BINDING_BIT, QueueFlagRequirements::Optional} };
-
-    auto graphicsQueueFamilyIndex = getBestQueueFamilyIndex(familyPropertiesList, graphicsQueueRequirements);
-    if (graphicsQueueFamilyIndex == std::numeric_limits<uint32_t>::max()) {
-        throw std::runtime_error("gfx:: could not found valid graphics queue family index for device: " + name_);
-    }
-
-    auto transferQueueRequirements =
-      std::array{ std::pair{ VK_QUEUE_GRAPHICS_BIT, QueueFlagRequirements::Unused },
-                  std::pair{ VK_QUEUE_TRANSFER_BIT, QueueFlagRequirements::Required },
-                  std::pair{ VK_QUEUE_COMPUTE_BIT, QueueFlagRequirements::Unused },
-                  std::pair{ VK_QUEUE_SPARSE_BINDING_BIT, QueueFlagRequirements::Unused } };
-
-    auto transferQueueFamilyIndex = getBestQueueFamilyIndex(familyPropertiesList, transferQueueRequirements);
-    if (transferQueueFamilyIndex == std::numeric_limits<uint32_t>::max()) {
-        throw std::runtime_error("gfx:: could not found valid transfer queue family index for device: " + name_);
-    }
-    */
-    // to refactor with array of { flag, option }
-    /*auto graphicsQueueFamilyIndex =
-      getBestQueueFamilyIndex(familyPropertiesList, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT);
-
-    if (graphicsQueueFamilyIndex == std::numeric_limits<uint32_t>::max()) {
-        throw std::runtime_error("gfx:: could not found valid graphics queue family index for device: " + name_);
-    }
-
-    auto computeQueueFamilyIndex =
-      getBestQueueFamilyIndex(familyPropertiesList, VK_QUEUE_COMPUTE_BIT, uint_fast8_t{ 1 });*/
 
     auto features = VkPhysicalDeviceFeatures{};
 

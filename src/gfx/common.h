@@ -27,11 +27,11 @@ struct DeviceLimits
     bool dedicatedComputeQueue;
 };
 
-enum class DeviceVendor: uint32_t
+enum class DeviceVendor : uint32_t
 {
     Unknown = 0,
-    AMD = 0x1002, 
-    NVIDIA = 0x10DE, 
+    AMD = 0x1002,
+    NVIDIA = 0x10DE,
     ImgTec_PowerVR = 0x1010,
     ARM_MaliGPU = 0x13B5,
     Apple = 0x106B,
