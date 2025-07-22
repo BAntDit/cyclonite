@@ -189,7 +189,7 @@ Device::Device(core::ResourceManagerBase* resourceManager,
   , vkDevice_{}
 {
     if (!testRequiredDeviceExtensions(vkPhysicalDevice, requiredExtensions)) {
-        throw std::runtime_error("gfx:: physical device does not supports required extensions.");
+        throw std::runtime_error("gfx:: physical device does not supports required extensions. Device name: " + name_);
     }
 
     uint32_t familyCount = 0;
@@ -221,7 +221,83 @@ Device::Device(core::ResourceManagerBase* resourceManager,
                                           std::pair{ VK_QUEUE_TRANSFER_BIT, QueueSelectionPolicy::BetterInclude },
                                           std::pair{ VK_QUEUE_COMPUTE_BIT, QueueSelectionPolicy::Required } });
 
+    if (graphicsQueueFamilyIndex == std::numeric_limits<uint32_t>::max()) {
+        throw std::runtime_error("gfx:: could not find valid graphics queue family index for device: " + name_);
+    }
 
+    assert(transferQueueIndex < 3);
+
+    auto queueCreateInfoCount = uint32_t{ 0 };
+    auto deviceQueueCreateInfoArray = std::array<VkDeviceQueueCreateInfo, 3>{};
+    
+    auto graphicsQueuePriorities = std::array<float, 3>{ 1.0f, 1.0f, 1.0f };
+    if (graphicsQueueFamilyIndex == transferQueueFamilyIndex) {
+        graphicsQueuePriorities[transferQueueIndex] = 0.5f;
+    }
+    
+    auto computeQueuePriorities = std::array<float, 3>{ 1.0f, 1.0f, 1.0f }; 
+    if (computeQueueFamilyIndex == transferQueueFamilyIndex) {
+        computeQueuePriorities[transferQueueIndex] = 0.5f;
+    }
+
+    auto transferQueuePriorities = std::array<float, 3>{ 1.0f, 1.0f, 1.0f };
+    transferQueuePriorities[transferQueueIndex] = 0.5f;
+
+    // graphics
+    {
+        auto it = familyQueueUsages.find(graphicsQueueFamilyIndex);
+        assert(it != familyQueueUsages.end());
+
+        auto const [_, usageCount] = *it;
+        assert(usageCount > 0);
+        assert(usageCount <= 3);
+
+        familyQueueUsages.remove(it);
+
+        auto& deviceQueueCreateInfo = deviceQueueCreateInfoArray[queueCreateInfoCount++];
+        deviceQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        deviceQueueCreateInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
+        deviceQueueCreateInfo.queueCount = usageCount;
+        deviceQueueCreateInfo.pQueuePriorities = graphicsQueuePriorities.data();
+    }
+
+    // transfer
+    if (transferQueueFamilyIndex != std::numeric_limits<uint32_t>::max()) {
+        limits_.dedicatedTransferQueue = true;
+        if (auto it = familyQueueUsages.find(transferQueueFamilyIndex); it != familyQueueUsages.end()) {
+            auto const [_, usageCount] = *it;
+            assert(usageCount > 0);
+            assert(usageCount <= 3);
+
+            familyQueueUsages.remove(it);
+
+            auto& deviceQueueCreateInfo = deviceQueueCreateInfoArray[queueCreateInfoCount++];
+            deviceQueueCreateInfo.queueFamilyIndex = transferQueueFamilyIndex;
+            deviceQueueCreateInfo.queueCount = usageCount;
+            deviceQueueCreateInfo.pQueuePriorities = transferQueuePriorities.data();
+        }
+    } 
+
+    // compute
+    if (computeQueueFamilyIndex != std::numeric_limits<uint32_t>::max()) {
+        limits_.supportCompute = true;
+        limits_.dedicatedComputeQueue = true;
+
+        if (auto it = familyQueueUsages.find(computeQueueFamilyIndex); it != familyQueueUsages.end()) {
+            auto const [_, usageCount] = *it;
+            assert(usageCount > 0);
+            assert(usageCount <= 3);
+
+            familyQueueUsages.remove(it);
+
+            auto& deviceQueueCreateInfo = deviceQueueCreateInfoArray[queueCreateInfoCount++];
+            deviceQueueCreateInfo.queueFamilyIndex = computeQueueFamilyIndex;
+            deviceQueueCreateInfo.queueCount = usageCount;
+            deviceQueueCreateInfo.pQueuePriorities = computeQueuePriorities.data();
+        }
+    } else {
+        limits_.supportCompute = ((graphicsQueueFlags & VK_QUEUE_COMPUTE_BIT) != 0);
+    }
 
 
     auto features = VkPhysicalDeviceFeatures{};
@@ -234,10 +310,13 @@ Device::Device(core::ResourceManagerBase* resourceManager,
 
     auto deviceInfo = VkDeviceCreateInfo{};
     deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    // deviceInfo.queueCreateInfoCount = static_cast<uint32_t>(deviceQueuesCreateInfo.size());
-    // deviceInfo.pQueueCreateInfos = deviceQueuesCreateInfo.data();
+    deviceInfo.queueCreateInfoCount = queueCreateInfoCount;
+    deviceInfo.pQueueCreateInfos = deviceQueueCreateInfoArray.data();
     deviceInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
     deviceInfo.ppEnabledExtensionNames = requiredExtensions.data();
     deviceInfo.pEnabledFeatures = &features;
+
+    // TODO:: handle errors
+    // vkCreateDevice(vkPhysicalDevice_, &deviceInfo, nullptr, &vkDevice_);
 }
 }
