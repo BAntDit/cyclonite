@@ -3,6 +3,7 @@
 //
 
 #include "vkInstance.h"
+#include "vkException.h"
 #include <array>
 #include <cstring>
 #include <iostream>
@@ -217,35 +218,21 @@ Instance::Instance(std::string_view applicationName)
     instanceInfo.ppEnabledLayerNames = reqLayers.empty() ? nullptr : reqLayers.data();
 
     if (auto vkResult = vkCreateInstance(&instanceInfo, nullptr, &vkInstance_); vkResult != VK_SUCCESS) {
-        switch (vkResult) {
-            case VK_ERROR_OUT_OF_HOST_MEMORY:
-                throw std::runtime_error("system is running out of memory");
-            case VK_ERROR_OUT_OF_DEVICE_MEMORY:
-                throw std::runtime_error("device is running out of memory");
-            case VK_ERROR_LAYER_NOT_PRESENT:
-                throw std::runtime_error("layer is not presented");
-            case VK_ERROR_EXTENSION_NOT_PRESENT:
-                throw std::runtime_error("extension is not presented");
-            case VK_ERROR_INCOMPATIBLE_DRIVER:
-                throw std::runtime_error("incompatible driver");
-            default:
-                assert(false);
-        }
-
-        throw std::runtime_error("vulkan instance creation failed"); // and no one knows why
+        throw Exception{ vkResult, "vkCreateInstance" };
     }
 
     uint32_t physicalDeviceCount = 0;
-    if (vkEnumeratePhysicalDevices(static_cast<VkInstance>(vkInstance_), &physicalDeviceCount, VK_NULL_HANDLE) !=
-        VK_SUCCESS) {
-        throw std::runtime_error("could not enumerate physical devices");
+    if (auto vkResult =
+          vkEnumeratePhysicalDevices(static_cast<VkInstance>(vkInstance_), &physicalDeviceCount, VK_NULL_HANDLE);
+        vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vkEnumeratePhysicalDevices" };
     }
 
     physicalDeviceList_.resize(physicalDeviceCount);
-
-    if (vkEnumeratePhysicalDevices(
-          static_cast<VkInstance>(vkInstance_), &physicalDeviceCount, physicalDeviceList_.data()) != VK_SUCCESS) {
-        throw std::runtime_error("could not get physical devices");
+    if (auto vkResult = vkEnumeratePhysicalDevices(
+          static_cast<VkInstance>(vkInstance_), &physicalDeviceCount, physicalDeviceList_.data());
+        vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vkEnumeratePhysicalDevices" };
     }
 }
 

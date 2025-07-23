@@ -4,6 +4,7 @@
 
 #include "vkDevice.h"
 #include "core/hashTable.h"
+#include "vkException.h"
 #include <array>
 #include <cstring>
 #include <limits>
@@ -187,6 +188,9 @@ Device::Device(core::ResourceManagerBase* resourceManager,
   , vendor_{ getVendorById(physicalDeviceProperties.deviceID) }
   , limits_{}
   , vkDevice_{}
+  , graphicsQueue_{}
+  , transferQueue_{}
+  , computeQueue_{}
 {
     if (!testRequiredDeviceExtensions(vkPhysicalDevice, requiredExtensions)) {
         throw std::runtime_error("gfx:: physical device does not supports required extensions. Device name: " + name_);
@@ -229,13 +233,13 @@ Device::Device(core::ResourceManagerBase* resourceManager,
 
     auto queueCreateInfoCount = uint32_t{ 0 };
     auto deviceQueueCreateInfoArray = std::array<VkDeviceQueueCreateInfo, 3>{};
-    
+
     auto graphicsQueuePriorities = std::array<float, 3>{ 1.0f, 1.0f, 1.0f };
     if (graphicsQueueFamilyIndex == transferQueueFamilyIndex) {
         graphicsQueuePriorities[transferQueueIndex] = 0.5f;
     }
-    
-    auto computeQueuePriorities = std::array<float, 3>{ 1.0f, 1.0f, 1.0f }; 
+
+    auto computeQueuePriorities = std::array<float, 3>{ 1.0f, 1.0f, 1.0f };
     if (computeQueueFamilyIndex == transferQueueFamilyIndex) {
         computeQueuePriorities[transferQueueIndex] = 0.5f;
     }
@@ -276,7 +280,7 @@ Device::Device(core::ResourceManagerBase* resourceManager,
             deviceQueueCreateInfo.queueCount = usageCount;
             deviceQueueCreateInfo.pQueuePriorities = transferQueuePriorities.data();
         }
-    } 
+    }
 
     // compute
     if (computeQueueFamilyIndex != std::numeric_limits<uint32_t>::max()) {
@@ -299,7 +303,6 @@ Device::Device(core::ResourceManagerBase* resourceManager,
         limits_.supportCompute = ((graphicsQueueFlags & VK_QUEUE_COMPUTE_BIT) != 0);
     }
 
-
     auto features = VkPhysicalDeviceFeatures{};
 
     // turn off unused features (for now)
@@ -316,7 +319,17 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     deviceInfo.ppEnabledExtensionNames = requiredExtensions.data();
     deviceInfo.pEnabledFeatures = &features;
 
-    // TODO:: handle errors
-    // vkCreateDevice(vkPhysicalDevice_, &deviceInfo, nullptr, &vkDevice_);
+    if (auto vkResult = vkCreateDevice(vkPhysicalDevice_, &deviceInfo, nullptr, &vkDevice_); vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vkCreateDevice" };
+    }
+
+    assert(graphicsQueueFamilyIndex != std::numeric_limits<uint32_t>::max());
+    vkGetDeviceQueue(static_cast<VkDevice>(vkDevice_), graphicsQueueFamilyIndex, graphicsQueueIndex, &graphicsQueue_);
+
+    assert(transferQueueFamilyIndex != std::numeric_limits<uint32_t>::max());
+    vkGetDeviceQueue(static_cast<VkDevice>(vkDevice_), transferQueueFamilyIndex, transferQueueIndex, &transferQueue_);
+
+    assert(computeQueueFamilyIndex != std::numeric_limits<uint32_t>::max());
+    vkGetDeviceQueue(static_cast<VkDevice>(vkDevice_), computeQueueFamilyIndex, computeQueueIndex, &computeQueue_);
 }
 }

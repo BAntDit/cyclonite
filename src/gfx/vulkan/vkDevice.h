@@ -12,6 +12,7 @@
 #include "handle.h"
 #include <memory>
 #include <string_view>
+#include <optional>
 
 namespace cyclonite::gfx {
 class ResourceManager;
@@ -49,6 +50,9 @@ private:
     DeviceVendor vendor_;
     DeviceLimits limits_;
     Handle<VkDevice> vkDevice_;
+    Handle<VkQueue> graphicsQueue_;
+    Handle<VkQueue> transferQueue_;
+    Handle<VkQueue> computeQueue_;
 };
 }
 
