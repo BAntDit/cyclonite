@@ -11,8 +11,8 @@
 #include "gfx/common.h"
 #include "handle.h"
 #include <memory>
-#include <string_view>
 #include <optional>
+#include <string_view>
 
 namespace cyclonite::gfx {
 class ResourceManager;
@@ -40,6 +40,9 @@ public:
     [[nodiscard]] auto name() const -> std::string_view { return name_; }
 
     [[nodiscard]] auto vendor() const -> DeviceVendor { return vendor_; }
+
+    [[nodiscard]] auto createSurface(uint32_t width, uint32_t height, std::string_view title, bool fullscreen)
+      -> core::ResourceRef;
 
     using core::ResourceBase::resourceBase;
 

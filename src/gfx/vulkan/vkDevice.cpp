@@ -2,8 +2,11 @@
 // Created by anton on 6/26/25.
 //
 
+#if defined(GFX_DRIVER_VULKAN)
+
 #include "vkDevice.h"
 #include "core/hashTable.h"
+#include "core/resourceRef.h"
 #include "vkException.h"
 #include <array>
 #include <cstring>
@@ -332,4 +335,12 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     assert(computeQueueFamilyIndex != std::numeric_limits<uint32_t>::max());
     vkGetDeviceQueue(static_cast<VkDevice>(vkDevice_), computeQueueFamilyIndex, computeQueueIndex, &computeQueue_);
 }
+
+auto Device::createSurface(uint32_t width, uint32_t height, std::string_view title, bool fullscreen)
+  -> core::ResourceRef
+{
+    // TODO:: 
 }
+}
+
+#endif // GFX_DRIVER_VULKAN
