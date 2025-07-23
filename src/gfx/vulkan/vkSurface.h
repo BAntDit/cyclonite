@@ -6,6 +6,7 @@
 #define GFX_VK_SURFACE_H
 
 #include "core/resourceBase.h"
+#include "gfx/common.h"
 
 #if defined(GFX_DRIVER_VULKAN)
 
@@ -20,15 +21,14 @@ namespace cyclonite::gfx::vulkan {
 class Surface : public core::ResourceBase
 {
 public:
-    // TODO:: 
     Surface(core::ResourceManagerBase* resourceManager,
             core::ResourceId resourceId,
             VkInstance vkInstance,
             VkDevice vkDevice,
             uint32_t width,
             uint32_t height,
-            bool fullscreen,
-            std::string_view title);
+            std::string_view title,
+            SurfaceFlagBits flags);
 
     ~Surface() = default;
 

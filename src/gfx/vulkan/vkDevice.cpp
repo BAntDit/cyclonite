@@ -2,8 +2,6 @@
 // Created by anton on 6/26/25.
 //
 
-#if defined(GFX_DRIVER_VULKAN)
-
 #include "vkDevice.h"
 #include "core/hashTable.h"
 #include "core/resourceRef.h"
@@ -15,6 +13,8 @@
 #include <stdexcept>
 #include <tuple>
 #include <utility>
+
+#if defined(GFX_DRIVER_VULKAN)
 
 namespace cyclonite::gfx::vulkan {
 namespace {
@@ -329,17 +329,20 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     assert(graphicsQueueFamilyIndex != std::numeric_limits<uint32_t>::max());
     vkGetDeviceQueue(static_cast<VkDevice>(vkDevice_), graphicsQueueFamilyIndex, graphicsQueueIndex, &graphicsQueue_);
 
-    assert(transferQueueFamilyIndex != std::numeric_limits<uint32_t>::max());
-    vkGetDeviceQueue(static_cast<VkDevice>(vkDevice_), transferQueueFamilyIndex, transferQueueIndex, &transferQueue_);
+    if (transferQueueFamilyIndex != std::numeric_limits<uint32_t>::max()) {
+        vkGetDeviceQueue(
+          static_cast<VkDevice>(vkDevice_), transferQueueFamilyIndex, transferQueueIndex, &transferQueue_);
+    }
 
-    assert(computeQueueFamilyIndex != std::numeric_limits<uint32_t>::max());
-    vkGetDeviceQueue(static_cast<VkDevice>(vkDevice_), computeQueueFamilyIndex, computeQueueIndex, &computeQueue_);
+    if (computeQueueFamilyIndex != std::numeric_limits<uint32_t>::max()) {
+        vkGetDeviceQueue(static_cast<VkDevice>(vkDevice_), computeQueueFamilyIndex, computeQueueIndex, &computeQueue_);
+    }
 }
 
-auto Device::createSurface(uint32_t width, uint32_t height, std::string_view title, bool fullscreen)
+auto Device::createSurface(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
   -> core::ResourceRef
 {
-    // TODO:: 
+    // TODO::
 }
 }
 

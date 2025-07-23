@@ -2,6 +2,7 @@
 #include "vkException.h"
 #include <cassert>
 
+#if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 namespace {
 auto getErrorName(VkResult error) -> std::string_view
@@ -142,7 +143,7 @@ auto getErrorDescription(VkResult error) -> std::string_view
             result = "A requested format is not supported on this device";
             break;
         case VK_ERROR_FRAGMENTED_POOL:
-            result = "A pool allocation has failed due to fragmentation of the pool’s memory.";
+            result = "A pool allocation has failed due to fragmentation of the poolï¿½s memory.";
             break;
         case VK_ERROR_UNKNOWN:
             result = "An unknown error has occurred; either the application has provided invalid input, or an "
@@ -177,5 +178,8 @@ auto getErrorDescription(VkResult error) -> std::string_view
 Exception::Exception(VkResult error, std::string_view vkFunctionName)
   : std::runtime_error{ std::string("Error: ") + getErrorName(error).data() + " on  attempt to call " +
                         vkFunctionName.data() + ". " + getErrorDescription(error).data() }
-{}
+{
 }
+}
+
+#endif // GFX_DRIVER_VULKAN

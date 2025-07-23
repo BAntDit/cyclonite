@@ -5,6 +5,10 @@
 #ifndef GFX_COMMON_H
 #define GFX_COMMON_H
 
+#include <SDL3/SDL_video.h>
+#include <cstdint>
+#include <metrix/enum.h>
+
 namespace cyclonite::gfx {
 namespace type_traits {
 template<typename GfxType>
@@ -43,6 +47,21 @@ enum class DeviceVendor : uint32_t
     Google_SwiftShader_virtualGPU = 0x1AE0,
     Qualcomm_AdrenoGPU = 0x5143
 };
+
+enum class SurfaceFlag : uint64_t
+{
+    FULLSCREEN = SDL_WINDOW_FULLSCREEN,
+    HIDDEN = SDL_WINDOW_HIDDEN,
+    BORDERLESS = SDL_WINDOW_BORDERLESS,
+    RESIZABLE = SDL_WINDOW_RESIZABLE,
+    MINIMIZED = SDL_WINDOW_MINIMIZED,
+    MAXIMIZED = SDL_WINDOW_MAXIMIZED,
+    HIGH_PIXEL_DENSITY = SDL_WINDOW_HIGH_PIXEL_DENSITY,
+    ALWAYS_ON_TOP = SDL_WINDOW_ALWAYS_ON_TOP,
+    TRANSPARENT = SDL_WINDOW_TRANSPARENT
+};
+
+using SurfaceFlagBits = metrix::enum_bits<SurfaceFlag>;
 }
 
 #endif // GFX_COMMON_H

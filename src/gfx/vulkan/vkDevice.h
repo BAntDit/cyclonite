@@ -41,7 +41,7 @@ public:
 
     [[nodiscard]] auto vendor() const -> DeviceVendor { return vendor_; }
 
-    [[nodiscard]] auto createSurface(uint32_t width, uint32_t height, std::string_view title, bool fullscreen)
+    [[nodiscard]] auto createSurface(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
       -> core::ResourceRef;
 
     using core::ResourceBase::resourceBase;
