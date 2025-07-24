@@ -65,8 +65,8 @@ auto getWindowProperty<HWND>(SDL_Window* window) -> HWND
 {
     assert(window != nullptr);
     assert(SDL_strcmp(SDL_GetCurrentVideoDriver(), "windows") == 0);
-    return static_cast<HWND>(SDL_GetPointerProperty(
-      SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
+    return static_cast<HWND>(
+      SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
 }
 
 template<>
@@ -74,8 +74,8 @@ auto getWindowProperty<HINSTANCE>(SDL_Window* window) -> HINSTANCE
 {
     assert(window != nullptr);
     assert(SDL_strcmp(SDL_GetCurrentVideoDriver(), "windows") == 0);
-    return static_cast<HINSTANCE>(SDL_GetPointerProperty(
-      SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_INSTANCE_POINTER, nullptr));
+    return static_cast<HINSTANCE>(
+      SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_INSTANCE_POINTER, nullptr));
 }
 #endif
 }
