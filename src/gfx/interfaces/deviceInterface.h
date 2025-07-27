@@ -16,7 +16,7 @@ class ResourceBase;
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept DeviceConcept = requires(T t, uint32_t a, uint32_t b, std::string_view s, bool f) {
+concept DeviceConcept = requires(T t, uint32_t a, uint32_t b, std::string_view s, SurfaceFlagBits f) {
                             {
                                 t.resourceBase()
                                 } -> std::same_as<core::ResourceBase*>;
