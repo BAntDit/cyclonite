@@ -194,6 +194,7 @@ Device::Device(core::ResourceManagerBase* resourceManager,
   , graphicsQueue_{}
   , transferQueue_{}
   , computeQueue_{}
+  , vmaAllocator_{ VK_NULL_HANDLE }
 {
     if (!testRequiredDeviceExtensions(vkPhysicalDevice, requiredExtensions)) {
         throw std::runtime_error("gfx:: physical device does not supports required extensions. Device name: " + name_);
@@ -337,12 +338,29 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     if (computeQueueFamilyIndex != std::numeric_limits<uint32_t>::max()) {
         vkGetDeviceQueue(static_cast<VkDevice>(vkDevice_), computeQueueFamilyIndex, computeQueueIndex, &computeQueue_);
     }
+
+    auto allocatorCreateInfo = VmaAllocatorCreateInfo{};
+    allocatorCreateInfo.flags = VMA_ALLOCATOR_CREATE_EXTERNALLY_SYNCHRONIZED_BIT;
+    allocatorCreateInfo.physicalDevice = vkPhysicalDevice_;
+    allocatorCreateInfo.device = static_cast<VkDevice>(vkDevice_);
+    allocatorCreateInfo.instance = vkInstance;
+    allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_0;
+
+    if (auto vkResult = vmaCreateAllocator(&allocatorCreateInfo, &vmaAllocator_); vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vmaCreateAllocator" };
+    }
 }
 
 auto Device::createSurface(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
   -> core::ResourceRef
 {
     // TODO::
+}
+
+Device::~Device()
+{
+    assert(vmaAllocator_ != VK_NULL_HANDLE);
+    vmaDestroyAllocator(vmaAllocator_);
 }
 }
 

@@ -5,14 +5,15 @@
 #ifndef CYCLONITE_DEVICE_H
 #define CYCLONITE_DEVICE_H
 
-#if defined(GFX_DRIVER_VULKAN)
-
 #include "core/resourceBase.h"
 #include "gfx/common.h"
 #include "handle.h"
+#include "vmaUsage.h"
 #include <memory>
 #include <optional>
 #include <string_view>
+
+#if defined(GFX_DRIVER_VULKAN)
 
 namespace cyclonite::gfx {
 class ResourceManager;
@@ -29,7 +30,7 @@ public:
            VkPhysicalDeviceProperties const& physicalDeviceProperties,
            std::vector<const char*> const& requiredExtensions);
 
-    ~Device() = default;
+    ~Device();
 
     [[nodiscard]] auto vulkanInstance() const -> VkInstance { return vkInstance_; }
 
@@ -56,6 +57,7 @@ private:
     Handle<VkQueue> graphicsQueue_;
     Handle<VkQueue> transferQueue_;
     Handle<VkQueue> computeQueue_;
+    VmaAllocator vmaAllocator_;
 };
 }
 

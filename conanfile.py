@@ -55,6 +55,7 @@ class CycloniteRecipe(ConanFile):
             self.requires("glslang/1.3.243.0")
             self.requires("spirv-tools/1.3.243.0")
             self.requires("spirv-headers/1.3.243.0")
+            self.requires("vulkan-memory-allocator/3.0.1")
 
         self.requires("boost/1.87.0")
         self.requires("nlohmann_json/3.12.0")

@@ -5,12 +5,11 @@
 #ifndef GFX_VK_INSTANCE_H
 #define GFX_VK_INSTANCE_H
 
-#if defined(GFX_DRIVER_VULKAN)
-
 #include "gfx/resourceManager.h"
 #include "handle.h"
 #include <string_view>
 
+#if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 class Instance
 {

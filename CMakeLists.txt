@@ -180,6 +180,9 @@ target_link_libraries(${PROJECT_NAME} Vulkan::Loader)
 find_package(Boost REQUIRED)
 target_link_libraries(${PROJECT_NAME} boost::boost)
 
+find_package(vulkan-memory-allocator REQUIRED CONFIG)
+target_link_libraries(${PROJECT_NAME} vulkan-memory-allocator::vulkan-memory-allocator)
+
 include(GNUInstallDirs)
 
 # Install the library
