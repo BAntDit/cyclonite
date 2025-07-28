@@ -9,4 +9,4 @@
 #include <vk_mem_alloc.h>
 #endif
 
-#endif //CYCLONITE_VMAUSAGE_H
+#endif // CYCLONITE_VMAUSAGE_H

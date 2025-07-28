@@ -8,6 +8,7 @@
 #include <SDL3/SDL_video.h>
 #include <cstdint>
 #include <metrix/enum.h>
+#include "formats.h"
 
 namespace cyclonite::gfx {
 namespace type_traits {
@@ -62,6 +63,17 @@ enum class SurfaceFlag : uint64_t
 };
 
 using SurfaceFlagBits = metrix::enum_bits<SurfaceFlag>;
+
+enum class TextureType : uint_fast8_t
+{
+    TEXTURE_1D = 0,
+    TEXTURE_2D = 1,
+    TEXTURE_3D = 2,
+    TEXTURE_CUBE = 3,
+    TEXTURE_1D_ARRAY = 4,
+    TEXTURE_2D_ARRAY = 5,
+    TEXTURE_CUBE_ARRAY = 6
+};
 }
 
 #endif // GFX_COMMON_H
