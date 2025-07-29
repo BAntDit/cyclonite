@@ -74,6 +74,12 @@ enum class TextureType : uint_fast8_t
     TEXTURE_2D_ARRAY = 5,
     TEXTURE_CUBE_ARRAY = 6
 };
+
+enum class TextureTiling : uint_fast8_t
+{
+    OPTIMAL = 0,
+    LINEAR = 1
+};
 }
 
 #endif // GFX_COMMON_H

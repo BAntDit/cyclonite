@@ -15,7 +15,7 @@ Texture::Texture(VkImageCreateFlags imageCreateFlags,
                  uint32_t depth,
                  uint32_t mipCount,
                  uint32_t arrayLayerCount,
-                 VkImageTiling tiling,
+                 TextureTiling tiling,
                  VkImageUsageFlags usageFlags)
   : allocation_{ VK_NULL_HANDLE }
   , vkImage_{ VK_NULL_HANDLE }
@@ -31,7 +31,7 @@ Texture::Texture(VkImageCreateFlags imageCreateFlags,
     imageCreateInfo.mipLevels = mipCount;
     imageCreateInfo.arrayLayers = arrayLayerCount;
     imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    imageCreateInfo.tiling = tiling;
+    imageCreateInfo.tiling = internal::getTiling(tiling);
     imageCreateInfo.usage = usageFlags;
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;

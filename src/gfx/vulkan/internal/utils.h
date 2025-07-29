@@ -12,6 +12,20 @@
 #include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan::internal {
+inline constexpr auto getTiling(TextureTiling tiling) {
+    auto vkTiling = VK_IMAGE_TILING_OPTIMAL;
+
+    if (tiling == TextureTiling::OPTIMAL) {
+        vkTiling = VK_IMAGE_TILING_OPTIMAL;
+    } else if (tiling == TextureTiling::LINEAR) {
+        vkTiling = VK_IMAGE_TILING_LINEAR;
+    } else {
+        assert(false);
+    }
+
+    return vkYiling;
+}
+
 inline constexpr auto getImageType(TextureType type) -> VkImageType
 {
     auto result = VkImageType{ VK_IMAGE_TYPE_MAX_ENUM };

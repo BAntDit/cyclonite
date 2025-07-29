@@ -22,7 +22,7 @@ protected:
             uint32_t depth,
             uint32_t mipCount,
             uint32_t arrayLayerCount,
-            VkImageTiling tiling,
+            TextureTiling tiling,
             VkImageUsageFlags usageFlags);
 
 private:
