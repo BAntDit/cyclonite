@@ -49,7 +49,7 @@ enum class DeviceVendor : uint32_t
     Qualcomm_AdrenoGPU = 0x5143
 };
 
-enum class SurfaceFlag : uint64_t
+enum class SurfaceFlags : uint64_t
 {
     FULLSCREEN = SDL_WINDOW_FULLSCREEN,
     HIDDEN = SDL_WINDOW_HIDDEN,
@@ -62,7 +62,7 @@ enum class SurfaceFlag : uint64_t
     TRANSPARENT = SDL_WINDOW_TRANSPARENT
 };
 
-using SurfaceFlagBits = metrix::enum_bits<SurfaceFlag>;
+using SurfaceFlagBits = metrix::enum_bits<SurfaceFlags>;
 
 enum class TextureType : uint_fast8_t
 {
@@ -80,6 +80,31 @@ enum class TextureTiling : uint_fast8_t
     OPTIMAL = 0,
     LINEAR = 1
 };
+
+enum class TextureCreationFlags : uint32_t
+{
+    SPARSE_BINDING = 0x00000001,
+    SPARSE_RESIDENCY = 0x00000002,
+    SPARSE_ALIASED = 0x00000004,
+    MUTABLE_FORMAT = 0x00000008,
+    CUBE_COMPATIBLE = 0x00000010
+};
+
+using TextureCreationFlagBits = metrix::enum_bits<TextureCreationFlags>;
+
+enum class TextureUsageFlags : uint32_t
+{
+    TRANSFER_SRC = 0x00000001, 
+    TRANSFER_DST = 0x00000002,
+    SAMPLED = 0x00000004,
+    STORAGE = 0x00000008,
+    COLOR_ATTACHMENT = 0x00000010,
+    DEPTH_STENCIL_ATTACHMENT = 0x00000020,
+    TRANSIENT_ATTACHMENT = 0x00000040,
+    INPUT_ATTACHMENT = 0x00000080
+};
+
+using TextureUsageFlagBits = metrix::enum_bits<TextureUsageFlags>;
 }
 
 #endif // GFX_COMMON_H

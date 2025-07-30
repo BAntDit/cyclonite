@@ -14,7 +14,7 @@ namespace cyclonite::gfx::vulkan {
 class Texture
 {
 protected:
-    Texture(VkImageCreateFlags imageCreateFlags,
+    Texture(TextureCreationFlagBits imageCreateFlags,
             TextureType textureType,
             Format format,
             uint32_t width,
@@ -23,7 +23,7 @@ protected:
             uint32_t mipCount,
             uint32_t arrayLayerCount,
             TextureTiling tiling,
-            VkImageUsageFlags usageFlags);
+            TextureUsageFlagBits usageFlags);
 
 private:
     VmaAllocation allocation_;
