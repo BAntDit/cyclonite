@@ -5,10 +5,12 @@
 #include "vkTexture.h"
 #include "gfx/device.h"
 #include "internal/utils.h"
+#include "vkException.h"
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 Texture::Texture(core::ResourceRef deviceRef,
+                 GpuMemoryAllocationFlagBits allocationFlags,
                  TextureCreationFlagBits imageCreateFlags,
                  TextureType textureType,
                  Format format,
@@ -19,11 +21,12 @@ Texture::Texture(core::ResourceRef deviceRef,
                  uint32_t arrayLayerCount,
                  TextureTiling tiling,
                  TextureUsageFlagBits usageFlags)
-  : allocation_{ VK_NULL_HANDLE }
+  : deviceRef_{ deviceRef }
+  , allocation_{ VK_NULL_HANDLE }
   , vkImage_{ VK_NULL_HANDLE }
 {
-    assert(deviceRef.valid());
-    auto& device = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>();
+    assert(deviceRef_.valid());
+    auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
     auto allocator = device.allocator();
 
     auto imageCreateInfo = VkImageCreateInfo{};
@@ -43,7 +46,27 @@ Texture::Texture(core::ResourceRef deviceRef,
     imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     auto allocationCreateInfo = VmaAllocationCreateInfo{};
-    // vmaCreateImage()
+    allocationCreateInfo.flags = internal::getVmaAllocationFlags(allocationFlags);
+    allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+
+    if (auto vkResult =
+          vmaCreateImage(allocator, &imageCreateInfo, &allocationCreateInfo, &vkImage_, &allocation_, nullptr);
+        vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vmaCreateImage" };
+    }
+
+    deviceRef_.retain();
+}
+
+Texture::~Texture()
+{
+    assert(deviceRef_.valid());
+    auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
+    auto allocator = device.allocator();
+
+    vmaDestroyImage(allocator, vkImage_, allocation_);
+
+    deviceRef_.release();
 }
 }
 #endif

@@ -9,10 +9,42 @@
 #include <cassert>
 
 #if defined(GFX_DRIVER_VULKAN)
+#include "vmaUsage.h"
 #include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan::internal {
-inline constexpr auto getTiling(TextureTiling tiling)
+inline constexpr auto getVmaAllocationFlags(GpuMemoryAllocationFlagBits allocationFlags) -> VmaAllocationCreateFlags
+{
+    auto flags = VmaAllocationCreateFlags{};
+
+    if (allocationFlags.test(GpuMemoryAllocationFlags::DEDICATED_MEMORY)) {
+        flags |= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+    }
+    if (allocationFlags.test(GpuMemoryAllocationFlags::USE_EXISTING_BLOCK)) {
+        flags |= VMA_ALLOCATION_CREATE_NEVER_ALLOCATE_BIT;
+    }
+    if (allocationFlags.test(GpuMemoryAllocationFlags::PERSISTENT_MAPPED_MEMORY)) {
+        flags |= VMA_ALLOCATION_CREATE_MAPPED_BIT;
+    }
+    if (allocationFlags.test(GpuMemoryAllocationFlags::HOST_ACCESS_SEQUENTIAL_WRITE)) {
+        flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+    }
+    if (allocationFlags.test(GpuMemoryAllocationFlags::HOST_ACCESS_RANDOM_ORDER_WRITE_AND_READ)) {
+        flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+    }
+    if (allocationFlags.test(GpuMemoryAllocationFlags::MIN_MEMORY_STRATEGY)) {
+        flags |= VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT;
+    }
+    if (allocationFlags.test(GpuMemoryAllocationFlags::MIN_TIME_STRATEGY)) {
+        flags |= VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT;
+    }
+    if (allocationFlags.test(GpuMemoryAllocationFlags::MIN_OFFSET_STRATEGY)) {
+        flags |= VMA_ALLOCATION_CREATE_STRATEGY_MIN_OFFSET_BIT;
+    }
+    return flags;
+}
+
+inline constexpr auto getTiling(TextureTiling tiling) -> VkImageTiling
 {
     auto vkTiling = VK_IMAGE_TILING_OPTIMAL;
 

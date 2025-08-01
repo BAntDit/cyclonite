@@ -16,6 +16,7 @@ class Texture
 {
 protected:
     Texture(core::ResourceRef deviceRef,
+            GpuMemoryAllocationFlagBits allocationFlags,
             TextureCreationFlagBits imageCreateFlags,
             TextureType textureType,
             Format format,
@@ -27,7 +28,10 @@ protected:
             TextureTiling tiling,
             TextureUsageFlagBits usageFlags);
 
+    ~Texture();
+
 private:
+    core::ResourceRef deviceRef_;
     VmaAllocation allocation_;
     VkImage vkImage_;
 };
