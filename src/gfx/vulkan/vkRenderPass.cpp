@@ -11,7 +11,7 @@ RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
                        core::ResourceId resourceId,
                        core::ResourceRef deviceRef)
   : core::ResourceBase{ resourceManager, resourceId, true }
-  , renderPass_{ deviceRef.as<vulkan::Device>().handle(), vkDestroyRenderPass }
+  , renderPass_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
 {
     auto renderPassCreateInfo = VkRenderPassCreateInfo{};
     renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
