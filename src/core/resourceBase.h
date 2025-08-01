@@ -7,7 +7,7 @@
 
 #include "resourceId.h"
 #include <atomic>
-#include <concepts>
+#include <type_traits>
 
 namespace cyclonite::core {
 class ResourceManagerBase;
@@ -38,11 +38,11 @@ public:
     [[nodiscard]] auto resourceId() const -> ResourceId { return resourceId_; }
 
     template<typename T>
-    [[nodiscard]] auto as() -> T& requires(std::derived_from<T, ResourceBase>) { return static_cast<T&>(*this); }
+    [[nodiscard]] auto as() -> T& requires(std::is_base_of_v<ResourceBase, T>) { return static_cast<T&>(*this); }
 
     template<typename T>
     [[nodiscard]] auto as() const -> T const&
-        requires(std::derived_from<T, ResourceBase>)
+        requires(std::is_base_of_v<ResourceBase, T>)
     {
         return static_cast<T const&>(*this);
     }
