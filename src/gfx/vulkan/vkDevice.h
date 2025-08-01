@@ -32,6 +32,8 @@ public:
 
     ~Device();
 
+    [[nodiscard]] auto allocator() const -> VmaAllocator { return vmaAllocator_; }
+
     [[nodiscard]] auto vulkanInstance() const -> VkInstance { return vkInstance_; }
 
     [[nodiscard]] auto physicalDevice() const -> VkPhysicalDevice { return vkPhysicalDevice_; }
