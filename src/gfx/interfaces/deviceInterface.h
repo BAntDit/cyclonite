@@ -35,6 +35,8 @@ template<DeviceConcept PlatformImplementation>
 class DeviceInterface : private PlatformImplementation
 {
 public:
+    friend class core::ResourceBase;
+
     using PlatformImplementation::createSurface;
     using PlatformImplementation::name;
     using PlatformImplementation::PlatformImplementation;
