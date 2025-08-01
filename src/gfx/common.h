@@ -5,10 +5,10 @@
 #ifndef GFX_COMMON_H
 #define GFX_COMMON_H
 
+#include "formats.h"
 #include <SDL3/SDL_video.h>
 #include <cstdint>
 #include <metrix/enum.h>
-#include "formats.h"
 
 namespace cyclonite::gfx {
 namespace type_traits {
@@ -94,7 +94,7 @@ using TextureCreationFlagBits = metrix::enum_bits<TextureCreationFlags>;
 
 enum class TextureUsageFlags : uint32_t
 {
-    TRANSFER_SRC = 0x00000001, 
+    TRANSFER_SRC = 0x00000001,
     TRANSFER_DST = 0x00000002,
     SAMPLED = 0x00000004,
     STORAGE = 0x00000008,
@@ -105,6 +105,20 @@ enum class TextureUsageFlags : uint32_t
 };
 
 using TextureUsageFlagBits = metrix::enum_bits<TextureUsageFlags>;
+
+enum class GpuMemoryAllocationFlags : uint8_t
+{
+    DEDICATED_MEMORY = 1 >> 0,
+    USE_EXISTING_BLOCK = 1 >> 1,
+    PERSISTENT_MAPPED_MEMORY = 1 >> 2,
+    HOST_ACCESS_SEQUENTIAL_WRITE = 1 >> 3,
+    HOST_ACCESS_RANDOM_ORDER_WRITE_AND_READ = 1 >> 4,
+    MIN_MEMORY_STRATEGY = 1 >> 5,
+    MIN_TIME_STRATEGY = 1 >> 6,
+    MIN_OFFSET_STRATEGY = 1 >> 7
+};
+
+using GpuMemoryAllocationFlagBits = metrix::enum_bits<GpuMemoryAllocationFlags>;
 }
 
 #endif // GFX_COMMON_H

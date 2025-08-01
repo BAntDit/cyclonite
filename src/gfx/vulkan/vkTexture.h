@@ -5,6 +5,7 @@
 #ifndef CYCLONITE_VKTEXTURE_H
 #define CYCLONITE_VKTEXTURE_H
 
+#include "core/resourceRef.h"
 #include "gfx/common.h"
 #include "handle.h"
 #include "vmaUsage.h"
@@ -14,7 +15,8 @@ namespace cyclonite::gfx::vulkan {
 class Texture
 {
 protected:
-    Texture(TextureCreationFlagBits imageCreateFlags,
+    Texture(core::ResourceRef deviceRef,
+            TextureCreationFlagBits imageCreateFlags,
             TextureType textureType,
             Format format,
             uint32_t width,

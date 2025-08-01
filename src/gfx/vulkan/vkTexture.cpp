@@ -3,11 +3,13 @@
 //
 
 #include "vkTexture.h"
+#include "gfx/device.h"
 #include "internal/utils.h"
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
-Texture::Texture(TextureCreationFlagBits imageCreateFlags,
+Texture::Texture(core::ResourceRef deviceRef,
+                 TextureCreationFlagBits imageCreateFlags,
                  TextureType textureType,
                  Format format,
                  uint32_t width,
@@ -20,6 +22,10 @@ Texture::Texture(TextureCreationFlagBits imageCreateFlags,
   : allocation_{ VK_NULL_HANDLE }
   , vkImage_{ VK_NULL_HANDLE }
 {
+    assert(deviceRef.valid());
+    auto& device = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>();
+    auto allocator = device.allocator();
+
     auto imageCreateInfo = VkImageCreateInfo{};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageCreateInfo.flags = imageCreateFlags.cast_to<VkImageCreateFlags>();
@@ -36,6 +42,7 @@ Texture::Texture(TextureCreationFlagBits imageCreateFlags,
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
+    auto allocationCreateInfo = VmaAllocationCreateInfo{};
     // vmaCreateImage()
 }
 }
