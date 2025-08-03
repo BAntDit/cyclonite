@@ -119,6 +119,12 @@ enum class GpuMemoryAllocationFlags : uint8_t
 };
 
 using GpuMemoryAllocationFlagBits = metrix::enum_bits<GpuMemoryAllocationFlags>;
+
+inline constexpr auto isColorFormat(Format format) -> bool
+{
+    auto v = metrix::value_cast(format);
+    return ((v > 0 && v <= 123) || (v >= 131));
+}
 }
 
 #endif // GFX_COMMON_H

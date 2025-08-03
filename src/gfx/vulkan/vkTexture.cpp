@@ -29,11 +29,13 @@ Texture::Texture(core::ResourceRef deviceRef,
     auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
     auto allocator = device.allocator();
 
+    auto vkFormat = internal::getFormat(format);
+
     auto imageCreateInfo = VkImageCreateInfo{};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageCreateInfo.flags = imageCreateFlags.cast_to<VkImageCreateFlags>();
     imageCreateInfo.imageType = internal::getImageType(textureType);
-    imageCreateInfo.format = internal::getFormat(format);
+    imageCreateInfo.format = vkFormat;
     imageCreateInfo.extent.width = width;
     imageCreateInfo.extent.height = height;
     imageCreateInfo.extent.depth = depth;

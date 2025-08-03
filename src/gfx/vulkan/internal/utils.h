@@ -13,6 +13,39 @@
 #include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan::internal {
+inline constexpr auto getImageViewType(TextureType type) -> VkImageViewType
+{
+    auto result = VK_IMAGE_VIEW_TYPE_MAX_ENUM;
+
+    switch (type) {
+        case TextureType::TEXTURE_1D:
+            result = VK_IMAGE_VIEW_TYPE_1D;
+            break;
+        case TextureType::TEXTURE_1D_ARRAY:
+            result = VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+            break;
+        case TextureType::TEXTURE_2D:
+            result = VK_IMAGE_VIEW_TYPE_2D;
+            break;
+        case TextureType::TEXTURE_2D_ARRAY:
+            result = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+            break;
+        case TextureType::TEXTURE_CUBE:
+            result = VK_IMAGE_VIEW_TYPE_CUBE;
+            break;
+        case TextureType::TEXTURE_CUBE_ARRAY:
+            result = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+            break;
+        case TextureType::TEXTURE_3D:
+            result = VK_IMAGE_VIEW_TYPE_3D;
+            break;
+        default:
+            assert(false);
+    }
+
+    return result;
+}
+
 inline constexpr auto getVmaAllocationFlags(GpuMemoryAllocationFlagBits allocationFlags) -> VmaAllocationCreateFlags
 {
     auto flags = VmaAllocationCreateFlags{};
