@@ -27,6 +27,9 @@ concept DeviceConcept = requires(T t, uint32_t a, uint32_t b, std::string_view s
                                 t.vendor()
                                 } -> std::same_as<DeviceVendor>;
                             {
+                                t.limits()
+                                } -> std::same_as<DeviceLimits const&>;
+                            {
                                 t.createSurface(a, b, s, f)
                                 } -> std::same_as<core::ResourceRef>;
                         };
@@ -38,6 +41,7 @@ public:
     friend class core::ResourceBase;
 
     using PlatformImplementation::createSurface;
+    using PlatformImplementation::limits;
     using PlatformImplementation::name;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::resourceBase;

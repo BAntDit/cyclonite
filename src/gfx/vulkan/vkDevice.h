@@ -44,6 +44,8 @@ public:
 
     [[nodiscard]] auto vendor() const -> DeviceVendor { return vendor_; }
 
+    [[nodiscard]] auto limits() const -> DeviceLimits const& { return limits_; }
+
     [[nodiscard]] auto createSurface(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
       -> core::ResourceRef;
 

@@ -190,7 +190,7 @@ Device::Device(core::ResourceManagerBase* resourceManager,
   , name_{ physicalDeviceProperties.deviceName }
   , vendor_{ getVendorById(physicalDeviceProperties.deviceID) }
   , limits_{}
-  , vkDevice_{}
+  , vkDevice_{ vkDestroyDevice }
   , graphicsQueue_{}
   , transferQueue_{}
   , computeQueue_{}
@@ -349,6 +349,8 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     if (auto vkResult = vmaCreateAllocator(&allocatorCreateInfo, &vmaAllocator_); vkResult != VK_SUCCESS) {
         throw Exception{ vkResult, "vmaCreateAllocator" };
     }
+
+    limits_.maxColorAttachmentCount = static_cast<uint8_t>(physicalDeviceProperties.limits.maxColorAttachments);
 }
 
 auto Device::createSurface(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
