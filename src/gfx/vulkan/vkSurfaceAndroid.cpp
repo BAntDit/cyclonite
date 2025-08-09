@@ -7,7 +7,8 @@
 #if defined(GFX_DRIVER_VULKAN) && defined(VK_USE_PLATFORM_ANDROID_KHR)
 
 namespace cyclonite::gfx::vulkan {
-SurfaceAndroid::SurfaceAndroid(VkInstance vkInstance, ANativeWindow* window) : SurfaceKHR{ vkInstance }
+SurfaceAndroid::SurfaceAndroid(VkInstance vkInstance, ANativeWindow* window)
+  : SurfaceKHR{ vkInstance }
 {
     auto vkAndroidSurfaceCreateInfoKHR = VkAndroidSurfaceCreateInfoKHR{};
     vkAndroidSurfaceCreateInfoKHR.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;

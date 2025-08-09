@@ -19,7 +19,7 @@ public:
 
     SurfaceKHR(SurfaceKHR&&) = default;
 
-    ~SurfaceKHR() = default;
+    virtual ~SurfaceKHR() = default;
 
     auto operator=(SurfaceKHR const&) -> SurfaceKHR& = delete;
 

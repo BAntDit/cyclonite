@@ -10,6 +10,7 @@
 
 #if defined(GFX_DRIVER_VULKAN)
 
+#include "vkSurfaceKHR.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_video.h>
 #include <functional>
@@ -23,8 +24,7 @@ class Surface : public core::ResourceBase
 public:
     Surface(core::ResourceManagerBase* resourceManager,
             core::ResourceId resourceId,
-            VkInstance vkInstance,
-            VkDevice vkDevice,
+            core::ResourceRef deviceRef,
             uint32_t width,
             uint32_t height,
             std::string_view title,
@@ -39,6 +39,7 @@ public:
 private:
     VkExtent2D extent_;
     std::unique_ptr<SDL_Window, std::function<void(SDL_Window*)>> sdlWindowPtr_;
+    std::unique_ptr<SurfaceKHR> surface_;
 };
 }
 

@@ -8,6 +8,18 @@
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_video.h>
 
+#if defined(VK_USE_PLATFORM_XLIB_KHR)
+#include "vkSurfaceXlib.h"
+#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
+#include "vkSurfaceWayland.h"
+#elif defined(VK_USE_PLATFORM_WIN32_KHR)
+#include "vkSurfaceWin32.h"
+#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
+#include "vkSurfaceAndroid.h"
+#else
+static_assert(false, "wrong platform configuration, check value of -o platform=<value> this project installed with.");
+#endif
+
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 namespace {
@@ -78,11 +90,17 @@ auto getWindowProperty<HINSTANCE>(SDL_Window* window) -> HINSTANCE
       SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_INSTANCE_POINTER, nullptr));
 }
 #endif
+
+template<typename... SurfaceArgs>
+auto createPlatformSurface(VkInstance vkInstance, SDL_Window* sdlWindow, metrix::type_list<SurfaceArgs...>)
+  -> platform_surface_t*
+{
+    return new platform_surface_t{ vkInstance, getWindowProperty<SurfaceArgs>(sdlWindow)... };
+}
 }
 Surface::Surface(core::ResourceManagerBase* resourceManager,
                  core::ResourceId resourceId,
-                 VkInstance vkInstance,
-                 VkDevice vkDevice,
+                 core::ResourceRef deviceRef,
                  uint32_t width,
                  uint32_t height,
                  std::string_view title,
@@ -94,8 +112,11 @@ Surface::Surface(core::ResourceManagerBase* resourceManager,
                                     static_cast<int>(height),
                                     flags.cast_to<SDL_WindowFlags>()),
                    [](SDL_Window* window) { SDL_DestroyWindow(window); } }
+  , surface_{ createPlatformSurface(
+      deviceRef.as<gfx::type_traits::platform_implementation_t<gfx::Device>>().vulkanInstance(),
+      sdlWindowPtr_.get(),
+      platform_surface_argument_type_list_t{}) }
 {
-    // TODO:: platform surface creation
 }
 }
 #endif

@@ -16,6 +16,10 @@ class RenderPass : public core::ResourceBase
 public:
     RenderPass(core::ResourceManagerBase* resourceManager, core::ResourceId resourceId, core::ResourceRef deviceRef);
 
+    // begin
+
+    // end
+
 private:
     Handle<VkRenderPass> renderPass_;
 };

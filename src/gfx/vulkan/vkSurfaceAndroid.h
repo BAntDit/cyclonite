@@ -10,9 +10,8 @@
 
 #if defined(GFX_DRIVER_VULKAN) && defined(VK_USE_PLATFORM_ANDROID_KHR)
 
-namespace cyclonite::gfx::vulkan
-{
-class SurfaceAndroid: public SurfaceKHR
+namespace cyclonite::gfx::vulkan {
+class SurfaceAndroid : public SurfaceKHR
 {
 public:
     SurfaceAndroid(VkInstance vkInstance, ANativeWindow* window);
@@ -34,4 +33,4 @@ using platform_surface_argument_type_list_t = metrix::type_list<ANativeWindow*>;
 }
 
 #endif // GFX_DRIVER_VULKAN && VK_USE_PLATFORM_ANDROID_KHR
-#endif //CYCLONITE_GFX_VKSURFACEANDROID_H
+#endif // CYCLONITE_GFX_VKSURFACEANDROID_H
