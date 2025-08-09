@@ -30,6 +30,7 @@ struct DeviceLimits
     bool supportCompute;
     bool dedicatedTransferQueue;
     bool dedicatedComputeQueue;
+    uint8_t maxColorAttachmentCount;
 };
 
 enum class DeviceVendor : uint32_t
