@@ -7,9 +7,10 @@
 
 #include "core/resourceManager.h"
 #include "device.h"
+#include "surface.h"
 
 namespace cyclonite::gfx {
-using resource_manager_t = core::ResourceManager<gfx::Device>;
+using resource_manager_t = core::ResourceManager<gfx::Device, gfx::Surface>;
 }
 
 #endif // CYCLONITE_RESOURCEMANAGER_H

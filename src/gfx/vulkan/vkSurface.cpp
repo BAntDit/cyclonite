@@ -5,6 +5,7 @@
 #include "vkSurface.h"
 #include "core/resourceRef.h"
 #include "gfx/resourceManager.h"
+#include "vkException.h"
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_video.h>
 
@@ -98,6 +99,7 @@ auto createPlatformSurface(VkInstance vkInstance, SDL_Window* sdlWindow, metrix:
     return new platform_surface_t{ vkInstance, getWindowProperty<SurfaceArgs>(sdlWindow)... };
 }
 }
+
 Surface::Surface(core::ResourceManagerBase* resourceManager,
                  core::ResourceId resourceId,
                  core::ResourceRef deviceRef,
@@ -112,11 +114,45 @@ Surface::Surface(core::ResourceManagerBase* resourceManager,
                                     static_cast<int>(height),
                                     flags.cast_to<SDL_WindowFlags>()),
                    [](SDL_Window* window) { SDL_DestroyWindow(window); } }
-  , surface_{ createPlatformSurface(
+  , platformSurface_{ createPlatformSurface(
       deviceRef.as<gfx::type_traits::platform_implementation_t<gfx::Device>>().vulkanInstance(),
       sdlWindowPtr_.get(),
       platform_surface_argument_type_list_t{}) }
+  , minSwapchainImageCount_{ 0ul }
+  , maxSwapchainImageCount_{ 0ul }
 {
-}
+    auto& device = deviceRef.as<gfx::type_traits::platform_implementation_t<gfx::Device>>();
+
+    auto presentationSupport = VkBool32{ VK_FALSE };
+
+    if (auto vkResult = vkGetPhysicalDeviceSurfaceSupportKHR(
+          device.physicalDevice(), device.graphicsQueueFamilyIndex(), platformSurface_->handle(), &presentationSupport);
+        vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vkGetPhysicalDeviceSurfaceSupportKHR" };
+    }
+
+    if (presentationSupport == VK_FALSE) {
+        throw std::runtime_error("device graphics queue can not present surface");
+    }
+
+    auto vkSurfaceCapabilitiesKHR = VkSurfaceCapabilitiesKHR{};
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+      device.physicalDevice(), platformSurface_->handle(), &vkSurfaceCapabilitiesKHR);
+
+    if (vkSurfaceCapabilitiesKHR.currentExtent.width != std::numeric_limits<uint32_t>::max() &&
+        vkSurfaceCapabilitiesKHR.currentExtent.height != std::numeric_limits<uint32_t>::max()) {
+        extent_.width = vkSurfaceCapabilitiesKHR.currentExtent.width;
+        extent_.height = vkSurfaceCapabilitiesKHR.currentExtent.height;
+    } else {
+        extent_.width = std::max(vkSurfaceCapabilitiesKHR.minImageExtent.width,
+                                 std::min(vkSurfaceCapabilitiesKHR.maxImageExtent.width, static_cast<uint32_t>(width)));
+        extent_.height =
+          std::max(vkSurfaceCapabilitiesKHR.minImageExtent.height,
+                   std::min(vkSurfaceCapabilitiesKHR.maxImageExtent.height, static_cast<uint32_t>(height)));
+    }
+
+    minSwapchainImageCount_ = vkSurfaceCapabilitiesKHR.maxImageCount;
+    maxSwapchainImageCount_ = vkSurfaceCapabilitiesKHR.maxImageCount;
+};
 }
 #endif

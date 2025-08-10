@@ -50,6 +50,12 @@ public:
 protected:
     [[nodiscard]] auto resourceBase() -> ResourceBase* { return this; }
 
+    [[nodiscard]] auto resourceManager() -> ResourceManagerBase& { return *resourceManager_; }
+
+    [[nodiscard]] auto resourceManager() const -> ResourceManagerBase const& { return *resourceManager_; }
+
+    static void toRef(ResourceBase* resource, ResourceRef& ref);
+
 private:
     std::atomic<uint64_t> refCount_;
     ResourceManagerBase* resourceManager_;

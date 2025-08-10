@@ -4,6 +4,7 @@
 
 #ifndef GFX_INTERFACES_SURFACE_H
 #define GFX_INTERFACES_SURFACE_H
+#include "core/resourceRef.h"
 #include <concepts>
 #include <cstdint>
 
@@ -22,9 +23,12 @@ template<SurfaceConcept PlatformImplementation>
 class SurfaceInterface : private PlatformImplementation
 {
 public:
+    friend class core::ResourceBase;
+
     using PlatformImplementation::height;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::width;
+    using PlatformImplementation::resourceBase;
 };
 }
 

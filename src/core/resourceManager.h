@@ -34,14 +34,14 @@ public:
     [[nodiscard]] auto lastCompletedCurrentFrame() const -> uint_fast64_t { return lastCompletedFrame_; }
 
 protected:
-    [[nodiscard]] auto createResourceRef(ResourceId id, ResourceBase* resource) -> ResourceRef
-    {
-        return ResourceRef{ id, resource };
-    }
-
     virtual void releaseResourceImmediate(ResourceId id) = 0;
 
     virtual void releaseResourceDeferred(ResourceId id) = 0;
+
+    static auto makeResourceRef(ResourceBase* resource) -> ResourceRef
+    {
+        return ResourceRef{ resource->resourceId(), resource };
+    }
 
 private:
     uint_fast64_t currentFrame_;
@@ -245,7 +245,7 @@ auto ResourceManager<ResourceTypes...>::allocResource(Args&&... args) -> Resourc
     auto* memory = storage_.resources[type][blockIndex].bytes;
     auto* r = new (memory) ResourceType(this, resourceId, std::forward<Args>(args)...);
 
-    return createResourceRef(resourceId, r->resourceBase());
+    return makeResourceRef(r->resourceBase());
 }
 
 template<ResourceConcept... ResourceTypes>

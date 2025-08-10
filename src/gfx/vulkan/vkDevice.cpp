@@ -3,8 +3,8 @@
 //
 
 #include "vkDevice.h"
+#include "gfx/resourceManager.h"
 #include "core/hashTable.h"
-#include "core/resourceRef.h"
 #include "vkException.h"
 #include <array>
 #include <cstring>
@@ -191,6 +191,9 @@ Device::Device(core::ResourceManagerBase* resourceManager,
   , vendor_{ getVendorById(physicalDeviceProperties.deviceID) }
   , limits_{}
   , vkDevice_{ vkDestroyDevice }
+  , graphicsQueueFamilyIndex_{ std::numeric_limits<uint32_t>::max() }
+  , transferQueueFamilyIndex_{ std::numeric_limits<uint32_t>::max() }
+  , computeQueueFamilyIndex_{ std::numeric_limits<uint32_t>::max() }
   , graphicsQueue_{}
   , transferQueue_{}
   , computeQueue_{}
@@ -329,14 +332,17 @@ Device::Device(core::ResourceManagerBase* resourceManager,
 
     assert(graphicsQueueFamilyIndex != std::numeric_limits<uint32_t>::max());
     vkGetDeviceQueue(static_cast<VkDevice>(vkDevice_), graphicsQueueFamilyIndex, graphicsQueueIndex, &graphicsQueue_);
+    graphicsQueueFamilyIndex_ = graphicsQueueFamilyIndex;
 
     if (transferQueueFamilyIndex != std::numeric_limits<uint32_t>::max()) {
         vkGetDeviceQueue(
           static_cast<VkDevice>(vkDevice_), transferQueueFamilyIndex, transferQueueIndex, &transferQueue_);
+        transferQueueFamilyIndex_ = transferQueueFamilyIndex;
     }
 
     if (computeQueueFamilyIndex != std::numeric_limits<uint32_t>::max()) {
         vkGetDeviceQueue(static_cast<VkDevice>(vkDevice_), computeQueueFamilyIndex, computeQueueIndex, &computeQueue_);
+        computeQueueFamilyIndex_ = computeQueueFamilyIndex;
     }
 
     auto allocatorCreateInfo = VmaAllocatorCreateInfo{};
@@ -356,7 +362,17 @@ Device::Device(core::ResourceManagerBase* resourceManager,
 auto Device::createSurface(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
   -> core::ResourceRef
 {
-    // TODO::
+    auto result = core::ResourceRef{};
+
+    auto& resManager = static_cast<resource_manager_t&>(resourceManager());
+
+    auto deviceRef = core::ResourceRef{};
+    toRef(resourceBase(), deviceRef);
+    assert(deviceRef.valid());
+
+    result = resManager.allocResource<gfx::Surface>(deviceRef, width, height, title, flags);
+
+    return result;
 }
 
 Device::~Device()

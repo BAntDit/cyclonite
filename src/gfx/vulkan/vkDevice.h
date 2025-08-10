@@ -6,6 +6,7 @@
 #define CYCLONITE_DEVICE_H
 
 #include "core/resourceBase.h"
+#include "core/resourceRef.h"
 #include "gfx/common.h"
 #include "handle.h"
 #include "vmaUsage.h"
@@ -14,11 +15,6 @@
 #include <string_view>
 
 #if defined(GFX_DRIVER_VULKAN)
-
-namespace cyclonite::gfx {
-class ResourceManager;
-}
-
 namespace cyclonite::gfx::vulkan {
 class Device : public core::ResourceBase
 {
@@ -37,6 +33,12 @@ public:
     [[nodiscard]] auto vulkanInstance() const -> VkInstance { return vkInstance_; }
 
     [[nodiscard]] auto physicalDevice() const -> VkPhysicalDevice { return vkPhysicalDevice_; }
+
+    [[nodiscard]] auto graphicsQueueFamilyIndex() const -> uint32_t { return graphicsQueueFamilyIndex_; }
+
+    [[nodiscard]] auto transferQueueFamilyIndex() const -> uint32_t { return transferQueueFamilyIndex_; }
+
+    [[nodiscard]] auto computeQueueFamilyIndex() const -> uint32_t { return computeQueueFamilyIndex_; }
 
     [[nodiscard]] auto handle() const -> VkDevice { return static_cast<VkDevice>(vkDevice_); }
 
@@ -58,6 +60,9 @@ private:
     DeviceVendor vendor_;
     DeviceLimits limits_;
     Handle<VkDevice> vkDevice_;
+    uint32_t graphicsQueueFamilyIndex_;
+    uint32_t transferQueueFamilyIndex_;
+    uint32_t computeQueueFamilyIndex_;
     Handle<VkQueue> graphicsQueue_;
     Handle<VkQueue> transferQueue_;
     Handle<VkQueue> computeQueue_;

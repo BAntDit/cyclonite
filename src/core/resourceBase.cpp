@@ -50,4 +50,9 @@ auto ResourceBase::release() -> uint64_t
     assert(count > 0);
     return count - 1;
 }
+
+/*static*/ void ResourceBase::toRef(ResourceBase* resource, ResourceRef& ref)
+{
+    ref = ResourceManagerBase::makeResourceRef(resource);
+}
 }
