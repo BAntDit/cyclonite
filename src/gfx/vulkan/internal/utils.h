@@ -13,6 +13,46 @@
 #include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan::internal {
+inline constexpr auto getImageLayout(TextureState state) -> VkImageLayout 
+{
+    auto result = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    switch (state) 
+    {
+        case TextureState::UNDEFINED:
+            result = VK_IMAGE_LAYOUT_UNDEFINED;
+            break;
+        case TextureState::GENERAL:
+            result = VK_IMAGE_LAYOUT_GENERAL;
+            break;
+        case TextureState::COLOR_ATTACHMENT_OPTIMAL:
+            result = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            break;
+        case TextureState::DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+            result = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            break;
+        case TextureState::DEPTH_STENCIL_READ_ONLY_OPTIMAL:
+            result = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+            break;
+        case TextureState::SHADER_READ_ONLY_OPTIMAL:
+            result = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            break;
+        case TextureState::TRANSFER_DST_OPTIMAL:
+            result = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            break;
+        case TextureState::TRANSFER_SRC_OPTIMAL:
+            result = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            break;
+        case TextureState::PREINITIALIZED:
+            result = VK_IMAGE_LAYOUT_PREINITIALIZED;
+            break;
+        default:
+            assert(false);
+    }
+
+    return result;
+}
+
 inline constexpr auto getImageViewType(TextureType type) -> VkImageViewType
 {
     auto result = VK_IMAGE_VIEW_TYPE_MAX_ENUM;

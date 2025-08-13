@@ -24,6 +24,7 @@ Texture::Texture(core::ResourceRef deviceRef,
   : deviceRef_{ deviceRef }
   , allocation_{ VK_NULL_HANDLE }
   , vkImage_{ VK_NULL_HANDLE }
+  , state_{ TextureState::UNDEFINED }
 {
     assert(deviceRef_.valid());
     auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
@@ -45,7 +46,7 @@ Texture::Texture(core::ResourceRef deviceRef,
     imageCreateInfo.tiling = internal::getTiling(tiling);
     imageCreateInfo.usage = usageFlags.cast_to<VkImageUsageFlags>();
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageCreateInfo.initialLayout = internal::getImageLayout(state_);
 
     auto allocationCreateInfo = VmaAllocationCreateInfo{};
     allocationCreateInfo.flags = internal::getVmaAllocationFlags(allocationFlags);

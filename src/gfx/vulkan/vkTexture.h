@@ -30,10 +30,13 @@ protected:
 
     ~Texture();
 
+    [[nodiscard]] auto currentState() const -> TextureState { return state_; } 
+
 private:
     core::ResourceRef deviceRef_;
     VmaAllocation allocation_;
     VkImage vkImage_;
+    TextureState state_;
 };
 }
 #endif // GFX_DRIVER_VULKAN
