@@ -25,12 +25,13 @@ Texture::Texture(core::ResourceRef deviceRef,
   , allocation_{ VK_NULL_HANDLE }
   , vkImage_{ VK_NULL_HANDLE }
   , state_{ TextureState::UNDEFINED }
+  , format_{ format }
 {
     assert(deviceRef_.valid());
     auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
     auto allocator = device.allocator();
 
-    auto vkFormat = internal::getFormat(format);
+    auto vkFormat = internal::getFormat(format_);
 
     auto imageCreateInfo = VkImageCreateInfo{};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;

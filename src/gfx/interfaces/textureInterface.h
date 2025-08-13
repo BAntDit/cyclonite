@@ -14,6 +14,11 @@ concept TextureConcept = requires(T t)
         t.currentState()
     }
     ->std::same_as<TextureState>;
+
+    {
+        t.format()
+    }
+    ->std::same_as<Format>;
 };
 
 template<TextureConcept PlatformImplementation>
@@ -23,6 +28,7 @@ public:
     friend class core::ResourceBase;
 
     using PlatformImplementation::currentState;
+    using PlatformImplementation::format;
     using PlatformImplementation::PlatformImplementation;
 };
 }
