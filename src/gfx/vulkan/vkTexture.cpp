@@ -26,6 +26,10 @@ Texture::Texture(core::ResourceRef deviceRef,
   , vkImage_{ VK_NULL_HANDLE }
   , state_{ TextureState::UNDEFINED }
   , format_{ format }
+  , width_{ width }
+  , height_{ height }
+  , depth_{ depth }
+  , mipCount_{ mipCount }
 {
     assert(deviceRef_.valid());
     auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
@@ -38,10 +42,10 @@ Texture::Texture(core::ResourceRef deviceRef,
     imageCreateInfo.flags = imageCreateFlags.cast_to<VkImageCreateFlags>();
     imageCreateInfo.imageType = internal::getImageType(textureType);
     imageCreateInfo.format = vkFormat;
-    imageCreateInfo.extent.width = width;
-    imageCreateInfo.extent.height = height;
-    imageCreateInfo.extent.depth = depth;
-    imageCreateInfo.mipLevels = mipCount;
+    imageCreateInfo.extent.width = width_;
+    imageCreateInfo.extent.height = height_;
+    imageCreateInfo.extent.depth = depth_;
+    imageCreateInfo.mipLevels = mipCount_;
     imageCreateInfo.arrayLayers = arrayLayerCount;
     imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageCreateInfo.tiling = internal::getTiling(tiling);

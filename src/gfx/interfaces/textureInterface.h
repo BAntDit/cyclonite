@@ -19,6 +19,26 @@ concept TextureConcept = requires(T t)
         t.format()
     }
     ->std::same_as<Format>;
+
+    {
+        t.width()
+    }
+    ->std::same_as<uint32_t>;
+
+    {
+        t.height()
+    }
+    ->std::same_as<uint32_t>;
+
+    {
+        t.depth()
+    }
+    ->std::same_as<uint32_t>;
+
+    {
+        t.mipCount()
+    }
+    ->std::same_as<uint32_t>;
 };
 
 template<TextureConcept PlatformImplementation>
@@ -29,6 +49,10 @@ public:
 
     using PlatformImplementation::currentState;
     using PlatformImplementation::format;
+    using PlatformImplementation::width;
+    using PlatformImplementation::height;
+    using PlatformImplementation::depth;
+    using PlatformImplementation::mipCount;
     using PlatformImplementation::PlatformImplementation;
 };
 }
