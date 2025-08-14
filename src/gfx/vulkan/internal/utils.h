@@ -13,12 +13,11 @@
 #include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan::internal {
-inline constexpr auto getImageLayout(TextureState state) -> VkImageLayout 
+inline constexpr auto getImageLayout(TextureState state) -> VkImageLayout
 {
     auto result = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    switch (state) 
-    {
+    switch (state) {
         case TextureState::UNDEFINED:
             result = VK_IMAGE_LAYOUT_UNDEFINED;
             break;

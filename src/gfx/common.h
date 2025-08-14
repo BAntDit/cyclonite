@@ -139,6 +139,12 @@ inline constexpr auto isColorFormat(Format format) -> bool
     auto v = metrix::value_cast(format);
     return ((v > 0 && v <= 123) || (v >= 131));
 }
+
+inline constexpr auto isStencilFormat(Format format) -> bool
+{
+    return format == Format::S8_UINT || format == Format::D16_UNORM_S8_UINT || format == Format::D24_UNORM_S8_UINT ||
+           format == Format::D32_SFLOAT_S8_UINT;
+}
 }
 
 #endif // GFX_COMMON_H
