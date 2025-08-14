@@ -27,8 +27,8 @@ public:
 
     using PlatformImplementation::height;
     using PlatformImplementation::PlatformImplementation;
-    using PlatformImplementation::width;
     using PlatformImplementation::resourceBase;
+    using PlatformImplementation::width;
 };
 }
 

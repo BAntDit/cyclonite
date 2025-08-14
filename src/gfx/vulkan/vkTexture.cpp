@@ -9,7 +9,9 @@
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
-Texture::Texture(core::ResourceRef deviceRef,
+Texture::Texture(core::ResourceManagerBase* resourceManager,
+                 core::ResourceId resourceId,
+                 core::ResourceRef deviceRef,
                  GpuMemoryAllocationFlagBits allocationFlags,
                  TextureCreationFlagBits imageCreateFlags,
                  TextureType textureType,
@@ -21,7 +23,8 @@ Texture::Texture(core::ResourceRef deviceRef,
                  uint32_t arrayLayerCount,
                  TextureTiling tiling,
                  TextureUsageFlagBits usageFlags)
-  : deviceRef_{ deviceRef }
+  : core::ResourceBase{ resourceManager, resourceId, true }
+  , deviceRef_{ deviceRef }
   , allocation_{ VK_NULL_HANDLE }
   , vkImage_{ VK_NULL_HANDLE }
   , state_{ TextureState::UNDEFINED }

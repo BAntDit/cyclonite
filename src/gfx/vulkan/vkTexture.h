@@ -12,10 +12,12 @@
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
-class Texture
+class Texture : public core::ResourceBase
 {
-protected:
-    Texture(core::ResourceRef deviceRef,
+public:
+    Texture(core::ResourceManagerBase* resourceManager,
+            core::ResourceId resourceId,
+            core::ResourceRef deviceRef,
             GpuMemoryAllocationFlagBits allocationFlags,
             TextureCreationFlagBits imageCreateFlags,
             TextureType textureType,
@@ -30,9 +32,9 @@ protected:
 
     ~Texture();
 
-    [[nodiscard]] auto currentState() const -> TextureState { return state_; } 
-    
-    [[nodiscard]] auto format() const -> Format { return format_; } 
+    [[nodiscard]] auto currentState() const -> TextureState { return state_; }
+
+    [[nodiscard]] auto format() const -> Format { return format_; }
 
     [[nodiscard]] auto width() const -> uint32_t { return width_; }
 

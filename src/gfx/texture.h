@@ -1,6 +1,6 @@
 
-#ifndef GFX_SURFACE_H
-#define GFX_SURFACE_H
+#ifndef GFX_TEXTURE_H
+#define GFX_TEXTURE_H
 
 #include "interfaces/textureInterface.h"
 #if defined(GFX_DRIVER_VULKAN)
@@ -21,4 +21,4 @@ using Texture = interfaces::TextureInterface<vulkan::Texture>;
 #endif
 }
 
-#endif // GFX_SURFACE_H
+#endif // GFX_TEXTURE_H
