@@ -5,8 +5,9 @@
 #ifndef CYCLONITE_RENDERPASSBUILDER_H
 #define CYCLONITE_RENDERPASSBUILDER_H
 
+#include "config.h"
 #include "core/resourceRef.h"
-#include <vector>
+#include <array>
 
 namespace cyclonite::gfx {
 class RenderPassBuilder
@@ -28,7 +29,8 @@ private:
     core::ResourceRef deviceRef_;
     core::ResourceRef depthStencilTextureRef_;
     core::ResourceRef surfaceRef_;
-    std::vector<core::ResourceRef> colorAttachmentRefs_;
+    std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs_;
+    uint32_t colorAttachmentCount_;
 };
 }
 

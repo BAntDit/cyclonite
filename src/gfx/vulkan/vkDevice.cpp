@@ -3,8 +3,8 @@
 //
 
 #include "vkDevice.h"
-#include "gfx/resourceManager.h"
 #include "core/hashTable.h"
+#include "gfx/resourceManager.h"
 #include "vkException.h"
 #include <array>
 #include <cstring>

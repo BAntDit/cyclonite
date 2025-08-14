@@ -3,8 +3,10 @@
 //
 
 #include "renderPassBuilder.h"
+#include "config.h"
 #include "device.h"
 #include <cassert>
+#include <format>
 #include <stdexcept>
 
 namespace cyclonite::gfx {
@@ -28,20 +30,25 @@ auto RenderPassBuilder::addColorAttachment(core::ResourceRef textureRef) -> Rend
         throw std::logic_error("render pass is not able to render into color attachments and surface at once");
     }
 
-    if (colorAttachmentRefs_.empty()) { // first attachment
-        auto maxColorAttachmentCount = deviceRef_.as<gfx::Device>().limits().maxColorAttachmentCount;
-        colorAttachmentRefs_.reserve(maxColorAttachmentCount);
+    if (colorAttachmentCount_ == deviceRef_.as<gfx::Device>().limits().maxColorAttachmentCount) {
+        throw std::runtime_error(std::format("color attachment count must not exceed device limitation {}",
+                                             deviceRef_.as<gfx::Device>().limits().maxColorAttachmentCount));
     }
 
-    assert(colorAttachmentRefs_.size() < colorAttachmentRefs_.capacity());
+    if (colorAttachmentCount_ == compile_time_config_t::max_color_attachment_count_v) {
+        throw std::runtime_error(std::format("color attachment count must not exceed configuration limit {}",
+                                             compile_time_config_t::max_color_attachment_count_v));
+    }
+
     assert(textureRef.valid());
-    colorAttachmentRefs_.push_back(textureRef);
+    colorAttachmentRefs_[colorAttachmentCount_++] = textureRef;
+
     return *this;
 }
 
 auto RenderPassBuilder::setSurface(core::ResourceRef surfaceRef) -> RenderPassBuilder&
 {
-    if (!colorAttachmentRefs_.empty()) {
+    if (colorAttachmentCount_ > 0) {
         throw std::logic_error("render pass is not able to render into color attachments and surface at once");
     }
     surfaceRef_ = surfaceRef;
