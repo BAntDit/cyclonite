@@ -1,0 +1,17 @@
+//
+// Created by anton on 8/14/25.
+//
+
+#ifndef CYCLONITE_CONFIG_H
+#define CYCLONITE_CONFIG_H
+
+#include "configTraits.h"
+
+namespace cyclonite::gfx {
+struct compile_time_config
+{};
+
+using compile_time_config_t = ConfigTraits<compile_time_config>;
+}
+
+#endif // CYCLONITE_CONFIG_H

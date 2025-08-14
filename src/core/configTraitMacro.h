@@ -5,6 +5,8 @@
 #ifndef CYCLONITE_CORE_CONFIG_TRAITS_H
 #define CYCLONITE_CORE_CONFIG_TRAITS_H
 
+#include <type_traits>
+
 #define DECLARE_CONFIG_TRAIT(name, type, default_value)                                                                \
     template<typename C>                                                                                               \
     static constexpr auto test_##name(decltype(&C::name))->yes_t;                                                      \
