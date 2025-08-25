@@ -6,6 +6,7 @@
 #define CYCLONITE_VKRENDERPASS_H
 
 #include "core/resourceBase.h"
+#include "core/resourceRef.h"
 #include "gfx/common.h"
 #include "gfx/config.h"
 #include "handle.h"
@@ -27,6 +28,9 @@ public:
     // end
 
 private:
+    core::ResourceRef deviceRef_;
+    core::ResourceRef depthStencilRef_;
+    std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs_;
     Handle<VkRenderPass> renderPass_;
 };
 }

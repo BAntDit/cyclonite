@@ -65,8 +65,6 @@ Texture::Texture(core::ResourceManagerBase* resourceManager,
         vkResult != VK_SUCCESS) {
         throw Exception{ vkResult, "vmaCreateImage" };
     }
-
-    deviceRef_.retain();
 }
 
 Texture::~Texture()
@@ -76,8 +74,6 @@ Texture::~Texture()
     auto allocator = device.allocator();
 
     vmaDestroyImage(allocator, vkImage_, allocation_);
-
-    deviceRef_.release();
 }
 }
 #endif

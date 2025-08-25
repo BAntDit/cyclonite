@@ -70,8 +70,13 @@ RenderPass::RenderPass(
   core::ResourceRef depthStencilRef,
   std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs)
   : core::ResourceBase{ resourceManager, resourceId, true }
+  , deviceRef_{ deviceRef }
+  , depthStencilRef_{ depthStencilRef }
+  , colorAttachmentRefs_(colorAttachmentRefs)
   , renderPass_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
 {
+    assert(deviceRef_.valid());
+
     auto attachmentDescriptions = std::array<VkAttachmentDescription, max_attachment_count_v>{}; // +1 for depth
     auto colorAttachmentReferences =
       std::array<VkAttachmentReference, compile_time_config_t::max_color_attachment_count_v>{};
@@ -118,6 +123,12 @@ RenderPass::RenderPass(
         vkResult != VK_SUCCESS) {
         throw Exception{ vkResult, "vkCreateRenderPass" };
     }
+
+    // TODO:: create RTV
+
+    auto frameBufferCreateInfo = VkFramebufferCreateInfo{};
+    frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    frameBufferCreateInfo.renderPass = static_cast<VkRenderPass>(renderPass_);
 
     // TODO:: create frame buffer
 }
