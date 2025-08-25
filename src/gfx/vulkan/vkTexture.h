@@ -36,6 +36,8 @@ public:
 
     [[nodiscard]] auto format() const -> Format { return format_; }
 
+    [[nodiscard]] auto type() const -> TextureType { return type_; }
+
     [[nodiscard]] auto width() const -> uint32_t { return width_; }
 
     [[nodiscard]] auto height() const -> uint32_t { return height_; }
@@ -43,6 +45,10 @@ public:
     [[nodiscard]] auto depth() const -> uint32_t { return depth_; }
 
     [[nodiscard]] auto mipCount() const -> uint32_t { return mipCount_; }
+
+    [[nodiscard]] auto device() const -> core::ResourceRef { return deviceRef_; }
+
+    [[nodiscard]] auto handle() const -> VkImage { return vkImage_; }
 
 private:
     core::ResourceRef deviceRef_;
@@ -54,6 +60,7 @@ private:
     uint32_t height_;
     uint32_t depth_;
     uint32_t mipCount_;
+    TextureType type_;
 };
 }
 #endif // GFX_DRIVER_VULKAN

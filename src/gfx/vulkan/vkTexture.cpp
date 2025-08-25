@@ -33,6 +33,7 @@ Texture::Texture(core::ResourceManagerBase* resourceManager,
   , height_{ height }
   , depth_{ depth }
   , mipCount_{ mipCount }
+  , type_{ textureType }
 {
     assert(deviceRef_.valid());
     auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
