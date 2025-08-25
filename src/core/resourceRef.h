@@ -11,22 +11,32 @@
 namespace cyclonite::core {
 class ResourceManagerBase;
 
+class WeakResourceRef;
+
 class ResourceRef
 {
 public:
+    friend class WeakResourceRef;
+
     friend class ResourceManagerBase;
 
     ResourceRef() = default;
+
+    ResourceRef(ResourceRef const& ref);
+
+    ResourceRef(ResourceRef&& ref);
+
+    ~ResourceRef();
+
+    auto operator=(ResourceRef const& rhs) -> ResourceRef&;
+
+    auto operator=(ResourceRef&& rhs) -> ResourceRef&;
 
     [[nodiscard]] auto id() const -> ResourceId { return id_; }
 
     [[nodiscard]] auto valid() const -> bool;
 
     [[nodiscard]] auto refCount() const -> uint64_t { return resource_->refCount(); }
-
-    auto retain() -> uint64_t { return resource_->retain(); }
-
-    auto release() -> uint64_t { return resource_->release(); }
 
     [[nodiscard]] auto resourceBase() const -> ResourceBase* { return resource_; }
 
@@ -43,6 +53,10 @@ public:
     }
 
 private:
+    auto retain() -> uint64_t { return resource_->retain(); }
+
+    auto release() -> uint64_t { return resource_->release(); }
+
     ResourceRef(ResourceId id, ResourceBase* resource);
 
     ResourceId id_;
