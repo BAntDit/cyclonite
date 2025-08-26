@@ -14,6 +14,8 @@ class RenderTargetView
 public:
     RenderTargetView(core::WeakResourceRef weakRef, uint32_t mipLevel);
 
+    [[nodiscard]] auto texture() const -> core::WeakResourceRef { return texture_; }
+
 private:
     core::WeakResourceRef texture_;
     Handle<VkImageView> vkImageView_;
