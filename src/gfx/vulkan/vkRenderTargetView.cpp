@@ -11,8 +11,12 @@
 #include <stdexcept>
 
 namespace cyclonite::gfx::vulkan {
-RenderTargetView::RenderTargetView(core::WeakResourceRef weakRef, uint32_t mipLevel)
-  : texture_{ weakRef }
+RenderTargetView::RenderTargetView(core::ResourceManagerBase* resourceManager,
+                                   core::ResourceId resourceId,
+                                   core::WeakResourceRef weakRef,
+                                   uint32_t mipLevel)
+  : core::ResourceBase{ resourceManager, resourceId, true }
+  , texture_{ weakRef }
   , vkImageView_{ weakRef.lock()
                     .as<type_traits::platform_implementation_t<gfx::Texture>>()
                     .device()

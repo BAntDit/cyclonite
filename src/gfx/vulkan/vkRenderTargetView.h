@@ -9,10 +9,13 @@
 #include "handle.h"
 
 namespace cyclonite::gfx::vulkan {
-class RenderTargetView
+class RenderTargetView : public core::ResourceBase
 {
 public:
-    RenderTargetView(core::WeakResourceRef weakRef, uint32_t mipLevel);
+    RenderTargetView(core::ResourceManagerBase* resourceManager,
+                     core::ResourceId resourceId,
+                     core::WeakResourceRef weakRef,
+                     uint32_t mipLevel);
 
     [[nodiscard]] auto texture() const -> core::WeakResourceRef { return texture_; }
 
