@@ -4,11 +4,23 @@
 
 #include "vkTexture.h"
 #include "gfx/device.h"
+#include "gfx/resourceManager.h"
+#include "gfx/renderTargetView.h"
 #include "internal/utils.h"
+#include "core/spinLock.h"
+#include "core/weakResourceRef.h"
 #include "vkException.h"
+#include <mutex>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
+namespace {
+auto rtvKey(uint16_t mip, uint16_t layer) -> uint32_t 
+{
+    return (static_cast<uint32_t>(mip) & uint32_t{ 0xffff0000 }) | (static_cast<uint32_t>(layer) << 16);
+}
+}
+
 Texture::Texture(core::ResourceManagerBase* resourceManager,
                  core::ResourceId resourceId,
                  core::ResourceRef deviceRef,
@@ -34,6 +46,8 @@ Texture::Texture(core::ResourceManagerBase* resourceManager,
   , depth_{ depth }
   , mipCount_{ mipCount }
   , type_{ textureType }
+  , rtvs_{}
+  , rtvsGuard_{}
 {
     assert(deviceRef_.valid());
     auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
@@ -75,6 +89,38 @@ Texture::~Texture()
     auto allocator = device.allocator();
 
     vmaDestroyImage(allocator, vkImage_, allocation_);
+}
+
+auto Texture::getRTV(uint16_t mipLevel) -> core::ResourceRef 
+{
+    auto lock = std::lock_guard{ rtvsGuard_ };
+
+    auto key = rtvKey(mipLevel, 0);
+
+    auto rtv = core::ResourceRef{};
+
+    auto rtvExists = (rtvs_.contains(key) && (rtv = rtvs_.at(key)).valid()); 
+   
+    if (!rtvExists) {
+        auto& resManager = static_cast<resource_manager_t&>(resourceManager());
+        
+        auto thisRef = core::ResourceRef{};
+        ResourceBase::toRef(resourceBase(), thisRef);
+        assert(thisRef.valid());
+
+        auto [it, _] = rtvs_.emplace(key, resManager.allocResource<gfx::RenderTargetView>(core::WeakResourceRef{ thisRef }, static_cast<uint32_t>(mipLevel)));
+
+        if (it != rtvs_.end()) {
+            auto& [k, v] = *it;
+            rtv = v;
+        } 
+    }
+
+    if (!rtv.valid()) {
+        throw std::runtime_error("could not create RTV");
+    }
+
+    return rtv;
 }
 }
 #endif

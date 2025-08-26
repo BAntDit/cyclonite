@@ -367,7 +367,7 @@ auto Device::createSurface(uint32_t width, uint32_t height, std::string_view tit
     auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
     auto deviceRef = core::ResourceRef{};
-    toRef(resourceBase(), deviceRef);
+    ResourceBase::toRef(resourceBase(), deviceRef);
     assert(deviceRef.valid());
 
     result = resManager.allocResource<gfx::Surface>(deviceRef, width, height, title, flags);

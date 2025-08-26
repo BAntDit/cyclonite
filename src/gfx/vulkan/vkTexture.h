@@ -5,7 +5,9 @@
 #ifndef CYCLONITE_VKTEXTURE_H
 #define CYCLONITE_VKTEXTURE_H
 
+#include <unordered_map>
 #include "core/resourceRef.h"
+#include "core/spinLock.h"
 #include "gfx/common.h"
 #include "handle.h"
 #include "vmaUsage.h"
@@ -50,6 +52,8 @@ public:
 
     [[nodiscard]] auto handle() const -> VkImage { return vkImage_; }
 
+    [[nodiscard]] auto getRTV(uint16_t mipLevel) -> core::ResourceRef;
+
 private:
     core::ResourceRef deviceRef_;
     VmaAllocation allocation_;
@@ -61,6 +65,8 @@ private:
     uint32_t depth_;
     uint32_t mipCount_;
     TextureType type_;
+    std::unordered_map<uint32_t, core::ResourceRef> rtvs_;
+    core::SpinLock rtvsGuard_;
 };
 }
 #endif // GFX_DRIVER_VULKAN
