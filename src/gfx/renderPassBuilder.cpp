@@ -3,6 +3,7 @@
 //
 
 #include "renderPassBuilder.h"
+#include "texture.h"
 #include "config.h"
 #include "device.h"
 #include <cassert>
@@ -24,7 +25,7 @@ auto RenderPassBuilder::setDepthStencilAttachment(core::ResourceRef textureRef) 
     return *this;
 }
 
-auto RenderPassBuilder::addColorAttachment(core::ResourceRef textureRef) -> RenderPassBuilder&
+auto RenderPassBuilder::addColorAttachment(core::ResourceRef textureRef, uint32_t mipLevel) -> RenderPassBuilder&
 {
     if (surfaceRef_.valid()) {
         throw std::logic_error("render pass is not able to render into color attachments and surface at once");
@@ -41,7 +42,12 @@ auto RenderPassBuilder::addColorAttachment(core::ResourceRef textureRef) -> Rend
     }
 
     assert(textureRef.valid());
-    colorAttachmentRefs_[colorAttachmentCount_++] = textureRef;
+    assert(textureRef.as<gfx::Textue>().type() == TextureType::TEXTURE_2D);
+
+    colorAttachmentRefs_[colorAttachmentCount_] = textureRef;
+    colorAttachmentSubresDescs_[colorAttachmentCount_] = std::make_pair(static_cast<uint16_t>(mipLevel), uint16_t{ 0 });
+
+    colorAttachmentCount_++;
 
     return *this;
 }
