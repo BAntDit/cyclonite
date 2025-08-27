@@ -3,9 +3,9 @@
 //
 
 #include "renderPassBuilder.h"
-#include "texture.h"
 #include "config.h"
 #include "device.h"
+#include "texture.h"
 #include <cassert>
 #include <format>
 #include <stdexcept>
@@ -15,6 +15,13 @@ auto RenderPassBuilder::setDevice(core::ResourceRef deviceRef) -> RenderPassBuil
 {
     assert(deviceRef.valid());
     deviceRef_ = deviceRef;
+    return *this;
+}
+
+auto RenderPassBuilder::setResolution(uint32_t width, uint32_t height) -> RenderPassBuilder&
+{
+    width_ = width;
+    height_ = height;
     return *this;
 }
 
@@ -42,7 +49,7 @@ auto RenderPassBuilder::addColorAttachment(core::ResourceRef textureRef, uint32_
     }
 
     assert(textureRef.valid());
-    assert(textureRef.as<gfx::Textue>().type() == TextureType::TEXTURE_2D);
+    assert(textureRef.as<gfx::Texture>().type() == TextureType::TEXTURE_2D);
 
     colorAttachmentRefs_[colorAttachmentCount_] = textureRef;
     colorAttachmentSubresDescs_[colorAttachmentCount_] = std::make_pair(static_cast<uint16_t>(mipLevel), uint16_t{ 0 });

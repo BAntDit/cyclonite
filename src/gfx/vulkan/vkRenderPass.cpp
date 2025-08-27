@@ -7,6 +7,7 @@
 #include "gfx/texture.h"
 #include "internal/utils.h"
 #include "vkException.h"
+#include "vkRenderTargetView.h"
 #include <utility>
 
 #if defined(GFX_DRIVER_VULKAN)
@@ -61,6 +62,30 @@ auto writeAttachmentReferences(
      ...);
     return count;
 }
+
+auto getRTV(core::ResourceRef& attachmentRef, uint16_t mipLevel) -> VkImageView
+{
+    assert(attachmentRef.valid());
+
+    auto& texture = attachmentRef.as<gfx::Texture>();
+    auto& rtv = texture.getRTV(mipLevel).as<gfx::vulkan::RenderTargetView>();
+
+    return rtv.handle();
+}
+
+template<size_t... I>
+auto writeRTVs(std::array<VkImageView, max_attachment_count_v>& attachments,
+               std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v>& colorAttachmentRefs,
+               std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v> const&
+                 colorAttachmentSubresDescs,
+               std::index_sequence<I...>) -> uint32_t
+{
+    auto count = uint32_t{ 0 };
+    ((colorAttachmentRefs[I].valid() &&
+      (attachments[I] = getRTV(colorAttachmentRefs[I], colorAttachmentSubresDescs[I].first), ++count)) &&
+     ...);
+    return count;
+}
 }
 
 RenderPass::RenderPass(
@@ -70,12 +95,15 @@ RenderPass::RenderPass(
   core::ResourceRef depthStencilRef,
   std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs,
   std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
-    colorAttachmentSubresDescs)
+    colorAttachmentSubresDescs,
+  uint32_t width,
+  uint32_t height)
   : core::ResourceBase{ resourceManager, resourceId, true }
   , deviceRef_{ deviceRef }
   , depthStencilRef_{ depthStencilRef }
   , colorAttachmentRefs_(colorAttachmentRefs)
-  , renderPass_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
+  , vkRenderPass_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
+  , vkFrameBuffer_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyFramebuffer }
 {
     assert(deviceRef_.valid());
 
@@ -121,18 +149,39 @@ RenderPass::RenderPass(
 
     auto& device = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>();
 
-    if (auto vkResult = vkCreateRenderPass(device.handle(), &renderPassCreateInfo, nullptr, &renderPass_);
+    if (auto vkResult = vkCreateRenderPass(device.handle(), &renderPassCreateInfo, nullptr, &vkRenderPass_);
         vkResult != VK_SUCCESS) {
         throw Exception{ vkResult, "vkCreateRenderPass" };
     }
 
-    // TODO:: create RTV
+    auto rtvCount = uint32_t{ 0 };
+    auto attachments = std::array<VkImageView, max_attachment_count_v>{};
+
+    rtvCount = writeRTVs(attachments,
+                         colorAttachmentRefs,
+                         colorAttachmentSubresDescs,
+                         std::make_index_sequence<compile_time_config_t::max_color_attachment_count_v>{});
+
+    if (depthStencilRef.valid()) {
+        auto& dsTex = depthStencilRef.as<gfx::Texture>();
+        auto& dsv = dsTex.getRTV(0).as<gfx::vulkan::RenderTargetView>();
+
+        attachments[rtvCount++] = dsv.handle();
+    }
 
     auto frameBufferCreateInfo = VkFramebufferCreateInfo{};
     frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    frameBufferCreateInfo.renderPass = static_cast<VkRenderPass>(renderPass_);
+    frameBufferCreateInfo.renderPass = static_cast<VkRenderPass>(vkRenderPass_);
+    frameBufferCreateInfo.attachmentCount = rtvCount;
+    frameBufferCreateInfo.pAttachments = attachments.data();
+    frameBufferCreateInfo.width = width;
+    frameBufferCreateInfo.height = height;
+    frameBufferCreateInfo.layers = 1;
 
-    // TODO:: create frame buffer
+    if (auto vkResult = vkCreateFramebuffer(device.handle(), &frameBufferCreateInfo, nullptr, &vkFrameBuffer_);
+        vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vkCreateFramebuffer" };
+    }
 }
 }
 #endif

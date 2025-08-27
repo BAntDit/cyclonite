@@ -5,12 +5,12 @@
 #ifndef CYCLONITE_VKTEXTURE_H
 #define CYCLONITE_VKTEXTURE_H
 
-#include <unordered_map>
 #include "core/resourceRef.h"
 #include "core/spinLock.h"
 #include "gfx/common.h"
 #include "handle.h"
 #include "vmaUsage.h"
+#include <unordered_map>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {

@@ -17,6 +17,8 @@ public:
 
     auto setDevice(core::ResourceRef deviceRef) -> RenderPassBuilder&;
 
+    auto setResolution(uint32_t width, uint32_t height) -> RenderPassBuilder&;
+
     auto setDepthStencilAttachment(core::ResourceRef textureRef) -> RenderPassBuilder&;
 
     auto setSurface(core::ResourceRef surfaceRef) -> RenderPassBuilder&;
@@ -33,6 +35,8 @@ private:
     std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
       colorAttachmentSubresDescs_;
     uint32_t colorAttachmentCount_;
+    uint32_t width_;
+    uint32_t height_;
 };
 }
 

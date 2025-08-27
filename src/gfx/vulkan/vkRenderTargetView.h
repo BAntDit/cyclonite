@@ -19,6 +19,8 @@ public:
 
     [[nodiscard]] auto texture() const -> core::WeakResourceRef { return texture_; }
 
+    [[nodiscard]] auto handle() const -> VkImageView { return static_cast<VkImageView>(vkImageView_); }
+
 private:
     core::WeakResourceRef texture_;
     Handle<VkImageView> vkImageView_;
