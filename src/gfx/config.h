@@ -2,8 +2,8 @@
 // Created by anton on 8/14/25.
 //
 
-#ifndef CYCLONITE_CONFIG_H
-#define CYCLONITE_CONFIG_H
+#ifndef CYCLONITE_GFX_CONFIG_H
+#define CYCLONITE_GFX_CONFIG_H
 
 #include "configTraits.h"
 
@@ -14,4 +14,4 @@ struct compile_time_config
 using compile_time_config_t = ConfigTraits<compile_time_config>;
 }
 
-#endif // CYCLONITE_CONFIG_H
+#endif // CYCLONITE_GFX_CONFIG_H

@@ -70,6 +70,15 @@ auto RenderPassBuilder::setSurface(core::ResourceRef surfaceRef) -> RenderPassBu
 
 auto RenderPassBuilder::build() -> core::ResourceRef
 {
-    // TODO::
+    auto rpRef = core::ResourceRef{};
+
+    if (colorAttachmentCount_ > 0) {
+        rpRef = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().createRenderPassWithRTVs(
+          depthStencilTextureRef_, colorAttachmentRefs_, colorAttachmentSubresDescs_, width_, height_);
+    } else {
+        // TODO::
+    }
+
+    return rpRef;
 }
 }

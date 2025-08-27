@@ -9,6 +9,7 @@
 #include "gfx/common.h"
 #include <concepts>
 #include <string_view>
+#include <utility>
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
@@ -28,6 +29,12 @@ concept DeviceConcept = requires(T t, uint32_t a, uint32_t b, std::string_view s
                             {
                                 t.createSurface(a, b, s, f)
                                 } -> std::same_as<core::ResourceRef>;
+
+                            requires std::is_member_function_pointer_v<decltype(&T::createRenderPassWithRTVs)>;
+
+                            requires []<typename Ret, typename... Args>(Ret (T::*)(Args...)) constexpr -> bool {
+                                return std::is_same_v<Ret, core::ResourceRef>;
+                            }(&T::createRenderPassWithRTVs);
                         };
 
 template<DeviceConcept PlatformImplementation>

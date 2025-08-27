@@ -8,6 +8,7 @@
 #include "core/resourceBase.h"
 #include "core/resourceRef.h"
 #include "gfx/common.h"
+#include "gfx/config.h"
 #include "handle.h"
 #include "vmaUsage.h"
 #include <memory>
@@ -50,6 +51,14 @@ public:
 
     [[nodiscard]] auto createSurface(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
       -> core::ResourceRef;
+
+    [[nodiscard]] auto createRenderPassWithRTVs(
+      core::ResourceRef depthStencilRef,
+      std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs,
+      std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
+        colorAttachmentSubresDescs,
+      uint32_t width,
+      uint32_t height) -> core::ResourceRef;
 
     using core::ResourceBase::resourceBase;
 

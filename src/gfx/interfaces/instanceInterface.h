@@ -18,7 +18,7 @@ concept InstanceConcept = requires(T t) {
 
                               requires std::is_member_function_pointer_v<decltype(&T::createDevice)>;
 
-                              []<typename Ret, typename... Args>(Ret (T::*)(Args...)) constexpr -> bool {
+                              requires []<typename Ret, typename... Args>(Ret (T::*)(Args...)) constexpr -> bool {
                                   return std::is_same_v<Ret, core::ResourceRef>;
                               }(&T::createDevice);
                           };

@@ -375,6 +375,28 @@ auto Device::createSurface(uint32_t width, uint32_t height, std::string_view tit
     return result;
 }
 
+auto Device::createRenderPassWithRTVs(
+  core::ResourceRef depthStencilRef,
+  std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs,
+  std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
+    colorAttachmentSubresDescs,
+  uint32_t width,
+  uint32_t height) -> core::ResourceRef
+{
+    auto result = core::ResourceRef{};
+
+    auto& resManager = static_cast<resource_manager_t&>(resourceManager());
+
+    auto deviceRef = core::ResourceRef{};
+    ResourceBase::toRef(resourceBase(), deviceRef);
+    assert(deviceRef.valid());
+
+    result = resManager.allocResource<gfx::RenderPass>(
+      deviceRef, depthStencilRef, colorAttachmentRefs, colorAttachmentSubresDescs, width, height);
+
+    return result;
+}
+
 Device::~Device()
 {
     assert(vmaAllocator_ != VK_NULL_HANDLE);

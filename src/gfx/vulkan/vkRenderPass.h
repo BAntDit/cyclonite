@@ -31,6 +31,8 @@ public:
 
     // end
 
+    using core::ResourceBase::resourceBase;
+
 private:
     core::ResourceRef deviceRef_;
     core::ResourceRef depthStencilRef_;

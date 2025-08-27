@@ -5,16 +5,13 @@
 #include "core/weakResourceRef.h"
 #include <concepts>
 
-namespace cyclonite::gfx::interfaces 
-{
+namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept RenderTargetViewConcept = requires(T t)
-{
-    {
-        t.texture()
-    }
-    ->std::same_as<core::WeakResourceRef>;
-};
+concept RenderTargetViewConcept = requires(T t) {
+                                      {
+                                          t.texture()
+                                          } -> std::same_as<core::WeakResourceRef>;
+                                  };
 
 template<RenderTargetViewConcept PlatformImplementation>
 class RenderTargetViewInterface : private PlatformImplementation
