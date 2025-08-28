@@ -359,7 +359,7 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     limits_.maxColorAttachmentCount = static_cast<uint8_t>(physicalDeviceProperties.limits.maxColorAttachments);
 }
 
-auto Device::createSurface(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
+auto Device::createRenderWindow(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
   -> core::ResourceRef
 {
     auto result = core::ResourceRef{};
@@ -370,7 +370,7 @@ auto Device::createSurface(uint32_t width, uint32_t height, std::string_view tit
     ResourceBase::toRef(resourceBase(), deviceRef);
     assert(deviceRef.valid());
 
-    result = resManager.allocResource<gfx::Surface>(deviceRef, width, height, title, flags);
+    result = resManager.allocResource<gfx::RenderWindow>(deviceRef, width, height, title, flags);
 
     return result;
 }

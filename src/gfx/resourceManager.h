@@ -9,10 +9,11 @@
 #include "device.h"
 #include "renderPass.h"
 #include "renderTargetView.h"
-#include "surface.h"
+#include "renderWindow.h"
 
 namespace cyclonite::gfx {
-using resource_manager_t = core::ResourceManager<gfx::Device, gfx::Surface, gfx::RenderTargetView, gfx::RenderPass>;
+using resource_manager_t =
+  core::ResourceManager<gfx::Device, gfx::RenderWindow, gfx::RenderTargetView, gfx::RenderPass>;
 }
 
 #endif // CYCLONITE_RESOURCEMANAGER_H

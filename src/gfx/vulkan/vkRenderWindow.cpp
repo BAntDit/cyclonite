@@ -2,7 +2,7 @@
 // Created by anton on 7/23/25.
 //
 
-#include "vkSurface.h"
+#include "vkRenderWindow.h"
 #include "core/resourceRef.h"
 #include "gfx/resourceManager.h"
 #include "vkException.h"
@@ -100,13 +100,13 @@ auto createPlatformSurface(VkInstance vkInstance, SDL_Window* sdlWindow, metrix:
 }
 }
 
-Surface::Surface(core::ResourceManagerBase* resourceManager,
-                 core::ResourceId resourceId,
-                 core::ResourceRef deviceRef,
-                 uint32_t width,
-                 uint32_t height,
-                 std::string_view title,
-                 SurfaceFlagBits flags)
+RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
+                           core::ResourceId resourceId,
+                           core::ResourceRef deviceRef,
+                           uint32_t width,
+                           uint32_t height,
+                           std::string_view title,
+                           SurfaceFlagBits flags)
   : core::ResourceBase{ resourceManager, resourceId, true }
   , extent_{}
   , sdlWindowPtr_{ SDL_CreateWindow(title.data(),

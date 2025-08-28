@@ -2,8 +2,8 @@
 // Created by anton on 6/11/25.
 //
 
-#ifndef GFX_VK_SURFACE_H
-#define GFX_VK_SURFACE_H
+#ifndef GFX_VK_RENDER_WINDOW_H
+#define GFX_VK_RENDER_WINDOW_H
 
 #include "core/resourceBase.h"
 #include "gfx/common.h"
@@ -19,18 +19,18 @@
 #include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan {
-class Surface : public core::ResourceBase
+class RenderWindow : public core::ResourceBase
 {
 public:
-    Surface(core::ResourceManagerBase* resourceManager,
-            core::ResourceId resourceId,
-            core::ResourceRef deviceRef,
-            uint32_t width,
-            uint32_t height,
-            std::string_view title,
-            SurfaceFlagBits flags);
+    RenderWindow(core::ResourceManagerBase* resourceManager,
+                 core::ResourceId resourceId,
+                 core::ResourceRef deviceRef,
+                 uint32_t width,
+                 uint32_t height,
+                 std::string_view title,
+                 SurfaceFlagBits flags);
 
-    ~Surface() = default;
+    ~RenderWindow() = default;
 
     [[nodiscard]] auto width() const -> uint32_t { return extent_.width; }
 
@@ -52,4 +52,4 @@ private:
 }
 
 #endif // GFX_DRIVER_VULKAN
-#endif // GFX_VK_SURFACE_H
+#endif // GFX_VK_RENDER_WINDOW_H
