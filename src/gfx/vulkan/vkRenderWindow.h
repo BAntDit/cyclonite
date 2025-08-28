@@ -36,18 +36,13 @@ public:
 
     [[nodiscard]] auto height() const -> uint32_t { return extent_.height; }
 
-    [[nodiscard]] auto minSwapchainImageCount() const -> uint32_t { return minSwapchainImageCount_; }
-
-    [[nodiscard]] auto maxSwapchainImageCount() const -> uint32_t { return maxSwapchainImageCount_; }
-
     using core::ResourceBase::resourceBase;
 
 private:
     VkExtent2D extent_;
     std::unique_ptr<SDL_Window, std::function<void(SDL_Window*)>> sdlWindowPtr_;
     std::unique_ptr<SurfaceKHR> platformSurface_;
-    uint32_t minSwapchainImageCount_;
-    uint32_t maxSwapchainImageCount_;
+    Handle<VkSwapchainKHR> swapchain_;
 };
 }
 

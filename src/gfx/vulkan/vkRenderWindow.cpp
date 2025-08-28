@@ -98,7 +98,7 @@ auto createPlatformSurface(VkInstance vkInstance, SDL_Window* sdlWindow, metrix:
 {
     return new platform_surface_t{ vkInstance, getWindowProperty<SurfaceArgs>(sdlWindow)... };
 }
-}
+} // anonymous namespace
 
 RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
                            core::ResourceId resourceId,
@@ -115,11 +115,10 @@ RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
                                     flags.cast_to<SDL_WindowFlags>()),
                    [](SDL_Window* window) { SDL_DestroyWindow(window); } }
   , platformSurface_{ createPlatformSurface(
-      deviceRef.as<gfx::type_traits::platform_implementation_t<gfx::Device>>().vulkanInstance(),
+      deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().vulkanInstance(),
       sdlWindowPtr_.get(),
       platform_surface_argument_type_list_t{}) }
-  , minSwapchainImageCount_{ 0ul }
-  , maxSwapchainImageCount_{ 0ul }
+  , swapchain_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroySwapchainKHR }
 {
     auto& device = deviceRef.as<gfx::type_traits::platform_implementation_t<gfx::Device>>();
 
@@ -151,8 +150,14 @@ RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
                    std::min(vkSurfaceCapabilitiesKHR.maxImageExtent.height, static_cast<uint32_t>(height)));
     }
 
-    minSwapchainImageCount_ = vkSurfaceCapabilitiesKHR.maxImageCount;
-    maxSwapchainImageCount_ = vkSurfaceCapabilitiesKHR.maxImageCount;
+    auto swapChainCreateInfoKHR = VkSwapchainCreateInfoKHR{};
+    swapChainCreateInfoKHR.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    swapChainCreateInfoKHR.surface = platformSurface_->handle();
+    swapChainCreateInfoKHR.minImageCount =
+      std::min(vkSurfaceCapabilitiesKHR.minImageCount + 1,
+               vkSurfaceCapabilitiesKHR.maxImageCount > 0 ? vkSurfaceCapabilitiesKHR.maxImageCount
+                                                          : std::numeric_limits<uint32_t>::max());
+    // swapChainCreateInfoKHR.imageColorSpace
 };
 }
 #endif
