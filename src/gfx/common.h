@@ -33,6 +33,14 @@ struct DeviceLimits
     uint8_t maxColorAttachmentCount;
 };
 
+enum class PresentMode : uint_fast8_t
+{
+    Immediate = 0,
+    MailBox = 1, 
+    FiFo = 2,
+    FiFoRelaxed = 3
+};
+
 enum class DeviceVendor : uint32_t
 {
     Unknown = 0,

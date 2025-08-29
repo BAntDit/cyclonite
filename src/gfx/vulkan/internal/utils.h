@@ -13,6 +13,30 @@
 #include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan::internal {
+inline constexpr auto getPresentMode(PresentMode presentMode) -> VkPresentModeKHR 
+{
+    auto result = VK_PRESENT_MODE_IMMEDIATE_KHR;
+
+    switch (presentMode) {
+        case PresentMode::Immediate:
+            result = VK_PRESENT_MODE_IMMEDIATE_KHR;
+            break;
+        case PresentMode::MailBox:
+            result = VK_PRESENT_MODE_MAILBOX_KHR;
+            break;
+        case PresentMode::FiFo:
+            result = VK_PRESENT_MODE_FIFO_KHR;
+            break;
+        case PresentMode::FiFoRelaxed:
+            result = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+            break;
+        default:
+            assert(false);
+    }
+
+    return result;
+}
+
 inline constexpr auto getImageLayout(TextureState state) -> VkImageLayout
 {
     auto result = VK_IMAGE_LAYOUT_UNDEFINED;
