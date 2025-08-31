@@ -3,8 +3,8 @@
 //
 
 #include "vkRenderWindow.h"
-#include "core/resourceRef.h"
 #include "gfx/resourceManager.h"
+#include "internal/utils.h"
 #include "vkException.h"
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_video.h>
@@ -108,6 +108,7 @@ RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
                            std::string_view title,
                            SurfaceFlagBits flags)
   : core::ResourceBase{ resourceManager, resourceId, true }
+  , deviceRef_{ deviceRef }
   , extent_{}
   , sdlWindowPtr_{ SDL_CreateWindow(title.data(),
                                     static_cast<int>(width),
@@ -118,9 +119,9 @@ RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
       deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().vulkanInstance(),
       sdlWindowPtr_.get(),
       platform_surface_argument_type_list_t{}) }
-  , swapchain_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroySwapchainKHR }
+  , vkSwapchain_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroySwapchainKHR }
 {
-    auto& device = deviceRef.as<gfx::type_traits::platform_implementation_t<gfx::Device>>();
+    auto& device = deviceRef_.as<gfx::type_traits::platform_implementation_t<gfx::Device>>();
 
     auto presentationSupport = VkBool32{ VK_FALSE };
 
@@ -133,6 +134,11 @@ RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
     if (presentationSupport == VK_FALSE) {
         throw std::runtime_error("device graphics queue can not present surface");
     }
+};
+
+void RenderWindow::validateSwapchain(VkFormat format, VkPresentModeKHR presentMode)
+{
+    auto& device = deviceRef_.as<gfx::type_traits::platform_implementation_t<gfx::Device>>();
 
     auto vkSurfaceCapabilitiesKHR = VkSurfaceCapabilitiesKHR{};
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
@@ -143,11 +149,12 @@ RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
         extent_.width = vkSurfaceCapabilitiesKHR.currentExtent.width;
         extent_.height = vkSurfaceCapabilitiesKHR.currentExtent.height;
     } else {
-        extent_.width = std::max(vkSurfaceCapabilitiesKHR.minImageExtent.width,
-                                 std::min(vkSurfaceCapabilitiesKHR.maxImageExtent.width, static_cast<uint32_t>(width)));
+        extent_.width =
+          std::max(vkSurfaceCapabilitiesKHR.minImageExtent.width,
+                   std::min(vkSurfaceCapabilitiesKHR.maxImageExtent.width, static_cast<uint32_t>(extent_.width)));
         extent_.height =
           std::max(vkSurfaceCapabilitiesKHR.minImageExtent.height,
-                   std::min(vkSurfaceCapabilitiesKHR.maxImageExtent.height, static_cast<uint32_t>(height)));
+                   std::min(vkSurfaceCapabilitiesKHR.maxImageExtent.height, static_cast<uint32_t>(extent_.height)));
     }
 
     auto swapChainCreateInfoKHR = VkSwapchainCreateInfoKHR{};
@@ -157,7 +164,22 @@ RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
       std::min(vkSurfaceCapabilitiesKHR.minImageCount + 1,
                vkSurfaceCapabilitiesKHR.maxImageCount > 0 ? vkSurfaceCapabilitiesKHR.maxImageCount
                                                           : std::numeric_limits<uint32_t>::max());
-    // swapChainCreateInfoKHR.imageColorSpace
-};
+    swapChainCreateInfoKHR.imageFormat = format;
+    swapChainCreateInfoKHR.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+    swapChainCreateInfoKHR.imageExtent = extent_;
+    swapChainCreateInfoKHR.imageArrayLayers = 1;
+    swapChainCreateInfoKHR.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    swapChainCreateInfoKHR.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    swapChainCreateInfoKHR.preTransform = vkSurfaceCapabilitiesKHR.currentTransform;
+    swapChainCreateInfoKHR.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    swapChainCreateInfoKHR.presentMode = presentMode;
+    swapChainCreateInfoKHR.clipped = VK_TRUE;
+    swapChainCreateInfoKHR.oldSwapchain = VK_NULL_HANDLE;
+
+    if (auto vkResult = vkCreateSwapchainKHR(device.handle(), &swapChainCreateInfoKHR, nullptr, &vkSwapchain_);
+        vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vkCreateSwapchainKHR" };
+    }
+}
 }
 #endif

@@ -5,7 +5,7 @@
 #ifndef GFX_VK_RENDER_WINDOW_H
 #define GFX_VK_RENDER_WINDOW_H
 
-#include "core/resourceBase.h"
+#include "core/resourceRef.h"
 #include "gfx/common.h"
 
 #if defined(GFX_DRIVER_VULKAN)
@@ -36,13 +36,18 @@ public:
 
     [[nodiscard]] auto height() const -> uint32_t { return extent_.height; }
 
+    [[nodiscard]] auto surfaceHandle() const -> VkSurfaceKHR { return platformSurface_->handle(); }
+
     using core::ResourceBase::resourceBase;
 
+    void validateSwapchain(VkFormat format, VkPresentModeKHR presentMode);
+
 private:
+    core::ResourceRef deviceRef_;
     VkExtent2D extent_;
     std::unique_ptr<SDL_Window, std::function<void(SDL_Window*)>> sdlWindowPtr_;
     std::unique_ptr<SurfaceKHR> platformSurface_;
-    Handle<VkSwapchainKHR> swapchain_;
+    Handle<VkSwapchainKHR> vkSwapchain_;
 };
 }
 

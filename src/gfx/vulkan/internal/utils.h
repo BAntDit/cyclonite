@@ -13,7 +13,7 @@
 #include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan::internal {
-inline constexpr auto getPresentMode(PresentMode presentMode) -> VkPresentModeKHR 
+inline constexpr auto getPresentMode(PresentMode presentMode) -> VkPresentModeKHR
 {
     auto result = VK_PRESENT_MODE_IMMEDIATE_KHR;
 

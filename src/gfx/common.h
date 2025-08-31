@@ -36,7 +36,7 @@ struct DeviceLimits
 enum class PresentMode : uint_fast8_t
 {
     Immediate = 0,
-    MailBox = 1, 
+    MailBox = 1,
     FiFo = 2,
     FiFoRelaxed = 3
 };
