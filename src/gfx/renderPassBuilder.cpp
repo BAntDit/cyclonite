@@ -34,8 +34,8 @@ auto RenderPassBuilder::setDepthStencilAttachment(core::ResourceRef textureRef) 
 
 auto RenderPassBuilder::addColorAttachment(core::ResourceRef textureRef, uint32_t mipLevel) -> RenderPassBuilder&
 {
-    if (surfaceRef_.valid()) {
-        throw std::logic_error("render pass is not able to render into color attachments and surface at once");
+    if (renderWindowRef_.valid()) {
+        throw std::logic_error("render pass is not able to render into color attachments and render window at once");
     }
 
     if (colorAttachmentCount_ == deviceRef_.as<gfx::Device>().limits().maxColorAttachmentCount) {
@@ -59,12 +59,12 @@ auto RenderPassBuilder::addColorAttachment(core::ResourceRef textureRef, uint32_
     return *this;
 }
 
-auto RenderPassBuilder::setSurface(core::ResourceRef surfaceRef) -> RenderPassBuilder&
+auto RenderPassBuilder::setRenderWindow(core::ResourceRef renderWindowRef) -> RenderPassBuilder&
 {
     if (colorAttachmentCount_ > 0) {
-        throw std::logic_error("render pass is not able to render into color attachments and surface at once");
+        throw std::logic_error("render pass is not able to render into color attachments and render window at once");
     }
-    surfaceRef_ = surfaceRef;
+    renderWindowRef_ = renderWindowRef;
     return *this;
 }
 

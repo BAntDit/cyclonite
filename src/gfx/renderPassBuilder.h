@@ -21,7 +21,7 @@ public:
 
     auto setDepthStencilAttachment(core::ResourceRef textureRef) -> RenderPassBuilder&;
 
-    auto setSurface(core::ResourceRef surfaceRef) -> RenderPassBuilder&;
+    auto setRenderWindow(core::ResourceRef renderWindowRef) -> RenderPassBuilder&;
 
     auto addColorAttachment(core::ResourceRef textureRef, uint32_t mipLevel) -> RenderPassBuilder&;
 
@@ -30,7 +30,7 @@ public:
 private:
     core::ResourceRef deviceRef_;
     core::ResourceRef depthStencilTextureRef_;
-    core::ResourceRef surfaceRef_;
+    core::ResourceRef renderWindowRef_;
     std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs_;
     std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
       colorAttachmentSubresDescs_;
