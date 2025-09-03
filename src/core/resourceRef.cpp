@@ -6,6 +6,13 @@
 #include "resourceManager.h"
 
 namespace cyclonite::core {
+ResourceRef::ResourceRef(ResourceBase* resource)
+  : id_{ resource->resourceId() }
+  , resource_{ resource }
+{
+    retain();
+}
+
 ResourceRef::ResourceRef(ResourceId id, ResourceBase* resource)
   : id_{ id }
   , resource_{ resource } {};

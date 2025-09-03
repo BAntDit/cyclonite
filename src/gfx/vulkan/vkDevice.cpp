@@ -366,9 +366,7 @@ auto Device::createRenderWindow(uint32_t width, uint32_t height, std::string_vie
 
     auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-    auto deviceRef = core::ResourceRef{};
-    ResourceBase::toRef(resourceBase(), deviceRef);
-    assert(deviceRef.valid());
+    auto deviceRef = core::ResourceRef{ resourceBase() };
 
     result = resManager.allocResource<gfx::RenderWindow>(deviceRef, width, height, title, flags);
 
@@ -387,9 +385,7 @@ auto Device::createRenderPassWithRTVs(
 
     auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-    auto deviceRef = core::ResourceRef{};
-    ResourceBase::toRef(resourceBase(), deviceRef);
-    assert(deviceRef.valid());
+    auto deviceRef = core::ResourceRef{ resourceBase() };
 
     result = resManager.allocResource<gfx::RenderPass>(
       deviceRef, depthStencilRef, colorAttachmentRefs, colorAttachmentSubresDescs, width, height);

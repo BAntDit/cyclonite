@@ -11,16 +11,14 @@
 namespace cyclonite::core {
 class ResourceManagerBase;
 
-class WeakResourceRef;
-
 class ResourceRef
 {
 public:
-    friend class WeakResourceRef;
-
     friend class ResourceManagerBase;
 
     ResourceRef() = default;
+
+    ResourceRef(ResourceBase* resource);
 
     ResourceRef(ResourceRef const& ref);
 

@@ -104,9 +104,7 @@ auto Texture::getRTV(uint16_t mipLevel) -> core::ResourceRef
     if (!rtvExists) {
         auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-        auto thisRef = core::ResourceRef{};
-        ResourceBase::toRef(resourceBase(), thisRef);
-        assert(thisRef.valid());
+        auto thisRef = core::ResourceRef{ resourceBase() };
 
         auto [it, _] = rtvs_.emplace(key,
                                      resManager.allocResource<gfx::RenderTargetView>(core::WeakResourceRef{ thisRef },
