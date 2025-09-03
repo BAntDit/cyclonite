@@ -120,6 +120,8 @@ RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
       sdlWindowPtr_.get(),
       platform_surface_argument_type_list_t{}) }
   , vkSwapchain_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroySwapchainKHR }
+  , depthStencilRefs_{}
+  , swapchainLength_{ 0 }
 {
     auto& device = deviceRef_.as<gfx::type_traits::platform_implementation_t<gfx::Device>>();
 

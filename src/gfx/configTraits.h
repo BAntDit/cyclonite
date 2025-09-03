@@ -18,6 +18,7 @@ struct config_traits_declaration
 
     // declare new parameters here, if necessary
     DECLARE_CONFIG_TRAIT(max_color_attachment_count, uint32_t, 8)
+    DECLARE_CONFIG_TRAIT(max_swapchain_length, uint8_t, 8)
 };
 }
 
@@ -26,6 +27,7 @@ struct ConfigTraits
 {
     // define new parameters here, if necessary
     DEFINE_CONFIG_TRAIT(max_color_attachment_count)
+    DEFINE_CONFIG_TRAIT(max_swapchain_length)
 };
 }
 

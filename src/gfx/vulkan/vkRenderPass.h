@@ -27,6 +27,12 @@ public:
                uint32_t width,
                uint32_t height);
 
+    RenderPass(core::ResourceManagerBase* resourceManager,
+               core::ResourceId resourceId,
+               core::ResourceRef deviceRef,
+               core::ResourceRef renderWindowRef,
+               gfx::Format depthStencilFormat = gfx::Format::UNDEFINED);
+
     // begin
 
     // end
@@ -35,10 +41,12 @@ public:
 
 private:
     core::ResourceRef deviceRef_;
-    core::ResourceRef depthStencilRef_;
+    std::array<core::ResourceRef, compile_time_config_t::max_swapchain_length_v> depthStencilRefs_;
     std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs_;
     Handle<VkRenderPass> vkRenderPass_;
-    Handle<VkFramebuffer> vkFrameBuffer_;
+    std::array<Handle<VkFramebuffer>, compile_time_config_t::max_swapchain_length_v> vkFrameBuffers_;
+    uint32_t bufferCount_;
+    uint32_t currentBufferIndex_;
 };
 }
 #endif // GFX_DRIVER_VULKAN

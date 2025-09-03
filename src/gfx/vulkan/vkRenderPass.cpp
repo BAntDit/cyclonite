@@ -100,12 +100,20 @@ RenderPass::RenderPass(
   uint32_t height)
   : core::ResourceBase{ resourceManager, resourceId, true }
   , deviceRef_{ deviceRef }
-  , depthStencilRef_{ depthStencilRef }
+  , depthStencilRefs_{}
   , colorAttachmentRefs_(colorAttachmentRefs)
   , vkRenderPass_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
-  , vkFrameBuffer_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyFramebuffer }
+  , vkFrameBuffers_{}
+  , bufferCount_{ 1 }
+  , currentBufferIndex_{ 0 }
 {
     assert(deviceRef_.valid());
+
+    depthStencilRefs_[0] = depthStencilRef;
+
+    vkFrameBuffers_[0] =
+      Handle<VkFramebuffer>{ deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().handle(),
+                             vkDestroyFramebuffer };
 
     auto attachmentDescriptions = std::array<VkAttachmentDescription, max_attachment_count_v>{}; // +1 for depth
     auto colorAttachmentReferences =
@@ -178,7 +186,7 @@ RenderPass::RenderPass(
     frameBufferCreateInfo.height = height;
     frameBufferCreateInfo.layers = 1;
 
-    if (auto vkResult = vkCreateFramebuffer(device.handle(), &frameBufferCreateInfo, nullptr, &vkFrameBuffer_);
+    if (auto vkResult = vkCreateFramebuffer(device.handle(), &frameBufferCreateInfo, nullptr, &vkFrameBuffers_[0]);
         vkResult != VK_SUCCESS) {
         throw Exception{ vkResult, "vkCreateFramebuffer" };
     }
