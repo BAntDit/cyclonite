@@ -39,9 +39,15 @@ auto RenderWindowBuilder::addPresentModeCandidate(PresentMode presentMode) -> Re
     return *this;
 }
 
-auto RenderWindowBuilder::addFormatCandidate(cyclonite::gfx::Format format) -> RenderWindowBuilder&
+auto RenderWindowBuilder::addFormatCandidate(Format format) -> RenderWindowBuilder&
 {
     formatCandidates_.emplace(format);
+    return *this;
+}
+
+auto RenderWindowBuilder::addDepthStencilFormatCandidate(Format format) -> RenderWindowBuilder& 
+{
+    depthStencilFormatCandidates_.emplace(format);
     return *this;
 }
 
@@ -126,6 +132,22 @@ auto RenderWindowBuilder::build() -> core::ResourceRef
     }
 
     renderWindow.validateSwapchain(format, presentMode);
+
+    auto depthStencilFormat = VK_FORMAT_UNDEFINED;
+    for (auto depthStencilFormatCandidate : depthStencilFormatCandidates_) {
+        auto vkDepthStencilFormat = vulkan::internal::getFormat(depthStencilFormatCandidate);
+
+        auto formatProperties = VkFormatProperties{};
+        vkGetPhysicalDeviceFormatProperties(device.physicalDevice(), vkDepthStencilFormat, &formatProperties);
+        if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0) {
+            depthStencilFormat = vkDepthStencilFormat;
+            break;
+        }
+    }
+
+    if (depthStencilFormat != VK_FORMAT_UNDEFINED) {
+        // TODO:: validate depth
+    }
 #endif
 
     return renderWindowRef;

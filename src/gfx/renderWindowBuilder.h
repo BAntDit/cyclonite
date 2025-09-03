@@ -31,6 +31,8 @@ public:
 
     auto addFormatCandidate(Format format) -> RenderWindowBuilder&;
 
+    auto addDepthStencilFormatCandidate(Format format) -> RenderWindowBuilder&;
+
     auto build() -> core::ResourceRef;
 
 private:
@@ -41,6 +43,7 @@ private:
     SurfaceFlagBits flags_;
     std::unordered_set<PresentMode> presentModeCandidates_;
     std::unordered_set<Format> formatCandidates_;
+    std::unordered_set<Format> depthStencilFormatCandidates_;
 };
 
 template<typename... Flag>
