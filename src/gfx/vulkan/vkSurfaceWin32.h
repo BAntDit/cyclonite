@@ -21,9 +21,9 @@ class SurfaceWin32 : public SurfaceKHR
 
     ~SurfaceWin32() = default;
 
-    auto operator=(SurfaceWin32 const&) -> SurfaceWin32 = delete;
+    auto operator=(SurfaceWin32 const&) -> SurfaceWin32& = delete;
 
-    auto operator=(SurfaceWin32&&) -> SurfaceWin32 = default;
+    auto operator=(SurfaceWin32&&) -> SurfaceWin32& = default;
 };
 
 using platform_surface_t = SurfaceWin32;

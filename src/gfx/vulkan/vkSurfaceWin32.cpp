@@ -3,6 +3,7 @@
 //
 
 #include "vkSurfaceWin32.h"
+#include "vkException.h"
 
 #if defined(GFX_DRIVER_VULKAN) && defined(VK_USE_PLATFORM_WIN32_KHR)
 
