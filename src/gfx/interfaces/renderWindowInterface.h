@@ -11,14 +11,22 @@
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept RenderWindowConcept = requires(T t) {
-                                  {
-                                      t.width()
-                                      } -> std::same_as<uint32_t>;
-                                  {
-                                      t.height()
-                                      } -> std::same_as<uint32_t>;
-                              };
+concept RenderWindowConcept = requires(T t)
+{
+    {
+        t.width()
+    }
+    ->std::same_as<uint32_t>;
+    {
+        t.height()
+    }
+    ->std::same_as<uint32_t>;
+
+    {
+        t.swapchainLength()
+    }
+    ->std::same_as<uint32_t>;
+};
 
 template<RenderWindowConcept PlatformImplementation>
 class RenderWindowInterface : private PlatformImplementation
@@ -30,6 +38,7 @@ public:
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::resourceBase;
     using PlatformImplementation::width;
+    using PlatformImplementation::swapchainLength;
 };
 }
 

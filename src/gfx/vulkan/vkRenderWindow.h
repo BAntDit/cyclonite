@@ -37,14 +37,16 @@ public:
     [[nodiscard]] auto width() const -> uint32_t { return extent_.width; }
 
     [[nodiscard]] auto height() const -> uint32_t { return extent_.height; }
+    
+    [[nodiscard]] auto swapchainLength() const -> uint32_t { return swapchainLength_; }
 
     [[nodiscard]] auto surfaceHandle() const -> VkSurfaceKHR { return platformSurface_->handle(); }
 
     using core::ResourceBase::resourceBase;
 
-    void validateSwapchain(VkFormat format, VkPresentModeKHR presentMode);
+    void validateSwapchain(Format format, PresentMode presentMode);
 
-    void validateDepthStencil(VkFormat format);
+    void validateDepthStencil(Format format);
 
 private:
     core::ResourceRef deviceRef_;

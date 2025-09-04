@@ -138,7 +138,7 @@ RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
     }
 };
 
-void RenderWindow::validateSwapchain(VkFormat format, VkPresentModeKHR presentMode)
+void RenderWindow::validateSwapchain(Format format, PresentMode presentMode)
 {
     auto& device = deviceRef_.as<gfx::type_traits::platform_implementation_t<gfx::Device>>();
 
@@ -166,7 +166,7 @@ void RenderWindow::validateSwapchain(VkFormat format, VkPresentModeKHR presentMo
       std::min(vkSurfaceCapabilitiesKHR.minImageCount + 1,
                vkSurfaceCapabilitiesKHR.maxImageCount > 0 ? vkSurfaceCapabilitiesKHR.maxImageCount
                                                           : std::numeric_limits<uint32_t>::max());
-    swapChainCreateInfoKHR.imageFormat = format;
+    swapChainCreateInfoKHR.imageFormat = vulkan::internal::getFormat(format);
     swapChainCreateInfoKHR.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
     swapChainCreateInfoKHR.imageExtent = extent_;
     swapChainCreateInfoKHR.imageArrayLayers = 1;
@@ -174,13 +174,47 @@ void RenderWindow::validateSwapchain(VkFormat format, VkPresentModeKHR presentMo
     swapChainCreateInfoKHR.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     swapChainCreateInfoKHR.preTransform = vkSurfaceCapabilitiesKHR.currentTransform;
     swapChainCreateInfoKHR.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    swapChainCreateInfoKHR.presentMode = presentMode;
+    swapChainCreateInfoKHR.presentMode = vulkan::internal::getPresentMode(presentMode);
     swapChainCreateInfoKHR.clipped = VK_TRUE;
     swapChainCreateInfoKHR.oldSwapchain = VK_NULL_HANDLE;
 
     if (auto vkResult = vkCreateSwapchainKHR(device.handle(), &swapChainCreateInfoKHR, nullptr, &vkSwapchain_);
         vkResult != VK_SUCCESS) {
         throw Exception{ vkResult, "vkCreateSwapchainKHR" };
+    }
+
+    if (auto vkResult = vkGetSwapchainImagesKHR(
+          device.handle(), static_cast<VkSwapchainKHR>(vkSwapchain_), &swapchainLength_, nullptr);
+        (vkResult != VK_SUCCESS && vkResult != VK_INCOMPLETE)) {
+        throw Exception{ vkResult, "vkGetSwapchainImagesKHR" };
+    }
+}
+
+void RenderWindow::validateDepthStencil(Format format)
+{
+    auto& device = deviceRef_.as<gfx::type_traits::platform_implementation_t<gfx::Device>>();
+
+    assert(swapchainLength_ <= std::size(depthStencilRefs_));
+    for (auto i = uint32_t{ 0 }; i < swapchainLength_; i++) {
+        auto allocationFlags = GpuMemoryAllocationFlagBits{};
+        allocationFlags.set(GpuMemoryAllocationFlags::DEDICATED_MEMORY, GpuMemoryAllocationFlags::MIN_MEMORY_STRATEGY);
+
+        auto creationFlags = TextureCreationFlagBits{};
+
+        auto usageFlags = TextureUsageFlagBits{};
+        usageFlags.set(TextureUsageFlags::DEPTH_STENCIL_ATTACHMENT);
+
+        depthStencilRefs_[i] = device.createTexture(allocationFlags,
+                                                    creationFlags,
+                                                    TextureType::TEXTURE_2D,
+                                                    format,
+                                                    extent_.width,
+                                                    extent_.height,
+                                                    1,
+                                                    1,
+                                                    1,
+                                                    TextureTiling::OPTIMAL,
+                                                    usageFlags);
     }
 }
 }

@@ -75,23 +75,25 @@ auto RenderWindowBuilder::build() -> core::ResourceRef
     vkGetPhysicalDeviceSurfacePresentModesKHR(
       device.physicalDevice(), renderWindow.surfaceHandle(), &availablePresentModeCount, availablePresentModes.data());
 
-    auto presentMode = VkPresentModeKHR{ VK_PRESENT_MODE_MAX_ENUM_KHR };
+    bool presentModeFound = false;
+    auto presentMode = PresentMode::Immediate;
 
     for (auto presentModeCandidate : presentModeCandidates_) {
         auto vkPresentMode = vulkan::internal::getPresentMode(presentModeCandidate);
         for (auto availablePresentMode : availablePresentModes) {
             if (availablePresentMode == vkPresentMode) {
-                presentMode = vkPresentMode;
+                presentMode = presentModeCandidate;
+                presentModeFound = true;
                 break;
             }
         }
 
-        if (presentMode != VK_PRESENT_MODE_MAX_ENUM_KHR) {
+        if (presentModeFound) {
             break;
         }
     }
 
-    if (presentMode == VK_PRESENT_MODE_MAX_ENUM_KHR) {
+    if (!presentModeFound) {
         throw std::runtime_error("could not select suitable available present mode");
     }
 
@@ -107,7 +109,7 @@ auto RenderWindowBuilder::build() -> core::ResourceRef
     vkGetPhysicalDeviceSurfaceFormatsKHR(
       device.physicalDevice(), renderWindow.surfaceHandle(), &availableFormatCount, availableFormats.data());
 
-    auto format = VK_FORMAT_UNDEFINED;
+    auto format = Format::UNDEFINED;
     for (auto formatCandidate : formatCandidates_) {
         auto vkFormat = vulkan::internal::getFormat(formatCandidate);
         for (auto [availableFormat, availableColorSpace] : availableFormats) {
@@ -116,37 +118,37 @@ auto RenderWindowBuilder::build() -> core::ResourceRef
                 vkGetPhysicalDeviceFormatProperties(device.physicalDevice(), vkFormat, &formatProperties);
 
                 if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) != 0) {
-                    format = vkFormat;
+                    format = formatCandidate;
                     break;
                 }
             }
         }
 
-        if (format != VK_FORMAT_UNDEFINED) {
+        if (format != Format::UNDEFINED) {
             break;
         }
     }
 
-    if (format == VK_FORMAT_UNDEFINED) {
+    if (format == Format::UNDEFINED) {
         throw std::runtime_error("could not find available format for surface");
     }
 
     renderWindow.validateSwapchain(format, presentMode);
 
-    auto depthStencilFormat = VK_FORMAT_UNDEFINED;
+    auto depthStencilFormat = Format::UNDEFINED;
     for (auto depthStencilFormatCandidate : depthStencilFormatCandidates_) {
         auto vkDepthStencilFormat = vulkan::internal::getFormat(depthStencilFormatCandidate);
 
         auto formatProperties = VkFormatProperties{};
         vkGetPhysicalDeviceFormatProperties(device.physicalDevice(), vkDepthStencilFormat, &formatProperties);
         if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0) {
-            depthStencilFormat = vkDepthStencilFormat;
+            depthStencilFormat = depthStencilFormatCandidate;
             break;
         }
     }
 
-    if (depthStencilFormat != VK_FORMAT_UNDEFINED) {
-        // TODO:: validate depth
+    if (depthStencilFormat != Format::UNDEFINED) {
+        renderWindow.validateDepthStencil(depthStencilFormat);
     }
 #endif
 
