@@ -359,6 +359,40 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     limits_.maxColorAttachmentCount = static_cast<uint8_t>(physicalDeviceProperties.limits.maxColorAttachments);
 }
 
+auto Device::createTexture(GpuMemoryAllocationFlagBits allocationFlags,
+                           TextureCreationFlagBits imageCreateFlags,
+                           TextureType textureType,
+                           Format format,
+                           uint32_t width,
+                           uint32_t height,
+                           uint32_t depth,
+                           uint32_t mipCount,
+                           uint32_t arrayLayerCount,
+                           TextureTiling tiling,
+                           TextureUsageFlagBits usageFlags) -> core::ResourceRef
+{
+    auto result = core::ResourceRef{};
+
+    auto& resManager = static_cast<resource_manager_t&>(resourceManager());
+
+    auto deviceRef = core::ResourceRef{ resourceBase() };
+
+    result = resManager.allocResource<gfx::Texture>(deviceRef,
+                                                    allocationFlags,
+                                                    imageCreateFlags,
+                                                    textureType,
+                                                    format,
+                                                    width,
+                                                    height,
+                                                    depth,
+                                                    mipCount,
+                                                    arrayLayerCount,
+                                                    tiling,
+                                                    usageFlags);
+
+    return result;
+}
+
 auto Device::createRenderWindow(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
   -> core::ResourceRef
 {

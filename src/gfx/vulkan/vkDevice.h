@@ -54,6 +54,18 @@ public:
                                           std::string_view title,
                                           SurfaceFlagBits flags) -> core::ResourceRef;
 
+    [[nodiscard]] auto createTexture(GpuMemoryAllocationFlagBits allocationFlags,
+                                     TextureCreationFlagBits imageCreateFlags,
+                                     TextureType textureType,
+                                     Format format,
+                                     uint32_t width,
+                                     uint32_t height,
+                                     uint32_t depth,
+                                     uint32_t mipCount,
+                                     uint32_t arrayLayerCount,
+                                     TextureTiling tiling,
+                                     TextureUsageFlagBits usageFlags) -> core::ResourceRef;
+
     [[nodiscard]] auto createRenderPassWithRTVs(
       core::ResourceRef depthStencilRef,
       std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs,

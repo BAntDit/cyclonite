@@ -8,9 +8,10 @@
 #include "core/resourceRef.h"
 #include "gfx/common.h"
 #include <concepts>
+#include <metrix/type_list.h>
+#include <metrix/type_traits.h>
 #include <string_view>
 #include <utility>
-#include <metrix/type_traits.h>
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
@@ -41,6 +42,23 @@ concept DeviceConcept = requires(T t, uint32_t a, uint32_t b, std::string_view s
 
     requires std::is_same_v<core::ResourceRef,
                             metrix::member_function_return_type_t<decltype(&T::createRenderPassWithRTVs)>>;
+
+    requires std::is_member_function_pointer_v<decltype(&T::createTexture)>;
+
+    requires std::is_same_v<core::ResourceRef, metrix::member_function_return_type_t<decltype(&T::createTexture)>>;
+
+    requires std::is_same_v<metrix::type_list<GpuMemoryAllocationFlagBits,
+                                              TextureCreationFlagBits,
+                                              TextureType,
+                                              Format,
+                                              uint32_t,
+                                              uint32_t,
+                                              uint32_t,
+                                              uint32_t,
+                                              uint32_t,
+                                              TextureTiling,
+                                              TextureUsageFlagBits>,
+                            metrix::member_function_argument_type_list_t<decltype(&T::createTexture)>>;
 };
 
 template<DeviceConcept PlatformImplementation>
@@ -50,6 +68,7 @@ public:
     friend class core::ResourceBase;
 
     using PlatformImplementation::createRenderWindow;
+    using PlatformImplementation::createTexture;
     using PlatformImplementation::limits;
     using PlatformImplementation::name;
     using PlatformImplementation::PlatformImplementation;
