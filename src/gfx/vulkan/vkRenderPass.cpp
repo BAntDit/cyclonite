@@ -100,16 +100,13 @@ RenderPass::RenderPass(
   uint32_t height)
   : core::ResourceBase{ resourceManager, resourceId, true }
   , deviceRef_{ deviceRef }
-  , depthStencilRefs_{}
-  , colorAttachmentRefs_(colorAttachmentRefs)
+  , renderTargets_{ std::make_pair(depthStencilRef, colorAttachmentRefs) }
   , vkRenderPass_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
   , vkFrameBuffers_{}
   , bufferCount_{ 1 }
   , currentBufferIndex_{ 0 }
 {
     assert(deviceRef_.valid());
-
-    depthStencilRefs_[0] = depthStencilRef;
 
     vkFrameBuffers_[0] =
       Handle<VkFramebuffer>{ deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().handle(),

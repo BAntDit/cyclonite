@@ -45,7 +45,7 @@ auto RenderWindowBuilder::addFormatCandidate(Format format) -> RenderWindowBuild
     return *this;
 }
 
-auto RenderWindowBuilder::addDepthStencilFormatCandidate(Format format) -> RenderWindowBuilder& 
+auto RenderWindowBuilder::addDepthStencilFormatCandidate(Format format) -> RenderWindowBuilder&
 {
     depthStencilFormatCandidates_.emplace(format);
     return *this;

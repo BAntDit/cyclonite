@@ -11,6 +11,7 @@
 #include "gfx/config.h"
 #include "handle.h"
 #include <array>
+#include <variant>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
@@ -40,9 +41,16 @@ public:
     using core::ResourceBase::resourceBase;
 
 private:
+    using render_windows_ref = core::ResourceRef;
+    using depth_stencil_ref = core::ResourceRef;
+    using color_attachment_ref = core::ResourceRef;
+    using render_targets_t =
+      std::variant<render_windows_ref,
+                   std::pair<depth_stencil_ref,
+                             std::array<color_attachment_ref, compile_time_config_t::max_color_attachment_count_v>>>;
+
     core::ResourceRef deviceRef_;
-    std::array<core::ResourceRef, compile_time_config_t::max_swapchain_length_v> depthStencilRefs_;
-    std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs_;
+    render_targets_t renderTargets_;
     Handle<VkRenderPass> vkRenderPass_;
     std::array<Handle<VkFramebuffer>, compile_time_config_t::max_swapchain_length_v> vkFrameBuffers_;
     uint32_t bufferCount_;

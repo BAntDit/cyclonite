@@ -37,7 +37,7 @@ public:
     [[nodiscard]] auto width() const -> uint32_t { return extent_.width; }
 
     [[nodiscard]] auto height() const -> uint32_t { return extent_.height; }
-    
+
     [[nodiscard]] auto swapchainLength() const -> uint32_t { return swapchainLength_; }
 
     [[nodiscard]] auto surfaceHandle() const -> VkSurfaceKHR { return platformSurface_->handle(); }
