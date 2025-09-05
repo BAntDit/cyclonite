@@ -121,7 +121,11 @@ RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
       platform_surface_argument_type_list_t{}) }
   , vkSwapchain_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroySwapchainKHR }
   , depthStencilRefs_{}
+  , imageViews_{}
   , swapchainLength_{ 0 }
+  , colorOutputFormat_{ gfx::Format::UNDEFINED }
+  , depthStencilFormat_{ gfx::Format::UNDEFINED }
+  , presentMode_{ gfx::PresentMode::Immediate }
 {
     auto& device = deviceRef_.as<gfx::type_traits::platform_implementation_t<gfx::Device>>();
 
@@ -188,6 +192,41 @@ void RenderWindow::validateSwapchain(Format format, PresentMode presentMode)
         (vkResult != VK_SUCCESS && vkResult != VK_INCOMPLETE)) {
         throw Exception{ vkResult, "vkGetSwapchainImagesKHR" };
     }
+    assert(swapchainLength_ <= compile_time_config_t::max_swapchain_length_v);
+
+    auto swapchainImages = std::array<VkImage, compile_time_config_t::max_swapchain_length_v>{};
+    if (auto vkResult = vkGetSwapchainImagesKHR(
+          device.handle(), static_cast<VkSwapchainKHR>(vkSwapchain_), &swapchainLength_, swapchainImages.data());
+        (vkResult != VK_SUCCESS && vkResult != VK_INCOMPLETE)) {
+        throw Exception{ vkResult, "vkGetSwapchainImagesKHR" };
+    }
+
+    for (auto i = uint32_t{ 0 }; i < swapchainLength_; i++) {
+        imageViews_[i] = Handle<VkImageView>{ device.handle(), vkDestroyImageView };
+
+        auto imageViewInfo = VkImageViewCreateInfo{};
+        imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        imageViewInfo.image = swapchainImages[i];
+        imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        imageViewInfo.format = vulkan::internal::getFormat(format);
+        imageViewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageViewInfo.subresourceRange.baseMipLevel = 0;
+        imageViewInfo.subresourceRange.levelCount = 1;
+        imageViewInfo.subresourceRange.baseArrayLayer = 0;
+        imageViewInfo.subresourceRange.layerCount = 1;
+
+        if (auto vkResult = vkCreateImageView(device.handle(), &imageViewInfo, nullptr, &imageViews_[i]);
+            vkResult != VK_SUCCESS) {
+            throw Exception{ vkResult, "vkCreateImageView" };
+        }
+    }
+
+    colorOutputFormat_ = format;
+    presentMode_ = presentMode;
 }
 
 void RenderWindow::validateDepthStencil(Format format)
@@ -216,6 +255,23 @@ void RenderWindow::validateDepthStencil(Format format)
                                                     TextureTiling::OPTIMAL,
                                                     usageFlags);
     }
+
+    depthStencilFormat_ = format;
+}
+
+auto RenderWindow::getDSV(size_t swapchainIndex) -> VkImageView 
+{
+    auto result = VkImageView{ VK_NULL_HANDLE };
+
+    if (depthStencilRefs_[swapchainLength_].valid()) {
+        result = depthStencilRefs_[swapchainIndex]
+          .as<type_traits::platform_implementation_t<gfx::Texture>>()
+          .getRTV(0)
+          .as<type_traits::platform_implementation_t<gfx::RenderTargetView>>()
+          .handle();
+    }
+
+    return result;
 }
 }
 #endif

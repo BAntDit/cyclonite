@@ -4,7 +4,6 @@
 
 #include "vkRenderPass.h"
 #include "gfx/resourceManager.h"
-#include "gfx/texture.h"
 #include "internal/utils.h"
 #include "vkException.h"
 #include "vkRenderTargetView.h"
@@ -174,6 +173,8 @@ RenderPass::RenderPass(
         attachments[rtvCount++] = dsv.handle();
     }
 
+    vkFrameBuffers_[0] = Handle<VkFramebuffer>{ device.handle(), vkDestroyFramebuffer };
+
     auto frameBufferCreateInfo = VkFramebufferCreateInfo{};
     frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     frameBufferCreateInfo.renderPass = static_cast<VkRenderPass>(vkRenderPass_);
@@ -186,6 +187,105 @@ RenderPass::RenderPass(
     if (auto vkResult = vkCreateFramebuffer(device.handle(), &frameBufferCreateInfo, nullptr, &vkFrameBuffers_[0]);
         vkResult != VK_SUCCESS) {
         throw Exception{ vkResult, "vkCreateFramebuffer" };
+    }
+}
+
+RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
+                       core::ResourceId resourceId,
+                       core::ResourceRef deviceRef,
+                       core::ResourceRef renderWindowRef)
+  : core::ResourceBase{ resourceManager, resourceId, true }
+  , deviceRef_{ deviceRef }
+  , renderTargets_{ renderWindowRef }
+  , vkRenderPass_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
+  , vkFrameBuffers_{}
+  , bufferCount_{ renderWindowRef.as<type_traits::platform_implementation_t<gfx::RenderWindow>>().swapchainLength() }
+  , currentBufferIndex_{ 0 }
+{
+    assert(deviceRef_.valid());
+
+    auto& device = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>();
+    auto& renderWindow = renderWindowRef.as<type_traits::platform_implementation_t<gfx::RenderWindow>>();
+
+    auto attachmentDescCount = uint32_t{ 1 };
+    auto attachmentDescs = std::array{ VkAttachmentDescription{}, VkAttachmentDescription{} };
+
+    attachmentDescs[0].format = vulkan::internal::getFormat(renderWindow.colorOutputFormat());
+    attachmentDescs[0].samples = VK_SAMPLE_COUNT_1_BIT;
+    attachmentDescs[0].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachmentDescs[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    attachmentDescs[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachmentDescs[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachmentDescs[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachmentDescs[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    if (renderWindow.hasDepth()) {
+        attachmentDescCount++;
+
+        attachmentDescs[1].format = vulkan::internal::getFormat(renderWindow.depthStencilFormat());
+        attachmentDescs[1].samples = VK_SAMPLE_COUNT_1_BIT;
+        attachmentDescs[1].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachmentDescs[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        attachmentDescs[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachmentDescs[1].stencilStoreOp = isStencilFormat(renderWindow.depthStencilFormat())
+                                              ? VK_ATTACHMENT_STORE_OP_STORE
+                                              : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachmentDescs[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachmentDescs[1].finalLayout =
+          !isStencilFormat(renderWindow.depthStencilFormat())      ? VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL
+          : isStencilOnlyFormat(renderWindow.depthStencilFormat()) ? VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL
+                                                                   : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    }
+
+    auto colorAttachmentCount = uint32_t{ 1 };
+    auto colorAttachmentReference = VkAttachmentReference{};
+    colorAttachmentReference.attachment = 0;
+    colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    auto subpassDescription = VkSubpassDescription{};
+    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescription.colorAttachmentCount = colorAttachmentCount;
+    subpassDescription.pColorAttachments = &colorAttachmentReference;
+
+    auto depthStencilAttachmentReference = VkAttachmentReference{};
+    if (renderWindow.hasDepth()) {
+        depthStencilAttachmentReference.attachment = 1;
+        depthStencilAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+        subpassDescription.pDepthStencilAttachment = &depthStencilAttachmentReference;
+    }
+
+    auto renderPassCreateInfo = VkRenderPassCreateInfo{};
+    renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassCreateInfo.attachmentCount = attachmentDescCount;
+    renderPassCreateInfo.pAttachments = attachmentDescs.data();
+    renderPassCreateInfo.subpassCount = 1;
+    renderPassCreateInfo.pSubpasses = &subpassDescription;
+
+    if (auto vkResult = vkCreateRenderPass(device.handle(), &renderPassCreateInfo, nullptr, &vkRenderPass_);
+        vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vkCreateRenderPass" };
+    }
+
+    for (auto i = uint32_t{ 0 }, count = renderWindow.swapchainLength(); i < count; i++) {
+        auto attachmentCount = renderWindow.hasDepth() ? uint32_t{ 2 } : uint32_t{ 1 };
+        auto attachments = std::array{ renderWindow.getImageView(i), renderWindow.getDSV(i) };
+
+        vkFrameBuffers_[i] = Handle<VkFramebuffer>{ device.handle(), vkDestroyFramebuffer };
+       
+        auto frameBufferCreateInfo = VkFramebufferCreateInfo{};
+        frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        frameBufferCreateInfo.renderPass = static_cast<VkRenderPass>(vkRenderPass_);
+        frameBufferCreateInfo.attachmentCount = attachmentCount;
+        frameBufferCreateInfo.pAttachments = attachments.data();
+        frameBufferCreateInfo.width = renderWindow.width();
+        frameBufferCreateInfo.height = renderWindow.height();
+        frameBufferCreateInfo.layers = 1;
+
+        if (auto vkResult = vkCreateFramebuffer(device.handle(), &frameBufferCreateInfo, nullptr, &vkFrameBuffers_[i]);
+            vkResult != VK_SUCCESS) {
+            throw Exception{ vkResult, "vkCreateFramebuffer" };
+        }
     }
 }
 }

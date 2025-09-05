@@ -153,6 +153,11 @@ inline constexpr auto isStencilFormat(Format format) -> bool
     return format == Format::S8_UINT || format == Format::D16_UNORM_S8_UINT || format == Format::D24_UNORM_S8_UINT ||
            format == Format::D32_SFLOAT_S8_UINT;
 }
+
+inline constexpr auto isStencilOnlyFormat(Format format) -> bool 
+{
+    return format == Format::S8_UINT;
+}
 }
 
 #endif // GFX_COMMON_H

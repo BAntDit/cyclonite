@@ -31,8 +31,7 @@ public:
     RenderPass(core::ResourceManagerBase* resourceManager,
                core::ResourceId resourceId,
                core::ResourceRef deviceRef,
-               core::ResourceRef renderWindowRef,
-               gfx::Format depthStencilFormat = gfx::Format::UNDEFINED);
+               core::ResourceRef renderWindowRef);
 
     // begin
 

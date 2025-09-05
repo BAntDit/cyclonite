@@ -74,6 +74,9 @@ public:
       uint32_t width,
       uint32_t height) -> core::ResourceRef;
 
+    [[nodiscard]] auto createRenderPassWithRenderWindow(core::ResourceRef renderWindowRef)
+      -> core::ResourceRef;
+
     using core::ResourceBase::resourceBase;
 
 private:

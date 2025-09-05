@@ -427,6 +427,19 @@ auto Device::createRenderPassWithRTVs(
     return result;
 }
 
+auto Device::createRenderPassWithRenderWindow(core::ResourceRef renderWindowRef) -> core::ResourceRef
+{
+    auto result = core::ResourceRef{};
+
+    auto& resManager = static_cast<resource_manager_t&>(resourceManager());
+
+    auto deviceRef = core::ResourceRef{ resourceBase() };
+
+    result = resManager.allocResource<gfx::RenderPass>(deviceRef, renderWindowRef);
+
+    return result;
+}
+
 Device::~Device()
 {
     assert(vmaAllocator_ != VK_NULL_HANDLE);

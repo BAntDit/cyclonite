@@ -76,7 +76,8 @@ auto RenderPassBuilder::build() -> core::ResourceRef
         rpRef = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().createRenderPassWithRTVs(
           depthStencilTextureRef_, colorAttachmentRefs_, colorAttachmentSubresDescs_, width_, height_);
     } else {
-        // TODO::
+        rpRef = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().createRenderPassWithRenderWindow(
+          renderWindowRef_);
     }
 
     return rpRef;

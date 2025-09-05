@@ -42,6 +42,21 @@ public:
 
     [[nodiscard]] auto surfaceHandle() const -> VkSurfaceKHR { return platformSurface_->handle(); }
 
+    [[nodiscard]] auto hasDepth() const -> bool { return depthStencilFormat_ != gfx::Format::UNDEFINED; }
+
+    [[nodiscard]] auto colorOutputFormat() const -> gfx::Format { return colorOutputFormat_; }
+
+    [[nodiscard]] auto depthStencilFormat() const -> gfx::Format { return depthStencilFormat_; }
+
+    [[nodiscard]] auto presentMode() const -> gfx::PresentMode { return presentMode_; }
+
+    [[nodiscard]] auto getImageView(size_t swapchainIndex) const -> VkImageView
+    {
+        return static_cast<VkImageView>(imageViews_[swapchainIndex]);
+    }
+
+    [[nodiscard]] auto getDSV(size_t swapchainIndex) -> VkImageView;
+
     using core::ResourceBase::resourceBase;
 
     void validateSwapchain(Format format, PresentMode presentMode);
@@ -55,7 +70,11 @@ private:
     std::unique_ptr<SurfaceKHR> platformSurface_;
     Handle<VkSwapchainKHR> vkSwapchain_;
     std::array<core::ResourceRef, compile_time_config_t::max_swapchain_length_v> depthStencilRefs_;
+    std::array<Handle<VkImageView>, compile_time_config_t::max_swapchain_length_v> imageViews_;
     uint32_t swapchainLength_;
+    gfx::Format colorOutputFormat_;
+    gfx::Format depthStencilFormat_;
+    gfx::PresentMode presentMode_;
 };
 }
 
