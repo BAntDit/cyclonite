@@ -6,6 +6,7 @@
 #define CYCLONITE_CONFIGTRAITS_H
 
 #include "core/configTraitMacro.h"
+#include <cstddef>
 #include <cstdint>
 
 namespace cyclonite::gfx {
@@ -19,6 +20,7 @@ struct config_traits_declaration
     // declare new parameters here, if necessary
     DECLARE_CONFIG_TRAIT(max_color_attachment_count, uint32_t, 8)
     DECLARE_CONFIG_TRAIT(max_swapchain_length, uint8_t, 8)
+    DECLARE_CONFIG_TRAIT(max_command_pool_count, size_t, 128)
 };
 }
 
@@ -28,6 +30,7 @@ struct ConfigTraits
     // define new parameters here, if necessary
     DEFINE_CONFIG_TRAIT(max_color_attachment_count)
     DEFINE_CONFIG_TRAIT(max_swapchain_length)
+    DEFINE_CONFIG_TRAIT(max_command_pool_count)
 };
 }
 

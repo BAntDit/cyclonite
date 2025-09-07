@@ -95,9 +95,12 @@ private:
     Handle<VkQueue> computeQueue_;
     VmaAllocator vmaAllocator_;
 
-    std::array<Handle<VkCommandPool>, 1024> commandPools_;
-    core::StaticHashTable<size_t, 1024, std::thread::id, uint32_t, CommandPoolFlagBits> commandPoolMap_;
-    // TODO:: command poll
+    core::StaticHashTable<core::ResourceRef,
+                          compile_time_config_t::max_command_pool_count_v,
+                          std::thread::id,
+                          uint32_t,
+                          CommandPoolFlagBits>
+      commandPoolMap_;
 };
 }
 
