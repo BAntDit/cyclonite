@@ -5,6 +5,7 @@
 #ifndef CYCLONITE_DEVICE_H
 #define CYCLONITE_DEVICE_H
 
+#include "core/hashTable.h"
 #include "core/resourceBase.h"
 #include "core/resourceRef.h"
 #include "gfx/common.h"
@@ -14,6 +15,7 @@
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <thread>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
@@ -74,8 +76,7 @@ public:
       uint32_t width,
       uint32_t height) -> core::ResourceRef;
 
-    [[nodiscard]] auto createRenderPassWithRenderWindow(core::ResourceRef renderWindowRef)
-      -> core::ResourceRef;
+    [[nodiscard]] auto createRenderPassWithRenderWindow(core::ResourceRef renderWindowRef) -> core::ResourceRef;
 
     using core::ResourceBase::resourceBase;
 
@@ -93,6 +94,10 @@ private:
     Handle<VkQueue> transferQueue_;
     Handle<VkQueue> computeQueue_;
     VmaAllocator vmaAllocator_;
+
+    std::array<Handle<VkCommandPool>, 1024> commandPools_;
+    core::StaticHashTable<size_t, 1024, std::thread::id, uint32_t, CommandPoolFlagBits> commandPoolMap_;
+    // TODO:: command poll
 };
 }
 

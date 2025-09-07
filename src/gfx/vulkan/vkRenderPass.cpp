@@ -272,7 +272,7 @@ RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
         auto attachments = std::array{ renderWindow.getImageView(i), renderWindow.getDSV(i) };
 
         vkFrameBuffers_[i] = Handle<VkFramebuffer>{ device.handle(), vkDestroyFramebuffer };
-       
+
         auto frameBufferCreateInfo = VkFramebufferCreateInfo{};
         frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         frameBufferCreateInfo.renderPass = static_cast<VkRenderPass>(vkRenderPass_);

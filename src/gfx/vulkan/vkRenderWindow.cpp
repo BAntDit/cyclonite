@@ -259,16 +259,16 @@ void RenderWindow::validateDepthStencil(Format format)
     depthStencilFormat_ = format;
 }
 
-auto RenderWindow::getDSV(size_t swapchainIndex) -> VkImageView 
+auto RenderWindow::getDSV(size_t swapchainIndex) -> VkImageView
 {
     auto result = VkImageView{ VK_NULL_HANDLE };
 
     if (depthStencilRefs_[swapchainLength_].valid()) {
         result = depthStencilRefs_[swapchainIndex]
-          .as<type_traits::platform_implementation_t<gfx::Texture>>()
-          .getRTV(0)
-          .as<type_traits::platform_implementation_t<gfx::RenderTargetView>>()
-          .handle();
+                   .as<type_traits::platform_implementation_t<gfx::Texture>>()
+                   .getRTV(0)
+                   .as<type_traits::platform_implementation_t<gfx::RenderTargetView>>()
+                   .handle();
     }
 
     return result;
