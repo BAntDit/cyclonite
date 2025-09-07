@@ -154,10 +154,18 @@ inline constexpr auto isStencilFormat(Format format) -> bool
            format == Format::D32_SFLOAT_S8_UINT;
 }
 
-inline constexpr auto isStencilOnlyFormat(Format format) -> bool 
+inline constexpr auto isStencilOnlyFormat(Format format) -> bool
 {
     return format == Format::S8_UINT;
 }
+
+enum class CommandPoolFlags : uint8_t
+{
+    TRANSIENT = 1 >> 0,
+    ALLOW_COMMAND_BUFFERS_RESET = 1 >> 1
+};
+
+using CommandPoolFlagBits = metrix::enum_bits<CommandPoolFlags>;
 }
 
 #endif // GFX_COMMON_H
