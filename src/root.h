@@ -50,7 +50,7 @@ public:
 
 private:
     Capabilities capabilities_;
-    std::unique_ptr<gfx::Instance> vulkanInstance_;
+    std::unique_ptr<gfx::Instance> gfxInstance_;
     Input input_;
 };
 }

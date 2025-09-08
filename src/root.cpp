@@ -9,7 +9,7 @@
 namespace cyclonite {
 Root::Root()
   : capabilities_{}
-  , vulkanInstance_{}
+  , gfxInstance_{}
   , input_{}
 {
 }
@@ -50,7 +50,7 @@ void Root::init(std::string_view appName, uint32_t deviceId)
         }
     }
 
-    if (!(vulkanInstance_ = std::make_unique<gfx::Instance>(appName))) {
+    if (!(gfxInstance_ = std::make_unique<gfx::Instance>(appName))) {
         throw std::runtime_error("gfx:: could not create gfx-instance");
     }
 }
