@@ -7,7 +7,7 @@
 
 #include "app.h"
 #include "event.h"
-#include "hash.h"
 #include "root.h"
+#include "commandLine.h"
 
 #endif // CYCLONITE_CYCLONITE_H
