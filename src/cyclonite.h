@@ -9,5 +9,7 @@
 #include "event.h"
 #include "root.h"
 #include "commandLine.h"
+#include "gfx/renderWindowBuilder.h"
+#include "gfx/renderPassBuilder.h"
 
 #endif // CYCLONITE_CYCLONITE_H

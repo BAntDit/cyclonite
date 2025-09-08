@@ -38,13 +38,15 @@ public:
 
     void init(std::string_view appName);
 
-    void init(std::string_view appName, uint32_t deviceId);
-
     [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
 
     [[nodiscard]] auto input() const -> Input const& { return input_; }
 
     [[nodiscard]] auto input() -> Input& { return input_; }
+
+    [[nodiscard]] auto gfxInstance() const -> gfx::Instance const& { return *gfxInstance_; }
+    
+    [[nodiscard]] auto gfxInstance() -> gfx::Instance& { return *gfxInstance_; }
 
     void reset();
 

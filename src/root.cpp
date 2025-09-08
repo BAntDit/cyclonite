@@ -16,11 +16,6 @@ Root::Root()
 
 void Root::init(std::string_view appName)
 {
-    init(appName, std::numeric_limits<uint32_t>::max());
-}
-
-void Root::init(std::string_view appName, uint32_t deviceId)
-{
     // SDL initialization:
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         throw std::runtime_error("SDL: could not initialize SDL video subsystem");
