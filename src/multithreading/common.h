@@ -25,6 +25,7 @@ template<typename T>
 concept DequeItemConcept = (std::is_nothrow_move_assignable_v<T> && std::is_nothrow_move_constructible_v<T> &&
                             std::is_nothrow_copy_assignable_v<T> && std::is_nothrow_copy_constructible_v<T>);
 
+namespace internal {
 template<DequeItemConcept DequeItemType>
 class DequeData
 {
@@ -59,6 +60,7 @@ template<DequeItemConcept DequeItemType>
 auto DequeData<DequeItemType>::load(size_t index) const noexcept -> DequeItemType
 {
     return data_[index % capacity_];
+}
 }
 }
 #endif // CYCLONITE_MULTITHREADING__COMMON_H
