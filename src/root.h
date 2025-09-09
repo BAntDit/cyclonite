@@ -45,7 +45,7 @@ public:
     [[nodiscard]] auto input() -> Input& { return input_; }
 
     [[nodiscard]] auto gfxInstance() const -> gfx::Instance const& { return *gfxInstance_; }
-    
+
     [[nodiscard]] auto gfxInstance() -> gfx::Instance& { return *gfxInstance_; }
 
     void reset();

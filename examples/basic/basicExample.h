@@ -1,16 +1,15 @@
 
 #include <cyclonite.h>
 
-namespace examples 
-{
+namespace examples {
 class BasicExample
 {
 public:
     BasicExample() = default;
 
-    auto init(cyclonite::CommadnLine const& commandLine) -> BasicExample&; 
-    
-    auto run() -> BasicExample&; 
+    auto init(cyclonite::CommandLine const& commandLine) -> BasicExample&;
+
+    auto run() -> BasicExample&;
 
     void done();
 

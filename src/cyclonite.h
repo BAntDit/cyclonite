@@ -6,10 +6,10 @@
 #define CYCLONITE_CYCLONITE_H
 
 #include "app.h"
-#include "event.h"
-#include "root.h"
 #include "commandLine.h"
-#include "gfx/renderWindowBuilder.h"
+#include "event.h"
 #include "gfx/renderPassBuilder.h"
+#include "gfx/renderWindowBuilder.h"
+#include "root.h"
 
 #endif // CYCLONITE_CYCLONITE_H

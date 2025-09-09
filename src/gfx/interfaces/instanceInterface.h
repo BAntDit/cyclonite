@@ -12,17 +12,16 @@
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept InstanceConcept = requires(T t)
-{
-    {
-        t.physicalDeviceCount()
-    }
-    ->std::same_as<uint32_t>;
+concept InstanceConcept =
+  requires(T t) {
+      {
+          t.physicalDeviceCount()
+          } -> std::same_as<uint32_t>;
 
-    requires std::is_member_function_pointer_v<decltype(&T::createDevice)>;
+      requires std::is_member_function_pointer_v<decltype(&T::createDevice)>;
 
-    requires std::is_same_v<core::ResourceRef, metrix::member_function_return_type_t<decltype(&T::createDevice)>>;
-};
+      requires std::is_same_v<core::ResourceRef, metrix::member_function_return_type_t<decltype(&T::createDevice)>>;
+  };
 
 template<InstanceConcept InstanceImplementation>
 class InstanceInterface : private InstanceImplementation

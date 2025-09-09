@@ -5,7 +5,7 @@
 #include <cassert>
 
 namespace examples {
-auto BasicExample::init(cyclonite::CommadnLine const& commandLine) -> BasicExample&
+auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExample&
 {
     auto commandLineVariables = boost::program_options::variables_map{};
 
@@ -44,9 +44,7 @@ auto BasicExample::init(cyclonite::CommadnLine const& commandLine) -> BasicExamp
                              .build();
 
     auto renderPassBuilder = cyclonite::gfx::RenderPassBuilder{};
-    auto renderPassRef = renderPassBuilder.setDevice(deviceRef)
-      .setRenderWindow(renderWindowRef)
-      .build();
+    auto renderPassRef = renderPassBuilder.setDevice(deviceRef).setRenderWindow(renderWindowRef).build();
 
     return *this;
 }
