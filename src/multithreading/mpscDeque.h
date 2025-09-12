@@ -8,6 +8,7 @@
 #include "common.h"
 #include <atomic>
 #include <cstdint>
+#include <limits>
 #include <optional>
 
 namespace cyclonite::multithreading {
@@ -60,7 +61,7 @@ auto MpscDeque<DataItemType>::countItems() const -> size_t
     auto bottom = consumerBottom_.load(std::memory_order_acquire);
     auto top = consumerTop_.load(std::memory_order_acquire);
 
-    return bottom - top;
+    return static_cast<size_t>((bottom >= top) ? bottom - top : (std::numeric_limits<uint64_t>::max() - top + bottom));
 }
 
 template<DequeItemConcept DataItemType>

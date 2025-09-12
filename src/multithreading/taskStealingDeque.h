@@ -6,10 +6,10 @@
 #define CYCLONITE_TASK_STEALING_DEQUE_H
 
 #include "common.h"
-#include <optional>
 #include <atomic>
 #include <cstdint>
 #include <limits>
+#include <optional>
 
 namespace cyclonite::multithreading {
 // circular work-stealing deque, SPMC and lock free
