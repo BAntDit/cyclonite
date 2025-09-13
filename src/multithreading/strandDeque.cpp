@@ -3,7 +3,7 @@
 //
 
 #include "strandDeque.h"
-#include "strandTask.h"
+#include "task.h"
 #include <limits>
 
 namespace cyclonite::multithreading {
@@ -12,7 +12,7 @@ StrandDeque::StrandDeque(size_t capacity)
   , consumerTop_{ 0 }
   , consumerBottom_{ 0 }
   , producerBottom_{ 0 }
-  , data_{ new internal::DequeData<StrandTask*>{ capacity } }
+  , data_{ new internal::DequeData<Task*>{ capacity } }
 {
 }
 
@@ -37,14 +37,14 @@ auto StrandDeque::isEmpty() const -> bool
     return (bottom - top) == 0;
 }
 
-auto StrandDeque::tryEmplace(StrandTask* task) -> bool
+auto StrandDeque::tryEmplace(Task* task) -> bool
 {
     if (countItems() < capacity()) {
         auto consumerBottom = consumerBottom_.load(std::memory_order_acquire);
         auto producerBottom = producerBottom_.fetch_add(1, std::memory_order_acq_rel);
 
         if (consumerBottom == producerBottom) {
-            data_->store(producerBottom, std::add_pointer_t<StrandTask>{ task });
+            data_->store(producerBottom, std::add_pointer_t<Task>{ task });
 
             if (consumerBottom_.compare_exchange_weak(
                   consumerBottom, producerBottom + 1, std::memory_order_release, std::memory_order_relaxed)) {
@@ -58,9 +58,9 @@ auto StrandDeque::tryEmplace(StrandTask* task) -> bool
     return false;
 }
 
-auto StrandDeque::tryPop() -> std::optional<StrandTask*>
+auto StrandDeque::tryPop() -> std::optional<Task*>
 {
-    auto result = std::optional<StrandTask*>{ std::nullopt };
+    auto result = std::optional<Task*>{ std::nullopt };
     auto expected = true;
 
     if (allowPop_.compare_exchange_weak(expected, false, std::memory_order_acq_rel, std::memory_order_relaxed)) {

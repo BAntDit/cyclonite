@@ -7,8 +7,10 @@
 
 #include <cassert>
 #include <cstddef>
+#include <future>
 #include <memory>
 #include <new>
+#include <thread>
 #include <type_traits>
 
 #ifdef __cpp_lib_hardware_interference_size
@@ -61,57 +63,6 @@ template<DequeItemConcept DequeItemType>
 auto DequeData<DequeItemType>::load(size_t index) const noexcept -> DequeItemType
 {
     return data_[index % capacity_];
-}
-
-inline constexpr size_t storage_align_v = alignof(void (*)());
-inline constexpr size_t storage_size_v = 64;
-
-struct functor_base_t
-{
-    functor_base_t() = default;
-
-    virtual ~functor_base_t() = default;
-
-    virtual void invoke() = 0;
-
-    virtual auto move_to(std::byte (&storage)[storage_size_v]) -> functor_base_t* = 0;
-};
-
-template<typename F>
-struct functor_t final : functor_base_t
-{
-    explicit functor_t(F const& f)
-      : f_(f)
-    {
-    }
-
-    explicit functor_t(F&& f)
-      : f_(std::move(f))
-    {
-    }
-
-    void invoke() override { f_(); }
-
-    auto move_to(std::byte (&storage)[storage_size_v]) -> functor_base_t* override;
-
-private:
-    F f_;
-};
-
-template<typename F>
-auto functor_t<F>::move_to(std::byte (&storage)[storage_size_v]) -> functor_base_t*
-{
-    auto* r = std::add_pointer_t<functor_base_t>{ nullptr };
-
-    void* sdata = std::data(storage);
-    size_t ssize = std::size(storage);
-
-    if (auto* p = std::align(alignof(functor_t<F>), sizeof(functor_t<F>), sdata, ssize); p == std::data(storage)) {
-        r = new (p) functor_t<F>{ std::move(f_) };
-    }
-
-    assert(r != nullptr);
-    return r;
 }
 } // internal
 }

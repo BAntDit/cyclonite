@@ -11,10 +11,13 @@
 #include <optional>
 
 namespace cyclonite::multithreading {
-class StrandTask;
+class Task;
+class Executor;
 
 class StrandDeque
 {
+    friend class Executor;
+
 public:
     explicit StrandDeque(size_t capacity);
 
@@ -27,16 +30,18 @@ public:
     [[nodiscard]] auto countItems() const -> size_t;
 
     // can be called in any producer thread
-    auto tryEmplace(StrandTask* task) -> bool;
+    auto tryEmplace(Task* task) -> bool;
 
-    auto tryPop() -> std::optional<StrandTask*>;
+    auto tryPop() -> std::optional<Task*>;
 
 private:
+    void allowPop() { allowPop_.store(true, std::memory_order_release); }
+
     alignas(hardware_destructive_interference_size) std::atomic<bool> allowPop_;
     alignas(hardware_destructive_interference_size) std::atomic<uint64_t> consumerTop_;
     alignas(hardware_destructive_interference_size) std::atomic<uint64_t> consumerBottom_;
     alignas(hardware_destructive_interference_size) std::atomic<uint64_t> producerBottom_;
-    alignas(hardware_destructive_interference_size) internal::DequeData<StrandTask*>* data_;
+    alignas(hardware_destructive_interference_size) internal::DequeData<Task*>* data_;
 };
 }
 
