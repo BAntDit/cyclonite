@@ -2,8 +2,8 @@
 // Created by anton on 8/14/25.
 //
 
-#ifndef CYCLONITE_CONFIGTRAITS_H
-#define CYCLONITE_CONFIGTRAITS_H
+#ifndef CYCLONITE_GFX_CONFIG_TRAITS_H
+#define CYCLONITE_GFX_CONFIG_TRAITS_H
 
 #include "core/configTraitMacro.h"
 #include <cstddef>
@@ -34,4 +34,4 @@ struct ConfigTraits
 };
 }
 
-#endif // CYCLONITE_CONFIGTRAITS_H
+#endif // CYCLONITE_GFX_CONFIG_TRAITS_H

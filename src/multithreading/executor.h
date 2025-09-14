@@ -20,7 +20,7 @@ class Executor
 public:
     Executor() = default;
 
-    Executor(TaskManager& taskManager, size_t workStealingDequeSize, size_t directDequeSize);
+    explicit Executor(TaskManager& taskManager);
 
     Executor(Executor const&) = delete;
 
@@ -42,10 +42,6 @@ public:
         requires std::is_invocable_v<F>
     auto submitTask(F&& f) -> std::future<std::invoke_result_t<F>>;
 
-    template<typename F>
-        requires std::is_invocable_v<F>
-    auto directTask(std::thread::id, F&& f) -> std::future<std::invoke_result_t<F>>;
-
     [[nodiscard]] auto ownerThreadId() const -> std::thread::id { return threadId_; }
 
     [[nodiscard]] auto canSubmit() const -> bool;
@@ -61,13 +57,55 @@ public:
     static auto threadExecutor() -> Executor&;
 
 private:
+    template<typename F>
+        requires std::is_invocable_v<F>
+    auto emplaceTaskForThisExecutor(F&& f) -> std::future<std::invoke_result_t<F>>;
+
+    [[nodiscard]] auto pool() const -> TaskPool const& { return taskPool_; }
+    [[nodiscard]] auto pool() -> TaskPool& { return taskPool_; }
+
+    [[nodiscard]] auto spmcQueue() const -> TaskStealingDeque<Task*> const& { return *spmcQueue_; }
+    [[nodiscard]] auto spmcQueue() -> TaskStealingDeque<Task*>& { return *spmcQueue_; }
+
     std::thread::id threadId_;
     TaskManager* taskManager_;
     TaskPool taskPool_;
-    TaskPool directTaskPool_;
     std::unique_ptr<TaskStealingDeque<Task*>> spmcQueue_;
     std::unique_ptr<MpscDeque<Task*>> mpscQueue_;
 };
+
+template<typename F>
+    requires std::is_invocable_v<F>
+auto Executor::emplaceTaskForThisExecutor(F&& f) -> std::future<std::invoke_result_t<F>>
+{
+
+}
+
+template<typename F>
+    requires std::is_invocable_v<F>
+auto Executor::submitTask(F&& f) -> std::future<std::invoke_result_t<F>>
+{
+    assert(canSubmit());
+
+    using result_type_t = std::invoke_result_t<F>;
+
+    auto* task = std::add_pointer_t<Task>{ nullptr };
+
+    while ((task = pool().writeableTask(), task == nullptr))
+        std::this_thread::yield();
+
+    auto&& packedTask = std::packaged_task<result_type_t()>{ std::forward<F>(f) };
+    auto future = packedTask.get_future();
+
+    *task = Task{ std::move(packedTask) };
+
+    // cycle waits space in deque if there is no one
+    // it must happen hardly ever as well
+    while (!spmcQueue().tryEmplace(task))
+        std::this_thread::yield();
+
+    return future;
+}
 }
 
 #endif // CYCLONITE_MT_EXECUTOR_H

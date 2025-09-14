@@ -3,9 +3,10 @@
 //
 
 #include "executor.h"
+#include "config.h"
+#include "taskManager.h"
 
-namespace cyclonite::multithreading
-{
+namespace cyclonite::multithreading {
 namespace {
 thread_local Executor* _mainThreadExecutor = nullptr;
 thread_local Executor* _threadExecutor = nullptr;
@@ -21,4 +22,22 @@ thread_local Executor* _threadExecutor = nullptr;
     assert(_threadExecutor != nullptr);
     return *_threadExecutor;
 }
+
+Executor::Executor(TaskManager& taskManager)
+  : threadId_{}
+  , taskManager_{ &taskManager }
+  , taskPool_{ config_t::mpsc_queue_max_size_v + config_t::spmc_queue_max_size_v }
+  , spmcQueue_{ nullptr }
+  , mpscQueue_{ nullptr }
+{
+    spmcQueue_ = std::make_unique<TaskStealingDeque<Task*>>(config_t::spmc_queue_max_size_v);
+    mpscQueue_ = std::make_unique<MpscDeque<Task*>>(config_t::mpsc_queue_max_size_v);
+}
+
+auto Executor::canSubmit() const -> bool
+{
+    return (_threadExecutor != nullptr) && threadId_ == std::this_thread::get_id();
+}
+
+void Executor::runOne() {}
 }

@@ -8,7 +8,7 @@
 #include "task.h"
 
 namespace cyclonite::multithreading {
-class TaskPool
+class TaskPool // TODO:: split pools for SC / MC
 {
 public:
     TaskPool() = default;
@@ -25,7 +25,7 @@ public:
 
     auto operator=(TaskPool&&) -> TaskPool& = default;
 
-    auto writeableTask() -> Task*;
+    // auto writeableTask() -> Task*;
 
 private:
     size_t size_;

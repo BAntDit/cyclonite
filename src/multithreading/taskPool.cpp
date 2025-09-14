@@ -11,7 +11,7 @@ TaskPool::TaskPool(size_t size)
 {
 }
 
-auto TaskPool::writeableTask() -> Task*
+/*auto TaskPool::writeableTask() -> Task*
 {
     auto* taskPtr = std::add_pointer_t<Task>{ nullptr };
 
@@ -27,5 +27,5 @@ auto TaskPool::writeableTask() -> Task*
     }
 
     return taskPtr;
-}
+}*/
 }

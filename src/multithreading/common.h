@@ -13,6 +13,11 @@
 #include <thread>
 #include <type_traits>
 
+#if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
+#include <exception>
+#include <mutex>
+#endif // ALLOW_THREAD_EXCEPTIONS_PROPAGATION
+
 #ifdef __cpp_lib_hardware_interference_size
 using std::hardware_constructive_interference_size;
 using std::hardware_destructive_interference_size;
