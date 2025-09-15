@@ -26,7 +26,8 @@ thread_local Executor* _threadExecutor = nullptr;
 Executor::Executor(TaskManager& taskManager)
   : threadId_{}
   , taskManager_{ &taskManager }
-  , taskPool_{ config_t::mpsc_queue_max_size_v + config_t::spmc_queue_max_size_v }
+  , taskPoolSC_{ config_t::spmc_queue_max_size_v } // one producer consumes from pool
+  , taskPoolMC_{ config_t::mpsc_queue_max_size_v } // many producers can consume from pool
   , spmcQueue_{ nullptr }
   , mpscQueue_{ nullptr }
 {

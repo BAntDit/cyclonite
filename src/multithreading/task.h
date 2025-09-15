@@ -71,6 +71,8 @@ public:
 
     [[nodiscard]] auto pending() const -> bool { return pending_.load(std::memory_order_acquire); }
 
+    [[nodiscard]] auto pending() -> std::atomic<bool>& { return pending_; }
+
     ~Task();
 
 private:
