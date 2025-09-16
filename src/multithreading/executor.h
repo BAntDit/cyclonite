@@ -61,6 +61,8 @@ private:
         requires std::is_invocable_v<F>
     auto emplaceTaskForThisExecutor(F&& f) -> std::future<std::invoke_result_t<F>>;
 
+    auto pendingTask() -> std::optional<Task>;
+
     [[nodiscard]] auto poolSC() const -> TaskPoolSC const& { return taskPoolSC_; }
     [[nodiscard]] auto poolSC() -> TaskPoolSC& { return taskPoolSC_; }
 

@@ -40,5 +40,25 @@ auto Executor::canSubmit() const -> bool
     return (_threadExecutor != nullptr) && threadId_ == std::this_thread::get_id();
 }
 
-void Executor::runOne() {}
+auto Executor::pendingTask() -> std::optional<Task>
+{
+    auto task = std::optional<Task>{ std::nullopt };
+
+    if (auto directedTask = mpscQueue().tryPop()) {
+        task = std::move(*directedTask.value());
+    } else if (auto ownTask = spmcQueue().tryPop()) {
+        task = std::move(*ownTask.value());
+    } else if (auto strandTask = taskManager_->strandQueue().tryPop()) {
+        task = std::move(*strandTask.value());
+    } else {
+
+    }
+
+    return task;
+}
+
+void Executor::runOne()
+{
+    // if (auto task = )
+}
 }
