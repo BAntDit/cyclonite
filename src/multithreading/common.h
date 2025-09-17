@@ -5,6 +5,7 @@
 #ifndef CYCLONITE_MULTITHREADING_COMMON_H
 #define CYCLONITE_MULTITHREADING_COMMON_H
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <future>
@@ -12,7 +13,6 @@
 #include <new>
 #include <thread>
 #include <type_traits>
-#include <algorithm>
 
 #if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
 #include <exception>
@@ -72,7 +72,7 @@ auto DequeData<DequeItemType>::load(size_t index) const noexcept -> DequeItemTyp
 }
 } // internal
 
-enum class TaskPurpose : uint_fast8_t
+enum class Purpose : uint_fast8_t
 {
     General = 0,
     Render = 1
