@@ -7,6 +7,7 @@
 
 #include "common.h"
 #include "mpscDeque.h"
+#include "taskManager.h"
 #include "taskPool.h"
 #include "taskStealingDeque.h"
 
@@ -20,7 +21,7 @@ class Executor
 public:
     Executor() = default;
 
-    explicit Executor(TaskManager& taskManager);
+    Executor(TaskManager& taskManager, Purpose purpose);
 
     Executor(Executor const&) = delete;
 
@@ -40,14 +41,15 @@ public:
 
     template<typename F>
         requires std::is_invocable_v<F>
-    auto submitTask(F&& f) -> std::future<std::invoke_result_t<F>>;
+    auto submitTask(F&& f, Purpose purpose = Purpose::General) -> std::future<std::invoke_result_t<F>>;
 
     [[nodiscard]] auto ownerThreadId() const -> std::thread::id { return threadId_; }
 
     [[nodiscard]] auto canSubmit() const -> bool;
 
-    [[nodiscard]] auto taskManager() const -> TaskManager const& { return *taskManager_; }
+    [[nodiscard]] auto purpose() const -> Purpose { return purpose_; }
 
+    [[nodiscard]] auto taskManager() const -> TaskManager const& { return *taskManager_; }
     [[nodiscard]] auto taskManager() -> TaskManager& { return *taskManager_; }
 
     static auto isInMainThread() -> bool;
@@ -59,9 +61,15 @@ public:
 private:
     template<typename F>
         requires std::is_invocable_v<F>
-    auto emplaceTaskForThisExecutor(F&& f) -> std::future<std::invoke_result_t<F>>;
+    auto submitTaskSPMC(F&& f) -> std::future<std::invoke_result_t<F>>;
+
+    template<typename F>
+        requires std::is_invocable_v<F>
+    auto submitTaskMPSC(F&& f) -> std::future<std::invoke_result_t<F>>;
 
     auto pendingTask() -> std::optional<Task>;
+
+    auto renderExecutor() -> Executor&;
 
     [[nodiscard]] auto poolSC() const -> TaskPoolSC const& { return taskPoolSC_; }
     [[nodiscard]] auto poolSC() -> TaskPoolSC& { return taskPoolSC_; }
@@ -74,9 +82,6 @@ private:
 
     [[nodiscard]] auto mpscQueue() const -> MpscDeque<Task*> const& { return *mpscQueue_; }
     [[nodiscard]] auto mpscQueue() -> MpscDeque<Task*>& { return *mpscQueue_; }
-
-    [[nodiscard]] auto taskManager() const -> TaskManager const&;
-    [[nodiscard]] auto taskManager() -> TaskManager&;
 
     void _setThreadExecutorPtr();
     void _resetThreadExecutorPtr();
@@ -91,11 +96,31 @@ private:
     TaskPoolMC taskPoolMC_;
     std::unique_ptr<TaskStealingDeque<Task*>> spmcQueue_;
     std::unique_ptr<MpscDeque<Task*>> mpscQueue_;
+    Purpose purpose_;
 };
 
 template<typename F>
     requires std::is_invocable_v<F>
-auto Executor::emplaceTaskForThisExecutor(F&& f) -> std::future<std::invoke_result_t<F>>
+auto Executor::submitTask(F&& f, Purpose purpose /* = Purpose::General*/) -> std::future<std::invoke_result_t<F>>
+{
+    auto future = std::future<std::invoke_result_t<F>>{};
+
+    if (purpose == Purpose::Render) {
+        if (isInRenderThread()) {
+            future = submitTaskMPSC(std::forward<F>(f));
+        } else {
+            future = renderExecutor().submitTaskMPSC(std::forward<F>(f));
+        }
+    } else {
+        future = submitTaskSPMC(std::forward<F>(f));
+    }
+
+    return future;
+}
+
+template<typename F>
+    requires std::is_invocable_v<F>
+auto Executor::submitTaskMPSC(F&& f) -> std::future<std::invoke_result_t<F>>
 {
     assert(canSubmit());
 
@@ -119,7 +144,7 @@ auto Executor::emplaceTaskForThisExecutor(F&& f) -> std::future<std::invoke_resu
 
 template<typename F>
     requires std::is_invocable_v<F>
-auto Executor::submitTask(F&& f) -> std::future<std::invoke_result_t<F>>
+auto Executor::submitTaskSPMC(F&& f) -> std::future<std::invoke_result_t<F>>
 {
     assert(canSubmit());
 

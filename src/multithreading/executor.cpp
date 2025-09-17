@@ -11,7 +11,10 @@
 
 #define END_EXCEPTION_PROPAGATION()                                                                                    \
     }                                                                                                                  \
-    catch (...) { taskManager().propagateException(std::current_exception()); }
+    catch (...)                                                                                                        \
+    {                                                                                                                  \
+        taskManager().propagateException(std::current_exception());                                                    \
+    }
 #else
 #define BEGIN_EXCEPTION_PROPAGATION()
 #define END_EXCEPTION_PROPAGATION()
@@ -20,6 +23,7 @@
 namespace cyclonite::multithreading {
 namespace {
 thread_local Executor* _mainThreadExecutor = nullptr;
+thread_local Executor* _renderThreadExecutor = nullptr;
 thread_local Executor* _threadExecutor = nullptr;
 }
 
@@ -28,19 +32,25 @@ thread_local Executor* _threadExecutor = nullptr;
     return _mainThreadExecutor != nullptr;
 }
 
+/*static*/ auto Executor::isInRenderThread() -> bool
+{
+    return _renderThreadExecutor != nullptr;
+}
+
 /*static*/ auto Executor::threadExecutor() -> Executor&
 {
     assert(_threadExecutor != nullptr);
     return *_threadExecutor;
 }
 
-Executor::Executor(TaskManager& taskManager)
+Executor::Executor(TaskManager& taskManager, Purpose purpose)
   : threadId_{}
   , taskManager_{ &taskManager }
   , taskPoolSC_{ config_t::spmc_queue_max_size_v } // one producer consumes from pool
   , taskPoolMC_{ config_t::mpsc_queue_max_size_v } // many producers can consume from pool
   , spmcQueue_{ nullptr }
   , mpscQueue_{ nullptr }
+  , purpose_{ purpose }
 {
     spmcQueue_ = std::make_unique<TaskStealingDeque<Task*>>(config_t::spmc_queue_max_size_v);
     mpscQueue_ = std::make_unique<MpscDeque<Task*>>(config_t::mpsc_queue_max_size_v);
@@ -51,31 +61,25 @@ auto Executor::canSubmit() const -> bool
     return (_threadExecutor != nullptr) && threadId_ == std::this_thread::get_id();
 }
 
-auto Executor::taskManager() const -> TaskManager const&
-{
-    return *taskManager_;
-}
-
-auto Executor::taskManager() -> TaskManager&
-{
-    return *taskManager_;
-}
-
 void Executor::_setThreadExecutorPtr()
 {
     assert(_threadExecutor == nullptr);
     _threadExecutor = this;
+
+    if (purpose_ == Purpose::Render)
+        _renderThreadExecutor = this;
 
     threadId_ = std::this_thread::get_id();
 }
 
 void Executor::_resetThreadExecutorPtr()
 {
+    _renderThreadExecutor = nullptr;
     _threadExecutor = nullptr;
     threadId_ = std::thread::id{};
 }
 
-void Executor::_setAsMainThreadExecutor() 
+void Executor::_setAsMainThreadExecutor()
 {
     assert(_mainThreadExecutor == nullptr);
     _mainThreadExecutor = this;
@@ -84,7 +88,7 @@ void Executor::_setAsMainThreadExecutor()
     threadId_ = std::this_thread::get_id();
 }
 
-void Executor::_resetMainThreadExecutor() 
+void Executor::_resetMainThreadExecutor()
 {
     _mainThreadExecutor = nullptr;
     _threadExecutor = nullptr;
@@ -151,5 +155,10 @@ void Executor::run()
 void Executor::operator()()
 {
     run();
+}
+
+auto Executor::renderExecutor() -> Executor&
+{
+    return taskManager().executors()[TaskManager::renderExecutorIndex];
 }
 }

@@ -1,6 +1,7 @@
 
 #include "taskManager.h"
 #include "config.h"
+#include <cassert>
 
 namespace cyclonite::multithreading {
 TaskManager::TaskManager(size_t threadPoolSize /*= std::max(std::thread::hardware_concurrency(), 1u)*/)
@@ -10,35 +11,39 @@ TaskManager::TaskManager(size_t threadPoolSize /*= std::max(std::thread::hardwar
   , executorIndexToStealTask_{ 0 }
   , taskPoolForStrand_{ config_t::strand_queue_max_size_v }
   , strandDeque_{ nullptr }
-  , alive_
-{
-    true
-}
+  , alive_{ true }
 #if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
-, exPropagationLock_{}, exceptions_ {}
+  , exPropagationLock_{}
+  , exceptions_{}
 #endif
 {
-    for (auto i = size_t{ 0 }; i < executorCount_; i++) {
-        new (&executors_[i]) Executor{ *this };
-    }
-
     threadPool_.reserve(threadPoolSize);
 
+    assert(executorCount_ >= 2);
+    for (auto i = size_t{ 0 }; i < executorCount_; i++) {
+        auto purpose = (i == renderExecutorIndex) ? Purpose::Render : Purpose::General;
+        new (&executors_[i]) Executor{ *this, purpose };
+    }
     executors_[0]._setAsMainThreadExecutor();
-    // TODO::
 }
 
 TaskManager::~TaskManager()
 {
     stop();
-
     executors_[0]._resetMainThreadExecutor();
-    // TODO::
 }
 
 void TaskManager::start()
 {
-    // TODO::
+    assert(Executor::isInMainThread());
+
+    for (auto i = size_t{ 0 }; i < executorCount_; i++) {
+        if (executors_[i].canSubmit()) {
+            executors_[i]();
+        } else {
+            threadPool_.emplace_back([](Executor& executor) -> void { executor(); }, std::ref(executors_[i]));
+        }
+    }
 }
 
 void TaskManager::stop()
