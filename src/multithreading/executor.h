@@ -75,6 +75,12 @@ private:
     [[nodiscard]] auto mpscQueue() const -> MpscDeque<Task*> const& { return *mpscQueue_; }
     [[nodiscard]] auto mpscQueue() -> MpscDeque<Task*>& { return *mpscQueue_; }
 
+    [[nodiscard]] auto taskManager() const -> TaskManager const&;
+    [[nodiscard]] auto taskManager() -> TaskManager&;
+
+    void _setThreadExecutorPtr();
+    void _resetThreadExecutorPtr();
+
 private:
     std::thread::id threadId_;
     TaskManager* taskManager_;
