@@ -81,6 +81,9 @@ private:
     void _setThreadExecutorPtr();
     void _resetThreadExecutorPtr();
 
+    void _setAsMainThreadExecutor();
+    void _resetMainThreadExecutor();
+
 private:
     std::thread::id threadId_;
     TaskManager* taskManager_;

@@ -17,6 +17,22 @@ class TaskManager
     friend class Executor;
 
 public:
+    explicit TaskManager(size_t threadPoolSize = std::max(std::thread::hardware_concurrency(), 1u));
+
+    TaskManager(TaskManager const&) = delete;
+
+    TaskManager(TaskManager&&) = delete;
+
+    ~TaskManager();
+
+    auto operator=(TaskManager const&) -> TaskManager& = delete;
+    
+    auto operator=(TaskManager&&) -> TaskManager& = delete;
+
+    void start();
+
+    void stop();
+
     [[nodiscard]] auto keepAlive() const -> bool { return alive_.load(std::memory_order_relaxed); }
     
     [[nodiscard]] auto executorCount() const -> size_t { return executorCount_; }

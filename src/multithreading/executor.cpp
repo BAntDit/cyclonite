@@ -75,6 +75,23 @@ void Executor::_resetThreadExecutorPtr()
     threadId_ = std::thread::id{};
 }
 
+void Executor::_setAsMainThreadExecutor() 
+{
+    assert(_mainThreadExecutor == nullptr);
+    _mainThreadExecutor = this;
+    _threadExecutor = this;
+
+    threadId_ = std::this_thread::get_id();
+}
+
+void Executor::_resetMainThreadExecutor() 
+{
+    _mainThreadExecutor = nullptr;
+    _threadExecutor = nullptr;
+
+    threadId_ = std::thread::id{};
+}
+
 auto Executor::pendingTask() -> std::optional<Task>
 {
     auto task = std::optional<Task>{ std::nullopt };
