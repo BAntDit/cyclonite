@@ -10,6 +10,8 @@
 #include "executor.h"
 #include "strandDeque.h"
 #include "taskPool.h"
+#include <condition_variable>
+#include <vector>
 
 namespace cyclonite::multithreading {
 class TaskManager
@@ -63,6 +65,10 @@ private:
 
     [[nodiscard]] auto executorIndexToStealTask() -> size_t;
 
+    void waitForTasks();
+    void notifyNewTask();
+    void notifyNoTasks();
+
 #if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
     void propagateException(std::exception_ptr const& exception);
 #endif
@@ -78,6 +84,10 @@ private:
     std::unique_ptr<StrandDeque> strandDeque_;
 
     std::atomic<bool> alive_;
+
+    bool noTasks_;
+    std::condition_variable_any noTaskCv_;
+    core::SpinLock noTaskLock_;
 
 #if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
     core::SpinLock exPropagationLock_;
@@ -114,6 +124,8 @@ auto TaskManager::strandTask(F&& f) -> std::future<std::invoke_result_t<F>>
     // it must happen hardly ever as well
     while (taskManager.strandQueue().tryEmplace(task))
         std::this_thread::yield();
+
+    taskManager.notifyNewTask();
 
     return future;
 }

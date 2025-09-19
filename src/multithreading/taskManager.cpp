@@ -12,6 +12,9 @@ TaskManager::TaskManager(size_t threadPoolSize /*= std::max(std::thread::hardwar
   , taskPoolForStrand_{ config_t::strand_queue_max_size_v }
   , strandDeque_{ nullptr }
   , alive_{ true }
+  , noTasks_{ true }
+  , noTaskCv_{}
+  , noTaskLock_{}
 #if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
   , exPropagationLock_{}
   , exceptions_{}
@@ -59,6 +62,25 @@ void TaskManager::stop()
 auto TaskManager::executorIndexToStealTask() -> size_t
 {
     return executorIndexToStealTask_.fetch_add(1, std::memory_order_acq_rel) % executorCount_;
+}
+
+void TaskManager::waitForTasks()
+{
+    auto lk = std::unique_lock{ noTaskLock_ };
+    noTaskCv_.wait(lk, [&]() -> bool { return !noTasks_; });
+}
+
+void TaskManager::notifyNewTask()
+{
+    auto lg = std::lock_guard{ noTaskLock_ };
+    noTasks_ = false;
+    noTaskCv_.notify_all();
+}
+
+void TaskManager::notifyNoTasks()
+{
+    auto lg = std::lock_guard{ noTaskLock_ };
+    noTasks_ = true;
 }
 
 #if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)

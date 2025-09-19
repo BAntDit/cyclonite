@@ -125,13 +125,14 @@ auto Executor::pendingTask() -> std::optional<Task>
     return task;
 }
 
-void Executor::runOne()
+auto Executor::runOne() -> bool
 {
     if (auto task = pendingTask()) {
         task.value()();
-    } else {
-        std::this_thread::yield();
+        return true;
     }
+
+    return false;
 }
 
 void Executor::run()
@@ -144,7 +145,11 @@ void Executor::run()
     BEGIN_EXCEPTION_PROPAGATION();
 
     while (taskManager().keepAlive()) {
-        runOne();
+        taskManager().waitForTasks();
+
+        while (runOne()) {}
+
+        taskManager().notifyNoTasks();
     }
 
     END_EXCEPTION_PROPAGATION();
@@ -160,5 +165,10 @@ void Executor::operator()()
 auto Executor::renderExecutor() -> Executor&
 {
     return taskManager().executors()[TaskManager::renderExecutorIndex];
+}
+
+void Executor::notifyNewTask()
+{
+    taskManager().notifyNewTask();
 }
 }

@@ -37,7 +37,7 @@ public:
 
     void run();
 
-    void runOne();
+    auto runOne() -> bool;
 
     template<typename F>
         requires std::is_invocable_v<F>
@@ -71,17 +71,19 @@ private:
 
     auto renderExecutor() -> Executor&;
 
+    void notifyNewTask();
+
     [[nodiscard]] auto poolSC() const -> TaskPoolSC const& { return taskPoolSC_; }
     [[nodiscard]] auto poolSC() -> TaskPoolSC& { return taskPoolSC_; }
 
     [[nodiscard]] auto poolMC() const -> TaskPoolMC const& { return taskPoolMC_; }
     [[nodiscard]] auto poolMC() -> TaskPoolMC& { return taskPoolMC_; }
 
-    [[nodiscard]] auto spmcQueue() const -> TaskStealingDeque<Task*> const& { return *spmcQueue_; }
-    [[nodiscard]] auto spmcQueue() -> TaskStealingDeque<Task*>& { return *spmcQueue_; }
+    [[nodiscard]] auto spmcQueue() const -> TaskStealingDeque<task_ptr_t> const& { return *spmcQueue_; }
+    [[nodiscard]] auto spmcQueue() -> TaskStealingDeque<task_ptr_t>& { return *spmcQueue_; }
 
-    [[nodiscard]] auto mpscQueue() const -> MpscDeque<Task*> const& { return *mpscQueue_; }
-    [[nodiscard]] auto mpscQueue() -> MpscDeque<Task*>& { return *mpscQueue_; }
+    [[nodiscard]] auto mpscQueue() const -> MpscDeque<task_ptr_t> const& { return *mpscQueue_; }
+    [[nodiscard]] auto mpscQueue() -> MpscDeque<task_ptr_t>& { return *mpscQueue_; }
 
     void _setThreadExecutorPtr();
     void _resetThreadExecutorPtr();
@@ -94,8 +96,8 @@ private:
     TaskManager* taskManager_;
     TaskPoolSC taskPoolSC_;
     TaskPoolMC taskPoolMC_;
-    std::unique_ptr<TaskStealingDeque<Task*>> spmcQueue_;
-    std::unique_ptr<MpscDeque<Task*>> mpscQueue_;
+    std::unique_ptr<TaskStealingDeque<task_ptr_t>> spmcQueue_;
+    std::unique_ptr<MpscDeque<task_ptr_t>> mpscQueue_;
     Purpose purpose_;
 };
 
@@ -114,6 +116,8 @@ auto Executor::submitTask(F&& f, Purpose purpose /* = Purpose::General*/) -> std
     } else {
         future = submitTaskSPMC(std::forward<F>(f));
     }
+
+    notifyNewTask();
 
     return future;
 }

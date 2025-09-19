@@ -86,6 +86,9 @@ private:
     std::atomic<bool> pending_;
 };
 
+using task_ptr_t = std::add_pointer_t<Task>;
+static_assert(DequeItemConcept<task_ptr_t>);
+
 template<typename F>
 auto Task::functor_t<F>::move_to(std::byte (&storage)[storage_size_v]) -> functor_base_t*
 {
