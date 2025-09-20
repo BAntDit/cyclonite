@@ -6,7 +6,7 @@
 #define CYCLONITE_RENDERPASSBUILDER_H
 
 #include "config.h"
-#include "core/resourceRef.h"
+#include "core/resourceSharedRef.h"
 #include <array>
 
 namespace cyclonite::gfx {
@@ -15,23 +15,23 @@ class RenderPassBuilder
 public:
     RenderPassBuilder() = default;
 
-    auto setDevice(core::ResourceRef deviceRef) -> RenderPassBuilder&;
+    auto setDevice(core::ResourceSharedRef deviceRef) -> RenderPassBuilder&;
 
     auto setResolution(uint32_t width, uint32_t height) -> RenderPassBuilder&;
 
-    auto setDepthStencilAttachment(core::ResourceRef textureRef) -> RenderPassBuilder&;
+    auto setDepthStencilAttachment(core::ResourceSharedRef textureRef) -> RenderPassBuilder&;
 
-    auto setRenderWindow(core::ResourceRef renderWindowRef) -> RenderPassBuilder&;
+    auto setRenderWindow(core::ResourceSharedRef renderWindowRef) -> RenderPassBuilder&;
 
-    auto addColorAttachment(core::ResourceRef textureRef, uint32_t mipLevel) -> RenderPassBuilder&;
+    auto addColorAttachment(core::ResourceSharedRef textureRef, uint32_t mipLevel) -> RenderPassBuilder&;
 
-    auto build() -> core::ResourceRef;
+    auto build() -> core::ResourceSharedRef;
 
 private:
-    core::ResourceRef deviceRef_;
-    core::ResourceRef depthStencilTextureRef_;
-    core::ResourceRef renderWindowRef_;
-    std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs_;
+    core::ResourceSharedRef deviceRef_;
+    core::ResourceSharedRef depthStencilTextureRef_;
+    core::ResourceSharedRef renderWindowRef_;
+    std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs_;
     std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
       colorAttachmentSubresDescs_;
     uint32_t colorAttachmentCount_;

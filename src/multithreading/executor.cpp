@@ -147,7 +147,8 @@ void Executor::run()
     while (taskManager().keepAlive()) {
         taskManager().waitForTasks();
 
-        while (runOne()) {}
+        while (runOne()) {
+        }
 
         taskManager().notifyNoTasks();
     }

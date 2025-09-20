@@ -7,7 +7,6 @@
 
 #include "common.h"
 #include "mpscDeque.h"
-#include "taskManager.h"
 #include "taskPool.h"
 #include "taskStealingDeque.h"
 
@@ -103,7 +102,7 @@ private:
 
 template<typename F>
     requires std::is_invocable_v<F>
-auto Executor::submitTask(F&& f, Purpose purpose /* = Purpose::General*/) -> std::future<std::invoke_result_t<F>>
+auto Executor::submitTask(F&& f, Purpose purpose /*= Purpose::General*/) -> std::future<std::invoke_result_t<F>>
 {
     auto future = std::future<std::invoke_result_t<F>>{};
 

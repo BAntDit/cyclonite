@@ -13,7 +13,7 @@
 namespace cyclonite::gfx::vulkan {
 RenderTargetView::RenderTargetView(core::ResourceManagerBase* resourceManager,
                                    core::ResourceId resourceId,
-                                   core::WeakResourceRef weakRef,
+                                   core::ResourceWeakRef weakRef,
                                    uint32_t mipLevel)
   : core::ResourceBase{ resourceManager, resourceId, true }
   , texture_{ weakRef }

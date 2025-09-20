@@ -6,7 +6,7 @@
 #define CYCLONITE_VKCOMMANDPOOL_H
 
 #include "core/resourceBase.h"
-#include "core/resourceRef.h"
+#include "core/resourceSharedRef.h"
 #include "gfx/common.h"
 #include "handle.h"
 #include <atomic>
@@ -19,7 +19,7 @@ class CommandPool : public core::ResourceBase
 public:
     CommandPool(core::ResourceManagerBase* resourceManager,
                 core::ResourceId resourceId,
-                core::ResourceRef deviceRef,
+                core::ResourceSharedRef deviceRef,
                 uint32_t queueFamilyIndex,
                 CommandPoolFlagBits flags);
 
@@ -28,7 +28,7 @@ public:
     [[nodiscard]] auto queueFamilyIndex() const -> uint32_t { return queueFamilyIndex_; }
 
 private:
-    core::ResourceRef deviceRef_;
+    core::ResourceSharedRef deviceRef_;
     Handle<VkCommandPool> vkCommandPool_;
     std::thread::id threadId_;
     uint32_t queueFamilyIndex_;

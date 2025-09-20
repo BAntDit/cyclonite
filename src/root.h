@@ -5,7 +5,6 @@
 #ifndef CYCLONITE_ROOT_H
 #define CYCLONITE_ROOT_H
 
-#include "config.h"
 #include "gfx/instance.h"
 #include "input.h"
 #include "multithreading/taskManager.h"

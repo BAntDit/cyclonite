@@ -12,7 +12,7 @@
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 namespace {
-auto getAttachmentDescription(core::ResourceRef textureRef) -> VkAttachmentDescription
+auto getAttachmentDescription(core::ResourceSharedRef textureRef) -> VkAttachmentDescription
 {
     auto attachmentDesc = VkAttachmentDescription{};
     if (textureRef.valid()) {
@@ -39,7 +39,7 @@ constexpr auto max_attachment_count_v = compile_time_config_t::max_color_attachm
 
 template<size_t... I>
 auto writeAttachmentDescriptions(
-  std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v> const& attachmentRef,
+  std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v> const& attachmentRef,
   std::array<VkAttachmentDescription, max_attachment_count_v>& descriptions,
   std::index_sequence<I...>) -> uint32_t
 {
@@ -51,7 +51,7 @@ auto writeAttachmentDescriptions(
 
 template<size_t... I>
 auto writeAttachmentReferences(
-  std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v> const& attachmentRef,
+  std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v> const& attachmentRef,
   std::array<VkAttachmentReference, compile_time_config_t::max_color_attachment_count_v>& vkAttachmentRefs,
   std::index_sequence<I...>) -> uint32_t
 {
@@ -62,7 +62,7 @@ auto writeAttachmentReferences(
     return count;
 }
 
-auto getRTV(core::ResourceRef& attachmentRef, uint16_t mipLevel) -> VkImageView
+auto getRTV(core::ResourceSharedRef& attachmentRef, uint16_t mipLevel) -> VkImageView
 {
     assert(attachmentRef.valid());
 
@@ -73,11 +73,12 @@ auto getRTV(core::ResourceRef& attachmentRef, uint16_t mipLevel) -> VkImageView
 }
 
 template<size_t... I>
-auto writeRTVs(std::array<VkImageView, max_attachment_count_v>& attachments,
-               std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v>& colorAttachmentRefs,
-               std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v> const&
-                 colorAttachmentSubresDescs,
-               std::index_sequence<I...>) -> uint32_t
+auto writeRTVs(
+  std::array<VkImageView, max_attachment_count_v>& attachments,
+  std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v>& colorAttachmentRefs,
+  std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v> const&
+    colorAttachmentSubresDescs,
+  std::index_sequence<I...>) -> uint32_t
 {
     auto count = uint32_t{ 0 };
     ((colorAttachmentRefs[I].valid() &&
@@ -90,9 +91,9 @@ auto writeRTVs(std::array<VkImageView, max_attachment_count_v>& attachments,
 RenderPass::RenderPass(
   core::ResourceManagerBase* resourceManager,
   core::ResourceId resourceId,
-  core::ResourceRef deviceRef,
-  core::ResourceRef depthStencilRef,
-  std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs,
+  core::ResourceSharedRef deviceRef,
+  core::ResourceSharedRef depthStencilRef,
+  std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs,
   std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
     colorAttachmentSubresDescs,
   uint32_t width,
@@ -192,8 +193,8 @@ RenderPass::RenderPass(
 
 RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
                        core::ResourceId resourceId,
-                       core::ResourceRef deviceRef,
-                       core::ResourceRef renderWindowRef)
+                       core::ResourceSharedRef deviceRef,
+                       core::ResourceSharedRef renderWindowRef)
   : core::ResourceBase{ resourceManager, resourceId, true }
   , deviceRef_{ deviceRef }
   , renderTargets_{ renderWindowRef }

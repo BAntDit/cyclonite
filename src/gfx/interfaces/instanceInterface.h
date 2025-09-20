@@ -5,7 +5,7 @@
 #ifndef GFX_INTERFACES_INSTANCE_H
 #define GFX_INTERFACES_INSTANCE_H
 
-#include "core/resourceRef.h"
+#include "core/resourceSharedRef.h"
 #include <concepts>
 #include <metrix/type_traits.h>
 #include <utility>
@@ -20,7 +20,8 @@ concept InstanceConcept =
 
       requires std::is_member_function_pointer_v<decltype(&T::createDevice)>;
 
-      requires std::is_same_v<core::ResourceRef, metrix::member_function_return_type_t<decltype(&T::createDevice)>>;
+      requires std::is_same_v<core::ResourceSharedRef,
+                              metrix::member_function_return_type_t<decltype(&T::createDevice)>>;
   };
 
 template<InstanceConcept InstanceImplementation>

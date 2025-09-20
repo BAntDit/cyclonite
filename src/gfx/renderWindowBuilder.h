@@ -7,7 +7,7 @@
 
 #include "common.h"
 #include "config.h"
-#include "core/resourceRef.h"
+#include "core/resourceSharedRef.h"
 #include <string_view>
 #include <unordered_set>
 
@@ -17,7 +17,7 @@ class RenderWindowBuilder
 public:
     RenderWindowBuilder() = default;
 
-    auto setDevice(core::ResourceRef deviceRef) -> RenderWindowBuilder&;
+    auto setDevice(core::ResourceSharedRef deviceRef) -> RenderWindowBuilder&;
 
     auto setTitle(std::string_view title) -> RenderWindowBuilder&;
 
@@ -33,10 +33,10 @@ public:
 
     auto addDepthStencilFormatCandidate(Format format) -> RenderWindowBuilder&;
 
-    auto build() -> core::ResourceRef;
+    auto build() -> core::ResourceSharedRef;
 
 private:
-    core::ResourceRef deviceRef_;
+    core::ResourceSharedRef deviceRef_;
     std::string_view title_;
     uint32_t width_;
     uint32_t height_;

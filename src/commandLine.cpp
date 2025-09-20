@@ -7,7 +7,7 @@ CommandLine::CommandLine(int argc, const char* argv[])
   , argv_{ argv }
   , arguments_{}
 {
-    for (auto i = size_t{ 0 }, count = static_cast<size_t>(argc_); i < argc_; i++) {
+    for (auto i = size_t{ 0 }, count = static_cast<size_t>(argc_); i < count; i++) {
         arguments_.emplace(argv_[i]);
     }
 }

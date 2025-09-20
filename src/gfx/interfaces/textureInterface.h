@@ -1,7 +1,7 @@
 
 #ifndef GFX_INTERFACES_TEXTURE_H
 #define GFX_INTERFACES_TEXTURE_H
-#include "core/resourceRef.h"
+#include "core/resourceSharedRef.h"
 #include "gfx/common.h"
 #include <concepts>
 #include <cstdint>
@@ -39,7 +39,7 @@ concept TextureConcept = requires(T t, uint16_t a) {
 
                              {
                                  t.getRTV(a)
-                                 } -> std::same_as<core::ResourceRef>;
+                                 } -> std::same_as<core::ResourceSharedRef>;
                          };
 
 template<TextureConcept PlatformImplementation>
@@ -55,6 +55,7 @@ public:
     using PlatformImplementation::height;
     using PlatformImplementation::mipCount;
     using PlatformImplementation::PlatformImplementation;
+    using PlatformImplementation::resourceBase;
     using PlatformImplementation::type;
     using PlatformImplementation::width;
 };

@@ -2,22 +2,22 @@
 // Created by anton on 6/15/25.
 //
 
-#include "resourceRef.h"
+#include "resourceSharedRef.h"
 #include "resourceManager.h"
 
 namespace cyclonite::core {
-ResourceRef::ResourceRef(ResourceBase* resource)
+ResourceSharedRef::ResourceSharedRef(ResourceBase* resource)
   : id_{ resource->resourceId() }
   , resource_{ resource }
 {
     retain();
 }
 
-ResourceRef::ResourceRef(ResourceId id, ResourceBase* resource)
+ResourceSharedRef::ResourceSharedRef(ResourceId id, ResourceBase* resource)
   : id_{ id }
   , resource_{ resource } {};
 
-ResourceRef::ResourceRef(ResourceRef const& ref)
+ResourceSharedRef::ResourceSharedRef(ResourceSharedRef const& ref)
   : id_{ ref.id_ }
   , resource_{ ref.resource_ }
 {
@@ -26,7 +26,7 @@ ResourceRef::ResourceRef(ResourceRef const& ref)
     }
 }
 
-ResourceRef::ResourceRef(ResourceRef&& ref)
+ResourceSharedRef::ResourceSharedRef(ResourceSharedRef&& ref)
   : id_{ ref.id_ }
   , resource_{ ref.resource_ }
 {
@@ -34,19 +34,19 @@ ResourceRef::ResourceRef(ResourceRef&& ref)
     ref.resource_ = nullptr;
 }
 
-auto ResourceRef::valid() const -> bool
+auto ResourceSharedRef::valid() const -> bool
 {
     return resource_->resourceManager_->isResourceValid(id_);
 }
 
-ResourceRef::~ResourceRef()
+ResourceSharedRef::~ResourceSharedRef()
 {
     if (valid()) {
         release();
     }
 }
 
-auto ResourceRef::operator=(ResourceRef const& rhs) -> ResourceRef&
+auto ResourceSharedRef::operator=(ResourceSharedRef const& rhs) -> ResourceSharedRef&
 {
     id_ = rhs.id_;
     resource_ = rhs.resource_;
@@ -58,7 +58,7 @@ auto ResourceRef::operator=(ResourceRef const& rhs) -> ResourceRef&
     return *this;
 }
 
-auto ResourceRef::operator=(ResourceRef&& rhs) -> ResourceRef&
+auto ResourceSharedRef::operator=(ResourceSharedRef&& rhs) -> ResourceSharedRef&
 {
     id_ = rhs.id_;
     resource_ = rhs.resource_;

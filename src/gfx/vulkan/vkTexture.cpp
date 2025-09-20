@@ -3,8 +3,8 @@
 //
 
 #include "vkTexture.h"
+#include "core/resourceWeakRef.h"
 #include "core/spinLock.h"
-#include "core/weakResourceRef.h"
 #include "gfx/device.h"
 #include "gfx/renderTargetView.h"
 #include "gfx/resourceManager.h"
@@ -23,7 +23,7 @@ auto rtvKey(uint16_t mip, uint16_t layer) -> uint32_t
 
 Texture::Texture(core::ResourceManagerBase* resourceManager,
                  core::ResourceId resourceId,
-                 core::ResourceRef deviceRef,
+                 core::ResourceSharedRef deviceRef,
                  GpuMemoryAllocationFlagBits allocationFlags,
                  TextureCreationFlagBits imageCreateFlags,
                  TextureType textureType,
@@ -91,23 +91,23 @@ Texture::~Texture()
     vmaDestroyImage(allocator, vkImage_, allocation_);
 }
 
-auto Texture::getRTV(uint16_t mipLevel) -> core::ResourceRef
+auto Texture::getRTV(uint16_t mipLevel) -> core::ResourceSharedRef
 {
     auto lock = std::lock_guard{ rtvsGuard_ };
 
     auto key = rtvKey(mipLevel, 0);
 
-    auto rtv = core::ResourceRef{};
+    auto rtv = core::ResourceSharedRef{};
 
     auto rtvExists = (rtvs_.contains(key) && (rtv = rtvs_.at(key)).valid());
 
     if (!rtvExists) {
         auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-        auto thisRef = core::ResourceRef{ resourceBase() };
+        auto thisRef = core::ResourceSharedRef{ resourceBase() };
 
         auto [it, _] = rtvs_.emplace(key,
-                                     resManager.allocResource<gfx::RenderTargetView>(core::WeakResourceRef{ thisRef },
+                                     resManager.allocResource<gfx::RenderTargetView>(core::ResourceWeakRef{ thisRef },
                                                                                      static_cast<uint32_t>(mipLevel)));
 
         if (it != rtvs_.end()) {

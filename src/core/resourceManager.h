@@ -5,7 +5,7 @@
 #ifndef GFX_RESOURCE_MANAGER_H
 #define GFX_RESOURCE_MANAGER_H
 
-#include "resourceRef.h"
+#include "resourceSharedRef.h"
 #include <array>
 #include <cassert>
 #include <concepts>
@@ -38,9 +38,9 @@ protected:
 
     virtual void releaseResourceDeferred(ResourceId id) = 0;
 
-    static auto makeResourceRef(ResourceBase* resource) -> ResourceRef
+    static auto makeResourceRef(ResourceBase* resource) -> ResourceSharedRef
     {
-        return ResourceRef{ resource->resourceId(), resource };
+        return ResourceSharedRef{ resource->resourceId(), resource };
     }
 
 private:
@@ -148,7 +148,7 @@ public:
     auto operator=(ResourceManager&&) -> ResourceManager& = default;
 
     template<typename ResourceType, typename... Args>
-    auto allocResource(Args&&... args) -> ResourceRef
+    auto allocResource(Args&&... args) -> ResourceSharedRef
         requires(resource_type_list_t::template has_type<ResourceType>::value);
 
     void gc(bool clearAll = false);
@@ -219,14 +219,14 @@ void ResourceManager<ResourceTypes...>::free(uint32_t index)
     header.version++;
     header.type = std::numeric_limits<uint16_t>::max();
     header.index = std::numeric_limits<uint32_t>::max();
-    header.deleter = [](void* ptr) -> void {};
+    header.deleter = [](void*) -> void {};
 
     emptyHeaders_.push_back(index);
 }
 
 template<ResourceConcept... ResourceTypes>
 template<typename ResourceType, typename... Args>
-auto ResourceManager<ResourceTypes...>::allocResource(Args&&... args) -> ResourceRef
+auto ResourceManager<ResourceTypes...>::allocResource(Args&&... args) -> ResourceSharedRef
     requires(resource_type_list_t::template has_type<ResourceType>::value)
 {
     auto type = resource_meta_t::template type_index_v<ResourceType>();

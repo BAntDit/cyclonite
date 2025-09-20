@@ -7,7 +7,7 @@
 
 #include "core/hashTable.h"
 #include "core/resourceBase.h"
-#include "core/resourceRef.h"
+#include "core/resourceSharedRef.h"
 #include "gfx/common.h"
 #include "gfx/config.h"
 #include "handle.h"
@@ -54,7 +54,7 @@ public:
     [[nodiscard]] auto createRenderWindow(uint32_t width,
                                           uint32_t height,
                                           std::string_view title,
-                                          SurfaceFlagBits flags) -> core::ResourceRef;
+                                          SurfaceFlagBits flags) -> core::ResourceSharedRef;
 
     [[nodiscard]] auto createTexture(GpuMemoryAllocationFlagBits allocationFlags,
                                      TextureCreationFlagBits imageCreateFlags,
@@ -66,17 +66,18 @@ public:
                                      uint32_t mipCount,
                                      uint32_t arrayLayerCount,
                                      TextureTiling tiling,
-                                     TextureUsageFlagBits usageFlags) -> core::ResourceRef;
+                                     TextureUsageFlagBits usageFlags) -> core::ResourceSharedRef;
 
     [[nodiscard]] auto createRenderPassWithRTVs(
-      core::ResourceRef depthStencilRef,
-      std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs,
+      core::ResourceSharedRef depthStencilRef,
+      std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs,
       std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
         colorAttachmentSubresDescs,
       uint32_t width,
-      uint32_t height) -> core::ResourceRef;
+      uint32_t height) -> core::ResourceSharedRef;
 
-    [[nodiscard]] auto createRenderPassWithRenderWindow(core::ResourceRef renderWindowRef) -> core::ResourceRef;
+    [[nodiscard]] auto createRenderPassWithRenderWindow(core::ResourceSharedRef renderWindowRef)
+      -> core::ResourceSharedRef;
 
     using core::ResourceBase::resourceBase;
 
@@ -95,7 +96,7 @@ private:
     Handle<VkQueue> computeQueue_;
     VmaAllocator vmaAllocator_;
 
-    core::StaticHashTable<core::ResourceRef,
+    core::StaticHashTable<core::ResourceSharedRef,
                           compile_time_config_t::max_command_pool_count_v,
                           std::thread::id,
                           uint32_t,

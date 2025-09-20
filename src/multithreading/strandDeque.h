@@ -12,12 +12,9 @@
 
 namespace cyclonite::multithreading {
 class Task;
-class Executor;
 
 class StrandDeque
 {
-    friend class Executor;
-
 public:
     explicit StrandDeque(size_t capacity);
 

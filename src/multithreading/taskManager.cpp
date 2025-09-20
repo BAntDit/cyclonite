@@ -53,6 +53,9 @@ void TaskManager::stop()
 {
     alive_.store(false, std::memory_order_release);
 
+    // submit empty task to avoid executor deadlock
+    Executor::threadExecutor().submitTask([]() -> void {});
+
     for (auto&& thread : threadPool_) {
         if (thread.joinable())
             thread.join();

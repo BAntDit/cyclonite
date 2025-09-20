@@ -13,7 +13,7 @@
 #endif
 
 namespace cyclonite::gfx {
-auto RenderWindowBuilder::setDevice(core::ResourceRef deviceRef) -> RenderWindowBuilder&
+auto RenderWindowBuilder::setDevice(core::ResourceSharedRef deviceRef) -> RenderWindowBuilder&
 {
     assert(deviceRef.valid());
     deviceRef_ = deviceRef;
@@ -51,9 +51,9 @@ auto RenderWindowBuilder::addDepthStencilFormatCandidate(Format format) -> Rende
     return *this;
 }
 
-auto RenderWindowBuilder::build() -> core::ResourceRef
+auto RenderWindowBuilder::build() -> core::ResourceSharedRef
 {
-    auto renderWindowRef = core::ResourceRef{};
+    auto renderWindowRef = core::ResourceSharedRef{};
 
     renderWindowRef = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().createRenderWindow(
       width_, height_, title_, flags_);

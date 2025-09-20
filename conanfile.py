@@ -43,7 +43,6 @@ class CycloniteRecipe(ConanFile):
     def requirements(self):
         self.requires("gtest/[~1.16]")
         self.requires("metrix/[~1.7]")
-        self.requires("taskweaver/[~0.3]")
         self.requires("enttx/4.1.0.0")
         self.requires("glm/1.0.1")
         self.requires("sdl/3.2.6")

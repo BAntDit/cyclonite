@@ -5,7 +5,7 @@
 #ifndef GFX_INTERFACES_DEVICE_H
 #define GFX_INTERFACES_DEVICE_H
 
-#include "core/resourceRef.h"
+#include "core/resourceSharedRef.h"
 #include "gfx/common.h"
 #include <concepts>
 #include <metrix/type_list.h>
@@ -31,21 +31,22 @@ concept DeviceConcept =
           } -> std::same_as<DeviceLimits const&>;
       {
           t.createRenderWindow(a, b, s, f)
-          } -> std::same_as<core::ResourceRef>;
+          } -> std::same_as<core::ResourceSharedRef>;
 
       requires std::is_member_function_pointer_v<decltype(&T::createRenderPassWithRenderWindow)>;
 
-      requires std::is_same_v<core::ResourceRef,
+      requires std::is_same_v<core::ResourceSharedRef,
                               metrix::member_function_return_type_t<decltype(&T::createRenderPassWithRenderWindow)>>;
 
       requires std::is_member_function_pointer_v<decltype(&T::createRenderPassWithRTVs)>;
 
-      requires std::is_same_v<core::ResourceRef,
+      requires std::is_same_v<core::ResourceSharedRef,
                               metrix::member_function_return_type_t<decltype(&T::createRenderPassWithRTVs)>>;
 
       requires std::is_member_function_pointer_v<decltype(&T::createTexture)>;
 
-      requires std::is_same_v<core::ResourceRef, metrix::member_function_return_type_t<decltype(&T::createTexture)>>;
+      requires std::is_same_v<core::ResourceSharedRef,
+                              metrix::member_function_return_type_t<decltype(&T::createTexture)>>;
 
       requires std::is_same_v<metrix::type_list<GpuMemoryAllocationFlagBits,
                                                 TextureCreationFlagBits,

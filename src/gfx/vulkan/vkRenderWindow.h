@@ -5,7 +5,7 @@
 #ifndef GFX_VK_RENDER_WINDOW_H
 #define GFX_VK_RENDER_WINDOW_H
 
-#include "core/resourceRef.h"
+#include "core/resourceSharedRef.h"
 #include "gfx/common.h"
 #include "gfx/config.h"
 
@@ -26,7 +26,7 @@ class RenderWindow : public core::ResourceBase
 public:
     RenderWindow(core::ResourceManagerBase* resourceManager,
                  core::ResourceId resourceId,
-                 core::ResourceRef deviceRef,
+                 core::ResourceSharedRef deviceRef,
                  uint32_t width,
                  uint32_t height,
                  std::string_view title,
@@ -64,12 +64,12 @@ public:
     void validateDepthStencil(Format format);
 
 private:
-    core::ResourceRef deviceRef_;
+    core::ResourceSharedRef deviceRef_;
     VkExtent2D extent_;
     std::unique_ptr<SDL_Window, std::function<void(SDL_Window*)>> sdlWindowPtr_;
     std::unique_ptr<SurfaceKHR> platformSurface_;
     Handle<VkSwapchainKHR> vkSwapchain_;
-    std::array<core::ResourceRef, compile_time_config_t::max_swapchain_length_v> depthStencilRefs_;
+    std::array<core::ResourceSharedRef, compile_time_config_t::max_swapchain_length_v> depthStencilRefs_;
     std::array<Handle<VkImageView>, compile_time_config_t::max_swapchain_length_v> imageViews_;
     uint32_t swapchainLength_;
     gfx::Format colorOutputFormat_;

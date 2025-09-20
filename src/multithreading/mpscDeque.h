@@ -82,7 +82,7 @@ auto MpscDeque<DataItemType>::tryEmplace(Args&&... args) -> bool
         auto producerBottom = producerBottom_.fetch_add(1, std::memory_order_acq_rel);
 
         if (consumerBottom == producerBottom) {
-            data_->store(producerBottom, DequeItemType(std::forward<Args>(args)...));
+            data_->store(producerBottom, DataItemType(std::forward<Args>(args)...));
 
             if (consumerBottom_.compare_exchange_weak(
                   consumerBottom, producerBottom + 1, std::memory_order_release, std::memory_order_relaxed)) {

@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_COMMANDPOOLINTERFACE_H
 #define CYCLONITE_COMMANDPOOLINTERFACE_H
 
-#include "core/resourceRef.h"
+#include "core/resourceSharedRef.h"
 #include "gfx/common.h"
 #include <concepts>
 

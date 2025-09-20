@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_VKTEXTURE_H
 #define CYCLONITE_VKTEXTURE_H
 
-#include "core/resourceRef.h"
+#include "core/resourceSharedRef.h"
 #include "core/spinLock.h"
 #include "gfx/common.h"
 #include "handle.h"
@@ -19,7 +19,7 @@ class Texture : public core::ResourceBase
 public:
     Texture(core::ResourceManagerBase* resourceManager,
             core::ResourceId resourceId,
-            core::ResourceRef deviceRef,
+            core::ResourceSharedRef deviceRef,
             GpuMemoryAllocationFlagBits allocationFlags,
             TextureCreationFlagBits imageCreateFlags,
             TextureType textureType,
@@ -48,14 +48,14 @@ public:
 
     [[nodiscard]] auto mipCount() const -> uint32_t { return mipCount_; }
 
-    [[nodiscard]] auto device() const -> core::ResourceRef { return deviceRef_; }
+    [[nodiscard]] auto device() const -> core::ResourceSharedRef { return deviceRef_; }
 
     [[nodiscard]] auto handle() const -> VkImage { return vkImage_; }
 
-    [[nodiscard]] auto getRTV(uint16_t mipLevel) -> core::ResourceRef;
+    [[nodiscard]] auto getRTV(uint16_t mipLevel) -> core::ResourceSharedRef;
 
 private:
-    core::ResourceRef deviceRef_;
+    core::ResourceSharedRef deviceRef_;
     VmaAllocation allocation_;
     VkImage vkImage_;
     TextureState state_;
@@ -65,7 +65,7 @@ private:
     uint32_t depth_;
     uint32_t mipCount_;
     TextureType type_;
-    std::unordered_map<uint32_t, core::ResourceRef> rtvs_;
+    std::unordered_map<uint32_t, core::ResourceSharedRef> rtvs_;
     core::SpinLock rtvsGuard_;
 };
 }

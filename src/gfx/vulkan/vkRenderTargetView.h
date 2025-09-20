@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_GFX_VKRENDERTARGETVIEW_H
 #define CYCLONITE_GFX_VKRENDERTARGETVIEW_H
 
-#include "core/weakResourceRef.h"
+#include "core/resourceWeakRef.h"
 #include "handle.h"
 
 namespace cyclonite::gfx::vulkan {
@@ -14,15 +14,15 @@ class RenderTargetView : public core::ResourceBase
 public:
     RenderTargetView(core::ResourceManagerBase* resourceManager,
                      core::ResourceId resourceId,
-                     core::WeakResourceRef weakRef,
+                     core::ResourceWeakRef weakRef,
                      uint32_t mipLevel);
 
-    [[nodiscard]] auto texture() const -> core::WeakResourceRef { return texture_; }
+    [[nodiscard]] auto texture() const -> core::ResourceWeakRef { return texture_; }
 
     [[nodiscard]] auto handle() const -> VkImageView { return static_cast<VkImageView>(vkImageView_); }
 
 private:
-    core::WeakResourceRef texture_;
+    core::ResourceWeakRef texture_;
     Handle<VkImageView> vkImageView_;
 };
 }

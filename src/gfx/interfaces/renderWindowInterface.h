@@ -5,7 +5,7 @@
 #ifndef GFX_INTERFACES_RENDER_WINDOW_H
 #define GFX_INTERFACES_RENDER_WINDOW_H
 
-#include "core/resourceRef.h"
+#include "core/resourceSharedRef.h"
 #include "gfx/common.h"
 #include <concepts>
 #include <cstdint>

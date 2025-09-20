@@ -10,7 +10,7 @@
 namespace cyclonite::gfx::vulkan {
 CommandPool::CommandPool(core::ResourceManagerBase* resourceManager,
                          core::ResourceId resourceId,
-                         core::ResourceRef deviceRef,
+                         core::ResourceSharedRef deviceRef,
                          uint32_t queueFamilyIndex,
                          CommandPoolFlagBits flags)
   : core::ResourceBase{ resourceManager, resourceId, true }

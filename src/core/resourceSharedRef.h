@@ -2,33 +2,35 @@
 // Created by anton on 6/14/25.
 //
 
-#ifndef GFX_RESOURCE_REF_H
-#define GFX_RESOURCE_REF_H
+#ifndef GFX_RESOURCE_SHARED_REF_H
+#define GFX_RESOURCE_SHARED_REF_H
 
 #include "resourceBase.h"
 #include "resourceId.h"
 
 namespace cyclonite::core {
 class ResourceManagerBase;
+class ResourceWeakRef;
 
-class ResourceRef
+class ResourceSharedRef
 {
 public:
     friend class ResourceManagerBase;
+    friend class ResourceWeakRef;
 
-    ResourceRef() = default;
+    ResourceSharedRef() = default;
 
-    ResourceRef(ResourceBase* resource);
+    ResourceSharedRef(ResourceBase* resource);
 
-    ResourceRef(ResourceRef const& ref);
+    ResourceSharedRef(ResourceSharedRef const& ref);
 
-    ResourceRef(ResourceRef&& ref);
+    ResourceSharedRef(ResourceSharedRef&& ref);
 
-    ~ResourceRef();
+    ~ResourceSharedRef();
 
-    auto operator=(ResourceRef const& rhs) -> ResourceRef&;
+    auto operator=(ResourceSharedRef const& rhs) -> ResourceSharedRef&;
 
-    auto operator=(ResourceRef&& rhs) -> ResourceRef&;
+    auto operator=(ResourceSharedRef&& rhs) -> ResourceSharedRef&;
 
     [[nodiscard]] auto id() const -> ResourceId { return id_; }
 
@@ -55,11 +57,11 @@ private:
 
     auto release() -> uint64_t { return resource_->release(); }
 
-    ResourceRef(ResourceId id, ResourceBase* resource);
+    ResourceSharedRef(ResourceId id, ResourceBase* resource);
 
     ResourceId id_;
     ResourceBase* resource_;
 };
 }
 
-#endif // GFX_RESOURCE_REF_H
+#endif // GFX_RESOURCE_SHARED_REF_H

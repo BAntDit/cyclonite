@@ -369,13 +369,13 @@ auto Device::createTexture(GpuMemoryAllocationFlagBits allocationFlags,
                            uint32_t mipCount,
                            uint32_t arrayLayerCount,
                            TextureTiling tiling,
-                           TextureUsageFlagBits usageFlags) -> core::ResourceRef
+                           TextureUsageFlagBits usageFlags) -> core::ResourceSharedRef
 {
-    auto result = core::ResourceRef{};
+    auto result = core::ResourceSharedRef{};
 
     auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-    auto deviceRef = core::ResourceRef{ resourceBase() };
+    auto deviceRef = core::ResourceSharedRef{ resourceBase() };
 
     result = resManager.allocResource<gfx::Texture>(deviceRef,
                                                     allocationFlags,
@@ -394,13 +394,13 @@ auto Device::createTexture(GpuMemoryAllocationFlagBits allocationFlags,
 }
 
 auto Device::createRenderWindow(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
-  -> core::ResourceRef
+  -> core::ResourceSharedRef
 {
-    auto result = core::ResourceRef{};
+    auto result = core::ResourceSharedRef{};
 
     auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-    auto deviceRef = core::ResourceRef{ resourceBase() };
+    auto deviceRef = core::ResourceSharedRef{ resourceBase() };
 
     result = resManager.allocResource<gfx::RenderWindow>(deviceRef, width, height, title, flags);
 
@@ -408,18 +408,18 @@ auto Device::createRenderWindow(uint32_t width, uint32_t height, std::string_vie
 }
 
 auto Device::createRenderPassWithRTVs(
-  core::ResourceRef depthStencilRef,
-  std::array<core::ResourceRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs,
+  core::ResourceSharedRef depthStencilRef,
+  std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs,
   std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
     colorAttachmentSubresDescs,
   uint32_t width,
-  uint32_t height) -> core::ResourceRef
+  uint32_t height) -> core::ResourceSharedRef
 {
-    auto result = core::ResourceRef{};
+    auto result = core::ResourceSharedRef{};
 
     auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-    auto deviceRef = core::ResourceRef{ resourceBase() };
+    auto deviceRef = core::ResourceSharedRef{ resourceBase() };
 
     result = resManager.allocResource<gfx::RenderPass>(
       deviceRef, depthStencilRef, colorAttachmentRefs, colorAttachmentSubresDescs, width, height);
@@ -427,13 +427,13 @@ auto Device::createRenderPassWithRTVs(
     return result;
 }
 
-auto Device::createRenderPassWithRenderWindow(core::ResourceRef renderWindowRef) -> core::ResourceRef
+auto Device::createRenderPassWithRenderWindow(core::ResourceSharedRef renderWindowRef) -> core::ResourceSharedRef
 {
-    auto result = core::ResourceRef{};
+    auto result = core::ResourceSharedRef{};
 
     auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-    auto deviceRef = core::ResourceRef{ resourceBase() };
+    auto deviceRef = core::ResourceSharedRef{ resourceBase() };
 
     result = resManager.allocResource<gfx::RenderPass>(deviceRef, renderWindowRef);
 

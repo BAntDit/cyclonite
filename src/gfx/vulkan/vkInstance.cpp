@@ -269,9 +269,9 @@ auto Instance::chooseBestPhysicalDevice() const -> uint32_t
     return result;
 }
 
-auto Instance::createDevice(uint32_t deviceId /* = std::numeric_limits<uint32_t>::max()*/) -> core::ResourceRef
+auto Instance::createDevice(uint32_t deviceId /* = std::numeric_limits<uint32_t>::max()*/) -> core::ResourceSharedRef
 {
-    auto result = core::ResourceRef{};
+    auto result = core::ResourceSharedRef{};
 
     std::vector<const char*> requiredExtensions = {};
 

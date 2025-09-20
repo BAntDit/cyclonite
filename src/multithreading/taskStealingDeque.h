@@ -86,7 +86,8 @@ template<typename... Args>
 auto TaskStealingDeque<DataItemType>::tryEmplace(Args&&... args) -> bool
 {
     if (countItems() < capacity()) {
-        data_->store(static_cast<size_t>(bottom_.load(std::memory_order_relaxed)), T(std::forward<Args>(args)...));
+        data_->store(static_cast<size_t>(bottom_.load(std::memory_order_relaxed)),
+                     DataItemType(std::forward<Args>(args)...));
         bottom_.fetch_add(1, std::memory_order_relaxed);
         return true;
     }

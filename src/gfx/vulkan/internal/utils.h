@@ -9,7 +9,7 @@
 #include <cassert>
 
 #if defined(GFX_DRIVER_VULKAN)
-#include "vmaUsage.h"
+#include "gfx/vulkan/vmaUsage.h"
 #include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan::internal {

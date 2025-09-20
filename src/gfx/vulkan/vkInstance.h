@@ -30,7 +30,8 @@ public:
 
     [[nodiscard]] auto physicalDeviceCount() const -> uint32_t { return physicalDeviceList_.size(); }
 
-    [[nodiscard]] auto createDevice(uint32_t deviceId = std::numeric_limits<uint32_t>::max()) -> core::ResourceRef;
+    [[nodiscard]] auto createDevice(uint32_t deviceId = std::numeric_limits<uint32_t>::max())
+      -> core::ResourceSharedRef;
 
 private:
     [[nodiscard]] auto chooseBestPhysicalDevice() const -> uint32_t;

@@ -11,7 +11,7 @@
 #include <stdexcept>
 
 namespace cyclonite::gfx {
-auto RenderPassBuilder::setDevice(core::ResourceRef deviceRef) -> RenderPassBuilder&
+auto RenderPassBuilder::setDevice(core::ResourceSharedRef deviceRef) -> RenderPassBuilder&
 {
     assert(deviceRef.valid());
     deviceRef_ = deviceRef;
@@ -25,14 +25,14 @@ auto RenderPassBuilder::setResolution(uint32_t width, uint32_t height) -> Render
     return *this;
 }
 
-auto RenderPassBuilder::setDepthStencilAttachment(core::ResourceRef textureRef) -> RenderPassBuilder&
+auto RenderPassBuilder::setDepthStencilAttachment(core::ResourceSharedRef textureRef) -> RenderPassBuilder&
 {
     assert(textureRef.valid());
     depthStencilTextureRef_ = textureRef;
     return *this;
 }
 
-auto RenderPassBuilder::addColorAttachment(core::ResourceRef textureRef, uint32_t mipLevel) -> RenderPassBuilder&
+auto RenderPassBuilder::addColorAttachment(core::ResourceSharedRef textureRef, uint32_t mipLevel) -> RenderPassBuilder&
 {
     if (renderWindowRef_.valid()) {
         throw std::logic_error("render pass is not able to render into color attachments and render window at once");
@@ -59,7 +59,7 @@ auto RenderPassBuilder::addColorAttachment(core::ResourceRef textureRef, uint32_
     return *this;
 }
 
-auto RenderPassBuilder::setRenderWindow(core::ResourceRef renderWindowRef) -> RenderPassBuilder&
+auto RenderPassBuilder::setRenderWindow(core::ResourceSharedRef renderWindowRef) -> RenderPassBuilder&
 {
     if (colorAttachmentCount_ > 0) {
         throw std::logic_error("render pass is not able to render into color attachments and render window at once");
@@ -68,9 +68,9 @@ auto RenderPassBuilder::setRenderWindow(core::ResourceRef renderWindowRef) -> Re
     return *this;
 }
 
-auto RenderPassBuilder::build() -> core::ResourceRef
+auto RenderPassBuilder::build() -> core::ResourceSharedRef
 {
-    auto rpRef = core::ResourceRef{};
+    auto rpRef = core::ResourceSharedRef{};
 
     if (colorAttachmentCount_ > 0) {
         rpRef = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().createRenderPassWithRTVs(
