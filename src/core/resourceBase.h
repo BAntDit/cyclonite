@@ -11,13 +11,13 @@
 
 namespace cyclonite::core {
 class ResourceManagerBase;
-
 class ResourceSharedRef;
+class ResourceUniqueRef;
 
 class ResourceBase
 {
     friend class ResourceSharedRef;
-
+    friend class ResourceUniqueRef;
     friend class ResourceManagerBase;
 
 public:

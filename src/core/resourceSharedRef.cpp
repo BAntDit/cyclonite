@@ -4,6 +4,7 @@
 
 #include "resourceSharedRef.h"
 #include "resourceManager.h"
+#include "resourceUniqueRef.h"
 
 namespace cyclonite::core {
 ResourceSharedRef::ResourceSharedRef(ResourceBase* resource)
@@ -11,6 +12,14 @@ ResourceSharedRef::ResourceSharedRef(ResourceBase* resource)
   , resource_{ resource }
 {
     retain();
+}
+
+ResourceSharedRef::ResourceSharedRef(ResourceUniqueRef&& uniqueRef) noexcept
+  : id_{ uniqueRef.id_ }
+  , resource_{ uniqueRef.resource_ }
+{
+    uniqueRef.id_ = ResourceId{};
+    uniqueRef.resource_ = nullptr;
 }
 
 ResourceSharedRef::ResourceSharedRef(ResourceId id, ResourceBase* resource)
@@ -26,7 +35,7 @@ ResourceSharedRef::ResourceSharedRef(ResourceSharedRef const& ref)
     }
 }
 
-ResourceSharedRef::ResourceSharedRef(ResourceSharedRef&& ref)
+ResourceSharedRef::ResourceSharedRef(ResourceSharedRef&& ref) noexcept
   : id_{ ref.id_ }
   , resource_{ ref.resource_ }
 {
@@ -36,7 +45,7 @@ ResourceSharedRef::ResourceSharedRef(ResourceSharedRef&& ref)
 
 auto ResourceSharedRef::valid() const -> bool
 {
-    return resource_->resourceManager_->isResourceValid(id_);
+    return resource_ != nullptr && resource_->resourceManager_->isResourceValid(id_);
 }
 
 ResourceSharedRef::~ResourceSharedRef()
@@ -58,7 +67,7 @@ auto ResourceSharedRef::operator=(ResourceSharedRef const& rhs) -> ResourceShare
     return *this;
 }
 
-auto ResourceSharedRef::operator=(ResourceSharedRef&& rhs) -> ResourceSharedRef&
+auto ResourceSharedRef::operator=(ResourceSharedRef&& rhs) noexcept -> ResourceSharedRef&
 {
     id_ = rhs.id_;
     resource_ = rhs.resource_;

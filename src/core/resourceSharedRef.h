@@ -11,6 +11,7 @@
 namespace cyclonite::core {
 class ResourceManagerBase;
 class ResourceWeakRef;
+class ResourceUniqueRef;
 
 class ResourceSharedRef
 {
@@ -20,17 +21,19 @@ public:
 
     ResourceSharedRef() = default;
 
-    ResourceSharedRef(ResourceBase* resource);
+    explicit ResourceSharedRef(ResourceBase* resource);
+
+    explicit ResourceSharedRef(ResourceUniqueRef&& uniqueRef) noexcept;
 
     ResourceSharedRef(ResourceSharedRef const& ref);
 
-    ResourceSharedRef(ResourceSharedRef&& ref);
+    ResourceSharedRef(ResourceSharedRef&& ref) noexcept;
 
     ~ResourceSharedRef();
 
     auto operator=(ResourceSharedRef const& rhs) -> ResourceSharedRef&;
 
-    auto operator=(ResourceSharedRef&& rhs) -> ResourceSharedRef&;
+    auto operator=(ResourceSharedRef&& rhs) noexcept -> ResourceSharedRef&;
 
     [[nodiscard]] auto id() const -> ResourceId { return id_; }
 
