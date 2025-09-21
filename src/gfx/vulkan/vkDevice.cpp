@@ -185,6 +185,7 @@ Device::Device(core::ResourceManagerBase* resourceManager,
                VkPhysicalDeviceProperties const& physicalDeviceProperties,
                std::vector<const char*> const& requiredExtensions)
   : core::ResourceBase{ resourceManager, resourceId, true }
+  , core::EnableRefFromThis{}
   , vkInstance_{ vkInstance }
   , vkPhysicalDevice_{ vkPhysicalDevice }
   , name_{ physicalDeviceProperties.deviceName }
@@ -369,13 +370,13 @@ auto Device::createTexture(GpuMemoryAllocationFlagBits allocationFlags,
                            uint32_t mipCount,
                            uint32_t arrayLayerCount,
                            TextureTiling tiling,
-                           TextureUsageFlagBits usageFlags) -> core::ResourceSharedRef
+                           TextureUsageFlagBits usageFlags) -> core::ResourceUniqueRef
 {
-    auto result = core::ResourceSharedRef{};
+    auto result = core::ResourceUniqueRef{};
 
     auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-    auto deviceRef = core::ResourceSharedRef{ resourceBase() };
+    auto deviceRef = getWeakFromThis(this);
 
     result = resManager.allocResource<gfx::Texture>(deviceRef,
                                                     allocationFlags,
@@ -394,13 +395,13 @@ auto Device::createTexture(GpuMemoryAllocationFlagBits allocationFlags,
 }
 
 auto Device::createRenderWindow(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
-  -> core::ResourceSharedRef
+  -> core::ResourceUniqueRef
 {
-    auto result = core::ResourceSharedRef{};
+    auto result = core::ResourceUniqueRef{};
 
     auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-    auto deviceRef = core::ResourceSharedRef{ resourceBase() };
+    auto deviceRef = getWeakFromThis(this);
 
     result = resManager.allocResource<gfx::RenderWindow>(deviceRef, width, height, title, flags);
 
@@ -413,13 +414,13 @@ auto Device::createRenderPassWithRTVs(
   std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
     colorAttachmentSubresDescs,
   uint32_t width,
-  uint32_t height) -> core::ResourceSharedRef
+  uint32_t height) -> core::ResourceUniqueRef
 {
-    auto result = core::ResourceSharedRef{};
+    auto result = core::ResourceUniqueRef{};
 
     auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-    auto deviceRef = core::ResourceSharedRef{ resourceBase() };
+    auto deviceRef = getWeakFromThis(this);
 
     result = resManager.allocResource<gfx::RenderPass>(
       deviceRef, depthStencilRef, colorAttachmentRefs, colorAttachmentSubresDescs, width, height);
@@ -427,15 +428,15 @@ auto Device::createRenderPassWithRTVs(
     return result;
 }
 
-auto Device::createRenderPassWithRenderWindow(core::ResourceSharedRef renderWindowRef) -> core::ResourceSharedRef
+auto Device::createRenderPassWithRenderWindow(core::ResourceWeakRef renderWindowRef) -> core::ResourceUniqueRef
 {
-    auto result = core::ResourceSharedRef{};
+    auto result = core::ResourceUniqueRef{};
 
     auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-    auto deviceRef = core::ResourceSharedRef{ resourceBase() };
+    auto deviceRef = getWeakFromThis(this);
 
-    result = resManager.allocResource<gfx::RenderPass>(deviceRef, renderWindowRef);
+    result = resManager.allocResource<gfx::RenderPass>(deviceRef, renderWindowRef.lock());
 
     return result;
 }

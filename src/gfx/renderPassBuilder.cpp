@@ -11,9 +11,9 @@
 #include <stdexcept>
 
 namespace cyclonite::gfx {
-auto RenderPassBuilder::setDevice(core::ResourceSharedRef deviceRef) -> RenderPassBuilder&
+auto RenderPassBuilder::setDevice(core::ResourceWeakRef deviceRef) -> RenderPassBuilder&
 {
-    assert(deviceRef.valid());
+    assert(!deviceRef.expired());
     deviceRef_ = deviceRef;
     return *this;
 }
@@ -25,22 +25,23 @@ auto RenderPassBuilder::setResolution(uint32_t width, uint32_t height) -> Render
     return *this;
 }
 
-auto RenderPassBuilder::setDepthStencilAttachment(core::ResourceSharedRef textureRef) -> RenderPassBuilder&
+auto RenderPassBuilder::setDepthStencilAttachment(core::ResourceWeakRef textureRef) -> RenderPassBuilder&
 {
-    assert(textureRef.valid());
-    depthStencilTextureRef_ = textureRef;
+    assert(!textureRef.expired());
+    depthStencilTextureRef_ = textureRef.lock();
     return *this;
 }
 
-auto RenderPassBuilder::addColorAttachment(core::ResourceSharedRef textureRef, uint32_t mipLevel) -> RenderPassBuilder&
+auto RenderPassBuilder::addColorAttachment(core::ResourceWeakRef textureRef, uint32_t mipLevel) -> RenderPassBuilder&
 {
     if (renderWindowRef_.valid()) {
         throw std::logic_error("render pass is not able to render into color attachments and render window at once");
     }
 
-    if (colorAttachmentCount_ == deviceRef_.as<gfx::Device>().limits().maxColorAttachmentCount) {
+    auto deviceRef = deviceRef_.lock();
+    if (colorAttachmentCount_ == deviceRef.as<gfx::Device>().limits().maxColorAttachmentCount) {
         throw std::runtime_error(std::format("color attachment count must not exceed device limitation {}",
-                                             deviceRef_.as<gfx::Device>().limits().maxColorAttachmentCount));
+                                             deviceRef.as<gfx::Device>().limits().maxColorAttachmentCount));
     }
 
     if (colorAttachmentCount_ == compile_time_config_t::max_color_attachment_count_v) {
@@ -48,10 +49,10 @@ auto RenderPassBuilder::addColorAttachment(core::ResourceSharedRef textureRef, u
                                              compile_time_config_t::max_color_attachment_count_v));
     }
 
-    assert(textureRef.valid());
-    assert(textureRef.as<gfx::Texture>().type() == TextureType::TEXTURE_2D);
+    assert(!textureRef.expired());
+    assert(textureRef.lock().as<gfx::Texture>().type() == TextureType::TEXTURE_2D);
 
-    colorAttachmentRefs_[colorAttachmentCount_] = textureRef;
+    colorAttachmentRefs_[colorAttachmentCount_] = textureRef.lock();
     colorAttachmentSubresDescs_[colorAttachmentCount_] = std::make_pair(static_cast<uint16_t>(mipLevel), uint16_t{ 0 });
 
     colorAttachmentCount_++;
@@ -59,24 +60,25 @@ auto RenderPassBuilder::addColorAttachment(core::ResourceSharedRef textureRef, u
     return *this;
 }
 
-auto RenderPassBuilder::setRenderWindow(core::ResourceSharedRef renderWindowRef) -> RenderPassBuilder&
+auto RenderPassBuilder::setRenderWindow(core::ResourceWeakRef renderWindowRef) -> RenderPassBuilder&
 {
     if (colorAttachmentCount_ > 0) {
         throw std::logic_error("render pass is not able to render into color attachments and render window at once");
     }
-    renderWindowRef_ = renderWindowRef;
+    renderWindowRef_ = renderWindowRef.lock();
     return *this;
 }
 
-auto RenderPassBuilder::build() -> core::ResourceSharedRef
+auto RenderPassBuilder::build() -> core::ResourceUniqueRef
 {
-    auto rpRef = core::ResourceSharedRef{};
+    auto rpRef = core::ResourceUniqueRef{};
+    auto deviceRef = deviceRef_.lock();
 
     if (colorAttachmentCount_ > 0) {
-        rpRef = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().createRenderPassWithRTVs(
+        rpRef = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().createRenderPassWithRTVs(
           depthStencilTextureRef_, colorAttachmentRefs_, colorAttachmentSubresDescs_, width_, height_);
     } else {
-        rpRef = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().createRenderPassWithRenderWindow(
+        rpRef = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().createRenderPassWithRenderWindow(
           renderWindowRef_);
     }
 

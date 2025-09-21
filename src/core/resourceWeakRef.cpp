@@ -17,4 +17,10 @@ auto ResourceWeakRef::lock() -> ResourceSharedRef
     ref.retain();
     return ref;
 }
+
+ResourceWeakRef::ResourceWeakRef(ResourceBase* resource)
+  : id_{ resource->resourceId() }
+  , resource_{ resource }
+{
+}
 }

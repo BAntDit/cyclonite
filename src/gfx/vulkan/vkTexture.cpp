@@ -23,7 +23,7 @@ auto rtvKey(uint16_t mip, uint16_t layer) -> uint32_t
 
 Texture::Texture(core::ResourceManagerBase* resourceManager,
                  core::ResourceId resourceId,
-                 core::ResourceSharedRef deviceRef,
+                 core::ResourceWeakRef deviceRef,
                  GpuMemoryAllocationFlagBits allocationFlags,
                  TextureCreationFlagBits imageCreateFlags,
                  TextureType textureType,
@@ -36,7 +36,8 @@ Texture::Texture(core::ResourceManagerBase* resourceManager,
                  TextureTiling tiling,
                  TextureUsageFlagBits usageFlags)
   : core::ResourceBase{ resourceManager, resourceId, true }
-  , deviceRef_{ deviceRef }
+  , core::EnableRefFromThis{}
+  , deviceRef_{ deviceRef.lock() }
   , allocation_{ VK_NULL_HANDLE }
   , vkImage_{ VK_NULL_HANDLE }
   , state_{ TextureState::UNDEFINED }
@@ -91,32 +92,31 @@ Texture::~Texture()
     vmaDestroyImage(allocator, vkImage_, allocation_);
 }
 
-auto Texture::getRTV(uint16_t mipLevel) -> core::ResourceSharedRef
+auto Texture::getRTV(uint16_t mipLevel) -> core::ResourceWeakRef
 {
     auto lock = std::lock_guard{ rtvsGuard_ };
 
     auto key = rtvKey(mipLevel, 0);
 
-    auto rtv = core::ResourceSharedRef{};
+    auto rtv = core::ResourceWeakRef{};
 
-    auto rtvExists = (rtvs_.contains(key) && (rtv = rtvs_.at(key)).valid());
+    auto rtvExists = (rtvs_.contains(key) && !(rtv = core::ResourceWeakRef{ rtvs_.at(key) }).expired());
 
     if (!rtvExists) {
         auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-        auto thisRef = core::ResourceSharedRef{ resourceBase() };
+        auto thisRef = getWeakFromThis(this);
 
-        auto [it, _] = rtvs_.emplace(key,
-                                     resManager.allocResource<gfx::RenderTargetView>(core::ResourceWeakRef{ thisRef },
-                                                                                     static_cast<uint32_t>(mipLevel)));
+        auto [it, _] =
+          rtvs_.emplace(key, resManager.allocResource<gfx::RenderTargetView>(thisRef, static_cast<uint32_t>(mipLevel)));
 
         if (it != rtvs_.end()) {
             auto& [k, v] = *it;
-            rtv = v;
+            rtv = core::ResourceWeakRef{ v };
         }
     }
 
-    if (!rtv.valid()) {
+    if (rtv.expired()) {
         throw std::runtime_error("could not create RTV");
     }
 

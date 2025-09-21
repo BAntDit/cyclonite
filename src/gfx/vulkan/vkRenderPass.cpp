@@ -3,6 +3,7 @@
 //
 
 #include "vkRenderPass.h"
+#include "core/resourceWeakRef.h"
 #include "gfx/resourceManager.h"
 #include "internal/utils.h"
 #include "vkException.h"
@@ -67,7 +68,7 @@ auto getRTV(core::ResourceSharedRef& attachmentRef, uint16_t mipLevel) -> VkImag
     assert(attachmentRef.valid());
 
     auto& texture = attachmentRef.as<gfx::Texture>();
-    auto& rtv = texture.getRTV(mipLevel).as<gfx::vulkan::RenderTargetView>();
+    auto& rtv = texture.getRTV(mipLevel).lock().as<gfx::vulkan::RenderTargetView>();
 
     return rtv.handle();
 }
@@ -91,7 +92,7 @@ auto writeRTVs(
 RenderPass::RenderPass(
   core::ResourceManagerBase* resourceManager,
   core::ResourceId resourceId,
-  core::ResourceSharedRef deviceRef,
+  core::ResourceWeakRef deviceRef,
   core::ResourceSharedRef depthStencilRef,
   std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs,
   std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
@@ -99,9 +100,9 @@ RenderPass::RenderPass(
   uint32_t width,
   uint32_t height)
   : core::ResourceBase{ resourceManager, resourceId, true }
-  , deviceRef_{ deviceRef }
+  , deviceRef_{ deviceRef.lock() }
   , renderTargets_{ std::make_pair(depthStencilRef, colorAttachmentRefs) }
-  , vkRenderPass_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
+  , vkRenderPass_{ deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
   , vkFrameBuffers_{}
   , bufferCount_{ 1 }
   , currentBufferIndex_{ 0 }
@@ -152,7 +153,7 @@ RenderPass::RenderPass(
     renderPassCreateInfo.subpassCount = 1;
     renderPassCreateInfo.pSubpasses = &subpassDescription;
 
-    auto& device = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>();
+    auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
 
     if (auto vkResult = vkCreateRenderPass(device.handle(), &renderPassCreateInfo, nullptr, &vkRenderPass_);
         vkResult != VK_SUCCESS) {
@@ -169,7 +170,7 @@ RenderPass::RenderPass(
 
     if (depthStencilRef.valid()) {
         auto& dsTex = depthStencilRef.as<gfx::Texture>();
-        auto& dsv = dsTex.getRTV(0).as<gfx::vulkan::RenderTargetView>();
+        auto& dsv = dsTex.getRTV(0).lock().as<gfx::vulkan::RenderTargetView>();
 
         attachments[rtvCount++] = dsv.handle();
     }
@@ -193,19 +194,19 @@ RenderPass::RenderPass(
 
 RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
                        core::ResourceId resourceId,
-                       core::ResourceSharedRef deviceRef,
+                       core::ResourceWeakRef deviceRef,
                        core::ResourceSharedRef renderWindowRef)
   : core::ResourceBase{ resourceManager, resourceId, true }
-  , deviceRef_{ deviceRef }
+  , deviceRef_{ deviceRef.lock() }
   , renderTargets_{ renderWindowRef }
-  , vkRenderPass_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
+  , vkRenderPass_{ deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
   , vkFrameBuffers_{}
   , bufferCount_{ renderWindowRef.as<type_traits::platform_implementation_t<gfx::RenderWindow>>().swapchainLength() }
   , currentBufferIndex_{ 0 }
 {
     assert(deviceRef_.valid());
 
-    auto& device = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>();
+    auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
     auto& renderWindow = renderWindowRef.as<type_traits::platform_implementation_t<gfx::RenderWindow>>();
 
     auto attachmentDescCount = uint32_t{ 1 };

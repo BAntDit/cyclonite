@@ -8,6 +8,7 @@
 #include "common.h"
 #include "config.h"
 #include "core/resourceSharedRef.h"
+#include "core/resourceUniqueRef.h"
 #include <string_view>
 #include <unordered_set>
 
@@ -33,7 +34,7 @@ public:
 
     auto addDepthStencilFormatCandidate(Format format) -> RenderWindowBuilder&;
 
-    auto build() -> core::ResourceSharedRef;
+    auto build() -> core::ResourceUniqueRef;
 
 private:
     core::ResourceSharedRef deviceRef_;

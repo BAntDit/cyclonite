@@ -8,8 +8,12 @@
 #include "resourceSharedRef.h"
 
 namespace cyclonite::core {
+class EnableRefFromThis;
+
 class ResourceWeakRef
 {
+    friend class EnableRefFromThis;
+
 public:
     ResourceWeakRef() = default;
 
@@ -32,6 +36,8 @@ public:
     [[nodiscard]] auto expired() const -> bool { return ResourceSharedRef{ id_, resource_ }.valid(); }
 
 private:
+    explicit ResourceWeakRef(ResourceBase* resource);
+
     ResourceId id_;
     ResourceBase* resource_;
 };

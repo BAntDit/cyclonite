@@ -6,6 +6,7 @@
 #define GFX_VK_RENDER_WINDOW_H
 
 #include "core/resourceSharedRef.h"
+#include "core/resourceWeakRef.h"
 #include "gfx/common.h"
 #include "gfx/config.h"
 
@@ -26,7 +27,7 @@ class RenderWindow : public core::ResourceBase
 public:
     RenderWindow(core::ResourceManagerBase* resourceManager,
                  core::ResourceId resourceId,
-                 core::ResourceSharedRef deviceRef,
+                 core::ResourceWeakRef deviceRef,
                  uint32_t width,
                  uint32_t height,
                  std::string_view title,

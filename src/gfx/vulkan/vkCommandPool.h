@@ -19,7 +19,7 @@ class CommandPool : public core::ResourceBase
 public:
     CommandPool(core::ResourceManagerBase* resourceManager,
                 core::ResourceId resourceId,
-                core::ResourceSharedRef deviceRef,
+                core::ResourceWeakRef deviceRef,
                 uint32_t queueFamilyIndex,
                 CommandPoolFlagBits flags);
 

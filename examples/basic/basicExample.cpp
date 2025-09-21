@@ -31,17 +31,18 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
     root_.init("basic-example");
 
     auto deviceId = commandLineVariables["device-id"].as<uint32_t>();
-    auto deviceRef = root_.gfxInstance().createDevice(deviceId);
+    auto deviceRef = cyclonite::core::ResourceSharedRef{ root_.gfxInstance().createDevice(deviceId) };
     assert(deviceRef.valid());
 
     auto renderWindowBuilder = cyclonite::gfx::RenderWindowBuilder{};
-    auto renderWindowRef = renderWindowBuilder.setDevice(deviceRef)
-                             .setTitle("basic.example")
-                             .setResolution(1024, 768)
-                             .addFormatCandidate(cyclonite::gfx::Format::R8G8B8A8_SRGB)
-                             .addPresentModeCandidate(cyclonite::gfx::PresentMode::MailBox)
-                             .addPresentModeCandidate(cyclonite::gfx::PresentMode::FiFo)
-                             .build();
+    auto renderWindowRef =
+      cyclonite::core::ResourceSharedRef{ renderWindowBuilder.setDevice(deviceRef)
+                                            .setTitle("basic.example")
+                                            .setResolution(1024, 768)
+                                            .addFormatCandidate(cyclonite::gfx::Format::R8G8B8A8_SRGB)
+                                            .addPresentModeCandidate(cyclonite::gfx::PresentMode::MailBox)
+                                            .addPresentModeCandidate(cyclonite::gfx::PresentMode::FiFo)
+                                            .build() };
 
     auto renderPassBuilder = cyclonite::gfx::RenderPassBuilder{};
     auto renderPassRef = renderPassBuilder.setDevice(deviceRef).setRenderWindow(renderWindowRef).build();

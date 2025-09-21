@@ -51,9 +51,9 @@ auto RenderWindowBuilder::addDepthStencilFormatCandidate(Format format) -> Rende
     return *this;
 }
 
-auto RenderWindowBuilder::build() -> core::ResourceSharedRef
+auto RenderWindowBuilder::build() -> core::ResourceUniqueRef
 {
-    auto renderWindowRef = core::ResourceSharedRef{};
+    auto renderWindowRef = core::ResourceUniqueRef{};
 
     renderWindowRef = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().createRenderWindow(
       width_, height_, title_, flags_);

@@ -20,7 +20,7 @@ concept InstanceConcept =
 
       requires std::is_member_function_pointer_v<decltype(&T::createDevice)>;
 
-      requires std::is_same_v<core::ResourceSharedRef,
+      requires std::is_same_v<core::ResourceUniqueRef,
                               metrix::member_function_return_type_t<decltype(&T::createDevice)>>;
   };
 

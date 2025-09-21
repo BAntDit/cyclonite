@@ -31,21 +31,21 @@ concept DeviceConcept =
           } -> std::same_as<DeviceLimits const&>;
       {
           t.createRenderWindow(a, b, s, f)
-          } -> std::same_as<core::ResourceSharedRef>;
+          } -> std::same_as<core::ResourceUniqueRef>;
 
       requires std::is_member_function_pointer_v<decltype(&T::createRenderPassWithRenderWindow)>;
 
-      requires std::is_same_v<core::ResourceSharedRef,
+      requires std::is_same_v<core::ResourceUniqueRef,
                               metrix::member_function_return_type_t<decltype(&T::createRenderPassWithRenderWindow)>>;
 
       requires std::is_member_function_pointer_v<decltype(&T::createRenderPassWithRTVs)>;
 
-      requires std::is_same_v<core::ResourceSharedRef,
+      requires std::is_same_v<core::ResourceUniqueRef,
                               metrix::member_function_return_type_t<decltype(&T::createRenderPassWithRTVs)>>;
 
       requires std::is_member_function_pointer_v<decltype(&T::createTexture)>;
 
-      requires std::is_same_v<core::ResourceSharedRef,
+      requires std::is_same_v<core::ResourceUniqueRef,
                               metrix::member_function_return_type_t<decltype(&T::createTexture)>>;
 
       requires std::is_same_v<metrix::type_list<GpuMemoryAllocationFlagBits,

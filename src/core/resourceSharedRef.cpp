@@ -77,4 +77,15 @@ auto ResourceSharedRef::operator=(ResourceSharedRef&& rhs) noexcept -> ResourceS
 
     return *this;
 }
+
+auto ResourceSharedRef::operator=(ResourceUniqueRef&& rhs) noexcept -> ResourceSharedRef&
+{
+    id_ = rhs.id_;
+    resource_ = rhs.resource_;
+
+    rhs.id_ = ResourceId{};
+    rhs.resource_ = nullptr;
+
+    return *this;
+}
 }

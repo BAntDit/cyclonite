@@ -10,12 +10,13 @@
 namespace cyclonite::gfx::vulkan {
 CommandPool::CommandPool(core::ResourceManagerBase* resourceManager,
                          core::ResourceId resourceId,
-                         core::ResourceSharedRef deviceRef,
+                         core::ResourceWeakRef deviceRef,
                          uint32_t queueFamilyIndex,
                          CommandPoolFlagBits flags)
   : core::ResourceBase{ resourceManager, resourceId, true }
-  , deviceRef_{ deviceRef }
-  , vkCommandPool_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyCommandPool }
+  , deviceRef_{ deviceRef.lock() }
+  , vkCommandPool_{ deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().handle(),
+                    vkDestroyCommandPool }
   , threadId_{ std::this_thread::get_id() }
   , queueFamilyIndex_{ queueFamilyIndex }
   , flags_{ flags }

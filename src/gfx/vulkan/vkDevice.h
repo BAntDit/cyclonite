@@ -6,20 +6,23 @@
 #define CYCLONITE_DEVICE_H
 
 #include "core/hashTable.h"
+#include "core/refFromThisMixin.h"
 #include "core/resourceBase.h"
 #include "core/resourceSharedRef.h"
+#include "core/resourceUniqueRef.h"
 #include "gfx/common.h"
 #include "gfx/config.h"
 #include "handle.h"
 #include "vmaUsage.h"
 #include <memory>
-#include <optional>
 #include <string_view>
 #include <thread>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
-class Device : public core::ResourceBase
+class Device
+  : public core::ResourceBase
+  , public core::EnableRefFromThis
 {
 public:
     Device(core::ResourceManagerBase* resourceManager,
@@ -54,7 +57,7 @@ public:
     [[nodiscard]] auto createRenderWindow(uint32_t width,
                                           uint32_t height,
                                           std::string_view title,
-                                          SurfaceFlagBits flags) -> core::ResourceSharedRef;
+                                          SurfaceFlagBits flags) -> core::ResourceUniqueRef;
 
     [[nodiscard]] auto createTexture(GpuMemoryAllocationFlagBits allocationFlags,
                                      TextureCreationFlagBits imageCreateFlags,
@@ -66,7 +69,7 @@ public:
                                      uint32_t mipCount,
                                      uint32_t arrayLayerCount,
                                      TextureTiling tiling,
-                                     TextureUsageFlagBits usageFlags) -> core::ResourceSharedRef;
+                                     TextureUsageFlagBits usageFlags) -> core::ResourceUniqueRef;
 
     [[nodiscard]] auto createRenderPassWithRTVs(
       core::ResourceSharedRef depthStencilRef,
@@ -74,10 +77,10 @@ public:
       std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
         colorAttachmentSubresDescs,
       uint32_t width,
-      uint32_t height) -> core::ResourceSharedRef;
+      uint32_t height) -> core::ResourceUniqueRef;
 
-    [[nodiscard]] auto createRenderPassWithRenderWindow(core::ResourceSharedRef renderWindowRef)
-      -> core::ResourceSharedRef;
+    [[nodiscard]] auto createRenderPassWithRenderWindow(core::ResourceWeakRef renderWindowRef)
+      -> core::ResourceUniqueRef;
 
     using core::ResourceBase::resourceBase;
 

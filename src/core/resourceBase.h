@@ -13,6 +13,7 @@ namespace cyclonite::core {
 class ResourceManagerBase;
 class ResourceSharedRef;
 class ResourceUniqueRef;
+class ResourceWeakRef;
 
 class ResourceBase
 {

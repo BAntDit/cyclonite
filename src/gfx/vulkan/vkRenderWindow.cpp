@@ -102,13 +102,13 @@ auto createPlatformSurface(VkInstance vkInstance, SDL_Window* sdlWindow, metrix:
 
 RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
                            core::ResourceId resourceId,
-                           core::ResourceSharedRef deviceRef,
+                           core::ResourceWeakRef deviceRef,
                            uint32_t width,
                            uint32_t height,
                            std::string_view title,
                            SurfaceFlagBits flags)
   : core::ResourceBase{ resourceManager, resourceId, true }
-  , deviceRef_{ deviceRef }
+  , deviceRef_{ deviceRef.lock() }
   , extent_{}
   , sdlWindowPtr_{ SDL_CreateWindow(title.data(),
                                     static_cast<int>(width),
@@ -116,10 +116,10 @@ RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
                                     flags.cast_to<SDL_WindowFlags>()),
                    [](SDL_Window* window) { SDL_DestroyWindow(window); } }
   , platformSurface_{ createPlatformSurface(
-      deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().vulkanInstance(),
+      deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().vulkanInstance(),
       sdlWindowPtr_.get(),
       platform_surface_argument_type_list_t{}) }
-  , vkSwapchain_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroySwapchainKHR }
+  , vkSwapchain_{ deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroySwapchainKHR }
   , depthStencilRefs_{}
   , imageViews_{}
   , swapchainLength_{ 0 }
@@ -267,6 +267,7 @@ auto RenderWindow::getDSV(size_t swapchainIndex) -> VkImageView
         result = depthStencilRefs_[swapchainIndex]
                    .as<type_traits::platform_implementation_t<gfx::Texture>>()
                    .getRTV(0)
+                   .lock()
                    .as<type_traits::platform_implementation_t<gfx::RenderTargetView>>()
                    .handle();
     }

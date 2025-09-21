@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_VKTEXTURE_H
 #define CYCLONITE_VKTEXTURE_H
 
-#include "core/resourceSharedRef.h"
+#include "core/refFromThisMixin.h"
 #include "core/spinLock.h"
 #include "gfx/common.h"
 #include "handle.h"
@@ -14,12 +14,14 @@
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
-class Texture : public core::ResourceBase
+class Texture
+  : public core::ResourceBase
+  , public core::EnableRefFromThis
 {
 public:
     Texture(core::ResourceManagerBase* resourceManager,
             core::ResourceId resourceId,
-            core::ResourceSharedRef deviceRef,
+            core::ResourceWeakRef deviceRef,
             GpuMemoryAllocationFlagBits allocationFlags,
             TextureCreationFlagBits imageCreateFlags,
             TextureType textureType,
@@ -52,7 +54,7 @@ public:
 
     [[nodiscard]] auto handle() const -> VkImage { return vkImage_; }
 
-    [[nodiscard]] auto getRTV(uint16_t mipLevel) -> core::ResourceSharedRef;
+    [[nodiscard]] auto getRTV(uint16_t mipLevel) -> core::ResourceWeakRef;
 
 private:
     core::ResourceSharedRef deviceRef_;
