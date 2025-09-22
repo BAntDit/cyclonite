@@ -51,6 +51,7 @@ public:
 
 private:
     Capabilities capabilities_;
+    multithreading::TaskManager taskManager_;
     std::unique_ptr<gfx::Instance> gfxInstance_;
     Input input_;
 };

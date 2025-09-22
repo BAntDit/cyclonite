@@ -9,6 +9,7 @@
 namespace cyclonite {
 Root::Root()
   : capabilities_{}
+  , taskManager_{}
   , gfxInstance_{}
   , input_{}
 {
@@ -20,6 +21,8 @@ void Root::init(std::string_view appName)
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         throw std::runtime_error("SDL: could not initialize SDL video subsystem");
     }
+
+    taskManager_.start();
 
     {
         auto const displayId = SDL_GetPrimaryDisplay();
@@ -52,6 +55,8 @@ void Root::init(std::string_view appName)
 
 void Root::reset()
 {
+    taskManager_.stop();
+
     SDL_Quit();
 }
 }
