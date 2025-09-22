@@ -79,7 +79,7 @@ public:
       uint32_t width,
       uint32_t height) -> core::ResourceUniqueRef;
 
-    [[nodiscard]] auto createRenderPassWithRenderWindow(core::ResourceWeakRef renderWindowRef)
+    [[nodiscard]] auto createRenderPassWithRenderWindow(core::ResourceSharedRef renderWindowRef)
       -> core::ResourceUniqueRef;
 
     using core::ResourceBase::resourceBase;

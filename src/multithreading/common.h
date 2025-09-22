@@ -78,4 +78,4 @@ enum class Purpose : uint_fast8_t
     Render = 1
 };
 }
-#endif // CYCLONITE_MULTITHREADING__COMMON_H
+#endif // CYCLONITE_MULTITHREADING_COMMON_H

@@ -92,7 +92,7 @@ auto writeRTVs(
 RenderPass::RenderPass(
   core::ResourceManagerBase* resourceManager,
   core::ResourceId resourceId,
-  core::ResourceWeakRef deviceRef,
+  core::ResourceSharedRef deviceRef,
   core::ResourceSharedRef depthStencilRef,
   std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs,
   std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
@@ -100,9 +100,9 @@ RenderPass::RenderPass(
   uint32_t width,
   uint32_t height)
   : core::ResourceBase{ resourceManager, resourceId, true }
-  , deviceRef_{ deviceRef.lock() }
+  , deviceRef_{ deviceRef }
   , renderTargets_{ std::make_pair(depthStencilRef, colorAttachmentRefs) }
-  , vkRenderPass_{ deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
+  , vkRenderPass_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
   , vkFrameBuffers_{}
   , bufferCount_{ 1 }
   , currentBufferIndex_{ 0 }
@@ -194,12 +194,12 @@ RenderPass::RenderPass(
 
 RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
                        core::ResourceId resourceId,
-                       core::ResourceWeakRef deviceRef,
+                       core::ResourceSharedRef deviceRef,
                        core::ResourceSharedRef renderWindowRef)
   : core::ResourceBase{ resourceManager, resourceId, true }
-  , deviceRef_{ deviceRef.lock() }
+  , deviceRef_{ deviceRef }
   , renderTargets_{ renderWindowRef }
-  , vkRenderPass_{ deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
+  , vkRenderPass_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
   , vkFrameBuffers_{}
   , bufferCount_{ renderWindowRef.as<type_traits::platform_implementation_t<gfx::RenderWindow>>().swapchainLength() }
   , currentBufferIndex_{ 0 }

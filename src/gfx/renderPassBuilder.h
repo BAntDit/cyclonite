@@ -17,20 +17,20 @@ class RenderPassBuilder
 public:
     RenderPassBuilder() = default;
 
-    auto setDevice(core::ResourceWeakRef deviceRef) -> RenderPassBuilder&;
+    auto setDevice(core::ResourceSharedRef deviceRef) -> RenderPassBuilder&;
 
     auto setResolution(uint32_t width, uint32_t height) -> RenderPassBuilder&;
 
-    auto setDepthStencilAttachment(core::ResourceWeakRef textureRef) -> RenderPassBuilder&;
+    auto setDepthStencilAttachment(core::ResourceSharedRef textureRef) -> RenderPassBuilder&;
 
-    auto setRenderWindow(core::ResourceWeakRef renderWindowRef) -> RenderPassBuilder&;
+    auto setRenderWindow(core::ResourceSharedRef renderWindowRef) -> RenderPassBuilder&;
 
-    auto addColorAttachment(core::ResourceWeakRef textureRef, uint32_t mipLevel) -> RenderPassBuilder&;
+    auto addColorAttachment(core::ResourceSharedRef textureRef, uint32_t mipLevel) -> RenderPassBuilder&;
 
     auto build() -> core::ResourceUniqueRef;
 
 private:
-    core::ResourceWeakRef deviceRef_;
+    core::ResourceSharedRef deviceRef_;
     core::ResourceSharedRef depthStencilTextureRef_;
     core::ResourceSharedRef renderWindowRef_;
     std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs_;

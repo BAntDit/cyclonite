@@ -102,13 +102,13 @@ auto createPlatformSurface(VkInstance vkInstance, SDL_Window* sdlWindow, metrix:
 
 RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
                            core::ResourceId resourceId,
-                           core::ResourceWeakRef deviceRef,
+                           core::ResourceSharedRef deviceRef,
                            uint32_t width,
                            uint32_t height,
                            std::string_view title,
                            SurfaceFlagBits flags)
   : core::ResourceBase{ resourceManager, resourceId, true }
-  , deviceRef_{ deviceRef.lock() }
+  , deviceRef_{ deviceRef }
   , extent_{}
   , sdlWindowPtr_{ SDL_CreateWindow(title.data(),
                                     static_cast<int>(width),

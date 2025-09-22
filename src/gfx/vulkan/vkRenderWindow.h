@@ -27,7 +27,7 @@ class RenderWindow : public core::ResourceBase
 public:
     RenderWindow(core::ResourceManagerBase* resourceManager,
                  core::ResourceId resourceId,
-                 core::ResourceWeakRef deviceRef,
+                 core::ResourceSharedRef deviceRef,
                  uint32_t width,
                  uint32_t height,
                  std::string_view title,

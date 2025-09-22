@@ -21,7 +21,7 @@ public:
     RenderPass(
       core::ResourceManagerBase* resourceManager,
       core::ResourceId resourceId,
-      core::ResourceWeakRef deviceRef,
+      core::ResourceSharedRef deviceRef,
       core::ResourceSharedRef depthStencilRef,
       std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs,
       std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
@@ -31,7 +31,7 @@ public:
 
     RenderPass(core::ResourceManagerBase* resourceManager,
                core::ResourceId resourceId,
-               core::ResourceWeakRef deviceRef,
+               core::ResourceSharedRef deviceRef,
                core::ResourceSharedRef renderWindowRef);
 
     // begin

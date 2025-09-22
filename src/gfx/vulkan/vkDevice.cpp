@@ -420,7 +420,7 @@ auto Device::createRenderPassWithRTVs(
 
     auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-    auto deviceRef = getWeakFromThis(this);
+    auto deviceRef = getSharedFromThis(this);
 
     result = resManager.allocResource<gfx::RenderPass>(
       deviceRef, depthStencilRef, colorAttachmentRefs, colorAttachmentSubresDescs, width, height);
@@ -428,15 +428,15 @@ auto Device::createRenderPassWithRTVs(
     return result;
 }
 
-auto Device::createRenderPassWithRenderWindow(core::ResourceWeakRef renderWindowRef) -> core::ResourceUniqueRef
+auto Device::createRenderPassWithRenderWindow(core::ResourceSharedRef renderWindowRef) -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 
     auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-    auto deviceRef = getWeakFromThis(this);
+    auto deviceRef = getSharedFromThis(this);
 
-    result = resManager.allocResource<gfx::RenderPass>(deviceRef, renderWindowRef.lock());
+    result = resManager.allocResource<gfx::RenderPass>(deviceRef, renderWindowRef);
 
     return result;
 }
