@@ -99,9 +99,9 @@ private:
     Handle<VkQueue> computeQueue_;
     VmaAllocator vmaAllocator_;
 
-    core::StaticHashTable<core::ResourceSharedRef,
+    core::StaticHashTable<core::ResourceSharedRef, // TODO:: replace command pool with command list ring
                           compile_time_config_t::max_command_pool_count_v,
-                          std::thread::id,
+                          std::thread::id, // TODO:: replace thread with Purpose
                           uint32_t,
                           CommandPoolFlagBits>
       commandPoolMap_;
