@@ -322,10 +322,10 @@ Device::Device(core::ResourceManagerBase* resourceManager,
 
     // ext features
     auto timelineSemaphoreFeatures = VkPhysicalDeviceTimelineSemaphoreFeaturesKHR{};
-    timelineSemaphoreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+    timelineSemaphoreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR;
 
     auto features2 = VkPhysicalDeviceFeatures2KHR{};
-    features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
     features2.pNext = &timelineSemaphoreFeatures;
 
     vkGetPhysicalDeviceFeatures2KHR(vkPhysicalDevice_, &features2);
