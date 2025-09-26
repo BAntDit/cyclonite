@@ -320,8 +320,22 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     features.shaderInt64 = VK_FALSE;
     features.inheritedQueries = VK_FALSE;
 
+    // ext features
+    auto timelineSemaphoreFeatures = VkPhysicalDeviceTimelineSemaphoreFeaturesKHR{};
+    timelineSemaphoreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+
+    auto features2 = VkPhysicalDeviceFeatures2KHR{};
+    features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    features2.pNext = &timelineSemaphoreFeatures;
+
+    vkGetPhysicalDeviceFeatures2KHR(vkPhysicalDevice_, &features2);
+    if (!timelineSemaphoreFeatures.timelineSemaphore) {
+        throw std::runtime_error("select device does not support necessary feature: timeline semaphores");
+    }
+
     auto deviceInfo = VkDeviceCreateInfo{};
     deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    deviceInfo.pNext = &timelineSemaphoreFeatures;
     deviceInfo.queueCreateInfoCount = queueCreateInfoCount;
     deviceInfo.pQueueCreateInfos = deviceQueueCreateInfoArray.data();
     deviceInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
