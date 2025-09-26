@@ -33,9 +33,8 @@ private:
     core::ResourceSharedRef deviceRef_;
     core::ResourceSharedRef depthStencilTextureRef_;
     core::ResourceSharedRef renderWindowRef_;
-    std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs_;
-    std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
-      colorAttachmentSubresDescs_;
+    std::array<core::ResourceSharedRef, config_t::max_color_attachment_count_v> colorAttachmentRefs_;
+    std::array<std::pair<uint16_t, uint16_t>, config_t::max_color_attachment_count_v> colorAttachmentSubresDescs_;
     uint32_t colorAttachmentCount_;
     uint32_t width_;
     uint32_t height_;

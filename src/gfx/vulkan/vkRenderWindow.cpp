@@ -192,9 +192,9 @@ void RenderWindow::validateSwapchain(Format format, PresentMode presentMode)
         (vkResult != VK_SUCCESS && vkResult != VK_INCOMPLETE)) {
         throw Exception{ vkResult, "vkGetSwapchainImagesKHR" };
     }
-    assert(swapchainLength_ <= compile_time_config_t::max_swapchain_length_v);
+    assert(swapchainLength_ <= config_t::max_swapchain_length_v);
 
-    auto swapchainImages = std::array<VkImage, compile_time_config_t::max_swapchain_length_v>{};
+    auto swapchainImages = std::array<VkImage, config_t::max_swapchain_length_v>{};
     if (auto vkResult = vkGetSwapchainImagesKHR(
           device.handle(), static_cast<VkSwapchainKHR>(vkSwapchain_), &swapchainLength_, swapchainImages.data());
         (vkResult != VK_SUCCESS && vkResult != VK_INCOMPLETE)) {

@@ -36,11 +36,11 @@ auto getAttachmentDescription(core::ResourceSharedRef textureRef) -> VkAttachmen
     return attachmentDesc;
 }
 
-constexpr auto max_attachment_count_v = compile_time_config_t::max_color_attachment_count_v + 1; // +1 depth
+constexpr auto max_attachment_count_v = config_t::max_color_attachment_count_v + 1; // +1 depth
 
 template<size_t... I>
 auto writeAttachmentDescriptions(
-  std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v> const& attachmentRef,
+  std::array<core::ResourceSharedRef, config_t::max_color_attachment_count_v> const& attachmentRef,
   std::array<VkAttachmentDescription, max_attachment_count_v>& descriptions,
   std::index_sequence<I...>) -> uint32_t
 {
@@ -52,8 +52,8 @@ auto writeAttachmentDescriptions(
 
 template<size_t... I>
 auto writeAttachmentReferences(
-  std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v> const& attachmentRef,
-  std::array<VkAttachmentReference, compile_time_config_t::max_color_attachment_count_v>& vkAttachmentRefs,
+  std::array<core::ResourceSharedRef, config_t::max_color_attachment_count_v> const& attachmentRef,
+  std::array<VkAttachmentReference, config_t::max_color_attachment_count_v>& vkAttachmentRefs,
   std::index_sequence<I...>) -> uint32_t
 {
     auto count = uint32_t{ 0 };
@@ -76,9 +76,8 @@ auto getRTV(core::ResourceSharedRef& attachmentRef, uint16_t mipLevel) -> VkImag
 template<size_t... I>
 auto writeRTVs(
   std::array<VkImageView, max_attachment_count_v>& attachments,
-  std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v>& colorAttachmentRefs,
-  std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v> const&
-    colorAttachmentSubresDescs,
+  std::array<core::ResourceSharedRef, config_t::max_color_attachment_count_v>& colorAttachmentRefs,
+  std::array<std::pair<uint16_t, uint16_t>, config_t::max_color_attachment_count_v> const& colorAttachmentSubresDescs,
   std::index_sequence<I...>) -> uint32_t
 {
     auto count = uint32_t{ 0 };
@@ -94,9 +93,8 @@ RenderPass::RenderPass(
   core::ResourceId resourceId,
   core::ResourceSharedRef deviceRef,
   core::ResourceSharedRef depthStencilRef,
-  std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs,
-  std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
-    colorAttachmentSubresDescs,
+  std::array<core::ResourceSharedRef, config_t::max_color_attachment_count_v> colorAttachmentRefs,
+  std::array<std::pair<uint16_t, uint16_t>, config_t::max_color_attachment_count_v> colorAttachmentSubresDescs,
   uint32_t width,
   uint32_t height)
   : core::ResourceBase{ resourceManager, resourceId, true }
@@ -114,18 +112,15 @@ RenderPass::RenderPass(
                              vkDestroyFramebuffer };
 
     auto attachmentDescriptions = std::array<VkAttachmentDescription, max_attachment_count_v>{}; // +1 for depth
-    auto colorAttachmentReferences =
-      std::array<VkAttachmentReference, compile_time_config_t::max_color_attachment_count_v>{};
+    auto colorAttachmentReferences = std::array<VkAttachmentReference, config_t::max_color_attachment_count_v>{};
 
-    auto attachmentDescCount =
-      writeAttachmentDescriptions(colorAttachmentRefs,
-                                  attachmentDescriptions,
-                                  std::make_index_sequence<compile_time_config_t::max_color_attachment_count_v>{});
+    auto attachmentDescCount = writeAttachmentDescriptions(
+      colorAttachmentRefs, attachmentDescriptions, std::make_index_sequence<config_t::max_color_attachment_count_v>{});
 
     auto colorAttachmentCount =
       writeAttachmentReferences(colorAttachmentRefs,
                                 colorAttachmentReferences,
-                                std::make_index_sequence<compile_time_config_t::max_color_attachment_count_v>{});
+                                std::make_index_sequence<config_t::max_color_attachment_count_v>{});
     assert(attachmentDescCount == colorAttachmentCount);
 
     auto depthAttachmentIndex = std::numeric_limits<uint32_t>::max();
@@ -166,7 +161,7 @@ RenderPass::RenderPass(
     rtvCount = writeRTVs(attachments,
                          colorAttachmentRefs,
                          colorAttachmentSubresDescs,
-                         std::make_index_sequence<compile_time_config_t::max_color_attachment_count_v>{});
+                         std::make_index_sequence<config_t::max_color_attachment_count_v>{});
 
     if (depthStencilRef.valid()) {
         auto& dsTex = depthStencilRef.as<gfx::Texture>();

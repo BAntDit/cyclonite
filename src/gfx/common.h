@@ -169,10 +169,10 @@ using CommandPoolFlagBits = metrix::enum_bits<CommandPoolFlags>;
 
 enum class CommandListState : uint_fast8_t
 {
-    Initial  = 0,
+    Initial = 0,
     Recording = 1,
     Executable = 2,
-    Pending = 3, 
+    Pending = 3,
     Invalid = 4
 };
 }

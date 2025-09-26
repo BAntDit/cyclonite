@@ -70,8 +70,8 @@ private:
     std::unique_ptr<SDL_Window, std::function<void(SDL_Window*)>> sdlWindowPtr_;
     std::unique_ptr<SurfaceKHR> platformSurface_;
     Handle<VkSwapchainKHR> vkSwapchain_;
-    std::array<core::ResourceSharedRef, compile_time_config_t::max_swapchain_length_v> depthStencilRefs_;
-    std::array<Handle<VkImageView>, compile_time_config_t::max_swapchain_length_v> imageViews_;
+    std::array<core::ResourceSharedRef, config_t::max_swapchain_length_v> depthStencilRefs_;
+    std::array<Handle<VkImageView>, config_t::max_swapchain_length_v> imageViews_;
     uint32_t swapchainLength_;
     gfx::Format colorOutputFormat_;
     gfx::Format depthStencilFormat_;

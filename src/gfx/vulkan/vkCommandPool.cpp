@@ -15,8 +15,7 @@ CommandPool::CommandPool(core::ResourceManagerBase* resourceManager,
                          CommandPoolFlagBits flags)
   : core::ResourceBase{ resourceManager, resourceId, true }
   , deviceRef_{ deviceRef }
-  , vkCommandPool_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(),
-                    vkDestroyCommandPool }
+  , vkCommandPool_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyCommandPool }
   , threadId_{ std::this_thread::get_id() }
   , queueFamilyIndex_{ queueFamilyIndex }
   , flags_{ flags }

@@ -11,7 +11,7 @@ namespace cyclonite::gfx {
 struct compile_time_config
 {};
 
-using compile_time_config_t = ConfigTraits<compile_time_config>;
+using config_t = ConfigTraits<compile_time_config>;
 }
 
 #endif // CYCLONITE_GFX_CONFIG_H

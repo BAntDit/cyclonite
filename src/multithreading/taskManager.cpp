@@ -4,6 +4,24 @@
 #include <cassert>
 
 namespace cyclonite::multithreading {
+namespace {
+auto executorPurpose(size_t i, size_t count, size_t renderIndex) -> PurposeBits
+{
+    auto purposeBits = PurposeBits{ Purpose::General };
+
+    if (i == renderIndex) {
+        purposeBits.set(Purpose::Render, Purpose::Compute);
+        if (count <= (renderIndex + 1)) {
+            purposeBits.set(Purpose::Transfer);
+        }
+    } else if (i == (renderIndex + 1)) {
+        purposeBits.set(Purpose::Compute);
+    }
+
+    return purposeBits;
+}
+}
+
 TaskManager::TaskManager(size_t threadPoolSize /*= std::max(std::thread::hardware_concurrency(), 1u)*/)
   : threadPool_{}
   , executorCount_{ threadPoolSize + 1 } // plus main thread
@@ -24,7 +42,7 @@ TaskManager::TaskManager(size_t threadPoolSize /*= std::max(std::thread::hardwar
 
     assert(executorCount_ >= 2);
     for (auto i = size_t{ 0 }; i < executorCount_; i++) {
-        auto purpose = (i == renderExecutorIndex) ? Purpose::Render : Purpose::General;
+        auto purpose = executorPurpose(i, executorCount_, renderExecutorIndex);
         new (&executors_[i]) Executor{ *this, purpose };
     }
     executors_[0]._setAsMainThreadExecutor();

@@ -10,9 +10,11 @@
 #include "core/resourceBase.h"
 #include "core/resourceSharedRef.h"
 #include "core/resourceUniqueRef.h"
+#include "core/ringBuffer.h"
 #include "gfx/common.h"
 #include "gfx/config.h"
 #include "handle.h"
+#include "multithreading/common.h"
 #include "vmaUsage.h"
 #include <memory>
 #include <string_view>
@@ -73,9 +75,8 @@ public:
 
     [[nodiscard]] auto createRenderPassWithRTVs(
       core::ResourceSharedRef depthStencilRef,
-      std::array<core::ResourceSharedRef, compile_time_config_t::max_color_attachment_count_v> colorAttachmentRefs,
-      std::array<std::pair<uint16_t, uint16_t>, compile_time_config_t::max_color_attachment_count_v>
-        colorAttachmentSubresDescs,
+      std::array<core::ResourceSharedRef, config_t::max_color_attachment_count_v> colorAttachmentRefs,
+      std::array<std::pair<uint16_t, uint16_t>, config_t::max_color_attachment_count_v> colorAttachmentSubresDescs,
       uint32_t width,
       uint32_t height) -> core::ResourceUniqueRef;
 
@@ -99,9 +100,19 @@ private:
     Handle<VkQueue> computeQueue_;
     VmaAllocator vmaAllocator_;
 
-    core::StaticHashTable<core::ResourceSharedRef, // TODO:: replace command pool with command list ring
-                          compile_time_config_t::max_command_pool_count_v,
-                          std::thread::id, // TODO:: replace thread with Purpose
+    // hash table:
+    // key: purpose, family queue
+    // value: Command Pool Ring
+    //  -- values of Ring: Command Pool
+    //   --- -> command list state
+    //   --- -> fence
+
+    using command_pool_ring_t =
+      core::ConditionalRingBuffer<core::ResourceSharedRef, uint64_t, config_t::command_pool_ring_size_v>;
+
+    core::StaticHashTable<command_pool_ring_t,
+                          config_t::max_command_pool_ring_count_v,
+                          multithreading::PurposeBits,
                           uint32_t,
                           CommandPoolFlagBits>
       commandPoolMap_;

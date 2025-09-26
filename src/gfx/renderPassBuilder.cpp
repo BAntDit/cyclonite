@@ -43,9 +43,9 @@ auto RenderPassBuilder::addColorAttachment(core::ResourceSharedRef textureRef, u
                                              deviceRef_.as<gfx::Device>().limits().maxColorAttachmentCount));
     }
 
-    if (colorAttachmentCount_ == compile_time_config_t::max_color_attachment_count_v) {
+    if (colorAttachmentCount_ == config_t::max_color_attachment_count_v) {
         throw std::runtime_error(std::format("color attachment count must not exceed configuration limit {}",
-                                             compile_time_config_t::max_color_attachment_count_v));
+                                             config_t::max_color_attachment_count_v));
     }
 
     assert(textureRef.valid());

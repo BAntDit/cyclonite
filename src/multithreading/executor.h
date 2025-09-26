@@ -20,7 +20,7 @@ class Executor
 public:
     Executor() = default;
 
-    Executor(TaskManager& taskManager, Purpose purpose);
+    Executor(TaskManager& taskManager, PurposeBits purposeBits);
 
     Executor(Executor const&) = delete;
 
@@ -46,7 +46,7 @@ public:
 
     [[nodiscard]] auto canSubmit() const -> bool;
 
-    [[nodiscard]] auto purpose() const -> Purpose { return purpose_; }
+    [[nodiscard]] auto purpose() const -> PurposeBits { return purposeBits_; }
 
     [[nodiscard]] auto taskManager() const -> TaskManager const& { return *taskManager_; }
     [[nodiscard]] auto taskManager() -> TaskManager& { return *taskManager_; }
@@ -54,6 +54,8 @@ public:
     static auto isInMainThread() -> bool;
 
     static auto isInRenderThread() -> bool;
+
+    static auto isInTransferThread() -> bool;
 
     static auto threadExecutor() -> Executor&;
 
@@ -69,6 +71,8 @@ private:
     auto pendingTask() -> std::optional<Task>;
 
     auto renderExecutor() -> Executor&;
+
+    auto transferExecutor() -> Executor&;
 
     void notifyNewTask();
 
@@ -97,7 +101,7 @@ private:
     TaskPoolMC taskPoolMC_;
     std::unique_ptr<TaskStealingDeque<task_ptr_t>> spmcQueue_;
     std::unique_ptr<MpscDeque<task_ptr_t>> mpscQueue_;
-    Purpose purpose_;
+    PurposeBits purposeBits_;
 };
 
 template<typename F>
@@ -106,13 +110,20 @@ auto Executor::submitTask(F&& f, Purpose purpose /*= Purpose::General*/) -> std:
 {
     auto future = std::future<std::invoke_result_t<F>>{};
 
-    if (purpose == Purpose::Render) {
+    if (purpose == Purpose::Render || purpose == Purpose::Compute) {
         if (isInRenderThread()) {
             future = submitTaskMPSC(std::forward<F>(f));
         } else {
             future = renderExecutor().submitTaskMPSC(std::forward<F>(f));
         }
+    } else if (purpose == Purpose::Transfer) {
+        if (isInTransferThread()) {
+            future = submitTaskMPSC(std::forward<F>(f));
+        } else {
+            future = transferExecutor().submitTaskMPSC(std::forward<F>(f));
+        }
     } else {
+        assert(purpose == Purpose::General);
         future = submitTaskSPMC(std::forward<F>(f));
     }
 

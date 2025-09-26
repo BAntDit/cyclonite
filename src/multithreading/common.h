@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <future>
 #include <memory>
+#include <metrix/enum.h>
 #include <new>
 #include <thread>
 #include <type_traits>
@@ -72,10 +73,14 @@ auto DequeData<DequeItemType>::load(size_t index) const noexcept -> DequeItemTyp
 }
 } // internal
 
-enum class Purpose : uint_fast8_t
+enum class Purpose : uint8_t
 {
-    General = 0,
-    Render = 1
+    General = 1 >> 0,
+    Render = 1 >> 1,
+    Compute = 1 >> 2,
+    Transfer = 1 >> 3
 };
+using PurposeBits = metrix::enum_bits<Purpose>;
+
 }
 #endif // CYCLONITE_MULTITHREADING_COMMON_H

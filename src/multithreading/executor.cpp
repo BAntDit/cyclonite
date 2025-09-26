@@ -24,6 +24,7 @@ namespace cyclonite::multithreading {
 namespace {
 thread_local Executor* _mainThreadExecutor = nullptr;
 thread_local Executor* _renderThreadExecutor = nullptr;
+thread_local Executor* _transferThreadExecutor = nullptr;
 thread_local Executor* _threadExecutor = nullptr;
 }
 
@@ -37,20 +38,25 @@ thread_local Executor* _threadExecutor = nullptr;
     return _renderThreadExecutor != nullptr;
 }
 
+/*static*/ auto Executor::isInTransferThread() -> bool
+{
+    return _transferThreadExecutor != nullptr;
+}
+
 /*static*/ auto Executor::threadExecutor() -> Executor&
 {
     assert(_threadExecutor != nullptr);
     return *_threadExecutor;
 }
 
-Executor::Executor(TaskManager& taskManager, Purpose purpose)
+Executor::Executor(TaskManager& taskManager, PurposeBits purposeBits)
   : threadId_{}
   , taskManager_{ &taskManager }
   , taskPoolSC_{ config_t::spmc_queue_max_size_v } // one producer consumes from pool
   , taskPoolMC_{ config_t::mpsc_queue_max_size_v } // many producers can consume from pool
   , spmcQueue_{ nullptr }
   , mpscQueue_{ nullptr }
-  , purpose_{ purpose }
+  , purposeBits_{ purposeBits }
 {
     spmcQueue_ = std::make_unique<TaskStealingDeque<Task*>>(config_t::spmc_queue_max_size_v);
     mpscQueue_ = std::make_unique<MpscDeque<Task*>>(config_t::mpsc_queue_max_size_v);
@@ -66,8 +72,13 @@ void Executor::_setThreadExecutorPtr()
     assert(_threadExecutor == nullptr);
     _threadExecutor = this;
 
-    if (purpose_ == Purpose::Render)
+    if (purposeBits_.test(Purpose::Render) || purposeBits_.test(Purpose::Compute)) {
         _renderThreadExecutor = this;
+    }
+
+    if (purposeBits_.test(Purpose::Transfer)) {
+        _transferThreadExecutor = this;
+    }
 
     threadId_ = std::this_thread::get_id();
 }
@@ -166,6 +177,14 @@ void Executor::operator()()
 auto Executor::renderExecutor() -> Executor&
 {
     return taskManager().executors()[TaskManager::renderExecutorIndex];
+}
+
+auto Executor::transferExecutor() -> Executor&
+{
+    auto& tm = taskManager();
+    auto executorIndex = tm.executorCount() > TaskManager::renderExecutorIndex ? TaskManager::renderExecutorIndex + 1
+                                                                               : TaskManager::renderExecutorIndex;
+    return tm.executors()[executorIndex];
 }
 
 void Executor::notifyNewTask()
