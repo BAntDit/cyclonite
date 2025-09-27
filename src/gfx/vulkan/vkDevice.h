@@ -20,6 +20,8 @@
 #include <string_view>
 #include <thread>
 
+#include "vkSignal.h"
+
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 class Device
@@ -55,6 +57,8 @@ public:
     [[nodiscard]] auto vendor() const -> DeviceVendor { return vendor_; }
 
     [[nodiscard]] auto limits() const -> DeviceLimits const& { return limits_; }
+
+    [[nodiscard]] auto createSignal(SignalType signalType, uint64_t initialValue = 0) -> core::ResourceUniqueRef;
 
     [[nodiscard]] auto createRenderWindow(uint32_t width,
                                           uint32_t height,

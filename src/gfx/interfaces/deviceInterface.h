@@ -16,7 +16,7 @@
 namespace cyclonite::gfx::interfaces {
 template<typename T>
 concept DeviceConcept =
-  requires(T t, uint32_t a, uint32_t b, std::string_view s, SurfaceFlagBits f) {
+  requires(T t, uint32_t a, uint32_t b, uint64_t c, std::string_view s, SurfaceFlagBits f, SignalType st) {
       {
           t.resourceBase()
           } -> std::same_as<core::ResourceBase*>;
@@ -31,6 +31,10 @@ concept DeviceConcept =
           } -> std::same_as<DeviceLimits const&>;
       {
           t.createRenderWindow(a, b, s, f)
+          } -> std::same_as<core::ResourceUniqueRef>;
+
+      {
+          t.createSignal(c, st)
           } -> std::same_as<core::ResourceUniqueRef>;
 
       requires std::is_member_function_pointer_v<decltype(&T::createRenderPassWithRenderWindow)>;
@@ -69,6 +73,7 @@ public:
     friend class core::ResourceBase;
 
     using PlatformImplementation::createRenderWindow;
+    using PlatformImplementation::createSignal;
     using PlatformImplementation::createTexture;
     using PlatformImplementation::limits;
     using PlatformImplementation::name;

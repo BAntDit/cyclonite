@@ -8,10 +8,10 @@
 #include "commandPool.h"
 #include "core/resourceManager.h"
 #include "device.h"
+#include "gfx/signal.h"
 #include "renderPass.h"
 #include "renderTargetView.h"
 #include "renderWindow.h"
-#include "gfx/signal.h"
 #include "texture.h"
 
 namespace cyclonite::gfx {

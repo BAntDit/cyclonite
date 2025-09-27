@@ -375,6 +375,19 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     limits_.maxColorAttachmentCount = static_cast<uint8_t>(physicalDeviceProperties.limits.maxColorAttachments);
 }
 
+auto Device::createSignal(SignalType signalType, uint64_t initialValue /* = 0*/) -> core::ResourceUniqueRef
+{
+    auto result = core::ResourceUniqueRef{};
+
+    auto& resManager = static_cast<resource_manager_t&>(resourceManager());
+
+    auto deviceRef = getSharedFromThis(this);
+
+    result = resManager.allocResource<gfx::Signal>(deviceRef, signalType, initialValue);
+
+    return result;
+}
+
 auto Device::createTexture(GpuMemoryAllocationFlagBits allocationFlags,
                            TextureCreationFlagBits imageCreateFlags,
                            TextureType textureType,
@@ -391,7 +404,7 @@ auto Device::createTexture(GpuMemoryAllocationFlagBits allocationFlags,
 
     auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-    auto deviceRef = getWeakFromThis(this);
+    auto deviceRef = getSharedFromThis(this);
 
     result = resManager.allocResource<gfx::Texture>(deviceRef,
                                                     allocationFlags,
