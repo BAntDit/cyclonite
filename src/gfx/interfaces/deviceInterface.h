@@ -34,7 +34,7 @@ concept DeviceConcept =
           } -> std::same_as<core::ResourceUniqueRef>;
 
       {
-          t.createSignal(c, st)
+          t.createSignal(st, c)
           } -> std::same_as<core::ResourceUniqueRef>;
 
       requires std::is_member_function_pointer_v<decltype(&T::createRenderPassWithRenderWindow)>;

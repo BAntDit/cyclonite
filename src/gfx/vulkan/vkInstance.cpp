@@ -140,32 +140,27 @@ Instance::Instance(std::string_view applicationName)
 
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
 #if !defined(NDEBUG)
-    auto reqExtensions = std::array<char const*, 4>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+    auto reqExtensions = std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
                                                      VK_KHR_SURFACE_EXTENSION_NAME,
-                                                     VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
-                                                     VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME };
+                                                     VK_KHR_XLIB_SURFACE_EXTENSION_NAME };
 #else
-    auto reqExtensions = std::array<char const*, 3>{ VK_KHR_SURFACE_EXTENSION_NAME,
-                                                     VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
-                                                     VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME };
+    auto reqExtensions =
+      std::array<char const*, 2>{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_XLIB_SURFACE_EXTENSION_NAME };
 #endif
 #elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
 #if !defined(NDEBUG)
-    auto reqExtensions = std::array<char const*, 4>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+    auto reqExtensions = std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
                                                      VK_KHR_SURFACE_EXTENSION_NAME,
-                                                     VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME,
-                                                     VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME };
+                                                     VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME };
 #else
-    auto reqExtensions = std::array<char const*, 3>{ VK_KHR_SURFACE_EXTENSION_NAME,
-                                                     VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME,
-                                                     VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME };
+    auto reqExtensions =
+      std::array<char const*, 2>{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME };
 #endif
 #elif defined(VK_USE_PLATFORM_WIN32_KHR)
 #if !defined(NDEBUG)
-    auto reqExtensions = std::array<char const*, 4>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+    auto reqExtensions = std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
                                                      VK_KHR_SURFACE_EXTENSION_NAME,
-                                                     VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-                                                     VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME };
+                                                     VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
 #else
     auto reqExtensions = std::array<char const*, 3>{ VK_KHR_SURFACE_EXTENSION_NAME,
                                                      VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
@@ -173,21 +168,18 @@ Instance::Instance(std::string_view applicationName)
 #endif
 #elif defined(VK_USE_PLATFORM_ANDROID_KHR)
 #if !defined(NDEBUG)
-    auto reqExtensions = std::array<char const*, 4>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+    auto reqExtensions = std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
                                                      VK_KHR_SURFACE_EXTENSION_NAME,
-                                                     VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
-                                                     VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME };
+                                                     VK_KHR_ANDROID_SURFACE_EXTENSION_NAME };
 #else
-    auto reqExtensions = std::array<char const*, 3>{ VK_KHR_SURFACE_EXTENSION_NAME,
-                                                     VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
-                                                     VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME };
+    auto reqExtensions =
+      std::array<char const*, 2>{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_ANDROID_SURFACE_EXTENSION_NAME };
 #endif
 #else
 #if !defined(NDEBUG)
-    auto reqExtensions = std::array<char const*, 2>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-                                                     VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME };
+    auto reqExtensions = std::array<char const*, 1>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME };
 #else
-    auto reqExtensions = std::array<char const*, 1>{ VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME };
+    auto reqExtensions = std::array<char const*, 0>{};
 #endif
 #endif
 
@@ -199,7 +191,7 @@ Instance::Instance(std::string_view applicationName)
 
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = applicationName.data();
-    appInfo.apiVersion = VK_API_VERSION_1_0;
+    appInfo.apiVersion = VK_API_VERSION_1_3;
     appInfo.applicationVersion = VK_MAKE_VERSION(VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
 
 #if !defined(NDEBUG)
@@ -288,8 +280,6 @@ auto Instance::createDevice(uint32_t deviceId /* = std::numeric_limits<uint32_t>
   defined(VK_USE_PLATFORM_ANDROID_KHR)
     requiredExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 #endif
-
-    requiredExtensions.push_back(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
 
     if (deviceId == std::numeric_limits<uint32_t>::max()) {
         deviceId = chooseBestPhysicalDevice();

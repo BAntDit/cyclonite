@@ -23,10 +23,10 @@ Signal::Signal(core::ResourceManagerBase* resourceManager,
     assert(deviceRef.valid());
     auto& device = deviceRef.as<gfx::type_traits::platform_implementation_t<gfx::Device>>();
 
-    auto semaphoreTypeCreateInfo = VkSemaphoreTypeCreateInfoKHR{};
-    semaphoreTypeCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR;
+    auto semaphoreTypeCreateInfo = VkSemaphoreTypeCreateInfo{};
+    semaphoreTypeCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
     semaphoreTypeCreateInfo.semaphoreType =
-      signalType == SignalType::BINARY ? VK_SEMAPHORE_TYPE_BINARY_KHR : VK_SEMAPHORE_TYPE_TIMELINE_KHR;
+      signalType == SignalType::BINARY ? VK_SEMAPHORE_TYPE_BINARY : VK_SEMAPHORE_TYPE_TIMELINE;
     semaphoreTypeCreateInfo.initialValue = initialValue;
 
     auto semaphoreCreateInfo = VkSemaphoreCreateInfo{};
@@ -47,9 +47,9 @@ auto Signal::value() const -> uint64_t
 
     auto const& device = deviceRef_.as<gfx::type_traits::platform_implementation_t<gfx::Device>>();
 
-    if (auto vkResult = vkGetSemaphoreCounterValueKHR(device.handle(), static_cast<VkSemaphore>(vkSemaphore_), &result);
+    if (auto vkResult = vkGetSemaphoreCounterValue(device.handle(), static_cast<VkSemaphore>(vkSemaphore_), &result);
         vkResult != VK_SUCCESS) {
-        throw Exception{ vkResult, "vkGetSemaphoreCounterValueKHR" };
+        throw Exception{ vkResult, "vkGetSemaphoreCounterValue" };
     }
 
     return result;
@@ -61,13 +61,13 @@ void Signal::signalFromCpu(uint64_t value)
 
     auto const& device = deviceRef_.as<gfx::type_traits::platform_implementation_t<gfx::Device>>();
 
-    auto signalInfo = VkSemaphoreSignalInfoKHR{};
-    signalInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR;
+    auto signalInfo = VkSemaphoreSignalInfo{};
+    signalInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO;
     signalInfo.semaphore = static_cast<VkSemaphore>(vkSemaphore_);
     signalInfo.value = value;
 
-    if (auto vkResult = vkSignalSemaphoreKHR(device.handle(), &signalInfo); vkResult != VK_SUCCESS) {
-        throw Exception{ vkResult, "vkSignalSemaphoreKHR" };
+    if (auto vkResult = vkSignalSemaphore(device.handle(), &signalInfo); vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vkSignalSemaphore" };
     }
 }
 
@@ -77,17 +77,17 @@ auto Signal::waitOnCpu(uint64_t value, uint64_t timeout) -> bool
 
     auto const& device = deviceRef_.as<gfx::type_traits::platform_implementation_t<gfx::Device>>();
 
-    auto waitInfo = VkSemaphoreWaitInfoKHR{};
-    waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR;
-    waitInfo.flags = VK_SEMAPHORE_WAIT_ANY_BIT_KHR;
+    auto waitInfo = VkSemaphoreWaitInfo{};
+    waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+    waitInfo.flags = VK_SEMAPHORE_WAIT_ANY_BIT;
     waitInfo.semaphoreCount = 1;
     waitInfo.pSemaphores = &std::as_const(vkSemaphore_);
     waitInfo.pValues = &value;
 
     auto vkResult = VkResult{ VK_SUCCESS };
-    if (vkResult = vkWaitSemaphoresKHR(device.handle(), &waitInfo, timeout);
+    if (vkResult = vkWaitSemaphores(device.handle(), &waitInfo, timeout);
         (vkResult != VK_SUCCESS && vkResult != VK_TIMEOUT)) {
-        throw Exception{ vkResult, "vkWaitSemaphoresKHR" };
+        throw Exception{ vkResult, "vkWaitSemaphores" };
     }
 
     return vkResult == VK_SUCCESS;
