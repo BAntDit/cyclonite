@@ -21,7 +21,7 @@ class Texture
 public:
     Texture(core::ResourceManagerBase* resourceManager,
             core::ResourceId resourceId,
-            core::ResourceWeakRef deviceRef,
+            core::ResourceSharedRef deviceRef,
             GpuMemoryAllocationFlagBits allocationFlags,
             TextureCreationFlagBits imageCreateFlags,
             TextureType textureType,
