@@ -32,6 +32,8 @@ public:
 
     auto waitOnCpu(uint64_t value, uint64_t timeout) -> bool;
 
+    using core::ResourceBase::resourceBase;
+
 private:
     core::ResourceSharedRef deviceRef_;
     Handle<VkSemaphore> vkSemaphore_;
