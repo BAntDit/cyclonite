@@ -175,6 +175,13 @@ enum class CommandListState : uint_fast8_t
     Pending = 3,
     Invalid = 4
 };
+
+enum class SignalType : uint_fast8_t
+{
+    BINARY = 0,
+    TIMELINE = 1
+};
+
 }
 
 #endif // GFX_COMMON_H
