@@ -33,11 +33,23 @@ public:
                core::ResourceSharedRef deviceRef,
                core::ResourceSharedRef renderWindowRef);
 
-    // begin
+    [[nodiscard]] auto handle() const -> VkRenderPass { return static_cast<VkRenderPass>(vkRenderPass_); }
+
+    [[nodiscard]] auto frameBuffer() const -> VkFramebuffer
+    {
+        return static_cast<VkFramebuffer>(vkFrameBuffers_[currentBufferIndex_]);
+    }
+
+    [[nodiscard]] auto width() const -> uint32_t;
+
+    [[nodiscard]] auto height() const -> uint32_t;
 
     // end
 
     using core::ResourceBase::resourceBase;
+
+private:
+    [[nodiscard]] auto getResolution() const -> std::pair<uint32_t, uint32_t>;
 
 private:
     using render_windows_ref = core::ResourceSharedRef;

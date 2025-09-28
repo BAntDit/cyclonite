@@ -8,6 +8,7 @@
 #include "internal/utils.h"
 #include "vkException.h"
 #include "vkRenderTargetView.h"
+#include <glm/ext/scalar_uint_sized.hpp>
 #include <utility>
 
 #if defined(GFX_DRIVER_VULKAN)
@@ -284,6 +285,45 @@ RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
             throw Exception{ vkResult, "vkCreateFramebuffer" };
         }
     }
+}
+
+auto RenderPass::getResolution() const -> std::pair<uint32_t, uint32_t>
+{
+    return std::visit(
+      [](auto&& rt) -> std::pair<uint32_t, uint32_t> {
+          auto result = std::pair<uint32_t, uint32_t>{};
+
+          if constexpr (std::is_same_v<decltype(rt), core::ResourceSharedRef>) {
+              result =
+                std::pair{ rt.template as<gfx::RenderWindow>().width(), rt.template as<gfx::RenderWindow>().height() };
+          } else if constexpr (std::is_same_v<
+                                 decltype(rt),
+                                 std::pair<depth_stencil_ref,
+                                           std::array<color_attachment_ref, config_t::max_color_attachment_count_v>>>) {
+              auto& [ds, arr] = rt;
+              if (arr[0].valid()) {
+                  result = std::pair{ arr[0].template as<gfx::Texture>().width(),
+                                      arr[0].template as<gfx::Texture>().height() };
+              } else if (ds.valid()) {
+                  result = std::pair{ ds.template as<gfx::Texture>().width(), ds.template as<gfx::Texture>().height() };
+              }
+          } else {
+              assert(false);
+          }
+
+          return result;
+      },
+      renderTargets_);
+}
+
+auto RenderPass::width() const -> uint32_t
+{
+    return getResolution().first;
+}
+
+auto RenderPass::height() const -> uint32_t
+{
+    return getResolution().second;
 }
 }
 #endif

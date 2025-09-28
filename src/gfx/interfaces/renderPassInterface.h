@@ -15,7 +15,14 @@ concept RenderPassConcept = requires(T t) {
                                 {
                                     t.resourceBase()
                                     } -> std::same_as<core::ResourceBase*>;
-                                // TODO:: begin /end methods
+
+                                {
+                                    t.width()
+                                    } -> std::same_as<uint32_t>;
+
+                                {
+                                    t.height()
+                                    } -> std::same_as<uint32_t>;
                             };
 
 template<RenderPassConcept PlatformImplementation>
@@ -24,9 +31,10 @@ class RenderPassInterface : private PlatformImplementation
 public:
     friend class core::ResourceBase;
 
+    using PlatformImplementation::height;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::resourceBase;
-    // begin / end
+    using PlatformImplementation::width;
 };
 }
 
