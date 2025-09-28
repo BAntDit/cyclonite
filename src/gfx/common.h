@@ -175,6 +175,15 @@ enum class CommandListState : uint_fast8_t
     Invalid = 4
 };
 
+enum class CommandListUsageFlags : uint8_t
+{
+    ONE_TIME_SUBMIT = 1 << 0,
+    RENDER_PASS_CONTINUE = 1 << 1,
+    SIMULTANEOUS_USE = 1 << 2
+};
+
+using CommandListUsageFlagBits = metrix::enum_bits<CommandListUsageFlags>;
+
 enum class SignalType : uint_fast8_t
 {
     BINARY = 0,
@@ -203,6 +212,7 @@ enum class PipelineStageFlags : uint32_t
 };
 
 using PipelineStageFlagBits = metrix::enum_bits<PipelineStageFlags>;
+
 }
 
 #endif // GFX_COMMON_H
