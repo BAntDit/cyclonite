@@ -3,6 +3,8 @@
 //
 
 #include "vkCommandList.h"
+#include "gfx/commandPool.h"
+#include "gfx/device.h"
 #include "gfx/renderPass.h"
 #include "vkException.h"
 #include <cassert>
@@ -15,6 +17,26 @@ CommandList::CommandList(core::ResourceWeakRef commandPool)
   , usage_{}
   , state_{ CommandListState::Invalid }
 {
+    auto poolRef = commandPool.lock();
+    assert(poolRef.valid());
+
+    auto& pool = poolRef.as<type_traits::platform_implementation_t<gfx::CommandPool>>();
+
+    auto allocateInfo = VkCommandBufferAllocateInfo{};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocateInfo.commandPool = pool.handle();
+    allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocateInfo.commandBufferCount = 1;
+
+    auto deviceRef = pool.device();
+    assert(deviceRef.valid());
+
+    auto& device = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>();
+
+    if (auto vkResult = vkAllocateCommandBuffers(device.handle(), &allocateInfo, &vkCommandBuffer_);
+        vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vkAllocateCommandBuffers" };
+    }
 }
 
 void CommandList::begin(CommandListUsageFlagBits usage)

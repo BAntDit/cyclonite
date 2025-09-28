@@ -106,7 +106,7 @@ private:
 
     // hash table:
     // key: purpose, family queue
-    // value: Command Pool Ring
+    // value: Command Pool Ring // TODO:: better execution ring with command pool inside
     //  -- values of Ring: Command Pool
     //   --- -> command list state
     //   --- -> fence

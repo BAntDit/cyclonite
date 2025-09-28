@@ -5,16 +5,19 @@
 #ifndef CYCLONITE_VKCOMMANDPOOL_H
 #define CYCLONITE_VKCOMMANDPOOL_H
 
+#include "core/refFromThisMixin.h"
 #include "core/resourceBase.h"
 #include "core/resourceSharedRef.h"
+#include "gfx/commandList.h"
 #include "gfx/common.h"
 #include "handle.h"
-#include <atomic>
 #include <thread>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
-class CommandPool : public core::ResourceBase
+class CommandPool
+  : public core::ResourceBase
+  , public core::EnableRefFromThis
 {
 public:
     CommandPool(core::ResourceManagerBase* resourceManager,
@@ -27,13 +30,18 @@ public:
 
     [[nodiscard]] auto queueFamilyIndex() const -> uint32_t { return queueFamilyIndex_; }
 
+    [[nodiscard]] auto allocCommandList() -> gfx::CommandList;
+
+    [[nodiscard]] auto handle() const -> VkCommandPool { return static_cast<VkCommandPool>(vkCommandPool_); }
+
+    [[nodiscard]] auto device() const -> core::ResourceSharedRef { return deviceRef_; }
+
 private:
     core::ResourceSharedRef deviceRef_;
     Handle<VkCommandPool> vkCommandPool_;
     std::thread::id threadId_;
     uint32_t queueFamilyIndex_;
     CommandPoolFlagBits flags_;
-    std::atomic<uint32_t> commandBufferInUseCount_;
 };
 }
 #endif // GFX_DRIVER_VULKAN

@@ -6,7 +6,7 @@
 #define CYCLONITE_COMMANDPOOLINTERFACE_H
 
 #include "core/resourceSharedRef.h"
-#include "gfx/common.h"
+#include "gfx/commandList.h"
 #include <concepts>
 
 namespace cyclonite::gfx::interfaces {
@@ -15,12 +15,17 @@ concept CommandPoolConcept = requires(T t) {
                                  {
                                      t.queueFamilyIndex()
                                      } -> std::same_as<uint32_t>;
+
+                                 {
+                                     t.allocCommandList()
+                                     } -> std::same_as<gfx::CommandList>;
                              };
 
 template<CommandPoolConcept PlatformImplementation>
 class CommandPoolInterface : private PlatformImplementation
 {
 public:
+    using PlatformImplementation::allocCommandList;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::queueFamilyIndex;
 };
