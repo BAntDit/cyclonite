@@ -7,7 +7,6 @@
 
 #include "formats.h"
 #include <SDL3/SDL_video.h>
-#include <cstdint>
 #include <metrix/enum.h>
 
 namespace cyclonite::gfx {
@@ -130,14 +129,14 @@ using TextureUsageFlagBits = metrix::enum_bits<TextureUsageFlags>;
 
 enum class GpuMemoryAllocationFlags : uint8_t
 {
-    DEDICATED_MEMORY = 1 >> 0,
-    USE_EXISTING_BLOCK = 1 >> 1,
-    PERSISTENT_MAPPED_MEMORY = 1 >> 2,
-    HOST_ACCESS_SEQUENTIAL_WRITE = 1 >> 3,
-    HOST_ACCESS_RANDOM_ORDER_WRITE_AND_READ = 1 >> 4,
-    MIN_MEMORY_STRATEGY = 1 >> 5,
-    MIN_TIME_STRATEGY = 1 >> 6,
-    MIN_OFFSET_STRATEGY = 1 >> 7
+    DEDICATED_MEMORY = 1 << 0,
+    USE_EXISTING_BLOCK = 1 << 1,
+    PERSISTENT_MAPPED_MEMORY = 1 << 2,
+    HOST_ACCESS_SEQUENTIAL_WRITE = 1 << 3,
+    HOST_ACCESS_RANDOM_ORDER_WRITE_AND_READ = 1 << 4,
+    MIN_MEMORY_STRATEGY = 1 << 5,
+    MIN_TIME_STRATEGY = 1 << 6,
+    MIN_OFFSET_STRATEGY = 1 << 7
 };
 
 using GpuMemoryAllocationFlagBits = metrix::enum_bits<GpuMemoryAllocationFlags>;
@@ -182,6 +181,28 @@ enum class SignalType : uint_fast8_t
     TIMELINE = 1
 };
 
+enum class PipelineStageFlags : uint32_t
+{
+    TOP_OF_PIPE_BIT = 1 << 0,
+    DRAW_INDIRECT_BIT = 1 << 1,
+    VERTEX_INPUT_BIT = 1 << 2,
+    VERTEX_SHADER_BIT = 1 << 3,
+    TESSELLATION_CONTROL_SHADER_BIT = 1 << 4,
+    TESSELLATION_EVALUATION_SHADER_BIT = 1 << 5,
+    GEOMETRY_SHADER_BIT = 1 << 6,
+    FRAGMENT_SHADER_BIT = 1 << 7,
+    EARLY_FRAGMENT_TEST_BIT = 1 << 8,
+    LATE_FRAGMENT_TEST_BIT = 1 << 9,
+    COLOR_ATTACHMENT_OUTPUT_BIT = 1 << 10,
+    COMPUTE_SHADER_BIT = 1 << 11,
+    TRANSFER_BIT = 1 << 12,
+    BOTTOM_OF_PIPE_BIT = 1 << 13,
+    HOST_BIT = 1 << 14,
+    ALL_GRAPHICS_BIT = 1 << 15,
+    ALL_COMMANDS_BIT = 1 << 16
+};
+
+using PipelineStageFlagBits = metrix::enum_bits<PipelineStageFlags>;
 }
 
 #endif // GFX_COMMON_H
