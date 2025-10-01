@@ -74,8 +74,7 @@ auto try_get_one_future_result(std::variant<std::future<R>, std::shared_future<R
         return f.wait_for(std::chrono::microseconds{ 10 }) == std::future_status::ready;
     };
 
-    if (std::visit(is_ready_f, v))
-    {
+    if (std::visit(is_ready_f, v)) {
         r = get_one_future_result(v);
     }
 

@@ -13,9 +13,14 @@ class SubmissionBatchDependency
 {
 public:
     SubmissionBatchDependency(core::ResourceWeakRef signalRef, PipelineStageFlagBits stageMask)
-      : signalRef_{ signalRef_ }
+      : signalRef_{ signalRef }
       , stageMask_{ stageMask }
-    {}
+      , value_{} // value to signal
+    {
+        // TODO:: move to .cpp and fill value_ value.
+    }
+
+    [[nodiscard]] auto value() const -> uint64_t { return value_; }
 
     [[nodiscard]] auto signal() const -> core::ResourceWeakRef { return signalRef_; }
 
@@ -29,6 +34,7 @@ public:
 private:
     core::ResourceWeakRef signalRef_;
     PipelineStageFlagBits stageMask_;
+    uint64_t value_;
 };
 }
 #endif // GFX_DRIVER_VULKAN
