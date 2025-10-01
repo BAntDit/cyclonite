@@ -57,7 +57,7 @@ auto get_one_future_result(std::variant<std::future<R>, std::shared_future<R>> c
   -> std::conditional_t<std::is_same_v<void, R>, void_future_result_t, R>
 {
     if constexpr (std::is_same_v<R, void>) {
-        std::visit([](auto&& f) -> void { f.get() }, v);
+        std::visit([](auto&& f) -> void { f.get(); }, v);
         return void_future_result_t{};
     } else {
         return std::visit([](auto&& f) -> R { return f.get(); }, v);
@@ -72,7 +72,7 @@ auto try_get_one_future_result(std::variant<std::future<R>, std::shared_future<R
 
     auto is_ready_f = [](auto&& f) -> bool {
         return f.wait_for(std::chrono::microseconds{ 10 }) == std::future_status::ready;
-    }
+    };
 
     if (std::visit(is_ready_f, v))
     {
