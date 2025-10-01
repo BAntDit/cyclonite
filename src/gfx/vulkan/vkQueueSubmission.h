@@ -6,7 +6,6 @@
 #define CYCLONITE_VK_QUEUE_SUBMISSION_H
 
 #include "core/resourceSharedRef.h"
-#include "core/resourceWeakRef.h"
 #include "gfx/commandList.h"
 #include "gfx/submissionBatchDependency.h"
 #include <vector>
@@ -27,7 +26,16 @@ public:
 
     void addDependency(gfx::SubmissionBatchDependency const& dependency);
 
-    void reset();
+    void reset(); // -> initial state
+
+    // TODO::
+    // start recording method (clears submit info) -> recording state
+
+    // after start can add batches, coamnd list and etc.
+
+    // end recording (prepares submit info) -> executable state
+
+    // TODO:: add wait method
 
 private:
     struct SubmissionBatch
@@ -40,6 +48,8 @@ private:
     core::ResourceSharedRef commandPool_;
     std::vector<SubmissionBatch> batches_;
     uint64_t competitionValue_;
+    CommandListState commandListState_; // TODO:: rename to Commands state
+
 };
 }
 
