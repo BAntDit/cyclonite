@@ -10,6 +10,7 @@
 #include <metrix/containers.h>
 #include <metrix/type_traits.h>
 #include <tuple>
+#include <variant>
 #include <vector>
 
 namespace cyclonite::multithreading {
@@ -33,31 +34,49 @@ struct get_future_type<std::future<T>>
     using type_t = T;
 };
 
+template<typename T>
+struct get_future_type<std::shared_future<T>>
+{
+    using type_t = T;
+};
+
 template<>
 struct get_future_type<std::future<void>>
 {
     using type_t = void_future_result_t;
 };
 
+template<>
+struct get_future_type<std::shared_future<void>>
+{
+    using type_t = void_future_result_t;
+};
+
 template<typename R>
-auto get_one_future_result(std::future<R>&& f) -> std::conditional_t<std::is_same_v<void, R>, void_future_result_t, R>
+auto get_one_future_result(std::variant<std::future<R>, std::shared_future<R>> const& v)
+  -> std::conditional_t<std::is_same_v<void, R>, void_future_result_t, R>
 {
     if constexpr (std::is_same_v<R, void>) {
-        f.get();
+        std::visit([](auto&& f) -> void { f.get() }, v);
         return void_future_result_t{};
     } else {
-        return f.get();
+        return std::visit([](auto&& f) -> R { return f.get(); }, v);
     }
 }
 
 template<typename R>
-auto try_get_one_future_result(std::future<R>&& f)
+auto try_get_one_future_result(std::variant<std::future<R>, std::shared_future<R>> const& v)
   -> std::optional<std::conditional_t<std::is_same_v<void, R>, void_future_result_t, R>>
 {
     auto r = std::optional<std::conditional_t<std::is_same_v<void, R>, void_future_result_t, R>>{};
 
-    if (f.wait_for(std::chrono::microseconds{ 10 }) == std::future_status::ready) {
-        r = internal::get_one_future_result(std::move(f));
+    auto is_ready_f = [](auto&& f) -> bool {
+        return f.wait_for(std::chrono::microseconds{ 10 }) == std::future_status::ready;
+    }
+
+    if (std::visit(is_ready_f, v))
+    {
+        r = get_one_future_result(v);
     }
 
     return r;
@@ -65,15 +84,19 @@ auto try_get_one_future_result(std::future<R>&& f)
 } // internal
 
 template<typename F>
-concept FutureConcept = metrix::is_specialization_of_v<F, std::future>;
+concept FutureConcept =
+  metrix::is_specialization_of_v<F, std::future> || metrix::is_specialization_of_v<F, std::shared_future>;
 
 template<typename C>
-concept FutureContainerConcept =
-  metrix::is_iterable_v<C> && metrix::is_specialization_of_v<typename C::value_type, std::future>;
+concept FutureContainerConcept = metrix::is_iterable_v<C> &&
+                                 (metrix::is_specialization_of_v<typename C::value_type, std::future> ||
+                                  metrix::is_specialization_of_v<typename C::value_type, std::shared_future>);
 
 template<typename I>
 concept FutureInteratorConcept =
-  std::input_iterator<I> && metrix::is_specialization_of_v<typename std::iterator_traits<I>::value_type, std::future>;
+  std::input_iterator<I> &&
+  (metrix::is_specialization_of_v<typename std::iterator_traits<I>::value_type, std::future> ||
+   metrix::is_specialization_of_v<typename std::iterator_traits<I>::value_type, std::shared_future>);
 
 template<FutureConcept F>
 using future_type_t = typename internal::get_future_type<F>::type_t;
@@ -83,7 +106,7 @@ auto when_all(F&&... f) -> std::future<std::tuple<future_type_t<F>...>>
 {
     auto promise = std::promise<std::tuple<future_type_t<F>...>>{};
     auto future = promise.get_future();
-    auto futures = std::make_tuple(std::move(f)...);
+    auto futures = std::make_tuple(std::forward<F>(f)...);
 
     Executor::threadExecutor().submitTask([p = std::move(promise), fs = std::move(futures)]() mutable -> void {
         []<size_t... I>(std::index_sequence<I...>, auto&& futures, auto&& promise)->void
@@ -107,7 +130,7 @@ auto when_all(C const& container) -> std::future<std::vector<future_type_t<typen
 
     Executor::threadExecutor().submitTask([&container, v = std::move(v), p = std::move(promise)]() mutable -> void {
         for (auto&& f : container) {
-            v.emplace_back(internal::get_one_future_result(f));
+            v.emplace_back(internal::get_one_future_result(std::move(f)));
         }
         p.set_value(v);
     });
@@ -127,7 +150,7 @@ auto when_all(InputIt first, InputIt last)
 
     Executor::threadExecutor().submitTask([first, last, v = std::move(v), p = std::move(promise)]() mutable -> void {
         for (auto it = first; it != last; it++) {
-            v.emplace_back(internal::get_one_future_result(*it));
+            v.emplace_back(internal::get_one_future_result(std::move(*it)));
         }
         p.set_value(v);
     });
@@ -139,7 +162,7 @@ namespace internal {
 template<size_t I, typename ResultTuple, typename F, typename... Futures>
 auto set_when_any_result(when_any_result_t<ResultTuple>& result, F&& future, Futures&&... futures) -> bool
 {
-    auto&& v = internal::try_get_one_future_result(std::move(future));
+    auto&& v = internal::try_get_one_future_result(std::forward<F>(future));
     if (v.has_value()) {
         std::get<I>(result.result) = std::move(v.value());
         result.index = I;
@@ -148,7 +171,7 @@ auto set_when_any_result(when_any_result_t<ResultTuple>& result, F&& future, Fut
     }
 
     if constexpr (sizeof...(futures) > 0) {
-        set_when_any_result<I + 1>(result, std::move(futures)...);
+        set_when_any_result<I + 1>(result, std::forward<Futures>(futures)...);
     }
 
     return false;
@@ -161,7 +184,7 @@ auto when_any(F&&... f) -> std::future<when_any_result_t<std::tuple<future_type_
     auto result = when_any_result_t<std::tuple<future_type_t<F>...>>{};
     auto promise = std::promise<when_any_result_t<std::tuple<future_type_t<F>...>>>{};
     auto future = promise.get_future();
-    auto futures = std::make_tuple(std::move(f)...);
+    auto futures = std::make_tuple(std::forward<F>(f)...);
 
     Executor::threadExecutor().submitTask(
       [r = std::move(result), p = std::move(promise), fs = std::move(futures)]() mutable -> void {
