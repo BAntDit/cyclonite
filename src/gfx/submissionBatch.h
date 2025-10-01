@@ -7,7 +7,7 @@
 
 #include "submissionBatchDependency.h"
 #include "commandList.h"
-#include "gfx/signal.h"
+#include "core/resourceSharedRef.h"
 #include <vector>
 
 namespace cyclonite::gfx
@@ -16,7 +16,7 @@ struct SubmissionBatch
 {
     std::vector<gfx::SubmissionBatchDependency> dependencies;
     std::vector<gfx::CommandList> commandLists;
-    gfx::Signal signal;
+    core::ResourceSharedRef signal;
 };
 }
 
