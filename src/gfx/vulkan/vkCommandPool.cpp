@@ -42,6 +42,19 @@ auto CommandPool::allocCommandList() -> gfx::CommandList
     auto commandList = gfx::CommandList{ weakRef };
     return commandList;
 }
+
+void CommandPool::reset(bool releasePoolResources /* = false*/)
+{
+    assert(deviceRef_.valid());
+    auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
+
+    auto flags = releasePoolResources ? VkCommandPoolResetFlags{ VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT }
+                                      : VkCommandPoolResetFlags{};
+
+    if (auto vkResult = vkResetCommandPool(device.handle(), static_cast<VkCommandPool>(vkCommandPool_), flags);
+        vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vkResetCommandPool" };
+    }
 }
 
 #endif

@@ -11,15 +11,23 @@
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept CommandPoolConcept = requires(T t) {
-                                 {
-                                     t.queueFamilyIndex()
-                                     } -> std::same_as<uint32_t>;
+concept CommandPoolConcept = requires(T t, bool a)
+{
+    {
+        t.queueFamilyIndex()
+    }
+    ->std::same_as<uint32_t>;
 
-                                 {
-                                     t.allocCommandList()
-                                     } -> std::same_as<gfx::CommandList>;
-                             };
+    {
+        t.allocCommandList()
+    }
+    ->std::same_as<gfx::CommandList>;
+
+    {
+        t.reset(a)
+    }
+    ->std::same_as<void>;
+};
 
 template<CommandPoolConcept PlatformImplementation>
 class CommandPoolInterface : private PlatformImplementation
@@ -28,6 +36,7 @@ public:
     using PlatformImplementation::allocCommandList;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::queueFamilyIndex;
+    using PlatformImplementation::reset;
 };
 }
 

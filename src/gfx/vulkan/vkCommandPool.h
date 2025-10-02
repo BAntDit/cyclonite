@@ -36,6 +36,8 @@ public:
 
     [[nodiscard]] auto device() const -> core::ResourceSharedRef { return deviceRef_; }
 
+    void reset(bool releasePoolResources = false);
+
 private:
     core::ResourceSharedRef deviceRef_;
     Handle<VkCommandPool> vkCommandPool_;
