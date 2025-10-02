@@ -20,6 +20,11 @@ concept SubmissionBatchDependencyConcept = requires(T t)
         t.stageMask()
     }
     ->std::same_as<PipelineStageFlagBits>;
+
+    {
+        t.value()
+    }
+    ->std::same_as<uint64_t>;
 };
 
 template<SubmissionBatchDependencyConcept PlatformImplementation>
@@ -29,6 +34,7 @@ public:
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::signal;
     using PlatformImplementation::stageMask;
+    using PlatformImplementation::value;
 };
 }
 

@@ -12,13 +12,7 @@ namespace cyclonite::gfx::vulkan {
 class SubmissionBatchDependency
 {
 public:
-    SubmissionBatchDependency(core::ResourceWeakRef signalRef, PipelineStageFlagBits stageMask)
-      : signalRef_{ signalRef }
-      , stageMask_{ stageMask }
-      , value_{} // value to signal
-    {
-        // TODO:: move to .cpp and fill value_ value.
-    }
+    SubmissionBatchDependency(core::ResourceWeakRef signalRef, PipelineStageFlagBits stageMask);
 
     [[nodiscard]] auto value() const -> uint64_t { return value_; }
 
