@@ -87,6 +87,9 @@ public:
     [[nodiscard]] auto createRenderPassWithRenderWindow(core::ResourceSharedRef renderWindowRef)
       -> core::ResourceUniqueRef;
 
+    [[nodiscard]] auto createCommandPool(uint32_t queueFamilyIndex, CommandPoolFlagBits flags)
+      -> core::ResourceUniqueRef;
+
     using core::ResourceBase::resourceBase;
 
 private:

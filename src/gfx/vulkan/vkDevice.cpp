@@ -468,6 +468,19 @@ auto Device::createRenderPassWithRenderWindow(core::ResourceSharedRef renderWind
     return result;
 }
 
+auto Device::createCommandPool(uint32_t queueFamilyIndex, CommandPoolFlagBits flags) -> core::ResourceUniqueRef 
+{
+    auto result = core::ResourceUniqueRef{};
+
+    auto& resManager = static_cast<resource_manager_t&>(resourceManager());
+
+    auto deviceRef = getSharedFromThis(this);
+
+    result = resManager.allocResource<gfx::CommandPool>(deviceRef, queueFamilyIndex, flags);
+
+    return result;
+}
+
 Device::~Device()
 {
     assert(vmaAllocator_ != VK_NULL_HANDLE);
