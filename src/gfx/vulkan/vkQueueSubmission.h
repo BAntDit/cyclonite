@@ -15,16 +15,18 @@ namespace cyclonite::gfx::vulkan {
 class QueueSubmission
 {
 public:
-    [[nodiscard]] addBatch()->uint64_t;
+    QueueSubmission(core::ResourceSharedRef deviceRef, uint32_t queueFamilyIndex, CommandPoolFlagBits commandPoolFlags);
 
-    [[nodiscard]] addCommandList(uint64_t batchId)->gfx::CommandList;
+    [[nodiscard]] auto addBatch() -> uint64_t;
+
+    [[nodiscard]] auto addCommandList(uint64_t batchId) -> gfx::CommandList;
 
     [[nodiscard]] auto getDependency(uint64_t fromBatchId, PipelineStageFlagBits stageMask)
       -> gfx::SubmissionBatchDependency;
 
     void addDependency(uint64_t fromBatchId, uint64_t toBatchId, PipelineStageFlagBits stageMask);
 
-    void addDependency(gfx::SubmissionBatchDependency const& dependency);
+    void addDependency(uint64_t toBatchId, gfx::SubmissionBatchDependency const& dependency);
 
     void reset(); // -> initial state
 
@@ -48,8 +50,7 @@ private:
     core::ResourceSharedRef commandPool_;
     std::vector<SubmissionBatch> batches_;
     uint64_t competitionValue_;
-    CommandListState commandListState_; // TODO:: rename to Commands state
-
+    CommandListState commonListsState_;
 };
 }
 

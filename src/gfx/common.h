@@ -213,6 +213,18 @@ enum class PipelineStageFlags : uint32_t
 
 using PipelineStageFlagBits = metrix::enum_bits<PipelineStageFlags>;
 
+
+enum class QueueSubmissionStateFlags : uint32_t
+{
+    Invalid = 1 << 0,
+    Initial = 1 << 1,
+    BatchRecording = 1 << 2,
+    CommandListRecording = 1 << 3,
+    Recording = 1 << 4,
+    Executable = 1 << 5,
+    Pending = 1 << 6
+};
+
 }
 
 #endif // GFX_COMMON_H
