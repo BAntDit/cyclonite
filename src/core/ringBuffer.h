@@ -323,7 +323,7 @@ private:
 };
 #include "ringBuffer.inl" // TODO:: add tests
 
-// conditinal circular byte buffer
+// conditinal circular buffer
 // allow to present reserved range with a view of necessary type
 // and allow to bind reserved ranges with some conditions (with a fence, for example)
 template<typename T, typename ConditionValueType, size_t Size, bool hasExternalBuffer = false>
