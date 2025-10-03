@@ -225,6 +225,8 @@ enum class QueueSubmissionStateFlags : uint32_t
     Pending = 1 << 6
 };
 
+using QueueSubmissionStateFlagBits = metrix::enum_bits<QueueSubmissionStateFlags>;
+
 }
 
 #endif // GFX_COMMON_H

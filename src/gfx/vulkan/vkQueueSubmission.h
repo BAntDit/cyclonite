@@ -17,6 +17,10 @@ class QueueSubmission
 public:
     QueueSubmission(core::ResourceSharedRef deviceRef, uint32_t queueFamilyIndex, CommandPoolFlagBits commandPoolFlags);
 
+    void beginRecording();
+
+    void endRecording();
+
     [[nodiscard]] auto addBatch() -> uint64_t;
 
     [[nodiscard]] auto addCommandList(uint64_t batchId) -> gfx::CommandList;
@@ -28,7 +32,9 @@ public:
 
     void addDependency(uint64_t toBatchId, gfx::SubmissionBatchDependency const& dependency);
 
-    void reset(); // -> initial state
+    void reset();
+
+    void waitOnCpu();
 
     // TODO::
     // start recording method (clears submit info) -> recording state
@@ -37,7 +43,12 @@ public:
 
     // end recording (prepares submit info) -> executable state
 
-    // TODO:: add wait method
+    [[nodiscard]] auto signal() const -> core::ResourceSharedRef;
+
+    [[nodiscard]] auto isExecutable() const -> bool
+    {
+        return state_.value == metrix::value_cast(QueueSubmissionStateFlags::Executable);
+    }
 
 private:
     struct SubmissionBatch
@@ -50,7 +61,7 @@ private:
     core::ResourceSharedRef commandPool_;
     std::vector<SubmissionBatch> batches_;
     uint64_t competitionValue_;
-    CommandListState commonListsState_;
+    QueueSubmissionStateFlagBits state_;
 };
 }
 

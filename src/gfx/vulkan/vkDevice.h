@@ -114,10 +114,10 @@ private:
     //   --- -> command list state
     //   --- -> fence
 
-    using command_pool_ring_t =
-      core::ConditionalRingBuffer<core::ResourceSharedRef, uint64_t, config_t::command_pool_ring_size_v>;
+    using queue_submission_ring_t =
+      core::ConditionalRingBuffer<core::ResourceSharedRef, uint64_t, config_t::command_pool_ring_size_v>; // place here a queue submission instead
 
-    core::StaticHashTable<command_pool_ring_t,
+    core::StaticHashTable<queue_submission_ring_t,
                           config_t::max_command_pool_ring_count_v,
                           multithreading::PurposeBits,
                           uint32_t,
