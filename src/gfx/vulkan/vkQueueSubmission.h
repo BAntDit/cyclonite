@@ -12,10 +12,14 @@
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
-class QueueSubmission
+class QueueSubmission : public core::ResourceBase
 {
 public:
-    QueueSubmission(core::ResourceSharedRef deviceRef, uint32_t queueFamilyIndex, CommandPoolFlagBits commandPoolFlags);
+    QueueSubmission(core::ResourceManagerBase* resourceManager,
+                    core::ResourceId resourceId,
+                    core::ResourceSharedRef deviceRef,
+                    uint32_t queueFamilyIndex,
+                    CommandPoolFlagBits commandPoolFlags);
 
     void beginRecording();
 
@@ -49,6 +53,8 @@ public:
     {
         return state_.value == metrix::value_cast(QueueSubmissionStateFlags::Executable);
     }
+
+    using core::ResourceBase::resourceBase;
 
 private:
     struct SubmissionBatch

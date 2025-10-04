@@ -213,7 +213,6 @@ enum class PipelineStageFlags : uint32_t
 
 using PipelineStageFlagBits = metrix::enum_bits<PipelineStageFlags>;
 
-
 enum class QueueSubmissionStateFlags : uint32_t
 {
     Invalid = 1 << 0,

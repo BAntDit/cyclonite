@@ -1,20 +1,26 @@
 
 #include "vkQueueSubmission.h"
+#include "gfx/commandPool.h"
 #include "gfx/device.h"
 #include "gfx/signal.h"
-#include "gfx/commandPool.h"
+#include "multithreading/taskManager.h"
 #include <cassert>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
-QueueSubmission::QueueSubmission(core::ResourceSharedRef deviceRef,
+QueueSubmission::QueueSubmission(core::ResourceManagerBase* resourceManager,
+                                 core::ResourceId resourceId,
+                                 core::ResourceSharedRef deviceRef,
                                  uint32_t queueFamilyIndex,
                                  CommandPoolFlagBits commandPoolFlags)
-  : commandPool_{}
+  : core::ResourceBase{ resourceManager, resourceId, false }
+  , commandPool_{}
   , batches_{}
   , competitionValue_{}
   , state_{}
 {
+    // assert(multithreading::Executor::threadExecutor().p);
+
     state_.set(QueueSubmissionStateFlags::Initial);
 
     assert(deviceRef.valid());
@@ -25,12 +31,14 @@ QueueSubmission::QueueSubmission(core::ResourceSharedRef deviceRef,
 
 void QueueSubmission::beginRecording()
 {
+    // assert(multithreading::Executor::isInRenderThread());
     assert(state_.value == metrix::value_cast(QueueSubmissionStateFlags::Initial));
     state_.value = metrix::value_cast(QueueSubmissionStateFlags::Recording);
 }
 
 void QueueSubmission::endRecording()
 {
+    // assert(multithreading::Executor::isInRenderThread());
     assert(state_.value == metrix::value_cast(QueueSubmissionStateFlags::Recording));
     state_.value = metrix::value_cast(QueueSubmissionStateFlags::Executable);
 }
@@ -43,6 +51,7 @@ auto QueueSubmission::signal() const -> core::ResourceSharedRef
 
 void QueueSubmission::waitOnCpu()
 {
+    // assert(multithreading::Executor::isInRenderThread());
     assert(state_.test(QueueSubmissionStateFlags::Pending));
     assert(signal().valid());
 
@@ -55,8 +64,10 @@ void QueueSubmission::waitOnCpu()
     }
 }
 
-void QueueSubmission::reset() 
+void QueueSubmission::reset()
 {
+    assert(multithreading::Executor::isInRenderThread());
+
     if (state_.test(QueueSubmissionStateFlags::Pending)) {
         state_.set(QueueSubmissionStateFlags::Invalid);
         return;

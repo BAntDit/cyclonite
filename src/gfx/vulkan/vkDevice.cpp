@@ -468,7 +468,7 @@ auto Device::createRenderPassWithRenderWindow(core::ResourceSharedRef renderWind
     return result;
 }
 
-auto Device::createCommandPool(uint32_t queueFamilyIndex, CommandPoolFlagBits flags) -> core::ResourceUniqueRef 
+auto Device::createCommandPool(uint32_t queueFamilyIndex, CommandPoolFlagBits flags) -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 

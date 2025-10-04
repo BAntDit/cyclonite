@@ -38,6 +38,8 @@ public:
 
     void reset(bool releasePoolResources = false);
 
+    using core::ResourceBase::resourceBase;
+
 private:
     core::ResourceSharedRef deviceRef_;
     Handle<VkCommandPool> vkCommandPool_;
