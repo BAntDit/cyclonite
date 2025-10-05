@@ -13,33 +13,19 @@
 namespace cyclonite::gfx::interfaces {
 template<typename T>
 concept RenderWindowConcept = requires(T t) {
-                                  {
-                                      t.width()
-                                      } -> std::same_as<uint32_t>;
-                                  {
-                                      t.height()
-                                      } -> std::same_as<uint32_t>;
+    { t.width() } -> std::same_as<uint32_t>;
+    { t.height() } -> std::same_as<uint32_t>;
 
-                                  {
-                                      t.swapchainLength()
-                                      } -> std::same_as<uint32_t>;
+    { t.swapchainLength() } -> std::same_as<uint32_t>;
 
-                                  {
-                                      t.hasDepth()
-                                      } -> std::same_as<bool>;
+    { t.hasDepth() } -> std::same_as<bool>;
 
-                                  {
-                                      t.colorOutputFormat()
-                                      } -> std::same_as<gfx::Format>;
+    { t.colorOutputFormat() } -> std::same_as<gfx::Format>;
 
-                                  {
-                                      t.depthStencilFormat()
-                                      } -> std::same_as<gfx::Format>;
+    { t.depthStencilFormat() } -> std::same_as<gfx::Format>;
 
-                                  {
-                                      t.presentMode()
-                                      } -> std::same_as<gfx::PresentMode>;
-                              };
+    { t.presentMode() } -> std::same_as<gfx::PresentMode>;
+};
 
 template<RenderWindowConcept PlatformImplementation>
 class RenderWindowInterface : private PlatformImplementation

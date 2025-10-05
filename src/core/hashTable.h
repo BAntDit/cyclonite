@@ -22,8 +22,8 @@ template<typename Key>
 concept HashTableKeyConcept = std::is_default_constructible_v<Key>;
 
 template<typename Data>
-concept HashTableDataConcept = (std::is_default_constructible_v<Data> && std::is_copy_constructible_v<Data> &&
-                                std::is_copy_assignable_v<Data>);
+concept HashTableDataConcept =
+  (std::is_default_constructible_v<Data> && std::is_copy_constructible_v<Data> && std::is_copy_assignable_v<Data>);
 
 template<HashTableDataConcept DataType, size_t TableSize, HashTableKeyConcept... Key>
 class HashTableData
@@ -91,8 +91,7 @@ void HashTableData<DataType, TableSize, Key...>::destroyEntryData(size_t index)
 {
     assert(index < TableSize);
 
-    auto destroy_keys_f = []<size_t... I>(std::index_sequence<I...>, auto&& tuple)->void
-    {
+    auto destroy_keys_f = []<size_t... I>(std::index_sequence<I...>, auto&& tuple) -> void {
         auto destroy_key_f = [](auto&& key) -> void {
             if constexpr (!std::is_trivially_destructible_v<std::decay_t<decltype(key)>>) {
                 std::destroy_at(&key);
@@ -419,8 +418,8 @@ auto StaticHashTable<DataType, TableSize, Key...>::removeEntry(KeyN&&... keyN) -
 
 template<typename DataType, size_t TableSize, typename... Key>
 template<size_t... I>
-auto StaticHashTable<DataType, TableSize, Key...>::getOriginalEntry(key_type const& k, std::index_sequence<I...>) const
-  -> size_t
+auto StaticHashTable<DataType, TableSize, Key...>::getOriginalEntry(key_type const& k,
+                                                                    std::index_sequence<I...>) const -> size_t
 {
     return normalizedHash(std::get<I>(k)...);
 }
@@ -458,18 +457,16 @@ template<typename DataType, size_t TableSize, typename... Key>
 template<typename... KeyN>
 auto StaticHashTable<DataType, TableSize, Key...>::at(KeyN&&... keyN) const
   -> DataType const* requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...) {
-                         auto entry =
-                           findEntry(std::make_index_sequence<sizeof...(KeyN)>{}, std::forward<KeyN>(keyN)...);
-                         return (entry == table_data_t::invalid_hash_entry_v) ? nullptr
-                                                                              : &table_data_t::data()[entry].second;
-                     }
+    auto entry = findEntry(std::make_index_sequence<sizeof...(KeyN)>{}, std::forward<KeyN>(keyN)...);
+    return (entry == table_data_t::invalid_hash_entry_v) ? nullptr : &table_data_t::data()[entry].second;
+}
 
 template<typename DataType, size_t TableSize, typename... Key>
 template<typename... KeyN>
 auto StaticHashTable<DataType, TableSize, Key...>::at(KeyN&&... keyN)
   -> DataType* requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...) {
-                   return const_cast<DataType*>(std::as_const(*this).at(std::forward<KeyN>(keyN)...));
-               }
+    return const_cast<DataType*>(std::as_const(*this).at(std::forward<KeyN>(keyN)...));
+}
 
 template<typename DataType, size_t TableSize, typename... Key>
 template<typename... KeyN>

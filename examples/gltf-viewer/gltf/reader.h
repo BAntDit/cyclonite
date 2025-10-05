@@ -810,7 +810,7 @@ void Reader::_readNode(
                 f(reader_data_type_t<ReaderDataType::GEOMETRY>{}, meshPrimitive);
             }
         } // primitives cycle end
-    }     // mesh parse end
+    } // mesh parse end
 
     f(reader_data_type_t<ReaderDataType::NODE>{}, Node{ position, scale, rotation }, parentIdx, nodeIdx);
 

@@ -20,8 +20,8 @@ class Event
 private:
     struct Dummy
     {
-        void func(){};
-        virtual void vFunc(){};
+        void func() {};
+        virtual void vFunc() {};
     };
 
     using event_handler_identifier_t =

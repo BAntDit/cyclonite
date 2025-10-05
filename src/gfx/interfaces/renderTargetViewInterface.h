@@ -8,10 +8,8 @@
 namespace cyclonite::gfx::interfaces {
 template<typename T>
 concept RenderTargetViewConcept = requires(T t) {
-                                      {
-                                          t.texture()
-                                          } -> std::same_as<core::ResourceWeakRef>;
-                                  };
+    { t.texture() } -> std::same_as<core::ResourceWeakRef>;
+};
 
 template<RenderTargetViewConcept PlatformImplementation>
 class RenderTargetViewInterface : private PlatformImplementation

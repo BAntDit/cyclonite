@@ -93,8 +93,9 @@ auto getWindowProperty<HINSTANCE>(SDL_Window* window) -> HINSTANCE
 #endif
 
 template<typename... SurfaceArgs>
-auto createPlatformSurface(VkInstance vkInstance, SDL_Window* sdlWindow, metrix::type_list<SurfaceArgs...>)
-  -> platform_surface_t*
+auto createPlatformSurface(VkInstance vkInstance,
+                           SDL_Window* sdlWindow,
+                           metrix::type_list<SurfaceArgs...>) -> platform_surface_t*
 {
     return new platform_surface_t{ vkInstance, getWindowProperty<SurfaceArgs>(sdlWindow)... };
 }

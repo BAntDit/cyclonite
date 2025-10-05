@@ -9,18 +9,12 @@
 namespace cyclonite::gfx::interfaces {
 template<typename T>
 concept SubmissionBatchDependencyConcept = requires(T t) {
-                                               {
-                                                   t.signal()
-                                                   } -> std::same_as<core::ResourceWeakRef>;
+    { t.signal() } -> std::same_as<core::ResourceWeakRef>;
 
-                                               {
-                                                   t.stageMask()
-                                                   } -> std::same_as<PipelineStageFlagBits>;
+    { t.stageMask() } -> std::same_as<PipelineStageFlagBits>;
 
-                                               {
-                                                   t.value()
-                                                   } -> std::same_as<uint64_t>;
-                                           };
+    { t.value() } -> std::same_as<uint64_t>;
+};
 
 template<SubmissionBatchDependencyConcept PlatformImplementation>
 class SubmissionBatchDependencyInterface : private PlatformImplementation

@@ -16,6 +16,7 @@
 #include "handle.h"
 #include "multithreading/common.h"
 #include "vmaUsage.h"
+#include <glm/ext/scalar_uint_sized.hpp>
 #include <memory>
 #include <string_view>
 #include <thread>
@@ -87,8 +88,12 @@ public:
     [[nodiscard]] auto createRenderPassWithRenderWindow(core::ResourceSharedRef renderWindowRef)
       -> core::ResourceUniqueRef;
 
-    [[nodiscard]] auto createCommandPool(uint32_t queueFamilyIndex, CommandPoolFlagBits flags)
-      -> core::ResourceUniqueRef;
+    [[nodiscard]] auto createCommandPool(uint32_t queueFamilyIndex,
+                                         CommandPoolFlagBits flags) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto acquireQueueSubmission(multithreading::Purpose purpose,
+                                              uint32_t queueFamilyIndex,
+                                              CommandPoolFlags flags) -> core::ResourceSharedRef;
 
     using core::ResourceBase::resourceBase;
 
@@ -107,24 +112,15 @@ private:
     Handle<VkQueue> computeQueue_;
     VmaAllocator vmaAllocator_;
 
-    // hash table:
-    // key: purpose, family queue
-    // value: Command Pool Ring // TODO:: better execution ring with command pool inside
-    //  -- values of Ring: Command Pool
-    //   --- -> command list state
-    //   --- -> fence
-
     using queue_submission_ring_t =
-      core::ConditionalRingBuffer<core::ResourceSharedRef,
-                                  uint64_t,
-                                  config_t::queue_submission_ring_size_v>;
+      core::ConditionalRingBuffer<core::ResourceSharedRef, uint64_t, config_t::queue_submission_ring_size_v>;
 
     core::StaticHashTable<queue_submission_ring_t,
                           config_t::max_queue_submission_ring_count_v,
                           multithreading::PurposeBits,
                           uint32_t,
                           CommandPoolFlagBits>
-      commandPoolMap_;
+      queueSubmissionRingMap_;
 };
 }
 

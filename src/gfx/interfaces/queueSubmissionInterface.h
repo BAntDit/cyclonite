@@ -11,18 +11,12 @@
 namespace cyclonite::gfx::interfaces {
 template<typename T>
 concept QueueSubmissionConcept = requires(T t) {
-                                     {
-                                         t.beginRecording()
-                                         } -> std::same_as<void>;
+    { t.beginRecording() } -> std::same_as<void>;
 
-                                     {
-                                         t.endRecording()
-                                         } -> std::same_as<void>;
+    { t.endRecording() } -> std::same_as<void>;
 
-                                     {
-                                         t.resourceBase()
-                                         } -> std::same_as<core::ResourceBase*>;
-                                 };
+    { t.resourceBase() } -> std::same_as<core::ResourceBase*>;
+};
 
 template<QueueSubmissionConcept PlatformImplementation>
 class QueueSubmissionInterface : private PlatformImplementation

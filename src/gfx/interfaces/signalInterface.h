@@ -12,22 +12,14 @@
 namespace cyclonite::gfx::interfaces {
 template<typename T>
 concept SignalConcept = requires(T t, uint64_t a, uint64_t b) {
-                            {
-                                t.type()
-                                } -> std::same_as<SignalType>;
+    { t.type() } -> std::same_as<SignalType>;
 
-                            {
-                                t.value()
-                                } -> std::same_as<uint64_t>;
+    { t.value() } -> std::same_as<uint64_t>;
 
-                            {
-                                t.signalFromCpu(a)
-                                } -> std::same_as<void>;
+    { t.signalFromCpu(a) } -> std::same_as<void>;
 
-                            {
-                                t.waitOnCpu(a, b)
-                                } -> std::same_as<bool>;
-                        };
+    { t.waitOnCpu(a, b) } -> std::same_as<bool>;
+};
 
 template<SignalConcept PlatformImplementation>
 class SignalInterface : private PlatformImplementation

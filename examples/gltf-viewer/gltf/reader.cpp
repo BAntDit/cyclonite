@@ -60,7 +60,7 @@ static void _nodeResourcesCount(
 
             instanceCount++;
         } // primitives cycle end
-    }     // mesh parse end
+    } // mesh parse end
 
     // children nodes:
     if (auto childrenIt = node.find(reinterpret_cast<char const*>(u8"children")); childrenIt != node.end()) {
@@ -256,7 +256,7 @@ void Reader::_countNode(
 
             instanceCount_++;
         } // primitives cycle end
-    }     // mesh parse end
+    } // mesh parse end
 
     if (auto childrenIt = node.find(reinterpret_cast<char const*>(u8"children")); childrenIt != node.end()) {
         auto const& children = *childrenIt;

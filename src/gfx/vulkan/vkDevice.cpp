@@ -199,7 +199,7 @@ Device::Device(core::ResourceManagerBase* resourceManager,
   , transferQueue_{}
   , computeQueue_{}
   , vmaAllocator_{ VK_NULL_HANDLE }
-  , commandPoolMap_{}
+  , queueSubmissionRingMap_{}
 {
     if (!testRequiredDeviceExtensions(vkPhysicalDevice, requiredExtensions)) {
         throw std::runtime_error("gfx:: physical device does not supports required extensions. Device name: " + name_);
@@ -422,8 +422,10 @@ auto Device::createTexture(GpuMemoryAllocationFlagBits allocationFlags,
     return result;
 }
 
-auto Device::createRenderWindow(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
-  -> core::ResourceUniqueRef
+auto Device::createRenderWindow(uint32_t width,
+                                uint32_t height,
+                                std::string_view title,
+                                SurfaceFlagBits flags) -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 
@@ -479,6 +481,14 @@ auto Device::createCommandPool(uint32_t queueFamilyIndex, CommandPoolFlagBits fl
     result = resManager.allocResource<gfx::CommandPool>(deviceRef, queueFamilyIndex, flags);
 
     return result;
+}
+
+auto Device::acquireQueueSubmission(multithreading::Purpose purpose,
+                                    uint32_t queueFamilyIndex,
+                                    CommandPoolFlags flags) -> core::ResourceSharedRef
+{
+    // multithreading::PurposeBits
+    // queueSubmissionRingMap_.find()
 }
 
 Device::~Device()

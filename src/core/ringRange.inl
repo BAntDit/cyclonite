@@ -1,6 +1,6 @@
 template<size_t Size>
-auto RingRange<Size>::expectedOffset(size_t size, bool forceShiftToBegin /* = false*/) const
-  -> std::pair<size_t, size_t>
+auto RingRange<Size>::expectedOffset(size_t size,
+                                     bool forceShiftToBegin /* = false*/) const -> std::pair<size_t, size_t>
 {
     auto expected = std::numeric_limits<size_t>::max();
     auto available = size_t{ 0 };

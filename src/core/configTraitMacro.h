@@ -13,7 +13,7 @@
     template<typename C>                                                                                               \
     static constexpr auto test_##name(...)->no_t;                                                                      \
     static constexpr auto has_##name = sizeof(test_##name<T>(0)) == sizeof(yes_t);                                     \
-    static constexpr auto name()->type                                                                                 \
+    static constexpr auto name() -> type                                                                               \
     {                                                                                                                  \
         if constexpr (has_##name) {                                                                                    \
             static_assert(std::is_convertible_v<std::decay_t<decltype(T::name)>, type>);                               \

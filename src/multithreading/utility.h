@@ -87,9 +87,9 @@ concept FutureConcept =
   metrix::is_specialization_of_v<F, std::future> || metrix::is_specialization_of_v<F, std::shared_future>;
 
 template<typename C>
-concept FutureContainerConcept = metrix::is_iterable_v<C> &&
-                                 (metrix::is_specialization_of_v<typename C::value_type, std::future> ||
-                                  metrix::is_specialization_of_v<typename C::value_type, std::shared_future>);
+concept FutureContainerConcept =
+  metrix::is_iterable_v<C> && (metrix::is_specialization_of_v<typename C::value_type, std::future> ||
+                               metrix::is_specialization_of_v<typename C::value_type, std::shared_future>);
 
 template<typename I>
 concept FutureInteratorConcept =
@@ -108,11 +108,9 @@ auto when_all(F&&... f) -> std::future<std::tuple<future_type_t<F>...>>
     auto futures = std::make_tuple(std::forward<F>(f)...);
 
     Executor::threadExecutor().submitTask([p = std::move(promise), fs = std::move(futures)]() mutable -> void {
-        []<size_t... I>(std::index_sequence<I...>, auto&& futures, auto&& promise)->void
-        {
+        []<size_t... I>(std::index_sequence<I...>, auto&& futures, auto&& promise) -> void {
             promise.set_value(std::make_tuple(internal::get_one_future_result(std::move(std::get<I>(futures)))...));
-        }
-        (std::make_index_sequence<std::tuple_size_v<decltype(fs)>>{}, std::move(fs), std::move(p));
+        }(std::make_index_sequence<std::tuple_size_v<decltype(fs)>>{}, std::move(fs), std::move(p));
     });
 
     return future;
@@ -187,13 +185,11 @@ auto when_any(F&&... f) -> std::future<when_any_result_t<std::tuple<future_type_
 
     Executor::threadExecutor().submitTask(
       [r = std::move(result), p = std::move(promise), fs = std::move(futures)]() mutable -> void {
-          []<size_t... I>(std::index_sequence<I...>, auto& result, auto&& futures, auto&& promise)->void
-          {
+          []<size_t... I>(std::index_sequence<I...>, auto& result, auto&& futures, auto&& promise) -> void {
               while (!internal::set_when_any_result<0>(result, std::move(std::get<I>(futures))...)) {
               }
               promise.set_value(std::move(result));
-          }
-          (std::make_index_sequence<std::tuple_size_v<decltype(fs)>>{}, r, std::move(fs), std::move(p));
+          }(std::make_index_sequence<std::tuple_size_v<decltype(fs)>>{}, r, std::move(fs), std::move(p));
       });
 
     return future;

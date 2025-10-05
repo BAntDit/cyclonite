@@ -14,20 +14,14 @@
 namespace cyclonite {
 template<typename T>
 concept ApplicationConcept = requires(T t, CommandLine const& commandLine) {
-                                 {
-                                     t.init(commandLine)
-                                     } -> std::same_as<T&>;
+    { t.init(commandLine) } -> std::same_as<T&>;
 
-                                 {
-                                     t.run()
-                                     } -> std::same_as<T&>;
+    { t.run() } -> std::same_as<T&>;
 
-                                 {
-                                     t.done()
-                                     } -> std::same_as<void>;
+    { t.done() } -> std::same_as<void>;
 
-                                 requires std::is_default_constructible_v<T>;
-                             };
+    requires std::is_default_constructible_v<T>;
+};
 
 template<ApplicationConcept Application>
 int letsGo(int argc, const char* argv[])

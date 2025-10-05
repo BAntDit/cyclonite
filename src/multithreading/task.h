@@ -13,8 +13,7 @@ namespace cyclonite::multithreading {
 class Task;
 
 template<typename T>
-concept TaskFunctorConcept = !
-std::is_same_v<std::decay_t<T>, Task>;
+concept TaskFunctorConcept = !std::is_same_v<std::decay_t<T>, Task>;
 
 class alignas(hardware_destructive_interference_size) Task
 {
