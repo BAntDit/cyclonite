@@ -18,10 +18,14 @@ class TaskManager
 {
     friend class Executor;
 
-    static constexpr size_t renderExecutorIndex = 1;
+    static size_t renderExecutorIndex;
+    static size_t computeExecutorIndex;
+    static size_t transferExecutorIndex;
 
 public:
-    explicit TaskManager(size_t threadPoolSize = std::max(std::thread::hardware_concurrency(), 1u));
+    TaskManager(bool dedicatedTransferRequired,
+                bool dedicatedComputeRequired,
+                size_t threadPoolSize = std::max(std::thread::hardware_concurrency(), 1u));
 
     TaskManager(TaskManager const&) = delete;
 
@@ -78,6 +82,7 @@ private:
 
     size_t executorCount_;
     std::unique_ptr<Executor[]> executors_;
+    std::unique_ptr<PurposeBits[]> executorPurposes_;
     std::atomic<size_t> executorIndexToStealTask_;
 
     TaskPoolMC taskPoolForStrand_;

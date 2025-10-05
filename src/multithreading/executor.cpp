@@ -23,9 +23,8 @@
 namespace cyclonite::multithreading {
 namespace {
 thread_local Executor* _mainThreadExecutor = nullptr;
-thread_local Executor* _renderThreadExecutor = nullptr;
-thread_local Executor* _transferThreadExecutor = nullptr;
 thread_local Executor* _threadExecutor = nullptr;
+thread_local PurposeBits _executorPurposeBits = PurposeBits{};
 }
 
 /*static*/ auto Executor::isInMainThread() -> bool
@@ -35,12 +34,17 @@ thread_local Executor* _threadExecutor = nullptr;
 
 /*static*/ auto Executor::isInRenderThread() -> bool
 {
-    return _renderThreadExecutor != nullptr;
+    return _executorPurposeBits.test(Purpose::Render);
 }
 
 /*static*/ auto Executor::isInTransferThread() -> bool
 {
-    return _transferThreadExecutor != nullptr;
+    return _executorPurposeBits.test(Purpose::Transfer);
+}
+
+/*static*/ auto Executor::isInComputeThread() -> bool
+{
+    return _executorPurposeBits.test(Purpose::Compute);
 }
 
 /*static*/ auto Executor::threadExecutor() -> Executor&
@@ -49,14 +53,13 @@ thread_local Executor* _threadExecutor = nullptr;
     return *_threadExecutor;
 }
 
-Executor::Executor(TaskManager& taskManager, PurposeBits purposeBits)
+Executor::Executor(TaskManager& taskManager)
   : threadId_{}
   , taskManager_{ &taskManager }
   , taskPoolSC_{ config_t::spmc_queue_max_size_v } // one producer consumes from pool
   , taskPoolMC_{ config_t::mpsc_queue_max_size_v } // many producers can consume from pool
   , spmcQueue_{ nullptr }
   , mpscQueue_{ nullptr }
-  , purposeBits_{ purposeBits }
 {
     spmcQueue_ = std::make_unique<TaskStealingDeque<Task*>>(config_t::spmc_queue_max_size_v);
     mpscQueue_ = std::make_unique<MpscDeque<Task*>>(config_t::mpsc_queue_max_size_v);
@@ -67,25 +70,19 @@ auto Executor::canSubmit() const -> bool
     return (_threadExecutor != nullptr) && threadId_ == std::this_thread::get_id();
 }
 
-void Executor::_setThreadExecutorPtr()
+void Executor::_setThreadExecutorPtr(PurposeBits purpose)
 {
     assert(_threadExecutor == nullptr);
     _threadExecutor = this;
 
-    if (purposeBits_.test(Purpose::Render) || purposeBits_.test(Purpose::Compute)) {
-        _renderThreadExecutor = this;
-    }
-
-    if (purposeBits_.test(Purpose::Transfer)) {
-        _transferThreadExecutor = this;
-    }
+    _executorPurposeBits = purpose;
 
     threadId_ = std::this_thread::get_id();
 }
 
 void Executor::_resetThreadExecutorPtr()
 {
-    _renderThreadExecutor = nullptr;
+    _executorPurposeBits = PurposeBits{};
     _threadExecutor = nullptr;
     threadId_ = std::thread::id{};
 }
@@ -119,8 +116,8 @@ auto Executor::pendingTask() -> std::optional<Task>
         task = std::move(*strandTask.value());
     } else {
         for (auto i = size_t{ 0 }, count = taskManager().executorCount(); i < count; i++) {
-            auto executorIndex = TaskManager().executorIndexToStealTask();
-            auto& executors = TaskManager().executors();
+            auto executorIndex = taskManager().executorIndexToStealTask();
+            auto& executors = taskManager().executors();
             auto& executor = executors[executorIndex];
 
             if (executor.ownerThreadId() == std::this_thread::get_id())
@@ -146,12 +143,12 @@ auto Executor::runOne() -> bool
     return false;
 }
 
-void Executor::run()
+void Executor::run(PurposeBits purpose /* = PurposeBits{ Purpose::General }*/)
 {
     if (isInMainThread())
         return;
 
-    _setThreadExecutorPtr();
+    _setThreadExecutorPtr(purpose);
 
     BEGIN_EXCEPTION_PROPAGATION();
 
@@ -169,9 +166,9 @@ void Executor::run()
     _resetThreadExecutorPtr();
 }
 
-void Executor::operator()()
+void Executor::operator()(PurposeBits purpose /*= PurposeBits{ Purpose::General }*/)
 {
-    run();
+    run(purpose);
 }
 
 auto Executor::renderExecutor() -> Executor&
@@ -181,10 +178,12 @@ auto Executor::renderExecutor() -> Executor&
 
 auto Executor::transferExecutor() -> Executor&
 {
-    auto& tm = taskManager();
-    auto executorIndex = tm.executorCount() > TaskManager::renderExecutorIndex ? TaskManager::renderExecutorIndex + 1
-                                                                               : TaskManager::renderExecutorIndex;
-    return tm.executors()[executorIndex];
+    return taskManager().executors()[TaskManager::transferExecutorIndex];
+}
+
+auto Executor::computeExecutor() -> Executor&
+{
+    return taskManager().executors()[TaskManager::computeExecutorIndex];
 }
 
 void Executor::notifyNewTask()

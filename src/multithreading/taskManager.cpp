@@ -4,28 +4,64 @@
 #include <cassert>
 
 namespace cyclonite::multithreading {
+size_t TaskManager::renderExecutorIndex = std::numeric_limits<size_t>::max();
+size_t TaskManager::computeExecutorIndex = std::numeric_limits<size_t>::max();
+size_t TaskManager::transferExecutorIndex = std::numeric_limits<size_t>::max();
+
 namespace {
-auto executorPurpose(size_t i, size_t count, size_t renderIndex) -> PurposeBits
+auto setExecutorIndies(PurposeBits requirements,
+                       size_t executorCount,
+                       size_t& renderIdx,
+                       size_t& transferIdx,
+                       size_t& computeIdx) -> void
+{
+    auto lastAvailableDedicatedExecutorIdx = size_t{ 1 }; // main thread executor is counted
+
+    auto dedicatedTransferRequired = requirements.test(Purpose::Transfer);
+    auto dedicatedComputeRequired = requirements.test(Purpose::Compute);
+    auto dedicatedRenderRequired = requirements.test(Purpose::Render);
+
+    if (dedicatedRenderRequired && lastAvailableDedicatedExecutorIdx < executorCount) {
+        renderIdx = lastAvailableDedicatedExecutorIdx++;
+    }
+
+    if (dedicatedTransferRequired && lastAvailableDedicatedExecutorIdx < executorCount) {
+        transferIdx = lastAvailableDedicatedExecutorIdx++;
+    } else {
+        transferIdx = renderIdx;
+    }
+
+    if (dedicatedComputeRequired && lastAvailableDedicatedExecutorIdx < executorCount) {
+        computeIdx = lastAvailableDedicatedExecutorIdx++;
+    } else {
+        computeIdx = renderIdx;
+    }
+}
+
+auto executorPurpose(size_t i, size_t renderIdx, size_t transferIdx, size_t computeIdx) -> PurposeBits
 {
     auto purposeBits = PurposeBits{ Purpose::General };
 
-    if (i == renderIndex) {
-        purposeBits.set(Purpose::Render, Purpose::Compute);
-        if (count <= (renderIndex + 1)) {
-            purposeBits.set(Purpose::Transfer);
-        }
-    } else if (i == (renderIndex + 1)) {
+    if (i == renderIdx)
+        purposeBits.set(Purpose::Render);
+
+    if (i == transferIdx)
+        purposeBits.set(Purpose::Transfer);
+
+    if (i == computeIdx)
         purposeBits.set(Purpose::Compute);
-    }
 
     return purposeBits;
 }
 }
 
-TaskManager::TaskManager(size_t threadPoolSize /*= std::max(std::thread::hardware_concurrency(), 1u)*/)
+TaskManager::TaskManager(bool dedicatedTransferRequired,
+                         bool dedicatedComputeRequired,
+                         size_t threadPoolSize /*= std::max(std::thread::hardware_concurrency(), 1u)*/)
   : threadPool_{}
   , executorCount_{ threadPoolSize + 1 } // plus main thread
   , executors_{ std::make_unique_for_overwrite<Executor[]>(executorCount_) }
+  , executorPurposes_{ std::make_unique_for_overwrite<PurposeBits[]>(executorCount_) }
   , executorIndexToStealTask_{ 0 }
   , taskPoolForStrand_{ config_t::strand_queue_max_size_v }
   , strandDeque_{ nullptr }
@@ -40,10 +76,20 @@ TaskManager::TaskManager(size_t threadPoolSize /*= std::max(std::thread::hardwar
 {
     threadPool_.reserve(threadPoolSize);
 
+    auto executorRequirements = PurposeBits{ Purpose::Render };
+    if (dedicatedComputeRequired)
+        executorRequirements.set(Purpose::Compute);
+    if (dedicatedTransferRequired)
+        executorRequirements.set(Purpose::Transfer);
+
     assert(executorCount_ >= 2);
+
+    setExecutorIndies(
+      executorRequirements, executorCount_, renderExecutorIndex, transferExecutorIndex, computeExecutorIndex);
+
     for (auto i = size_t{ 0 }; i < executorCount_; i++) {
-        auto purpose = executorPurpose(i, executorCount_, renderExecutorIndex);
-        new (&executors_[i]) Executor{ *this, purpose };
+        executorPurposes_[i] = executorPurpose(i, renderExecutorIndex, transferExecutorIndex, computeExecutorIndex);
+        new (&executors_[i]) Executor{ *this };
     }
     executors_[0]._setAsMainThreadExecutor();
 }
@@ -62,7 +108,9 @@ void TaskManager::start()
         if (executors_[i].canSubmit()) {
             executors_[i]();
         } else {
-            threadPool_.emplace_back([](Executor& executor) -> void { executor(); }, std::ref(executors_[i]));
+            threadPool_.emplace_back([](Executor& executor, PurposeBits purpose) -> void { executor(purpose); },
+                                     std::ref(executors_[i]),
+                                     executorPurposes_[i]);
         }
     }
 }

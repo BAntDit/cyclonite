@@ -20,7 +20,7 @@ class Executor
 public:
     Executor() = default;
 
-    Executor(TaskManager& taskManager, PurposeBits purposeBits);
+    explicit Executor(TaskManager& taskManager);
 
     Executor(Executor const&) = delete;
 
@@ -32,9 +32,9 @@ public:
 
     auto operator=(Executor&&) -> Executor& = default;
 
-    void operator()();
+    void operator()(PurposeBits purpose = PurposeBits{ Purpose::General });
 
-    void run();
+    void run(PurposeBits purpose = PurposeBits{ Purpose::General });
 
     auto runOne() -> bool;
 
@@ -46,8 +46,6 @@ public:
 
     [[nodiscard]] auto canSubmit() const -> bool;
 
-    [[nodiscard]] auto purpose() const -> PurposeBits { return purposeBits_; }
-
     [[nodiscard]] auto taskManager() const -> TaskManager const& { return *taskManager_; }
     [[nodiscard]] auto taskManager() -> TaskManager& { return *taskManager_; }
 
@@ -56,6 +54,8 @@ public:
     static auto isInRenderThread() -> bool;
 
     static auto isInTransferThread() -> bool;
+
+    static auto isInComputeThread() -> bool;
 
     static auto threadExecutor() -> Executor&;
 
@@ -74,6 +74,8 @@ private:
 
     auto transferExecutor() -> Executor&;
 
+    auto computeExecutor() -> Executor&;
+
     void notifyNewTask();
 
     [[nodiscard]] auto poolSC() const -> TaskPoolSC const& { return taskPoolSC_; }
@@ -88,7 +90,7 @@ private:
     [[nodiscard]] auto mpscQueue() const -> MpscDeque<task_ptr_t> const& { return *mpscQueue_; }
     [[nodiscard]] auto mpscQueue() -> MpscDeque<task_ptr_t>& { return *mpscQueue_; }
 
-    void _setThreadExecutorPtr();
+    void _setThreadExecutorPtr(PurposeBits purpose);
     void _resetThreadExecutorPtr();
 
     void _setAsMainThreadExecutor();
@@ -101,7 +103,6 @@ private:
     TaskPoolMC taskPoolMC_;
     std::unique_ptr<TaskStealingDeque<task_ptr_t>> spmcQueue_;
     std::unique_ptr<MpscDeque<task_ptr_t>> mpscQueue_;
-    PurposeBits purposeBits_;
 };
 
 template<typename F>
@@ -110,7 +111,7 @@ auto Executor::submitTask(F&& f, Purpose purpose /*= Purpose::General*/) -> std:
 {
     auto future = std::future<std::invoke_result_t<F>>{};
 
-    if (purpose == Purpose::Render || purpose == Purpose::Compute) {
+    if (purpose == Purpose::Render) {
         if (isInRenderThread()) {
             future = submitTaskMPSC(std::forward<F>(f));
         } else {
@@ -121,6 +122,12 @@ auto Executor::submitTask(F&& f, Purpose purpose /*= Purpose::General*/) -> std:
             future = submitTaskMPSC(std::forward<F>(f));
         } else {
             future = transferExecutor().submitTaskMPSC(std::forward<F>(f));
+        }
+    } else if (purpose == Purpose::Compute) {
+        if (isInComputeThread()) {
+            future = submitTaskMPSC(std::forward<F>(f));
+        } else {
+            future = computeExecutor().submitTaskMPSC(std::forward<F>(f));
         }
     } else {
         assert(purpose == Purpose::General);
