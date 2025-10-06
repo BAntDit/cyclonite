@@ -5,6 +5,8 @@
 #include "vkDevice.h"
 #include "core/hashTable.h"
 #include "gfx/resourceManager.h"
+#include "multithreading/executor.h"
+#include "multithreading/taskManager.h"
 #include "vkException.h"
 #include <array>
 #include <cstring>
@@ -483,12 +485,49 @@ auto Device::createCommandPool(uint32_t queueFamilyIndex, CommandPoolFlagBits fl
     return result;
 }
 
-auto Device::acquireQueueSubmission(multithreading::Purpose purpose,
-                                    uint32_t queueFamilyIndex,
-                                    CommandPoolFlags flags) -> core::ResourceSharedRef
+namespace {
+auto getPurposeBits(multithreading::Purpose purpose) -> multithreading::PurposeBits
 {
-    // multithreading::PurposeBits
-    // queueSubmissionRingMap_.find()
+    assert(purpose != multithreading::Purpose::General);
+    return multithreading::Executor::threadExecutor().taskManager().getExecutorPurposeBits(purpose);
+}
+}
+
+auto Device::acquireQueueSubmission(uint64_t frameNumber,
+                                    multithreading::Purpose purpose,
+                                    CommandPoolFlagBits flags) -> core::ResourceSharedRef
+{
+    // TODO:: submit into necesessary thread
+    assert(purpose != multithreading::Purpose::General);
+    auto queueFamilyIndex = uint32_t{ 0 };
+
+    switch (purpose) {
+        case multithreading::Purpose::Render:
+            queueFamilyIndex = graphicsQueueFamilyIndex_;
+            break;
+        case multithreading::Purpose::Compute:
+            queueFamilyIndex = computeQueueFamilyIndex_;
+            break;
+        case multithreading::Purpose::Transfer:
+            queueFamilyIndex = transferQueueFamilyIndex_;
+            break;
+        default:
+            assert(false);
+    }
+
+    auto purposeBits = getPurposeBits(purpose);
+
+    auto queueSubmissionRef = core::ResourceSharedRef{};
+    if (auto it = queueSubmissionRingMap_.find(purposeBits.value, queueFamilyIndex, flags.value);
+        it == queueSubmissionRingMap_.end()) {
+        auto&& [_, ring] = *it;
+
+        auto&& view = ring.reserveToWrite(frameNumber, 1);
+
+        // if (view.empty())
+    }
+
+    return queueSubmissionRef;
 }
 
 Device::~Device()

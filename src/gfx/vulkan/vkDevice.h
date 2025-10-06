@@ -91,9 +91,9 @@ public:
     [[nodiscard]] auto createCommandPool(uint32_t queueFamilyIndex,
                                          CommandPoolFlagBits flags) -> core::ResourceUniqueRef;
 
-    [[nodiscard]] auto acquireQueueSubmission(multithreading::Purpose purpose,
-                                              uint32_t queueFamilyIndex,
-                                              CommandPoolFlags flags) -> core::ResourceSharedRef;
+    [[nodiscard]] auto acquireQueueSubmission(uint64_t frameNumber,
+                                              multithreading::Purpose purpose,
+                                              CommandPoolFlagBits flags) -> core::ResourceSharedRef;
 
     using core::ResourceBase::resourceBase;
 
@@ -117,9 +117,9 @@ private:
 
     core::StaticHashTable<queue_submission_ring_t,
                           config_t::max_queue_submission_ring_count_v,
-                          multithreading::PurposeBits,
+                          std::underlying_type_t<multithreading::Purpose>,
                           uint32_t,
-                          CommandPoolFlagBits>
+                          std::underlying_type_t<gfx::CommandPoolFlags>>
       queueSubmissionRingMap_;
 };
 }

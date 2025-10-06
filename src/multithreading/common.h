@@ -75,10 +75,10 @@ auto DequeData<DequeItemType>::load(size_t index) const noexcept -> DequeItemTyp
 
 enum class Purpose : uint8_t
 {
-    General = 1 >> 0,
-    Render = 1 >> 1,
-    Compute = 1 >> 2,
-    Transfer = 1 >> 3
+    General = 1 << 0,
+    Render = 1 << 1,
+    Compute = 1 << 2,
+    Transfer = 1 << 3
 };
 using PurposeBits = metrix::enum_bits<Purpose>;
 

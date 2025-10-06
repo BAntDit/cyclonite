@@ -57,6 +57,8 @@ public:
         requires std::is_invocable_v<F>
     static auto strandTask(F&& f) -> std::future<std::invoke_result_t<F>>;
 
+    [[nodiscard]] auto getExecutorPurposeBits(Purpose purpose) const -> PurposeBits;
+
 private:
     [[nodiscard]] auto executors() const -> std::unique_ptr<Executor[]> const& { return executors_; }
     [[nodiscard]] auto executors() -> std::unique_ptr<Executor[]>& { return executors_; }

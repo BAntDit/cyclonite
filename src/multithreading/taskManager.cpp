@@ -152,6 +152,21 @@ void TaskManager::notifyNoTasks()
     noTasks_ = true;
 }
 
+auto TaskManager::getExecutorPurposeBits(Purpose purpose) const -> PurposeBits
+{
+    auto purposeBits = PurposeBits{ Purpose::General };
+
+    if (purpose == multithreading::Purpose::Render) {
+        purposeBits = executorPurposes_[renderExecutorIndex];
+    } else if (purpose == multithreading::Purpose::Compute) {
+        purposeBits = executorPurposes_[computeExecutorIndex];
+    } else if (purpose == multithreading::Purpose::Transfer) {
+        purposeBits = executorPurposes_[transferExecutorIndex];
+    }
+
+    return purposeBits;
+}
+
 #if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
 auto TaskManager::getLastException() -> std::exception_ptr
 {
