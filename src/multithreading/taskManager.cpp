@@ -89,7 +89,7 @@ TaskManager::TaskManager(bool dedicatedTransferRequired,
 
     for (auto i = size_t{ 0 }; i < executorCount_; i++) {
         executorPurposes_[i] = executorPurpose(i, renderExecutorIndex, transferExecutorIndex, computeExecutorIndex);
-        new (&executors_[i]) Executor{ *this };
+        new (&executors_[i]) Executor{ *this, i };
     }
     executors_[0]._setAsMainThreadExecutor();
 }

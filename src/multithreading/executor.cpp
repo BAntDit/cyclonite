@@ -53,8 +53,9 @@ thread_local PurposeBits _executorPurposeBits = PurposeBits{};
     return *_threadExecutor;
 }
 
-Executor::Executor(TaskManager& taskManager)
-  : threadId_{}
+Executor::Executor(TaskManager& taskManager, size_t executorIndex)
+  : executorIndex_{ executorIndex }
+  , threadId_{}
   , taskManager_{ &taskManager }
   , taskPoolSC_{ config_t::spmc_queue_max_size_v } // one producer consumes from pool
   , taskPoolMC_{ config_t::mpsc_queue_max_size_v } // many producers can consume from pool
@@ -68,6 +69,11 @@ Executor::Executor(TaskManager& taskManager)
 auto Executor::canSubmit() const -> bool
 {
     return (_threadExecutor != nullptr) && threadId_ == std::this_thread::get_id();
+}
+
+auto Executor::matchesPurpose(Purpose taskPurpose) const -> bool
+{
+    return taskManager_->executorPurposes_[executorIndex_].test(taskPurpose);
 }
 
 void Executor::_setThreadExecutorPtr(PurposeBits purpose)

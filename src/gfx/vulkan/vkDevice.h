@@ -16,7 +16,7 @@
 #include "handle.h"
 #include "multithreading/common.h"
 #include "vmaUsage.h"
-#include <glm/ext/scalar_uint_sized.hpp>
+#include <array>
 #include <memory>
 #include <string_view>
 #include <thread>
@@ -91,8 +91,7 @@ public:
     [[nodiscard]] auto createCommandPool(uint32_t queueFamilyIndex,
                                          CommandPoolFlagBits flags) -> core::ResourceUniqueRef;
 
-    [[nodiscard]] auto acquireQueueSubmission(uint64_t frameNumber,
-                                              multithreading::Purpose purpose,
+    [[nodiscard]] auto acquireQueueSubmission(multithreading::Purpose purpose,
                                               CommandPoolFlagBits flags) -> core::ResourceSharedRef;
 
     using core::ResourceBase::resourceBase;
@@ -112,8 +111,11 @@ private:
     Handle<VkQueue> computeQueue_;
     VmaAllocator vmaAllocator_;
 
-    using queue_submission_ring_t =
-      core::ConditionalRingBuffer<core::ResourceSharedRef, uint64_t, config_t::queue_submission_ring_size_v>;
+    struct queue_submission_ring_t
+    {
+        std::array<core::ResourceSharedRef, config_t::queue_submission_ring_size_v> submissions;
+        uint64_t submissionIndex;
+    };
 
     core::StaticHashTable<queue_submission_ring_t,
                           config_t::max_queue_submission_ring_count_v,

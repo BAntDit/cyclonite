@@ -20,7 +20,7 @@ class Executor
 public:
     Executor() = default;
 
-    explicit Executor(TaskManager& taskManager);
+    Executor(TaskManager& taskManager, size_t executorIndex);
 
     Executor(Executor const&) = delete;
 
@@ -45,6 +45,8 @@ public:
     [[nodiscard]] auto ownerThreadId() const -> std::thread::id { return threadId_; }
 
     [[nodiscard]] auto canSubmit() const -> bool;
+
+    [[nodiscard]] auto matchesPurpose(Purpose taskPurpose) const -> bool;
 
     [[nodiscard]] auto taskManager() const -> TaskManager const& { return *taskManager_; }
     [[nodiscard]] auto taskManager() -> TaskManager& { return *taskManager_; }
@@ -97,6 +99,7 @@ private:
     void _resetMainThreadExecutor();
 
 private:
+    size_t executorIndex_;
     std::thread::id threadId_;
     TaskManager* taskManager_;
     TaskPoolSC taskPoolSC_;

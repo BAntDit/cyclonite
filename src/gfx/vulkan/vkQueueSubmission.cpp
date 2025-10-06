@@ -49,11 +49,13 @@ auto QueueSubmission::signal() const -> core::ResourceSharedRef
     return batches_.back().signal; // cause last batch finishes whole execution
 }
 
-void QueueSubmission::waitOnCpu()
+auto QueueSubmission::waitOnCpu() -> uint64_t
 {
     // assert(multithreading::Executor::isInRenderThread());
     assert(state_.test(QueueSubmissionStateFlags::Pending));
     assert(signal().valid());
+
+    auto completedValue = uint64_t{ 0 };
 
     if (signal().as<gfx::Signal>().waitOnCpu(competitionValue_, std::numeric_limits<uint64_t>::max())) {
         state_.reset(QueueSubmissionStateFlags::Pending);
@@ -61,7 +63,11 @@ void QueueSubmission::waitOnCpu()
         if (!state_.test(QueueSubmissionStateFlags::Invalid)) {
             state_.value = metrix::value_cast(QueueSubmissionStateFlags::Executable);
         }
+
+        completedValue = competitionValue_;
     }
+
+    return completedValue;
 }
 
 void QueueSubmission::reset()

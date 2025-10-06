@@ -16,6 +16,10 @@ concept QueueSubmissionConcept = requires(T t) {
     { t.endRecording() } -> std::same_as<void>;
 
     { t.resourceBase() } -> std::same_as<core::ResourceBase*>;
+
+    { t.isPending() } -> std::same_as<bool>;
+
+    { t.waitOnCpu() } -> std::same_as<uint64_t>;
 };
 
 template<QueueSubmissionConcept PlatformImplementation>
@@ -26,8 +30,10 @@ public:
 
     using PlatformImplementation::beginRecording;
     using PlatformImplementation::endRecording;
+    using PlatformImplementation::isPending;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::resourceBase;
+    using PlatformImplementation::waitOnCpu;
 };
 }
 

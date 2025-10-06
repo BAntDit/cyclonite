@@ -38,7 +38,7 @@ public:
 
     void reset();
 
-    void waitOnCpu();
+    auto waitOnCpu() -> uint64_t;
 
     // TODO::
     // start recording method (clears submit info) -> recording state
@@ -53,6 +53,8 @@ public:
     {
         return state_.value == metrix::value_cast(QueueSubmissionStateFlags::Executable);
     }
+
+    [[nodiscard]] auto isPending() const -> bool { return state_.test(QueueSubmissionStateFlags::Pending); }
 
     using core::ResourceBase::resourceBase;
 
