@@ -29,19 +29,28 @@ public:
 
     auto operator=(QueueSubmissionManager&&) -> QueueSubmissionManager& = default;
 
+    [[nodiscard]] auto acquireQueueSubmission(multithreading::Purpose purpose,
+                                              CommandPoolFlagBits flags) -> core::ResourceSharedRef;
+
 private:
     using queue_submission_ring_t = std::array<core::ResourceSharedRef, config_t::queue_submission_ring_size_v>;
 
     using queue_submission_map_t = core::StaticHashTable<queue_submission_ring_t,
-                                          config_t::max_queue_submission_ring_count_v,
-                                          std::underlying_type_t<multithreading::Purpose>,
-                                          uint32_t,
-                                          std::underlying_type_t<gfx::CommandPoolFlags>>;
+                                                         config_t::max_queue_submission_ring_count_v,
+                                                         std::underlying_type_t<multithreading::Purpose>,
+                                                         uint32_t,
+                                                         std::underlying_type_t<gfx::CommandPoolFlags>>;
+
+    using completion_map_t = core::StaticHashTable<uint64_t,
+                                                   config_t::max_queue_submission_ring_count_v,
+                                                   std::underlying_type_t<multithreading::Purpose>,
+                                                   uint32_t,
+                                                   std::underlying_type_t<gfx::CommandPoolFlags>>;
 
     core::ResourceSharedRef deviceRef_;
 
-    // TODO:: remove unique ptr when make queue hash table moveable
-    std::unique_ptr<queue_submission_map_t> queueSubmissionRingMap_;
+    queue_submission_map_t queueSubmissionRingMap_;
+    completion_map_t completedFrames_;
 
     uint64_t currentFrameIndex_;
 };

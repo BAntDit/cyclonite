@@ -485,82 +485,16 @@ auto Device::createCommandPool(uint32_t queueFamilyIndex, CommandPoolFlagBits fl
     return result;
 }
 
-namespace {
-auto getPurposeBits(multithreading::Purpose purpose) -> multithreading::PurposeBits
+auto Device::createQueueSubmission(uint32_t queueFamilyIndex,
+                                   CommandPoolFlagBits commandPoolFlags) -> core::ResourceUniqueRef
 {
-    assert(purpose != multithreading::Purpose::General);
-    return multithreading::Executor::threadExecutor().taskManager().getExecutorPurposeBits(purpose);
-}
-}
+    auto result = core::ResourceUniqueRef{};
 
-auto Device::acquireQueueSubmission(multithreading::Purpose purpose,
-                                    CommandPoolFlagBits flags) -> core::ResourceSharedRef
-{
-    // TODO:: add queue manager
-    // TODO:: replace submission index with common frame index
-    // TODO:: add queue submission id
-    // TODO:: resource dependency must be submission id, execution index
+    auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 
-    auto acquireQueueSubmissionTask = [=, this]() -> core::ResourceSharedRef {
-        assert(purpose != multithreading::Purpose::General);
-        auto queueFamilyIndex = uint32_t{ 0 };
+    auto deviceRef = getSharedFromThis(this);
 
-        switch (purpose) {
-            case multithreading::Purpose::Render:
-                queueFamilyIndex = graphicsQueueFamilyIndex_;
-                break;
-            case multithreading::Purpose::Compute:
-                queueFamilyIndex = computeQueueFamilyIndex_;
-                break;
-            case multithreading::Purpose::Transfer:
-                queueFamilyIndex = transferQueueFamilyIndex_;
-                break;
-            default:
-                assert(false);
-        }
-
-        auto purposeBits = getPurposeBits(purpose);
-
-        auto queueSubmissionRef = core::ResourceSharedRef{};
-        if (auto it = queueSubmissionRingMap_.find(purposeBits.value, queueFamilyIndex, flags.value);
-            it != queueSubmissionRingMap_.end()) {
-            auto&& [_, ring] = *it;
-            auto& [submissions, index] = ring;
-            auto& submissionRef = submissions[index++ % submissions.size()];
-
-            if (submissionRef.valid()) {
-                auto& queueSubmission = submissionRef.as<gfx::QueueSubmission>();
-                if (queueSubmission.isPending()) {
-                    [[maybe_unused]] auto completedFrame = queueSubmission.waitOnCpu();
-                }
-            } else {
-            }
-            // queueSubmission
-            // auto&& view = ring.reserveToWrite(frameNumber, 1);
-
-            // if (view.empty())
-
-            queueSubmissionRef = submissionRef;
-        } else {
-            auto [newIt, success] =
-              queueSubmissionRingMap_.add(queue_submission_ring_t{}, purposeBits.value, queueFamilyIndex, flags.value);
-            assert(success);
-
-            auto&& [_, ring] = *newIt;
-            auto& [submissions, index] = ring;
-            auto& submissionRef = submissions[index++ % submissions.size()];
-        }
-
-        return queueSubmissionRef;
-    };
-
-    auto result = core::ResourceSharedRef{};
-
-    if (multithreading::Executor::threadExecutor().matchesPurpose(purpose)) {
-        result = acquireQueueSubmissionTask();
-    } else {
-        result = multithreading::TaskManager::submitTask(acquireQueueSubmissionTask, purpose).get();
-    }
+    result = resManager.allocResource<gfx::QueueSubmission>(deviceRef, queueFamilyIndex, commandPoolFlags);
 
     return result;
 }

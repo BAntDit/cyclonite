@@ -330,8 +330,7 @@ auto StaticHashTable<DataType, TableSize, Key...>::operator=(StaticHashTable con
 {
     clear();
 
-    auto add_value =
-      []<size_t... I>(auto& self, auto const& k, auto const& v, std::index_sequence<I...>) -> bool {
+    auto add_value = []<size_t... I>(auto& self, auto const& k, auto const& v, std::index_sequence<I...>) -> bool {
         auto [_, success] = self.add(v, std::get<I>(k)...);
         return success;
     };

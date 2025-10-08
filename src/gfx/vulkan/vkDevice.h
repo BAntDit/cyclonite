@@ -88,8 +88,8 @@ public:
     [[nodiscard]] auto createCommandPool(uint32_t queueFamilyIndex,
                                          CommandPoolFlagBits flags) -> core::ResourceUniqueRef;
 
-    [[nodiscard]] auto acquireQueueSubmission(multithreading::Purpose purpose,
-                                              CommandPoolFlagBits flags) -> core::ResourceSharedRef;
+    [[nodiscard]] auto createQueueSubmission(uint32_t queueFamilyIndex,
+                                             CommandPoolFlagBits commandPoolFlags) -> core::ResourceUniqueRef;
 
     using core::ResourceBase::resourceBase;
 
@@ -107,19 +107,6 @@ private:
     Handle<VkQueue> transferQueue_;
     Handle<VkQueue> computeQueue_;
     VmaAllocator vmaAllocator_;
-
-    struct queue_submission_ring_t
-    {
-        std::array<core::ResourceSharedRef, config_t::queue_submission_ring_size_v> submissions;
-        uint64_t submissionIndex;
-    };
-
-    core::StaticHashTable<queue_submission_ring_t,
-                          config_t::max_queue_submission_ring_count_v,
-                          std::underlying_type_t<multithreading::Purpose>,
-                          uint32_t,
-                          std::underlying_type_t<gfx::CommandPoolFlags>>
-      queueSubmissionRingMap_;
 };
 }
 
