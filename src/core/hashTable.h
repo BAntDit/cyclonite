@@ -16,6 +16,7 @@
 #include <type_traits>
 #include <utility>
 
+// TODO:: make possible to move and copy hash table
 namespace cyclonite::core {
 namespace internal {
 template<typename Key>

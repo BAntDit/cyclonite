@@ -10,16 +10,13 @@
 #include "core/resourceBase.h"
 #include "core/resourceSharedRef.h"
 #include "core/resourceUniqueRef.h"
-#include "core/ringBuffer.h"
 #include "gfx/common.h"
 #include "gfx/config.h"
 #include "handle.h"
 #include "multithreading/common.h"
 #include "vmaUsage.h"
 #include <array>
-#include <memory>
 #include <string_view>
-#include <thread>
 
 #include "vkSignal.h"
 

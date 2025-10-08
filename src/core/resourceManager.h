@@ -263,6 +263,7 @@ void ResourceManager<ResourceTypes...>::releaseResourceImmediate(ResourceId id)
     free(id.index());
 }
 
+// TODO:: remove deferred release
 template<ResourceConcept... ResourceTypes>
 void ResourceManager<ResourceTypes...>::releaseResourceDeferred(ResourceId id)
 {

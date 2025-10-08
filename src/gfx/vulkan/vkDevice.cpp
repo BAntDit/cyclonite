@@ -186,7 +186,7 @@ Device::Device(core::ResourceManagerBase* resourceManager,
                VkPhysicalDevice vkPhysicalDevice,
                VkPhysicalDeviceProperties const& physicalDeviceProperties,
                std::vector<const char*> const& requiredExtensions)
-  : core::ResourceBase{ resourceManager, resourceId, true }
+  : core::ResourceBase{ resourceManager, resourceId, false }
   , core::EnableRefFromThis{}
   , vkInstance_{ vkInstance }
   , vkPhysicalDevice_{ vkPhysicalDevice }
