@@ -10,6 +10,8 @@
 #include "gfx/submissionBatchDependency.h"
 #include <vector>
 
+#include "multithreading/executor.h"
+
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 class QueueSubmission : public core::ResourceBase
@@ -47,7 +49,11 @@ public:
 
     // end recording (prepares submit info) -> executable state
 
+    [[nodiscard]] auto purpose() const -> multithreading::Purpose;
+
     [[nodiscard]] auto signal() const -> core::ResourceSharedRef;
+
+    [[nodiscard]] auto isInInitialState() const -> bool { return state_.test(QueueSubmissionStateFlags::Initial); }
 
     [[nodiscard]] auto isExecutable() const -> bool
     {

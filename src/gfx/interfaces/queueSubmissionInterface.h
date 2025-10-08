@@ -6,6 +6,7 @@
 #define CYCLONITE_GFX_QUEUE_SUBMISSION_INTERFACE_H
 
 #include "core/resourceSharedRef.h"
+#include "multithreading/common.h"
 #include <concepts>
 
 namespace cyclonite::gfx::interfaces {
@@ -19,7 +20,11 @@ concept QueueSubmissionConcept = requires(T t) {
 
     { t.isPending() } -> std::same_as<bool>;
 
+    { t.isInInitialState() } -> std::same_as<bool>;
+
     { t.waitOnCpu() } -> std::same_as<uint64_t>;
+
+    { t.purpose() } -> std::same_as<multithreading::Purpose>;
 };
 
 template<QueueSubmissionConcept PlatformImplementation>
@@ -34,6 +39,8 @@ public:
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::resourceBase;
     using PlatformImplementation::waitOnCpu;
+    using PlatformImplementation::isInInitialState;
+    using PlatformImplementation::purpose;
 };
 }
 

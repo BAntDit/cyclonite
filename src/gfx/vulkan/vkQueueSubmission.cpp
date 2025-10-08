@@ -84,5 +84,25 @@ void QueueSubmission::reset()
     competitionValue_ = 0;
     state_.value = metrix::value_cast(QueueSubmissionStateFlags::Initial);
 }
+
+auto QueueSubmission::purpose() const -> multithreading::Purpose
+{
+    auto purpose = multithreading::Purpose{ multithreading::Purpose::General };
+
+    auto& pool = commandPool_.as<type_traits::platform_implementation_t<gfx::CommandPool>>();
+    auto& device = pool.device().as<type_traits::platform_implementation_t<gfx::Device>>();
+    auto familyIndex = pool.queueFamilyIndex();
+
+    if (familyIndex == device.graphicsQueueFamilyIndex()) {
+        purpose = multithreading::Purpose::Render;
+    } else if (familyIndex == device.computeQueueFamilyIndex()) {
+        purpose = multithreading::Purpose::Compute;
+    } else if (familyIndex == device.transferQueueFamilyIndex()) {
+        purpose = multithreading::Purpose::Transfer;
+    }
+    assert(purpose != multithreading::Purpose::General);
+
+    return purpose;
+}
 }
 #endif
