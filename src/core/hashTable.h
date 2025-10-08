@@ -331,13 +331,13 @@ auto StaticHashTable<DataType, TableSize, Key...>::operator=(StaticHashTable con
     clear();
 
     auto add_value =
-      []<size_t... I>(auto& self, auto const& k, auto const& v, std::index_sequence<size_t... I>) -> bool {
-        auto [_, success] = self.add(v, std::get<I>(k));
+      []<size_t... I>(auto& self, auto const& k, auto const& v, std::index_sequence<I...>) -> bool {
+        auto [_, success] = self.add(v, std::get<I>(k)...);
         return success;
     };
 
     for (auto const& [k, v] : rhs) {
-        [[maybe_unused]] auto success = add_value(*this, k, v);
+        [[maybe_unused]] auto success = add_value(*this, k, v, std::make_index_sequence<sizeof...(Key)>{});
         assert(success);
     }
 
@@ -350,13 +350,13 @@ auto StaticHashTable<DataType, TableSize, Key...>::operator=(StaticHashTable&& r
 {
     clear();
 
-    auto move_value = []<size_t... I>(auto& self, auto const& k, auto&& v, std::index_sequence<size_t... I>) -> bool {
-        auto [_, success] = self.add(std::move(v), std::get<I>(k));
+    auto move_value = []<size_t... I>(auto& self, auto const& k, auto&& v, std::index_sequence<I...>) -> bool {
+        auto [_, success] = self.add(std::move(v), std::get<I>(k)...);
         return success;
     };
 
     for (auto&& [k, v] : rhs) {
-        [[maybe_unused]] auto success = move_value(*this, k, v);
+        [[maybe_unused]] auto success = move_value(*this, k, v, std::make_index_sequence<sizeof...(Key)>{});
         assert(success);
     }
 
@@ -472,8 +472,8 @@ auto StaticHashTable<DataType, TableSize, Key...>::removeEntry(KeyN&&... keyN) -
 
 template<typename DataType, size_t TableSize, typename... Key>
 template<size_t... I>
-auto StaticHashTable<DataType, TableSize, Key...>::getOriginalEntry(key_type const& k, std::index_sequence<I...>) const
-  -> size_t
+auto StaticHashTable<DataType, TableSize, Key...>::getOriginalEntry(key_type const& k,
+                                                                    std::index_sequence<I...>) const -> size_t
 {
     return normalizedHash(std::get<I>(k)...);
 }
@@ -511,16 +511,16 @@ template<typename DataType, size_t TableSize, typename... Key>
 template<typename... KeyN>
 auto StaticHashTable<DataType, TableSize, Key...>::at(KeyN&&... keyN) const
   -> DataType const* requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...) {
-      auto entry = findEntry(std::make_index_sequence<sizeof...(KeyN)>{}, std::forward<KeyN>(keyN)...);
-      return (entry == table_data_t::invalid_hash_entry_v) ? nullptr : &table_data_t::data()[entry].second;
-  }
+    auto entry = findEntry(std::make_index_sequence<sizeof...(KeyN)>{}, std::forward<KeyN>(keyN)...);
+    return (entry == table_data_t::invalid_hash_entry_v) ? nullptr : &table_data_t::data()[entry].second;
+}
 
 template<typename DataType, size_t TableSize, typename... Key>
 template<typename... KeyN>
 auto StaticHashTable<DataType, TableSize, Key...>::at(KeyN&&... keyN)
   -> DataType* requires(std::is_convertible_v<std::decay_t<KeyN>, Key>&&...) {
-      return const_cast<DataType*>(std::as_const(*this).at(std::forward<KeyN>(keyN)...));
-  }
+    return const_cast<DataType*>(std::as_const(*this).at(std::forward<KeyN>(keyN)...));
+}
 
 template<typename DataType, size_t TableSize, typename... Key>
 template<typename... KeyN>
