@@ -8,10 +8,11 @@
 #include "core/resourceSharedRef.h"
 #include "multithreading/common.h"
 #include <concepts>
+#include <cstddef>
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept QueueSubmissionConcept = requires(T t) {
+concept QueueSubmissionConcept = requires(T t, uint64_t idx) {
     { t.beginRecording() } -> std::same_as<void>;
 
     { t.endRecording() } -> std::same_as<void>;
@@ -22,9 +23,19 @@ concept QueueSubmissionConcept = requires(T t) {
 
     { t.isInInitialState() } -> std::same_as<bool>;
 
+    { t.isInRecordingState() } -> std::same_as<bool>;
+
+    { t.isInBatchRecordingState() } -> std::same_as<bool>;
+
     { t.waitOnCpu() } -> std::same_as<uint64_t>;
 
     { t.purpose() } -> std::same_as<multithreading::Purpose>;
+
+    { t.beginBatchRecording(idx) } -> std::same_as<void>;
+
+    { t.endBatchRecording() } -> std::same_as<void>;
+
+    { t.reset() } -> std::same_as<void>;
 };
 
 template<QueueSubmissionConcept PlatformImplementation>
@@ -33,14 +44,19 @@ class QueueSubmissionInterface : private PlatformImplementation
 public:
     friend class core::ResourceBase;
 
+    using PlatformImplementation::beginBatchRecording;
     using PlatformImplementation::beginRecording;
+    using PlatformImplementation::endBatchRecording;
     using PlatformImplementation::endRecording;
+    using PlatformImplementation::isInBatchRecordingState;
+    using PlatformImplementation::isInInitialState;
+    using PlatformImplementation::isInRecordingState;
     using PlatformImplementation::isPending;
     using PlatformImplementation::PlatformImplementation;
+    using PlatformImplementation::purpose;
+    using PlatformImplementation::reset;
     using PlatformImplementation::resourceBase;
     using PlatformImplementation::waitOnCpu;
-    using PlatformImplementation::isInInitialState;
-    using PlatformImplementation::purpose;
 };
 }
 

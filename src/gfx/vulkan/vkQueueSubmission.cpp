@@ -45,14 +45,29 @@ void QueueSubmission::endRecording()
     state_.value = metrix::value_cast(QueueSubmissionStateFlags::Executable);
 }
 
-auto QueueSubmission::beginBatchRecording() -> uint64_t 
+void QueueSubmission::beginBatchRecording(uint64_t currentFrameIndex)
 {
     [[maybe_unused]] auto submissionPurpose = purpose();
     assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
-    // TODO:: 
+
+    assert(!state_.test(QueueSubmissionStateFlags::BatchRecording));
+    state_.set(QueueSubmissionStateFlags::BatchRecording);
+
+    auto& batch = batches_.emplace_back();
+    auto& pool = commandPool_.as<type_traits::platform_implementation_t<gfx::CommandPool>>();
+    auto& device = pool.device().as<gfx::Device>();
+
+    batch.signal = device.createSignal(gfx::SignalType::TIMELINE, currentFrameIndex);
 }
 
-// void endBatchRecording();
+void QueueSubmission::endBatchRecording()
+{
+    [[maybe_unused]] auto submissionPurpose = purpose();
+    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
+
+    assert(state_.test(QueueSubmissionStateFlags::BatchRecording));
+    state_.reset(QueueSubmissionStateFlags::BatchRecording);
+}
 
 auto QueueSubmission::signal() const -> core::ResourceSharedRef
 {
@@ -62,7 +77,9 @@ auto QueueSubmission::signal() const -> core::ResourceSharedRef
 
 auto QueueSubmission::waitOnCpu() -> uint64_t
 {
-    // assert(multithreading::Executor::isInRenderThread());
+    [[maybe_unused]] auto submissionPurpose = purpose();
+    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
+
     assert(state_.test(QueueSubmissionStateFlags::Pending));
     assert(signal().valid());
 
@@ -83,9 +100,14 @@ auto QueueSubmission::waitOnCpu() -> uint64_t
 
 void QueueSubmission::reset()
 {
-    assert(multithreading::Executor::isInRenderThread());
+    [[maybe_unused]] auto submissionPurpose = purpose();
+    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
 
     if (state_.test(QueueSubmissionStateFlags::Pending)) {
+        throw std::runtime_error("attempt to reset queue commands in pending state");
+    }
+
+    if (state_.test(QueueSubmissionStateFlags::Recording)) {
         state_.set(QueueSubmissionStateFlags::Invalid);
         return;
     }

@@ -30,7 +30,7 @@ public:
     auto operator=(QueueSubmissionManager&&) -> QueueSubmissionManager& = default;
 
     [[nodiscard]] auto acquireQueueSubmission(multithreading::Purpose purpose,
-                                              CommandPoolFlagBits flags) -> core::ResourceSharedRef;
+                                              CommandPoolFlagBits flags) -> core::ResourceSharedRef; 
 
     // TODO::
     // auto submit();

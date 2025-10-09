@@ -15,22 +15,26 @@ namespace cyclonite::gfx
 {
 class QueueSubmissionRecorder
 {
-public:
-    QueueSubmissionRecorder() = default;
+    friend class SubmissionBatchRecorder;
 
-    ~QueueSubmissionRecorder() { finish(); }
+public:
+    QueueSubmissionRecorder();
+
+    ~QueueSubmissionRecorder(); // 
 
     void setQueueSubmission(core::ResourceSharedRef submissionRef);
 
-    [[nodiscard]] auto addBatch() -> SubmissionBatchRecorder;
-    // TODO:: add batch -> batch recorder
+    void setFrameNumber(uint64_t currentFrameNumber) { currentFrameIndex_ = currentFrameNumber; }
 
-    void finish();
+    [[nodiscard]] auto addBatch() -> SubmissionBatchRecorder;
+
+    void finish(bool noexceptions = false);
 
 private:
     core::ResourceSharedRef submissionRef_;
     QueueSubmission* submission_;
     std::vector<std::future<void>> futures_;
+    uint64_t currentFrameIndex_;
 };
 }
 

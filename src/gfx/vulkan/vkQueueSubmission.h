@@ -27,13 +27,13 @@ public:
 
     void endRecording();
 
-    [[nodiscard]] auto beginBatchRecording() -> uint64_t;
+    void beginBatchRecording(uint64_t currentFrameIndex);
     void endBatchRecording();
 
     [[nodiscard]] auto addCommandList(uint64_t batchId) -> gfx::CommandList;
 
-    [[nodiscard]] auto getDependency(uint64_t fromBatchId,
-                                     PipelineStageFlagBits stageMask) -> gfx::SubmissionBatchDependency;
+    [[nodiscard]] auto getDependency(uint64_t fromBatchId, PipelineStageFlagBits stageMask)
+      -> gfx::SubmissionBatchDependency;
 
     void addDependency(uint64_t fromBatchId, uint64_t toBatchId, PipelineStageFlagBits stageMask);
 
@@ -55,6 +55,13 @@ public:
     [[nodiscard]] auto signal() const -> core::ResourceSharedRef;
 
     [[nodiscard]] auto isInInitialState() const -> bool { return state_.test(QueueSubmissionStateFlags::Initial); }
+
+    [[nodiscard]] auto isInRecordingState() const -> bool { return state_.test(QueueSubmissionStateFlags::Recording); }
+
+    [[nodiscard]] auto isInBatchRecordingState() const -> bool
+    {
+        return state_.test(QueueSubmissionStateFlags::BatchRecording);
+    }
 
     [[nodiscard]] auto isExecutable() const -> bool
     {

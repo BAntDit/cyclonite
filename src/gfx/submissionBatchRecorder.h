@@ -13,6 +13,12 @@ class SubmissionBatchRecorder
 private:
     SubmissionBatchRecorder(QueueSubmissionRecorder* queueSubmissionRecorder);
 
+    ~SubmissionBatchRecorder();
+
+    void finish(bool noexceptions = false);
+
+    // TODO:: add command list 
+
 private:
     QueueSubmissionRecorder* queueSubmissionRecorder_;
 };
