@@ -19,8 +19,6 @@ QueueSubmission::QueueSubmission(core::ResourceManagerBase* resourceManager,
   , competitionValue_{}
   , state_{}
 {
-    // assert(multithreading::Executor::threadExecutor().p);
-
     state_.set(QueueSubmissionStateFlags::Initial);
 
     assert(deviceRef.valid());
@@ -31,17 +29,30 @@ QueueSubmission::QueueSubmission(core::ResourceManagerBase* resourceManager,
 
 void QueueSubmission::beginRecording()
 {
-    // assert(multithreading::Executor::isInRenderThread());
+    [[maybe_unused]] auto submissionPurpose = purpose();
+    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
+
     assert(state_.value == metrix::value_cast(QueueSubmissionStateFlags::Initial));
     state_.value = metrix::value_cast(QueueSubmissionStateFlags::Recording);
 }
 
 void QueueSubmission::endRecording()
 {
-    // assert(multithreading::Executor::isInRenderThread());
+    [[maybe_unused]] auto submissionPurpose = purpose();
+    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
+
     assert(state_.value == metrix::value_cast(QueueSubmissionStateFlags::Recording));
     state_.value = metrix::value_cast(QueueSubmissionStateFlags::Executable);
 }
+
+auto QueueSubmission::beginBatchRecording() -> uint64_t 
+{
+    [[maybe_unused]] auto submissionPurpose = purpose();
+    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
+    // TODO:: 
+}
+
+// void endBatchRecording();
 
 auto QueueSubmission::signal() const -> core::ResourceSharedRef
 {

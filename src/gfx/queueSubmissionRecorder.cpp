@@ -27,10 +27,16 @@ void QueueSubmissionRecorder::setQueueSubmission(core::ResourceSharedRef submiss
         submission_->beginRecording();
     };
 
-    if (multithreading::Executor::threadExecutor().matchesPurpose(purpose)) {
-        task();
-    } else {
-        multithreading::TaskManager::submitTask(task, purpose).get();
-    }
+    futures_.emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+}
+
+auto QueueSubmissionRecorder::addBatch() -> SubmissionBatchRecorder
+{
+    assert(submission_ != nullptr);
+    auto batchRecorder = SubmissionBatchRecorder{ this };
+
+    // TODO::
+
+    return batchRecorder;
 }
 }

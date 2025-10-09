@@ -27,7 +27,8 @@ public:
 
     void endRecording();
 
-    [[nodiscard]] auto addBatch() -> uint64_t;
+    [[nodiscard]] auto beginBatchRecording() -> uint64_t;
+    void endBatchRecording();
 
     [[nodiscard]] auto addCommandList(uint64_t batchId) -> gfx::CommandList;
 

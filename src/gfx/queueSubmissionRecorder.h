@@ -6,7 +6,10 @@
 #define CYCLONITE_QUEUE_SUBMISSION_RECORDER_H
 
 #include "core/resourceSharedRef.h"
-#include "gfx/queueSubmission.h"
+#include "queueSubmission.h"
+#include "submissionBatchRecorder.h"
+#include <future>
+#include <vector>
 
 namespace cyclonite::gfx
 {
@@ -19,6 +22,7 @@ public:
 
     void setQueueSubmission(core::ResourceSharedRef submissionRef);
 
+    [[nodiscard]] auto addBatch() -> SubmissionBatchRecorder;
     // TODO:: add batch -> batch recorder
 
     void finish();
@@ -26,6 +30,7 @@ public:
 private:
     core::ResourceSharedRef submissionRef_;
     QueueSubmission* submission_;
+    std::vector<std::future<void>> futures_;
 };
 }
 
