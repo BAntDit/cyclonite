@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_MULTITHREADING_TASK_H
 #define CYCLONITE_MULTITHREADING_TASK_H
 
-#include "common.h"
+#include "multithreading/common.h"
 #include <atomic>
 #include <cassert>
 

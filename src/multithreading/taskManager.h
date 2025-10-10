@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_TASKMANAGER_H
 #define CYCLONITE_TASKMANAGER_H
 
-#include "common.h"
+#include "multithreading/common.h"
 #include "core/spinLock.h"
 #include "executor.h"
 #include "strandDeque.h"

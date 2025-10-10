@@ -3,7 +3,7 @@
 //
 
 #include "executor.h"
-#include "config.h"
+#include "multithreading/config.h"
 #include "taskManager.h"
 
 #if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)

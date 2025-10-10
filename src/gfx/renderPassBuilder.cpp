@@ -3,7 +3,7 @@
 //
 
 #include "renderPassBuilder.h"
-#include "config.h"
+#include "gfx/config.h"
 #include "device.h"
 #include "texture.h"
 #include <cassert>

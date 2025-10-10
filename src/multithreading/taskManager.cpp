@@ -1,6 +1,6 @@
 
 #include "taskManager.h"
-#include "config.h"
+#include "multithreading/config.h"
 #include <cassert>
 
 namespace cyclonite::multithreading {

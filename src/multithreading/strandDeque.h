@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_STRAND_DEQUE_H
 #define CYCLONITE_STRAND_DEQUE_H
 
-#include "common.h"
+#include "multithreading/common.h"
 #include <atomic>
 #include <cstdint>
 #include <optional>

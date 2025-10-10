@@ -3,7 +3,7 @@
 //
 
 #include "renderWindowBuilder.h"
-#include "common.h"
+#include "gfx/common.h"
 #include "device.h"
 #include "renderWindow.h"
 #include <cassert>

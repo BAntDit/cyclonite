@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_TASK_STEALING_DEQUE_H
 #define CYCLONITE_TASK_STEALING_DEQUE_H
 
-#include "common.h"
+#include "multithreading/common.h"
 #include <atomic>
 #include <cstdint>
 #include <limits>

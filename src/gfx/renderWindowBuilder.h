@@ -5,8 +5,8 @@
 #ifndef CYCLONITE_GFX_RENDERWINDOWBUILDER_H
 #define CYCLONITE_GFX_RENDERWINDOWBUILDER_H
 
-#include "common.h"
-#include "config.h"
+#include "gfx/common.h"
+#include "gfx/config.h"
 #include "core/resourceSharedRef.h"
 #include "core/resourceUniqueRef.h"
 #include <string_view>

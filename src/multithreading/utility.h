@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_MULTITHREADING_UTILITY_H
 #define CYCLONITE_MULTITHREADING_UTILITY_H
 
-#include "common.h"
+#include "multithreading/common.h"
 #include "taskManager.h"
 #include <metrix/containers.h>
 #include <metrix/type_traits.h>

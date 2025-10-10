@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_RENDERPASSBUILDER_H
 #define CYCLONITE_RENDERPASSBUILDER_H
 
-#include "config.h"
+#include "gfx/config.h"
 #include "core/resourceSharedRef.h"
 #include "core/resourceUniqueRef.h"
 #include "core/resourceWeakRef.h"
