@@ -15,11 +15,13 @@ private:
 
     ~SubmissionBatchRecorder();
 
-    void finish(bool noexceptions = false);
+    void finish() { finish(false); }
 
     // TODO:: add command list 
 
 private:
+    void finish(bool noexceptions);
+
     QueueSubmissionRecorder* queueSubmissionRecorder_;
 };
 }

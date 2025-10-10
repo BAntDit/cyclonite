@@ -11,7 +11,7 @@ SubmissionBatchRecorder::SubmissionBatchRecorder(QueueSubmissionRecorder* queueS
 {
 }
 
-SubmissionBatchRecorder::~SubmissionBatchRecorder() 
+SubmissionBatchRecorder::~SubmissionBatchRecorder()
 {
     if (queueSubmissionRecorder_ != nullptr) {
         finish(true);
@@ -19,24 +19,33 @@ SubmissionBatchRecorder::~SubmissionBatchRecorder()
     }
 }
 
-void SubmissionBatchRecorder::finish(bool noexceptions/*= false*/)
+void SubmissionBatchRecorder::finish(bool noexceptions)
 {
-    assert(queueSubmissionRecorder_);
+    try {
+        auto purpose = queueSubmissionRecorder_->submission_->purpose();
 
-    auto purpose = queueSubmissionRecorder_->submission_->purpose();
-
-    auto task = [recorder = queueSubmissionRecorder_, noexceptions]() -> void { 
-        if (!recorder->submission_->isInBatchRecordingState()) {
-            recorder->submission_->reset();
-            
-            if (!noexceptions) {
+        auto task = [recorder = queueSubmissionRecorder_, noexceptions]() -> void {
+            if (!recorder->submission_->isInBatchRecordingState()) {
                 throw std::runtime_error("batch recording is already finished");
-            } 
-        }
+            }
 
-        recorder->submission_->endBatchRecording();
-    };
-    
-    queueSubmissionRecorder_->futures_.emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+            recorder->submission_->endBatchRecording();
+        };
+
+        queueSubmissionRecorder_->futures_.emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+
+        if (auto ex = multithreading::Executor::threadExecutor().taskManager().getLastException(); ex) {
+            std::rethrow_exception(ex);
+        }
+    } catch (...) {
+        if (!noexceptions) {
+            queueSubmissionRecorder_->submission_->reset();
+            return;
+        } else {
+            auto ex = std::current_exception();
+
+            std::rethrow_exception(ex);
+        }
+    }
 }
 }
