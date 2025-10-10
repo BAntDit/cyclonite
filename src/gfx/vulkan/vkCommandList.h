@@ -8,6 +8,7 @@
 #include "core/resourceSharedRef.h"
 #include "core/resourceWeakRef.h"
 #include "gfx/common.h"
+#include <vector>
 
 #if defined(GFX_DRIVER_VULKAN)
 #include <vulkan/vulkan.h>
@@ -35,6 +36,7 @@ public:
     void end();
 
 private:
+    std::vector<core::ResourceSharedRef> boundRefs_;
     core::ResourceWeakRef commandPool_;
     VkCommandBuffer vkCommandBuffer_;
     CommandListUsageFlagBits usage_;

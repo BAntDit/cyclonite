@@ -424,10 +424,8 @@ auto Device::createTexture(GpuMemoryAllocationFlagBits allocationFlags,
     return result;
 }
 
-auto Device::createRenderWindow(uint32_t width,
-                                uint32_t height,
-                                std::string_view title,
-                                SurfaceFlagBits flags) -> core::ResourceUniqueRef
+auto Device::createRenderWindow(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
+  -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 
@@ -445,7 +443,9 @@ auto Device::createRenderPassWithRTVs(
   std::array<core::ResourceSharedRef, config_t::max_color_attachment_count_v> colorAttachmentRefs,
   std::array<std::pair<uint16_t, uint16_t>, config_t::max_color_attachment_count_v> colorAttachmentSubresDescs,
   uint32_t width,
-  uint32_t height) -> core::ResourceUniqueRef
+  uint32_t height,
+  real depthClearValue,
+  uint8_t stencilClearValue) -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 
@@ -453,13 +453,21 @@ auto Device::createRenderPassWithRTVs(
 
     auto deviceRef = getSharedFromThis(this);
 
-    result = resManager.allocResource<gfx::RenderPass>(
-      deviceRef, depthStencilRef, colorAttachmentRefs, colorAttachmentSubresDescs, width, height);
+    result = resManager.allocResource<gfx::RenderPass>(deviceRef,
+                                                       depthStencilRef,
+                                                       colorAttachmentRefs,
+                                                       colorAttachmentSubresDescs,
+                                                       width,
+                                                       height,
+                                                       depthClearValue,
+                                                       stencilClearValue);
 
     return result;
 }
 
-auto Device::createRenderPassWithRenderWindow(core::ResourceSharedRef renderWindowRef) -> core::ResourceUniqueRef
+auto Device::createRenderPassWithRenderWindow(core::ResourceSharedRef renderWindowRef,
+                                              real depthClearValue,
+                                              uint8_t stencilClearValue) -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 
@@ -467,7 +475,7 @@ auto Device::createRenderPassWithRenderWindow(core::ResourceSharedRef renderWind
 
     auto deviceRef = getSharedFromThis(this);
 
-    result = resManager.allocResource<gfx::RenderPass>(deviceRef, renderWindowRef);
+    result = resManager.allocResource<gfx::RenderPass>(deviceRef, renderWindowRef, depthClearValue, stencilClearValue);
 
     return result;
 }
@@ -485,8 +493,8 @@ auto Device::createCommandPool(uint32_t queueFamilyIndex, CommandPoolFlagBits fl
     return result;
 }
 
-auto Device::createQueueSubmission(uint32_t queueFamilyIndex,
-                                   CommandPoolFlagBits commandPoolFlags) -> core::ResourceUniqueRef
+auto Device::createQueueSubmission(uint32_t queueFamilyIndex, CommandPoolFlagBits commandPoolFlags)
+  -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 

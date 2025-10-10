@@ -97,7 +97,9 @@ RenderPass::RenderPass(
   std::array<core::ResourceSharedRef, config_t::max_color_attachment_count_v> colorAttachmentRefs,
   std::array<std::pair<uint16_t, uint16_t>, config_t::max_color_attachment_count_v> colorAttachmentSubresDescs,
   uint32_t width,
-  uint32_t height)
+  uint32_t height,
+  real depthClearValue,
+  uint8_t stencilClearValue)
   : core::ResourceBase{ resourceManager, resourceId, true }
   , deviceRef_{ deviceRef }
   , renderTargets_{ std::make_pair(depthStencilRef, colorAttachmentRefs) }
@@ -105,6 +107,8 @@ RenderPass::RenderPass(
   , vkFrameBuffers_{}
   , bufferCount_{ 1 }
   , currentBufferIndex_{ 0 }
+  , depthClearValue_{ depthClearValue }
+  , stencilClearValue_{ stencilClearValue }
 {
     assert(deviceRef_.valid());
 
@@ -191,7 +195,9 @@ RenderPass::RenderPass(
 RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
                        core::ResourceId resourceId,
                        core::ResourceSharedRef deviceRef,
-                       core::ResourceSharedRef renderWindowRef)
+                       core::ResourceSharedRef renderWindowRef,
+                       real depthClearValue,
+                       uint8_t stencilClearValue)
   : core::ResourceBase{ resourceManager, resourceId, true }
   , deviceRef_{ deviceRef }
   , renderTargets_{ renderWindowRef }
@@ -199,6 +205,8 @@ RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
   , vkFrameBuffers_{}
   , bufferCount_{ renderWindowRef.as<type_traits::platform_implementation_t<gfx::RenderWindow>>().swapchainLength() }
   , currentBufferIndex_{ 0 }
+  , depthClearValue_{ depthClearValue }
+  , stencilClearValue_{ stencilClearValue }
 {
     assert(deviceRef_.valid());
 

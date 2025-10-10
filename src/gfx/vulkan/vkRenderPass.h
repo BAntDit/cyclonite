@@ -26,12 +26,16 @@ public:
       std::array<core::ResourceSharedRef, config_t::max_color_attachment_count_v> colorAttachmentRefs,
       std::array<std::pair<uint16_t, uint16_t>, config_t::max_color_attachment_count_v> colorAttachmentSubresDescs,
       uint32_t width,
-      uint32_t height);
+      uint32_t height,
+      real depthClearValue,
+      uint8_t stencilClearValue);
 
     RenderPass(core::ResourceManagerBase* resourceManager,
                core::ResourceId resourceId,
                core::ResourceSharedRef deviceRef,
-               core::ResourceSharedRef renderWindowRef);
+               core::ResourceSharedRef renderWindowRef,
+               real depthClearValue,
+               uint8_t stencilClearValue);
 
     [[nodiscard]] auto handle() const -> VkRenderPass { return static_cast<VkRenderPass>(vkRenderPass_); }
 
@@ -65,6 +69,9 @@ private:
     std::array<Handle<VkFramebuffer>, config_t::max_swapchain_length_v> vkFrameBuffers_;
     uint32_t bufferCount_;
     uint32_t currentBufferIndex_;
+
+    real depthClearValue_;
+    uint8_t stencilClearValue_;
 };
 }
 #endif // GFX_DRIVER_VULKAN

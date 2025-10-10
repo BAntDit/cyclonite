@@ -5,10 +5,11 @@
 #ifndef CYCLONITE_RENDERPASSBUILDER_H
 #define CYCLONITE_RENDERPASSBUILDER_H
 
-#include "gfx/config.h"
 #include "core/resourceSharedRef.h"
 #include "core/resourceUniqueRef.h"
 #include "core/resourceWeakRef.h"
+#include "gfx/common.h"
+#include "gfx/config.h"
 #include <array>
 
 namespace cyclonite::gfx {
@@ -21,7 +22,9 @@ public:
 
     auto setResolution(uint32_t width, uint32_t height) -> RenderPassBuilder&;
 
-    auto setDepthStencilAttachment(core::ResourceSharedRef textureRef) -> RenderPassBuilder&;
+    auto setDepthStencilAttachment(core::ResourceSharedRef textureRef,
+                                   real depthClearValue = 1.0f,
+                                   uint8_t stencilClearValue = 0) -> RenderPassBuilder&;
 
     auto setRenderWindow(core::ResourceSharedRef renderWindowRef) -> RenderPassBuilder&;
 
@@ -38,6 +41,8 @@ private:
     uint32_t colorAttachmentCount_;
     uint32_t width_;
     uint32_t height_;
+    real depthClearValue_;
+    uint8_t stencilClearValue_;
 };
 }
 

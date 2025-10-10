@@ -12,7 +12,8 @@
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 CommandList::CommandList(core::ResourceWeakRef commandPool)
-  : commandPool_{ commandPool }
+  : boundRefs_{}
+  , commandPool_{ commandPool }
   , vkCommandBuffer_{ VK_NULL_HANDLE }
   , usage_{}
   , state_{ CommandListState::Invalid }
@@ -60,6 +61,8 @@ void CommandList::beginRenderPass(core::ResourceSharedRef renderPassRef)
 {
     assert(vkCommandBuffer_ != VK_NULL_HANDLE);
     assert(renderPassRef.valid());
+
+    boundRefs_.emplace_back(renderPassRef);
 
     auto& renderPass = renderPassRef.as<type_traits::platform_implementation_t<gfx::RenderPass>>();
 

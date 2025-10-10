@@ -3,8 +3,8 @@
 //
 
 #include "renderPassBuilder.h"
-#include "gfx/config.h"
 #include "device.h"
+#include "gfx/config.h"
 #include "texture.h"
 #include <cassert>
 #include <format>
@@ -25,8 +25,13 @@ auto RenderPassBuilder::setResolution(uint32_t width, uint32_t height) -> Render
     return *this;
 }
 
-auto RenderPassBuilder::setDepthStencilAttachment(core::ResourceSharedRef textureRef) -> RenderPassBuilder&
+auto RenderPassBuilder::setDepthStencilAttachment(core::ResourceSharedRef textureRef,
+                                                  real depthClearValue /*= 1.0f*/,
+                                                  uint8_t stencilClearValue /*= 0*/) -> RenderPassBuilder&
 {
+    depthClearValue_ = depthClearValue;
+    stencilClearValue_ = stencilClearValue;
+
     assert(textureRef.valid());
     depthStencilTextureRef_ = textureRef;
     return *this;
@@ -74,10 +79,16 @@ auto RenderPassBuilder::build() -> core::ResourceUniqueRef
 
     if (colorAttachmentCount_ > 0) {
         rpRef = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().createRenderPassWithRTVs(
-          depthStencilTextureRef_, colorAttachmentRefs_, colorAttachmentSubresDescs_, width_, height_);
+          depthStencilTextureRef_,
+          colorAttachmentRefs_,
+          colorAttachmentSubresDescs_,
+          width_,
+          height_,
+          depthClearValue_,
+          stencilClearValue_);
     } else {
         rpRef = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().createRenderPassWithRenderWindow(
-          renderWindowRef_);
+          renderWindowRef_, depthClearValue_, stencilClearValue_);
     }
 
     return rpRef;

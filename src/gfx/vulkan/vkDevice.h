@@ -80,16 +80,19 @@ public:
       std::array<core::ResourceSharedRef, config_t::max_color_attachment_count_v> colorAttachmentRefs,
       std::array<std::pair<uint16_t, uint16_t>, config_t::max_color_attachment_count_v> colorAttachmentSubresDescs,
       uint32_t width,
-      uint32_t height) -> core::ResourceUniqueRef;
+      uint32_t height,
+      real depthClearValue,
+      uint8_t stencilClearValue) -> core::ResourceUniqueRef;
 
-    [[nodiscard]] auto createRenderPassWithRenderWindow(core::ResourceSharedRef renderWindowRef)
+    [[nodiscard]] auto createRenderPassWithRenderWindow(core::ResourceSharedRef renderWindowRef,
+                                                        real depthClearValue,
+                                                        uint8_t stencilClearValue) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto createCommandPool(uint32_t queueFamilyIndex, CommandPoolFlagBits flags)
       -> core::ResourceUniqueRef;
 
-    [[nodiscard]] auto createCommandPool(uint32_t queueFamilyIndex,
-                                         CommandPoolFlagBits flags) -> core::ResourceUniqueRef;
-
-    [[nodiscard]] auto createQueueSubmission(uint32_t queueFamilyIndex,
-                                             CommandPoolFlagBits commandPoolFlags) -> core::ResourceUniqueRef;
+    [[nodiscard]] auto createQueueSubmission(uint32_t queueFamilyIndex, CommandPoolFlagBits commandPoolFlags)
+      -> core::ResourceUniqueRef;
 
     using core::ResourceBase::resourceBase;
 
