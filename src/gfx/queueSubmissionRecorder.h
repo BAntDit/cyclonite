@@ -20,7 +20,7 @@ class QueueSubmissionRecorder
 public:
     QueueSubmissionRecorder();
 
-    ~QueueSubmissionRecorder(); // 
+    ~QueueSubmissionRecorder(); 
 
     void setQueueSubmission(core::ResourceSharedRef submissionRef);
 
@@ -28,9 +28,11 @@ public:
 
     [[nodiscard]] auto addBatch() -> SubmissionBatchRecorder;
 
-    void finish(bool noexceptions = false);
+    void finish() { finish(false); }
 
 private:
+    void finish(bool noexceptions);
+
     core::ResourceSharedRef submissionRef_;
     QueueSubmission* submission_;
     std::vector<std::future<void>> futures_;
