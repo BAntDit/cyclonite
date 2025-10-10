@@ -81,11 +81,15 @@ void QueueSubmissionRecorder::finish(bool noexceptions)
         auto purpose = submission_->purpose();
 
         auto task = [this]() -> void {
+            if (submission_->isInBatchRecordingState()) {
+                throw std::runtime_error("all batch recording must be finished before.");
+            }
+
             if (!submission_->isInRecordingState()) {
                 throw std::runtime_error("submission recording is not started");
             }
 
-            submission_->endBatchRecording();
+            submission_->endRecording();
         };
 
         futures_.emplace_back(multithreading::TaskManager::submitTask(task, purpose));
