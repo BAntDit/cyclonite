@@ -167,21 +167,23 @@ auto TaskManager::getExecutorPurposeBits(Purpose purpose) const -> PurposeBits
     return purposeBits;
 }
 
-#if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
 auto TaskManager::getLastException() -> std::exception_ptr
 {
-    auto lock = std::lock_guard<core::SpinLock>{ exPropagationLock_ };
-
     auto ex = std::exception_ptr{};
+
+#if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
+    auto lock = std::lock_guard<core::SpinLock>{ exPropagationLock_ };
 
     if (!exceptions_.empty()) {
         ex = exceptions_.back();
         exceptions_.pop_back();
     }
+#endif
 
     return ex;
 }
 
+#if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
 void TaskManager::propagateException(std::exception_ptr const& exception)
 {
     auto lock = std::lock_guard<core::SpinLock>{ exPropagationLock_ };

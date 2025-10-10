@@ -45,9 +45,7 @@ public:
 
     [[nodiscard]] auto executorCount() const -> size_t { return executorCount_; }
 
-#if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
     auto getLastException() -> std::exception_ptr;
-#endif
 
     template<typename F>
         requires std::is_invocable_v<F>
