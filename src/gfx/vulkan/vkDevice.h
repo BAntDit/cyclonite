@@ -88,11 +88,11 @@ public:
                                                         real depthClearValue,
                                                         uint8_t stencilClearValue) -> core::ResourceUniqueRef;
 
-    [[nodiscard]] auto createCommandPool(uint32_t queueFamilyIndex, CommandPoolFlagBits flags)
-      -> core::ResourceUniqueRef;
+    [[nodiscard]] auto createCommandPool(uint32_t queueFamilyIndex,
+                                         CommandPoolFlagBits flags) -> core::ResourceUniqueRef;
 
-    [[nodiscard]] auto createQueueSubmission(uint32_t queueFamilyIndex, CommandPoolFlagBits commandPoolFlags)
-      -> core::ResourceUniqueRef;
+    [[nodiscard]] auto createQueueSubmission(uint32_t queueFamilyIndex,
+                                             CommandPoolFlagBits commandPoolFlags) -> core::ResourceUniqueRef;
 
     using core::ResourceBase::resourceBase;
 

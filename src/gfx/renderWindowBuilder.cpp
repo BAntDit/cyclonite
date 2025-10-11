@@ -3,8 +3,8 @@
 //
 
 #include "renderWindowBuilder.h"
-#include "gfx/common.h"
 #include "device.h"
+#include "gfx/common.h"
 #include "renderWindow.h"
 #include <cassert>
 

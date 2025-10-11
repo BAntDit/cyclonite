@@ -11,8 +11,7 @@
 #include <future>
 #include <vector>
 
-namespace cyclonite::gfx
-{
+namespace cyclonite::gfx {
 class QueueSubmissionRecorder
 {
     friend class SubmissionBatchRecorder;
@@ -20,7 +19,7 @@ class QueueSubmissionRecorder
 public:
     QueueSubmissionRecorder();
 
-    ~QueueSubmissionRecorder(); 
+    ~QueueSubmissionRecorder();
 
     void setQueueSubmission(core::ResourceSharedRef submissionRef);
 
@@ -40,4 +39,4 @@ private:
 };
 }
 
-#endif //CYCLONITE_QUEUE_SUBMISSION_RECORDER_H
+#endif // CYCLONITE_QUEUE_SUBMISSION_RECORDER_H

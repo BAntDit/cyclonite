@@ -424,8 +424,10 @@ auto Device::createTexture(GpuMemoryAllocationFlagBits allocationFlags,
     return result;
 }
 
-auto Device::createRenderWindow(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
-  -> core::ResourceUniqueRef
+auto Device::createRenderWindow(uint32_t width,
+                                uint32_t height,
+                                std::string_view title,
+                                SurfaceFlagBits flags) -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 
@@ -493,8 +495,8 @@ auto Device::createCommandPool(uint32_t queueFamilyIndex, CommandPoolFlagBits fl
     return result;
 }
 
-auto Device::createQueueSubmission(uint32_t queueFamilyIndex, CommandPoolFlagBits commandPoolFlags)
-  -> core::ResourceUniqueRef
+auto Device::createQueueSubmission(uint32_t queueFamilyIndex,
+                                   CommandPoolFlagBits commandPoolFlags) -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 

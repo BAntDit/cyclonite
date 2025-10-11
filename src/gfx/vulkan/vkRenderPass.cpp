@@ -109,6 +109,7 @@ RenderPass::RenderPass(
   , currentBufferIndex_{ 0 }
   , depthClearValue_{ depthClearValue }
   , stencilClearValue_{ stencilClearValue }
+  , colorClearValues_{}
 {
     assert(deviceRef_.valid());
 
@@ -207,6 +208,7 @@ RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
   , currentBufferIndex_{ 0 }
   , depthClearValue_{ depthClearValue }
   , stencilClearValue_{ stencilClearValue }
+  , colorClearValues_{}
 {
     assert(deviceRef_.valid());
 

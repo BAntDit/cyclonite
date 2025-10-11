@@ -5,9 +5,9 @@
 #ifndef GFX_COMMON_H
 #define GFX_COMMON_H
 
-#include <common.h>
 #include "formats.h"
 #include <SDL3/SDL_video.h>
+#include <common.h>
 #include <metrix/enum.h>
 
 namespace cyclonite::gfx {

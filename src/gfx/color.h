@@ -4,7 +4,7 @@
 
 // #include "cyclonite/common.h"
 
-#include <common.h>
+#include "gfx/common.h"
 
 namespace cyclonite::gfx {
 struct Color
@@ -25,6 +25,7 @@ struct Color
     real g;
     real b;
     real a;
+};
 }
 
 #endif // CYCLONITE_GFX_COLOR

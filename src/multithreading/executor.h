@@ -5,8 +5,8 @@
 #ifndef CYCLONITE_MT_EXECUTOR_H
 #define CYCLONITE_MT_EXECUTOR_H
 
-#include "multithreading/common.h"
 #include "mpscDeque.h"
+#include "multithreading/common.h"
 #include "taskPool.h"
 #include "taskStealingDeque.h"
 

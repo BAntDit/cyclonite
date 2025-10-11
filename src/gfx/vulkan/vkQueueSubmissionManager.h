@@ -32,7 +32,7 @@ public:
     [[nodiscard]] auto currentFrameIndex() const -> uint64_t { return currentFrameIndex_; }
 
     [[nodiscard]] auto acquireQueueSubmission(multithreading::Purpose purpose,
-                                              CommandPoolFlagBits flags) -> core::ResourceSharedRef; 
+                                              CommandPoolFlagBits flags) -> core::ResourceSharedRef;
 
     // TODO::
     // auto submit();

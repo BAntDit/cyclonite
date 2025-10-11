@@ -5,7 +5,6 @@
 #include <boost/cstdfloat.hpp>
 #include <glm/glm.hpp>
 
-
 namespace cyclonite {
 using real = boost::float32_t;
 

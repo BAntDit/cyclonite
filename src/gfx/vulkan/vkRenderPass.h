@@ -7,6 +7,7 @@
 
 #include "core/resourceBase.h"
 #include "core/resourceSharedRef.h"
+#include "gfx/color.h"
 #include "gfx/common.h"
 #include "gfx/config.h"
 #include "handle.h"
@@ -72,6 +73,8 @@ private:
 
     real depthClearValue_;
     uint8_t stencilClearValue_;
+
+    std::array<gfx::Color, config_t::max_color_attachment_count_v> colorClearValues_;
 };
 }
 #endif // GFX_DRIVER_VULKAN
