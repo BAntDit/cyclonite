@@ -1,9 +1,7 @@
 
 #include "submissionBatchRecorder.h"
-#include "queueSubmissionRecorder.h"
-#include <cassert>
-
 #include "multithreading/taskManager.h"
+#include "queueSubmissionRecorder.h"
 
 namespace cyclonite::gfx {
 SubmissionBatchRecorder::SubmissionBatchRecorder(QueueSubmissionRecorder* queueSubmissionRecorder)
@@ -48,4 +46,21 @@ void SubmissionBatchRecorder::finish(bool noexceptions)
         }
     }
 }
+
+void SubmissionBatchRecorder::addBatchDependency(size_t dependencyIndex, PipelineStageFlagBits stageMask)
+{
+    auto purpose = queueSubmissionRecorder_->submission_->purpose();
+
+    auto task = [recorder = queueSubmissionRecorder_, dependencyIndex, stageMask]() -> void {
+        if (!recorder->submission_->isInBatchRecordingState()) {
+            throw std::runtime_error("batch recording is already finished");
+        }
+
+        recorder->submission_->addBatchDependency(dependencyIndex, stageMask);
+    };
+
+    queueSubmissionRecorder_->futures_.emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+}
+
+auto SubmissionBatchRecorder::addCommandList() -> CommandListRecorder {}
 }

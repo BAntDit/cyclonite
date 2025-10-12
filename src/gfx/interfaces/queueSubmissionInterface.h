@@ -6,13 +6,14 @@
 #define CYCLONITE_GFX_QUEUE_SUBMISSION_INTERFACE_H
 
 #include "core/resourceSharedRef.h"
+#include "gfx/common.h"
 #include "multithreading/common.h"
 #include <concepts>
 #include <cstddef>
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept QueueSubmissionConcept = requires(T t, uint64_t idx) {
+concept QueueSubmissionConcept = requires(T t, uint64_t idx, size_t batchIdx, PipelineStageFlagBits stageMask) {
     { t.beginRecording() } -> std::same_as<void>;
 
     { t.endRecording() } -> std::same_as<void>;
@@ -33,6 +34,8 @@ concept QueueSubmissionConcept = requires(T t, uint64_t idx) {
 
     { t.beginBatchRecording(idx) } -> std::same_as<void>;
 
+    { t.addBatchDependency(batchIdx, stageMask) } -> std::same_as<void>;
+
     { t.endBatchRecording() } -> std::same_as<void>;
 
     { t.reset() } -> std::same_as<void>;
@@ -44,6 +47,7 @@ class QueueSubmissionInterface : private PlatformImplementation
 public:
     friend class core::ResourceBase;
 
+    using PlatformImplementation::addBatchDependency;
     using PlatformImplementation::beginBatchRecording;
     using PlatformImplementation::beginRecording;
     using PlatformImplementation::endBatchRecording;

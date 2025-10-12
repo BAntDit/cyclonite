@@ -60,6 +60,15 @@ void QueueSubmission::beginBatchRecording(uint64_t currentFrameIndex)
     batch.signal = device.createSignal(gfx::SignalType::TIMELINE, currentFrameIndex);
 }
 
+void QueueSubmission::addBatchDependency(size_t fromBatch, PipelineStageFlagBits stageMask)
+{
+    assert(fromBatch < batches_.size());
+    auto& srcBatch = batches_[fromBatch];
+    auto& dstBatch = batches_.back();
+
+    dstBatch.dependencies.emplace_back(srcBatch.signal, stageMask);
+}
+
 void QueueSubmission::endBatchRecording()
 {
     [[maybe_unused]] auto submissionPurpose = purpose();

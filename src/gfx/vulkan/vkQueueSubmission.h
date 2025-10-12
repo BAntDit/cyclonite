@@ -32,12 +32,7 @@ public:
 
     [[nodiscard]] auto addCommandList(uint64_t batchId) -> gfx::CommandList;
 
-    [[nodiscard]] auto getDependency(uint64_t fromBatchId,
-                                     PipelineStageFlagBits stageMask) -> gfx::SubmissionBatchDependency;
-
-    void addDependency(uint64_t fromBatchId, uint64_t toBatchId, PipelineStageFlagBits stageMask);
-
-    void addDependency(uint64_t toBatchId, gfx::SubmissionBatchDependency const& dependency);
+    void addBatchDependency(size_t fromBatch, PipelineStageFlagBits stageMask);
 
     void reset();
 
