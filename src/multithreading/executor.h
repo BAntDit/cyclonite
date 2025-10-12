@@ -70,6 +70,10 @@ private:
         requires std::is_invocable_v<F>
     auto submitTaskMPSC(F&& f) -> std::future<std::invoke_result_t<F>>;
 
+    template<typename F>
+        requires std::is_invocable_v<F>
+    auto executeInPlace(F&& f) -> std::future<std::invoke_result_t<F>>;
+
     auto pendingTask() -> std::optional<Task>;
 
     auto renderExecutor() -> Executor&;
@@ -116,19 +120,19 @@ auto Executor::submitTask(F&& f, Purpose purpose /*= Purpose::General*/) -> std:
 
     if (purpose == Purpose::Render) {
         if (isInRenderThread()) {
-            future = submitTaskMPSC(std::forward<F>(f)); // TODO:: execute in place
+            future = executeInPlace(std::forward<F>(f));
         } else {
             future = renderExecutor().submitTaskMPSC(std::forward<F>(f));
         }
     } else if (purpose == Purpose::Transfer) {
         if (isInTransferThread()) {
-            future = submitTaskMPSC(std::forward<F>(f)); // TODO:: execute in place
+            future = executeInPlace(std::forward<F>(f));
         } else {
             future = transferExecutor().submitTaskMPSC(std::forward<F>(f));
         }
     } else if (purpose == Purpose::Compute) {
         if (isInComputeThread()) {
-            future = submitTaskMPSC(std::forward<F>(f)); // TODO:: execute in place
+            future = executeInPlace(std::forward<F>(f));
         } else {
             future = computeExecutor().submitTaskMPSC(std::forward<F>(f));
         }
@@ -188,6 +192,21 @@ auto Executor::submitTaskSPMC(F&& f) -> std::future<std::invoke_result_t<F>>
     // it must happen hardly ever as well
     while (!spmcQueue().tryEmplace(task))
         std::this_thread::yield();
+
+    return future;
+}
+
+template<typename F>
+    requires std::is_invocable_v<F>
+auto Executor::executeInPlace(F&& f) -> std::future<std::invoke_result_t<F>>
+{
+    using result_type_t = std::invoke_result_t<F>;
+
+    auto&& packedTask = std::packaged_task<result_type_t()>{ std::forward<F>(f) };
+    auto future = packedTask.get_future();
+
+    auto&& task = Task{ std::move(packedTask) };
+    task();
 
     return future;
 }
