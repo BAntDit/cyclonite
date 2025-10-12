@@ -8,7 +8,6 @@
 #include "internal/utils.h"
 #include "vkException.h"
 #include "vkRenderTargetView.h"
-#include <glm/ext/scalar_uint_sized.hpp>
 #include <utility>
 
 #if defined(GFX_DRIVER_VULKAN)
@@ -96,6 +95,7 @@ RenderPass::RenderPass(
   core::ResourceSharedRef depthStencilRef,
   std::array<core::ResourceSharedRef, config_t::max_color_attachment_count_v> colorAttachmentRefs,
   std::array<std::pair<uint16_t, uint16_t>, config_t::max_color_attachment_count_v> colorAttachmentSubresDescs,
+  std::array<gfx::Color, config_t::max_color_attachment_count_v> clearColorValues,
   uint32_t width,
   uint32_t height,
   real depthClearValue,
@@ -107,9 +107,10 @@ RenderPass::RenderPass(
   , vkFrameBuffers_{}
   , bufferCount_{ 1 }
   , currentBufferIndex_{ 0 }
+  , colorAttachmentCount_{}
   , depthClearValue_{ depthClearValue }
   , stencilClearValue_{ stencilClearValue }
-  , colorClearValues_{}
+  , colorClearValues_{ clearColorValues }
 {
     assert(deviceRef_.valid());
 
@@ -128,6 +129,7 @@ RenderPass::RenderPass(
                                 colorAttachmentReferences,
                                 std::make_index_sequence<config_t::max_color_attachment_count_v>{});
     assert(attachmentDescCount == colorAttachmentCount);
+    colorAttachmentCount_ = colorAttachmentCount;
 
     auto depthAttachmentIndex = std::numeric_limits<uint32_t>::max();
     auto depthAttachmentReference = VkAttachmentReference{};
@@ -197,6 +199,7 @@ RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
                        core::ResourceId resourceId,
                        core::ResourceSharedRef deviceRef,
                        core::ResourceSharedRef renderWindowRef,
+                       gfx::Color clearColor,
                        real depthClearValue,
                        uint8_t stencilClearValue)
   : core::ResourceBase{ resourceManager, resourceId, true }
@@ -206,6 +209,7 @@ RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
   , vkFrameBuffers_{}
   , bufferCount_{ renderWindowRef.as<type_traits::platform_implementation_t<gfx::RenderWindow>>().swapchainLength() }
   , currentBufferIndex_{ 0 }
+  , colorAttachmentCount_{}
   , depthClearValue_{ depthClearValue }
   , stencilClearValue_{ stencilClearValue }
   , colorClearValues_{}
@@ -246,6 +250,8 @@ RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
     }
 
     auto colorAttachmentCount = uint32_t{ 1 };
+    colorAttachmentCount_ = colorAttachmentCount;
+
     auto colorAttachmentReference = VkAttachmentReference{};
     colorAttachmentReference.attachment = 0;
     colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -295,6 +301,8 @@ RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
             throw Exception{ vkResult, "vkCreateFramebuffer" };
         }
     }
+
+    colorClearValues_[0] = clearColor;
 }
 
 auto RenderPass::getResolution() const -> std::pair<uint32_t, uint32_t>
@@ -334,6 +342,45 @@ auto RenderPass::width() const -> uint32_t
 auto RenderPass::height() const -> uint32_t
 {
     return getResolution().second;
+}
+
+void RenderPass::getClearValues(uint32_t& clearValuesCount, VkClearValue* clearValues) const
+{
+    bool hasDepth = std::visit(
+      [](auto&& rt) -> bool {
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, core::ResourceSharedRef>) {
+              auto const& renderWindow = rt.template as<gfx::RenderWindow>();
+              return renderWindow.hasDepth();
+          } else {
+              auto const& [ds, _] = rt;
+              return ds.valid();
+          }
+      },
+      renderTargets_);
+
+    if (clearValues == nullptr) {
+        clearValuesCount = colorAttachmentCount_;
+
+        if (hasDepth) {
+            clearValuesCount++;
+        }
+    } else {
+        assert(clearValuesCount <= colorAttachmentCount_);
+
+        auto i = size_t{ 0 };
+        for (i = 0; i < colorAttachmentCount_; i++) {
+            clearValues[i].color.float32[0] = colorClearValues_[i].r;
+            clearValues[i].color.float32[1] = colorClearValues_[i].g;
+            clearValues[i].color.float32[2] = colorClearValues_[i].b;
+            clearValues[i].color.float32[3] = colorClearValues_[i].a;
+        }
+
+        if (hasDepth) {
+            assert(i < clearValuesCount);
+            clearValues[i].depthStencil.depth = depthClearValue_;
+            clearValues[i].depthStencil.stencil = stencilClearValue_;
+        }
+    }
 }
 }
 #endif

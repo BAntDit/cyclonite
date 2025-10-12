@@ -26,6 +26,7 @@ public:
       core::ResourceSharedRef depthStencilRef,
       std::array<core::ResourceSharedRef, config_t::max_color_attachment_count_v> colorAttachmentRefs,
       std::array<std::pair<uint16_t, uint16_t>, config_t::max_color_attachment_count_v> colorAttachmentSubresDescs,
+      std::array<gfx::Color, config_t::max_color_attachment_count_v> clearColorValues,
       uint32_t width,
       uint32_t height,
       real depthClearValue,
@@ -35,6 +36,7 @@ public:
                core::ResourceId resourceId,
                core::ResourceSharedRef deviceRef,
                core::ResourceSharedRef renderWindowRef,
+               gfx::Color clearColor,
                real depthClearValue,
                uint8_t stencilClearValue);
 
@@ -49,7 +51,7 @@ public:
 
     [[nodiscard]] auto height() const -> uint32_t;
 
-    // end
+    void getClearValues(uint32_t& clearValuesCount, VkClearValue* clearValues) const;
 
     using core::ResourceBase::resourceBase;
 
@@ -70,6 +72,7 @@ private:
     std::array<Handle<VkFramebuffer>, config_t::max_swapchain_length_v> vkFrameBuffers_;
     uint32_t bufferCount_;
     uint32_t currentBufferIndex_;
+    uint32_t colorAttachmentCount_;
 
     real depthClearValue_;
     uint8_t stencilClearValue_;

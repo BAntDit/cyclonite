@@ -10,6 +10,7 @@
 #include "core/resourceBase.h"
 #include "core/resourceSharedRef.h"
 #include "core/resourceUniqueRef.h"
+#include "gfx/color.h"
 #include "gfx/common.h"
 #include "gfx/config.h"
 #include "handle.h"
@@ -79,12 +80,14 @@ public:
       core::ResourceSharedRef depthStencilRef,
       std::array<core::ResourceSharedRef, config_t::max_color_attachment_count_v> colorAttachmentRefs,
       std::array<std::pair<uint16_t, uint16_t>, config_t::max_color_attachment_count_v> colorAttachmentSubresDescs,
+      std::array<gfx::Color, config_t::max_color_attachment_count_v> clearColors,
       uint32_t width,
       uint32_t height,
       real depthClearValue,
       uint8_t stencilClearValue) -> core::ResourceUniqueRef;
 
     [[nodiscard]] auto createRenderPassWithRenderWindow(core::ResourceSharedRef renderWindowRef,
+                                                        gfx::Color colorClearValue,
                                                         real depthClearValue,
                                                         uint8_t stencilClearValue) -> core::ResourceUniqueRef;
 

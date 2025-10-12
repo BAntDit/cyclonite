@@ -37,7 +37,9 @@ auto RenderPassBuilder::setDepthStencilAttachment(core::ResourceSharedRef textur
     return *this;
 }
 
-auto RenderPassBuilder::addColorAttachment(core::ResourceSharedRef textureRef, uint32_t mipLevel) -> RenderPassBuilder&
+auto RenderPassBuilder::addColorAttachment(core::ResourceSharedRef textureRef,
+                                           uint32_t mipLevel,
+                                           gfx::Color clearColor) -> RenderPassBuilder&
 {
     if (renderWindowRef_.valid()) {
         throw std::logic_error("render pass is not able to render into color attachments and render window at once");
@@ -58,18 +60,26 @@ auto RenderPassBuilder::addColorAttachment(core::ResourceSharedRef textureRef, u
 
     colorAttachmentRefs_[colorAttachmentCount_] = textureRef;
     colorAttachmentSubresDescs_[colorAttachmentCount_] = std::make_pair(static_cast<uint16_t>(mipLevel), uint16_t{ 0 });
+    colorClearValues_[colorAttachmentCount_] = clearColor;
 
     colorAttachmentCount_++;
 
     return *this;
 }
 
-auto RenderPassBuilder::setRenderWindow(core::ResourceSharedRef renderWindowRef) -> RenderPassBuilder&
+auto RenderPassBuilder::setRenderWindow(core::ResourceSharedRef renderWindowRef,
+                                        gfx::Color clearColor,
+                                        real depthClearValue,
+                                        uint8_t stencilClearValue) -> RenderPassBuilder&
 {
     if (colorAttachmentCount_ > 0) {
         throw std::logic_error("render pass is not able to render into color attachments and render window at once");
     }
     renderWindowRef_ = renderWindowRef;
+    colorClearValues_[0] = clearColor;
+    depthClearValue_ = depthClearValue;
+    stencilClearValue_ = stencilClearValue;
+
     return *this;
 }
 
@@ -82,13 +92,14 @@ auto RenderPassBuilder::build() -> core::ResourceUniqueRef
           depthStencilTextureRef_,
           colorAttachmentRefs_,
           colorAttachmentSubresDescs_,
+          colorClearValues_,
           width_,
           height_,
           depthClearValue_,
           stencilClearValue_);
     } else {
         rpRef = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().createRenderPassWithRenderWindow(
-          renderWindowRef_, depthClearValue_, stencilClearValue_);
+          renderWindowRef_, colorClearValues_[0], depthClearValue_, stencilClearValue_);
     }
 
     return rpRef;

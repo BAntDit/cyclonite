@@ -77,7 +77,10 @@ void CommandList::beginRenderPass(core::ResourceSharedRef renderPassRef)
     beginInfo.renderPass = renderPass.handle();
     beginInfo.framebuffer = renderPass.frameBuffer();
     beginInfo.renderArea = rect2D;
-    // TODO:: add clear color values
+
+    auto clearValues = std::array<VkClearValue, config_t::max_color_attachment_count_v + 1>{};
+    renderPass.getClearValues(beginInfo.clearValueCount, nullptr);
+    renderPass.getClearValues(beginInfo.clearValueCount, clearValues.data());
 
     vkCmdBeginRenderPass(vkCommandBuffer_, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
 }

@@ -444,6 +444,7 @@ auto Device::createRenderPassWithRTVs(
   core::ResourceSharedRef depthStencilRef,
   std::array<core::ResourceSharedRef, config_t::max_color_attachment_count_v> colorAttachmentRefs,
   std::array<std::pair<uint16_t, uint16_t>, config_t::max_color_attachment_count_v> colorAttachmentSubresDescs,
+  std::array<gfx::Color, config_t::max_color_attachment_count_v> clearColors,
   uint32_t width,
   uint32_t height,
   real depthClearValue,
@@ -459,6 +460,7 @@ auto Device::createRenderPassWithRTVs(
                                                        depthStencilRef,
                                                        colorAttachmentRefs,
                                                        colorAttachmentSubresDescs,
+                                                       clearColors,
                                                        width,
                                                        height,
                                                        depthClearValue,
@@ -468,6 +470,7 @@ auto Device::createRenderPassWithRTVs(
 }
 
 auto Device::createRenderPassWithRenderWindow(core::ResourceSharedRef renderWindowRef,
+                                              gfx::Color colorClearValue,
                                               real depthClearValue,
                                               uint8_t stencilClearValue) -> core::ResourceUniqueRef
 {
@@ -477,7 +480,8 @@ auto Device::createRenderPassWithRenderWindow(core::ResourceSharedRef renderWind
 
     auto deviceRef = getSharedFromThis(this);
 
-    result = resManager.allocResource<gfx::RenderPass>(deviceRef, renderWindowRef, depthClearValue, stencilClearValue);
+    result = resManager.allocResource<gfx::RenderPass>(
+      deviceRef, renderWindowRef, colorClearValue, depthClearValue, stencilClearValue);
 
     return result;
 }
