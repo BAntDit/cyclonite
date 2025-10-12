@@ -12,6 +12,7 @@ class QueueSubmissionRecorder;
 class SubmissionBatchRecorder
 {
     friend class QueueSubmissionRecorder;
+    friend class CommandListRecorder;
 
 private:
     explicit SubmissionBatchRecorder(QueueSubmissionRecorder* queueSubmissionRecorder);
@@ -27,6 +28,10 @@ private:
     [[nodiscard]] auto submission() -> gfx::QueueSubmission&;
 
     [[nodiscard]] auto submission() const -> gfx::QueueSubmission const&;
+
+    [[nodiscard]] auto futures() -> std::vector<std::future<void>>&;
+
+    [[nodiscard]] auto futures() const -> std::vector<std::future<void>> const&;
 
 private:
     void finish(bool noexceptions);

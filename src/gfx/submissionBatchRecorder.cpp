@@ -36,7 +36,7 @@ void SubmissionBatchRecorder::finish(bool noexceptions)
             std::rethrow_exception(ex);
         }
     } catch (...) {
-        if (!noexceptions) {
+        if (noexceptions) {
             queueSubmissionRecorder_->submission_->reset();
             return;
         } else {
@@ -70,6 +70,16 @@ auto SubmissionBatchRecorder::submission() -> gfx::QueueSubmission&
 auto SubmissionBatchRecorder::submission() const -> gfx::QueueSubmission const&
 {
     return *queueSubmissionRecorder_->submission_;
+}
+
+auto SubmissionBatchRecorder::futures() -> std::vector<std::future<void>>&
+{
+    return queueSubmissionRecorder_->futures_;
+}
+
+auto SubmissionBatchRecorder::SubmissionBatchRecorder::futures() const -> std::vector<std::future<void>> const&
+{
+    return queueSubmissionRecorder_->futures_;
 }
 
 auto SubmissionBatchRecorder::addCommandList() -> CommandListRecorder

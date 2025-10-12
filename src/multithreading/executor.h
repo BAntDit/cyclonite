@@ -116,19 +116,19 @@ auto Executor::submitTask(F&& f, Purpose purpose /*= Purpose::General*/) -> std:
 
     if (purpose == Purpose::Render) {
         if (isInRenderThread()) {
-            future = submitTaskMPSC(std::forward<F>(f));
+            future = submitTaskMPSC(std::forward<F>(f)); // TODO:: execute in place
         } else {
             future = renderExecutor().submitTaskMPSC(std::forward<F>(f));
         }
     } else if (purpose == Purpose::Transfer) {
         if (isInTransferThread()) {
-            future = submitTaskMPSC(std::forward<F>(f));
+            future = submitTaskMPSC(std::forward<F>(f)); // TODO:: execute in place
         } else {
             future = transferExecutor().submitTaskMPSC(std::forward<F>(f));
         }
     } else if (purpose == Purpose::Compute) {
         if (isInComputeThread()) {
-            future = submitTaskMPSC(std::forward<F>(f));
+            future = submitTaskMPSC(std::forward<F>(f)); // TODO:: execute in place
         } else {
             future = computeExecutor().submitTaskMPSC(std::forward<F>(f));
         }

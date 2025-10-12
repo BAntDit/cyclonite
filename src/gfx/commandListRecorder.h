@@ -13,7 +13,13 @@ class CommandListRecorder
 public:
     explicit CommandListRecorder(SubmissionBatchRecorder* batchRecorder);
 
+    ~CommandListRecorder();
+
+    void finish() { finish(false); }
+
 private:
+    void finish(bool noexceptions = false);
+
     SubmissionBatchRecorder* batchRecorder_;
 };
 }
