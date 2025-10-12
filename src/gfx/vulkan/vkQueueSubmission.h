@@ -39,6 +39,8 @@ public:
 
     auto waitOnCpu() -> uint64_t;
 
+    [[nodiscard]] auto commandListToRecord() -> gfx::CommandList&;
+
     [[nodiscard]] auto purpose() const -> multithreading::Purpose;
 
     [[nodiscard]] auto signal() const -> core::ResourceSharedRef;

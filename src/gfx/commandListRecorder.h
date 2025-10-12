@@ -5,6 +5,9 @@
 #ifndef CYCLONITE_COMMAND_LIST_RECORDER_H
 #define CYCLONITE_COMMAND_LIST_RECORDER_H
 
+#include "core/resourceSharedRef.h"
+#include "gfx/common.h"
+
 namespace cyclonite::gfx {
 class SubmissionBatchRecorder;
 
@@ -14,6 +17,14 @@ public:
     explicit CommandListRecorder(SubmissionBatchRecorder* batchRecorder);
 
     ~CommandListRecorder();
+
+    void begin(CommandListUsageFlagBits usage);
+
+    void beginRenderPass(core::ResourceSharedRef renderPassRef);
+
+    void endRenderPass();
+
+    void end();
 
     void finish() { finish(false); }
 

@@ -92,6 +92,19 @@ void QueueSubmission::beginCommandListRecording()
     batch.commandLists.emplace_back(pool.allocCommandList());
 }
 
+auto QueueSubmission::commandListToRecord() -> gfx::CommandList&
+{
+    [[maybe_unused]] auto submissionPurpose = purpose();
+    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
+
+    assert(state_.test(QueueSubmissionStateFlags::CommandListRecording));
+
+    auto& batch = batches_.back();
+    auto& commandList = batch.commandLists.back();
+
+    return commandList;
+}
+
 void QueueSubmission::endCommandListRecording()
 {
     [[maybe_unused]] auto submissionPurpose = purpose();

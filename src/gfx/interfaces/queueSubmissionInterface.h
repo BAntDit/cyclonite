@@ -6,10 +6,10 @@
 #define CYCLONITE_GFX_QUEUE_SUBMISSION_INTERFACE_H
 
 #include "core/resourceSharedRef.h"
+#include "gfx/commandList.h"
 #include "gfx/common.h"
 #include "multithreading/common.h"
 #include <concepts>
-#include <cstddef>
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
@@ -44,6 +44,8 @@ concept QueueSubmissionConcept = requires(T t, uint64_t idx, size_t batchIdx, Pi
 
     { t.endCommandListRecording() } -> std::same_as<void>;
 
+    { t.commandListToRecord() } -> std::same_as<gfx::CommandList>;
+
     { t.reset() } -> std::same_as<void>;
 };
 
@@ -57,6 +59,7 @@ public:
     using PlatformImplementation::beginBatchRecording;
     using PlatformImplementation::beginCommandListRecording;
     using PlatformImplementation::beginRecording;
+    using PlatformImplementation::commandListToRecord;
     using PlatformImplementation::endBatchRecording;
     using PlatformImplementation::endCommandListRecording;
     using PlatformImplementation::endRecording;
