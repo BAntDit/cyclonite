@@ -78,6 +78,29 @@ void QueueSubmission::endBatchRecording()
     state_.reset(QueueSubmissionStateFlags::BatchRecording);
 }
 
+void QueueSubmission::beginCommandListRecording()
+{
+    [[maybe_unused]] auto submissionPurpose = purpose();
+    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
+
+    assert(!state_.test(QueueSubmissionStateFlags::CommandListRecording));
+    state_.set(QueueSubmissionStateFlags::CommandListRecording);
+
+    auto& batch = batches_.back();
+    auto& pool = commandPool_.as<type_traits::platform_implementation_t<gfx::CommandPool>>();
+
+    batch.commandLists.emplace_back(pool.allocCommandList());
+}
+
+void QueueSubmission::endCommandListRecording()
+{
+    [[maybe_unused]] auto submissionPurpose = purpose();
+    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
+
+    assert(state_.test(QueueSubmissionStateFlags::CommandListRecording));
+    state_.reset(QueueSubmissionStateFlags::CommandListRecording);
+}
+
 auto QueueSubmission::signal() const -> core::ResourceSharedRef
 {
     assert(!batches_.empty());

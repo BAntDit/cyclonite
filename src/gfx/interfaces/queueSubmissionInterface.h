@@ -28,6 +28,8 @@ concept QueueSubmissionConcept = requires(T t, uint64_t idx, size_t batchIdx, Pi
 
     { t.isInBatchRecordingState() } -> std::same_as<bool>;
 
+    { t.isInCommandListRecordingState() } -> std::same_as<bool>;
+
     { t.waitOnCpu() } -> std::same_as<uint64_t>;
 
     { t.purpose() } -> std::same_as<multithreading::Purpose>;
@@ -37,6 +39,10 @@ concept QueueSubmissionConcept = requires(T t, uint64_t idx, size_t batchIdx, Pi
     { t.addBatchDependency(batchIdx, stageMask) } -> std::same_as<void>;
 
     { t.endBatchRecording() } -> std::same_as<void>;
+
+    { t.beginCommandListRecording() } -> std::same_as<void>;
+
+    { t.endCommandListRecording() } -> std::same_as<void>;
 
     { t.reset() } -> std::same_as<void>;
 };
@@ -49,10 +55,13 @@ public:
 
     using PlatformImplementation::addBatchDependency;
     using PlatformImplementation::beginBatchRecording;
+    using PlatformImplementation::beginCommandListRecording;
     using PlatformImplementation::beginRecording;
     using PlatformImplementation::endBatchRecording;
+    using PlatformImplementation::endCommandListRecording;
     using PlatformImplementation::endRecording;
     using PlatformImplementation::isInBatchRecordingState;
+    using PlatformImplementation::isInCommandListRecordingState;
     using PlatformImplementation::isInInitialState;
     using PlatformImplementation::isInRecordingState;
     using PlatformImplementation::isPending;

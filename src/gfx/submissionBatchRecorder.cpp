@@ -62,5 +62,40 @@ void SubmissionBatchRecorder::addBatchDependency(size_t dependencyIndex, Pipelin
     queueSubmissionRecorder_->futures_.emplace_back(multithreading::TaskManager::submitTask(task, purpose));
 }
 
-auto SubmissionBatchRecorder::addCommandList() -> CommandListRecorder {}
+auto SubmissionBatchRecorder::submission() -> gfx::QueueSubmission&
+{
+    return *queueSubmissionRecorder_->submission_;
+}
+
+auto SubmissionBatchRecorder::submission() const -> gfx::QueueSubmission const&
+{
+    return *queueSubmissionRecorder_->submission_;
+}
+
+auto SubmissionBatchRecorder::addCommandList() -> CommandListRecorder
+{
+    auto purpose = queueSubmissionRecorder_->submission_->purpose();
+
+    auto commandListRecorder = CommandListRecorder{ this };
+
+    auto task = [recorder = queueSubmissionRecorder_]() -> void {
+        if (!recorder->submission_->isInRecordingState()) {
+            throw std::runtime_error("submission must be in recording state to record new batch");
+        }
+
+        if (!recorder->submission_->isInBatchRecordingState()) {
+            throw std::runtime_error("batch recording is not started yet");
+        }
+
+        if (recorder->submission_->isInCommandListRecordingState()) {
+            throw std::runtime_error("command list recording must be over before start new one");
+        }
+
+        recorder->submission_->beginCommandListRecording();
+    };
+
+    queueSubmissionRecorder_->futures_.emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+
+    return commandListRecorder;
+}
 }

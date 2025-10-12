@@ -4,6 +4,7 @@
 
 #include "commandListRecorder.h"
 #include "gfx/common.h"
+#include "gfx/queueSubmission.h"
 
 namespace cyclonite::gfx {
 class QueueSubmissionRecorder;
@@ -22,6 +23,10 @@ private:
     void addBatchDependency(size_t dependencyIndex, PipelineStageFlagBits stageMask);
 
     [[nodiscard]] auto addCommandList() -> CommandListRecorder;
+
+    [[nodiscard]] auto submission() -> gfx::QueueSubmission&;
+
+    [[nodiscard]] auto submission() const -> gfx::QueueSubmission const&;
 
 private:
     void finish(bool noexceptions);

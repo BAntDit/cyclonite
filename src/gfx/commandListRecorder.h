@@ -6,10 +6,15 @@
 #define CYCLONITE_COMMAND_LIST_RECORDER_H
 
 namespace cyclonite::gfx {
+class SubmissionBatchRecorder;
+
 class CommandListRecorder
 {
 public:
+    explicit CommandListRecorder(SubmissionBatchRecorder* batchRecorder);
+
 private:
+    SubmissionBatchRecorder* batchRecorder_;
 };
 }
 

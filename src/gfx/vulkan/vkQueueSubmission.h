@@ -30,20 +30,14 @@ public:
     void beginBatchRecording(uint64_t currentFrameIndex);
     void endBatchRecording();
 
-    [[nodiscard]] auto addCommandList(uint64_t batchId) -> gfx::CommandList;
-
     void addBatchDependency(size_t fromBatch, PipelineStageFlagBits stageMask);
+
+    void beginCommandListRecording();
+    void endCommandListRecording();
 
     void reset();
 
     auto waitOnCpu() -> uint64_t;
-
-    // TODO::
-    // start recording method (clears submit info) -> recording state
-
-    // after start can add batches, coamnd list and etc.
-
-    // end recording (prepares submit info) -> executable state
 
     [[nodiscard]] auto purpose() const -> multithreading::Purpose;
 
@@ -56,6 +50,11 @@ public:
     [[nodiscard]] auto isInBatchRecordingState() const -> bool
     {
         return state_.test(QueueSubmissionStateFlags::BatchRecording);
+    }
+
+    [[nodiscard]] auto isInCommandListRecordingState() const -> bool
+    {
+        return state_.test(QueueSubmissionStateFlags::CommandListRecording);
     }
 
     [[nodiscard]] auto isExecutable() const -> bool
