@@ -84,9 +84,9 @@ private:
 
     core::ResourceSharedRef commandPool_;
     std::vector<SubmissionBatch> batches_;
-    uint64_t completionFrameIndex_;
-    uint64_t currentFrameIndex_;
-    uint64_t lastCompletedFrameIndex_;
+    uint64_t completionFrameIndex_;    // to wait for (on CPU for submission completion)
+    uint64_t currentFrameIndex_;       // to signal on GPU (for batch signals)
+    uint64_t lastCompletedFrameIndex_; // to set as initial value of signals
     QueueSubmissionStateFlagBits state_;
 };
 }

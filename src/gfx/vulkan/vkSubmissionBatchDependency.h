@@ -14,7 +14,9 @@ class SubmissionBatchDependency
 public:
     SubmissionBatchDependency(core::ResourceWeakRef signalRef, PipelineStageFlagBits stageMask);
 
-    [[nodiscard]] auto value() const -> uint64_t { return value_; }
+    [[nodiscard]] auto value() const -> uint64_t { return value_; } // TODO:: return form signal here
+
+    // TODO:: add return completion value
 
     [[nodiscard]] auto signal() const -> core::ResourceWeakRef { return signalRef_; }
 
@@ -28,6 +30,8 @@ public:
 private:
     core::ResourceWeakRef signalRef_;
     PipelineStageFlagBits stageMask_;
+
+    // TODO:: make it completion value
     uint64_t value_;
 };
 }
