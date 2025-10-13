@@ -35,7 +35,7 @@ Texture::Texture(core::ResourceManagerBase* resourceManager,
                  uint32_t arrayLayerCount,
                  TextureTiling tiling,
                  TextureUsageFlagBits usageFlags)
-  : core::ResourceBase{ resourceManager, resourceId, true }
+  : core::ResourceBase{ resourceManager, resourceId, false }
   , core::EnableRefFromThis{}
   , deviceRef_{ deviceRef }
   , allocation_{ VK_NULL_HANDLE }

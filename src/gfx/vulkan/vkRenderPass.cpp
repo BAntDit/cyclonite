@@ -100,7 +100,7 @@ RenderPass::RenderPass(
   uint32_t height,
   real depthClearValue,
   uint8_t stencilClearValue)
-  : core::ResourceBase{ resourceManager, resourceId, true }
+  : core::ResourceBase{ resourceManager, resourceId, false }
   , deviceRef_{ deviceRef }
   , renderTargets_{ std::make_pair(depthStencilRef, colorAttachmentRefs) }
   , vkRenderPass_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
@@ -202,7 +202,7 @@ RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
                        gfx::Color clearColor,
                        real depthClearValue,
                        uint8_t stencilClearValue)
-  : core::ResourceBase{ resourceManager, resourceId, true }
+  : core::ResourceBase{ resourceManager, resourceId, false }
   , deviceRef_{ deviceRef }
   , renderTargets_{ renderWindowRef }
   , vkRenderPass_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }

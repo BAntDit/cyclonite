@@ -14,7 +14,7 @@ Signal::Signal(core::ResourceManagerBase* resourceManager,
                core::ResourceSharedRef deviceRef,
                SignalType signalType,
                uint64_t initialValue /* = 0*/)
-  : core::ResourceBase{ resourceManager, resourceId, true }
+  : core::ResourceBase{ resourceManager, resourceId, false }
   , deviceRef_{ deviceRef }
   , vkSemaphore_{ deviceRef.as<gfx::type_traits::platform_implementation_t<gfx::Device>>().handle(),
                   vkDestroySemaphore }

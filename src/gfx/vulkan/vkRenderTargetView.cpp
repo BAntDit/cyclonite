@@ -15,7 +15,7 @@ RenderTargetView::RenderTargetView(core::ResourceManagerBase* resourceManager,
                                    core::ResourceId resourceId,
                                    core::ResourceWeakRef weakRef,
                                    uint32_t mipLevel)
-  : core::ResourceBase{ resourceManager, resourceId, true }
+  : core::ResourceBase{ resourceManager, resourceId, false }
   , texture_{ weakRef }
   , vkImageView_{ weakRef.lock()
                     .as<type_traits::platform_implementation_t<gfx::Texture>>()

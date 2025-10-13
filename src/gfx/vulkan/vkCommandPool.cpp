@@ -13,7 +13,7 @@ CommandPool::CommandPool(core::ResourceManagerBase* resourceManager,
                          core::ResourceSharedRef deviceRef,
                          uint32_t queueFamilyIndex,
                          CommandPoolFlagBits flags)
-  : core::ResourceBase{ resourceManager, resourceId, true }
+  : core::ResourceBase{ resourceManager, resourceId, false }
   , core::EnableRefFromThis{}
   , deviceRef_{ deviceRef }
   , vkCommandPool_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyCommandPool }

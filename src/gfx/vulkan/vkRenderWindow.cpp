@@ -108,7 +108,7 @@ RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
                            uint32_t height,
                            std::string_view title,
                            SurfaceFlagBits flags)
-  : core::ResourceBase{ resourceManager, resourceId, true }
+  : core::ResourceBase{ resourceManager, resourceId, false }
   , deviceRef_{ deviceRef }
   , extent_{}
   , sdlWindowPtr_{ SDL_CreateWindow(title.data(),

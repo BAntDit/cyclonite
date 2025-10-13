@@ -26,7 +26,10 @@ public:
 
     virtual ~ResourceManagerBase() = default;
 
+    [[deprecated]]
     void setCurrentFrame(uint_fast64_t frameNumber) { currentFrame_ = frameNumber; }
+    
+    
     void setLastCompletedFrame(uint_fast64_t frameNumber) { lastCompletedFrame_ = frameNumber; }
 
     [[nodiscard]] auto currentFrame() const -> uint_fast64_t { return currentFrame_; }
@@ -35,6 +38,7 @@ public:
 protected:
     virtual void releaseResourceImmediate(ResourceId id) = 0;
 
+    [[deprecated]]
     virtual void releaseResourceDeferred(ResourceId id) = 0;
 
     static auto makeUniqueRef(ResourceBase* resource) -> ResourceUniqueRef
@@ -150,6 +154,7 @@ public:
     auto allocResource(Args&&... args) -> ResourceUniqueRef
         requires(resource_type_list_t::template has_type<ResourceType>::value);
 
+    [[deprecated]]
     void gc(bool clearAll = false);
 
     [[nodiscard]] auto isResourceValid(ResourceId id) const -> bool override;
@@ -157,6 +162,7 @@ public:
 protected:
     void releaseResourceImmediate(ResourceId id) override;
 
+    [[deprecated]]
     void releaseResourceDeferred(ResourceId id) override;
 
     auto alloc(uint16_t type) -> std::pair<uint32_t, uint32_t>;
