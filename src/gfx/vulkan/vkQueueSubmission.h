@@ -39,6 +39,8 @@ public:
 
     auto waitOnCpu() -> uint64_t;
 
+    void submit();
+
     [[nodiscard]] auto commandListToRecord() -> gfx::CommandList&;
 
     [[nodiscard]] auto purpose() const -> multithreading::Purpose;

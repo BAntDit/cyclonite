@@ -47,6 +47,8 @@ concept QueueSubmissionConcept = requires(T t, uint64_t idx, size_t batchIdx, Pi
     { t.commandListToRecord() } -> std::same_as<gfx::CommandList>;
 
     { t.reset() } -> std::same_as<void>;
+
+    { t.submit() } -> std::same_as<void>;
 };
 
 template<QueueSubmissionConcept PlatformImplementation>
@@ -72,6 +74,7 @@ public:
     using PlatformImplementation::purpose;
     using PlatformImplementation::reset;
     using PlatformImplementation::resourceBase;
+    using PlatformImplementation::submit;
     using PlatformImplementation::waitOnCpu;
 };
 }

@@ -66,6 +66,8 @@ void CommandList::beginRenderPass(core::ResourceSharedRef renderPassRef)
 
     auto& renderPass = renderPassRef.as<type_traits::platform_implementation_t<gfx::RenderPass>>();
 
+    // TODO:: render pass dependency
+
     auto rect2D = VkRect2D{};
     rect2D.offset.x = 0;
     rect2D.offset.y = 0;

@@ -49,6 +49,12 @@ public:
 
     [[nodiscard]] auto computeQueueFamilyIndex() const -> uint32_t { return computeQueueFamilyIndex_; }
 
+    [[nodiscard]] auto graphicsQueue() const -> VkQueue { return static_cast<VkQueue>(graphicsQueue_); }
+
+    [[nodiscard]] auto transferQueue() const -> VkQueue { return static_cast<VkQueue>(transferQueue_); }
+
+    [[nodiscard]] auto computeQueue() const -> VkQueue { return static_cast<VkQueue>(computeQueue_); }
+
     [[nodiscard]] auto handle() const -> VkDevice { return static_cast<VkDevice>(vkDevice_); }
 
     [[nodiscard]] auto name() const -> std::string_view { return name_; }

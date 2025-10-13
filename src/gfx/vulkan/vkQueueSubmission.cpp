@@ -182,5 +182,47 @@ auto QueueSubmission::purpose() const -> multithreading::Purpose
 
     return purpose;
 }
+
+void QueueSubmission::submit() 
+{
+    [[maybe_unused]] auto submissionPurpose = purpose();
+    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
+
+    auto& pool = commandPool_.as<type_traits::platform_implementation_t<gfx::CommandPool>>();
+    auto& device = pool.device().as<type_traits::platform_implementation_t<gfx::Device>>();
+
+    auto queue = VkQueue{ VK_NULL_HANDLE };
+    switch (submissionPurpose) 
+    {
+        case multithreading::Purpose::Render:
+            queue = device.graphicsQueue();
+            break;
+        case multithreading::Purpose::Transfer:
+            queue = device.transferQueue();
+            break;
+        case multithreading::Purpose::Compute:
+            queue = device.computeQueue();
+            break;
+        default:
+            assert(false);
+    }
+
+    auto submissionBatchCount = batches_.size();
+    auto vkSubmissions = std::vector<VkSubmitInfo>{};
+
+    vkSubmissions.reserve(submissionBatchCount);
+
+    for (auto const& batch : batches_) {
+        auto vkBatch = vkSubmissions.emplace_back(VkSubmitInfo{});
+        
+        auto timelineSubmitInfo = VkTimelineSemaphoreSubmitInfo{};
+        timelineSubmitInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+
+        //batch.dependencies
+
+        vkBatch.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    }
+    // TODO::
+}
 }
 #endif
