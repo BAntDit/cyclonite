@@ -27,7 +27,7 @@ public:
 
     void endRecording();
 
-    void beginBatchRecording(uint64_t currentFrameIndex);
+    void beginBatchRecording();
     void endBatchRecording();
 
     void addBatchDependency(size_t fromBatch, PipelineStageFlagBits stageMask);
@@ -68,6 +68,10 @@ public:
 
     [[nodiscard]] auto isPending() const -> bool { return state_.test(QueueSubmissionStateFlags::Pending); }
 
+    [[nodiscard]] auto currentFrameIndex() const -> uint64_t { return currentFrameIndex_; };
+
+    void setFrameIndices(uint64_t currentFrameIndex, uint64_t lastCompletedFrameIndex);
+
     using core::ResourceBase::resourceBase;
 
 private:
@@ -80,7 +84,9 @@ private:
 
     core::ResourceSharedRef commandPool_;
     std::vector<SubmissionBatch> batches_;
-    uint64_t competitionValue_;
+    uint64_t completionFrameIndex_;
+    uint64_t currentFrameIndex_;
+    uint64_t lastCompletedFrameIndex_;
     QueueSubmissionStateFlagBits state_;
 };
 }

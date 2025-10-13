@@ -13,7 +13,7 @@
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept QueueSubmissionConcept = requires(T t, uint64_t idx, size_t batchIdx, PipelineStageFlagBits stageMask) {
+concept QueueSubmissionConcept = requires(T t, size_t batchIdx, PipelineStageFlagBits stageMask) {
     { t.beginRecording() } -> std::same_as<void>;
 
     { t.endRecording() } -> std::same_as<void>;
@@ -34,7 +34,7 @@ concept QueueSubmissionConcept = requires(T t, uint64_t idx, size_t batchIdx, Pi
 
     { t.purpose() } -> std::same_as<multithreading::Purpose>;
 
-    { t.beginBatchRecording(idx) } -> std::same_as<void>;
+    { t.beginBatchRecording() } -> std::same_as<void>;
 
     { t.addBatchDependency(batchIdx, stageMask) } -> std::same_as<void>;
 
@@ -44,11 +44,11 @@ concept QueueSubmissionConcept = requires(T t, uint64_t idx, size_t batchIdx, Pi
 
     { t.endCommandListRecording() } -> std::same_as<void>;
 
-    { t.commandListToRecord() } -> std::same_as<gfx::CommandList>;
+    { t.commandListToRecord() } -> std::same_as<std::add_lvalue_reference_t<gfx::CommandList>>;
 
     { t.reset() } -> std::same_as<void>;
 
-    { t.submit() } -> std::same_as<void>;
+    // { t.submit() } -> std::same_as<void>;
 };
 
 template<QueueSubmissionConcept PlatformImplementation>

@@ -27,9 +27,11 @@ public:
     virtual ~ResourceManagerBase() = default;
 
     [[deprecated]]
-    void setCurrentFrame(uint_fast64_t frameNumber) { currentFrame_ = frameNumber; }
-    
-    
+    void setCurrentFrame(uint_fast64_t frameNumber)
+    {
+        currentFrame_ = frameNumber;
+    }
+
     void setLastCompletedFrame(uint_fast64_t frameNumber) { lastCompletedFrame_ = frameNumber; }
 
     [[nodiscard]] auto currentFrame() const -> uint_fast64_t { return currentFrame_; }

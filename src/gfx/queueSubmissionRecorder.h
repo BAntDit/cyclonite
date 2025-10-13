@@ -23,8 +23,6 @@ public:
 
     void setQueueSubmission(core::ResourceSharedRef submissionRef);
 
-    void setFrameNumber(uint64_t currentFrameNumber) { currentFrameIndex_ = currentFrameNumber; }
-
     [[nodiscard]] auto addBatch() -> SubmissionBatchRecorder;
 
     void finish() { finish(false); }
@@ -35,7 +33,6 @@ private:
     core::ResourceSharedRef submissionRef_;
     QueueSubmission* submission_;
     std::vector<std::future<void>> futures_;
-    uint64_t currentFrameIndex_;
 };
 }
 

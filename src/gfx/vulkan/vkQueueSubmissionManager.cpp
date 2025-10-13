@@ -12,7 +12,7 @@ namespace cyclonite::gfx::vulkan {
 QueueSubmissionManager::QueueSubmissionManager(core::ResourceSharedRef deviceRef)
   : deviceRef_{ deviceRef }
   , queueSubmissionRingMap_{}
-  , currentFrameIndex_{ 0 }
+  , currentFrameIndex_{ 1 }
 {
 }
 
@@ -83,6 +83,12 @@ auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purp
             } // if pending
         } else { // new submission
             submissionRef = device.createQueueSubmission(queueFamilyIndex, flags);
+        }
+
+        {
+            auto* completedFrame = completedFrames_.at(purposeBits.value, queueFamilyIndex, flags.value);
+            auto& submission = submissionRef.as<type_traits::platform_implementation_t<gfx::QueueSubmission>>();
+            submission.setFrameIndices(currentFrameIndex_, completedFrame == nullptr ? 0 : *completedFrame);
         }
 
         return submissionRef;

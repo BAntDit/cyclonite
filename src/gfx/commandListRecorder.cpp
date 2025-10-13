@@ -83,7 +83,7 @@ void CommandListRecorder::finish(bool noexceptions /* = false*/)
     try {
         auto purpose = batchRecorder_->submission().purpose();
 
-        auto task = [recorder = batchRecorder_, noexceptions]() -> void {
+        auto task = [recorder = batchRecorder_]() -> void {
             if (!recorder->submission().isInCommandListRecordingState()) {
                 throw std::runtime_error("command list recording is already finished");
             }

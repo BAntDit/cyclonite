@@ -55,10 +55,6 @@ auto QueueSubmissionRecorder::addBatch() -> SubmissionBatchRecorder
     auto purpose = submission_->purpose();
 
     auto task = [this]() -> void {
-        if (currentFrameIndex_ == std::numeric_limits<uint64_t>::max()) {
-            throw std::runtime_error("invalid frame index");
-        }
-
         if (!submission_->isInRecordingState()) {
             throw std::runtime_error("submission must be in recording state to record new batch");
         }
@@ -67,7 +63,7 @@ auto QueueSubmissionRecorder::addBatch() -> SubmissionBatchRecorder
             throw std::runtime_error("batch recording must be over, before start new one");
         }
 
-        submission_->beginBatchRecording(currentFrameIndex_);
+        submission_->beginBatchRecording();
     };
 
     futures_.emplace_back(multithreading::TaskManager::submitTask(task, purpose));

@@ -16,7 +16,9 @@ QueueSubmission::QueueSubmission(core::ResourceManagerBase* resourceManager,
   : core::ResourceBase{ resourceManager, resourceId, false }
   , commandPool_{}
   , batches_{}
-  , competitionValue_{}
+  , completionFrameIndex_{ 0 }
+  , currentFrameIndex_{ 0 }
+  , lastCompletedFrameIndex_{ 0 }
   , state_{}
 {
     state_.set(QueueSubmissionStateFlags::Initial);
@@ -45,7 +47,7 @@ void QueueSubmission::endRecording()
     state_.value = metrix::value_cast(QueueSubmissionStateFlags::Executable);
 }
 
-void QueueSubmission::beginBatchRecording(uint64_t currentFrameIndex)
+void QueueSubmission::beginBatchRecording()
 {
     [[maybe_unused]] auto submissionPurpose = purpose();
     assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
@@ -57,7 +59,7 @@ void QueueSubmission::beginBatchRecording(uint64_t currentFrameIndex)
     auto& pool = commandPool_.as<type_traits::platform_implementation_t<gfx::CommandPool>>();
     auto& device = pool.device().as<gfx::Device>();
 
-    batch.signal = device.createSignal(gfx::SignalType::TIMELINE, currentFrameIndex);
+    batch.signal = device.createSignal(gfx::SignalType::TIMELINE, lastCompletedFrameIndex_);
 }
 
 void QueueSubmission::addBatchDependency(size_t fromBatch, PipelineStageFlagBits stageMask)
@@ -130,14 +132,14 @@ auto QueueSubmission::waitOnCpu() -> uint64_t
 
     auto completedValue = uint64_t{ 0 };
 
-    if (signal().as<gfx::Signal>().waitOnCpu(competitionValue_, std::numeric_limits<uint64_t>::max())) {
+    if (signal().as<gfx::Signal>().waitOnCpu(completionFrameIndex_, std::numeric_limits<uint64_t>::max())) {
         state_.reset(QueueSubmissionStateFlags::Pending);
 
         if (!state_.test(QueueSubmissionStateFlags::Invalid)) {
             state_.value = metrix::value_cast(QueueSubmissionStateFlags::Executable);
         }
 
-        completedValue = competitionValue_;
+        completedValue = completionFrameIndex_;
     }
 
     return completedValue;
@@ -159,7 +161,7 @@ void QueueSubmission::reset()
 
     batches_.clear();
     commandPool_.as<gfx::CommandPool>().reset();
-    competitionValue_ = 0;
+    completionFrameIndex_ = 0;
     state_.value = metrix::value_cast(QueueSubmissionStateFlags::Initial);
 }
 
@@ -183,7 +185,7 @@ auto QueueSubmission::purpose() const -> multithreading::Purpose
     return purpose;
 }
 
-void QueueSubmission::submit() 
+void QueueSubmission::submit()
 {
     [[maybe_unused]] auto submissionPurpose = purpose();
     assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
@@ -192,8 +194,7 @@ void QueueSubmission::submit()
     auto& device = pool.device().as<type_traits::platform_implementation_t<gfx::Device>>();
 
     auto queue = VkQueue{ VK_NULL_HANDLE };
-    switch (submissionPurpose) 
-    {
+    switch (submissionPurpose) {
         case multithreading::Purpose::Render:
             queue = device.graphicsQueue();
             break;
@@ -214,15 +215,22 @@ void QueueSubmission::submit()
 
     for (auto const& batch : batches_) {
         auto vkBatch = vkSubmissions.emplace_back(VkSubmitInfo{});
-        
+
         auto timelineSubmitInfo = VkTimelineSemaphoreSubmitInfo{};
         timelineSubmitInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
 
-        //batch.dependencies
+        // batch.dependencies
 
         vkBatch.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     }
     // TODO::
+}
+
+void QueueSubmission::setFrameIndices(uint64_t currentFrameIndex, uint64_t lastCompletedFrameIndex)
+{
+    assert(state_.test(QueueSubmissionStateFlags::Initial) || state_.test(QueueSubmissionStateFlags::Executable));
+    currentFrameIndex_ = currentFrameIndex;
+    lastCompletedFrameIndex_ = lastCompletedFrameIndex;
 }
 }
 #endif
