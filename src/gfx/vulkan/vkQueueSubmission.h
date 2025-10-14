@@ -32,6 +32,8 @@ public:
 
     void addBatchDependency(size_t fromBatch, PipelineStageFlagBits stageMask);
 
+    void addBatchDependency(gfx::SubmissionBatchDependency const& externalDependency);
+
     void beginCommandListRecording();
     void endCommandListRecording();
 
@@ -77,7 +79,8 @@ public:
 private:
     struct SubmissionBatch
     {
-        std::vector<gfx::SubmissionBatchDependency> dependencies;
+        std::vector<gfx::SubmissionBatchDependency> timelineDependencies;
+        std::vector<gfx::SubmissionBatchDependency> binaryDependencies;
         std::vector<gfx::CommandList> commandLists;
         core::ResourceSharedRef signal;
     };

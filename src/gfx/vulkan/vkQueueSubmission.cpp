@@ -68,7 +68,17 @@ void QueueSubmission::addBatchDependency(size_t fromBatch, PipelineStageFlagBits
     auto& srcBatch = batches_[fromBatch];
     auto& dstBatch = batches_.back();
 
-    dstBatch.dependencies.emplace_back(srcBatch.signal, stageMask);
+    dstBatch.timelineDependencies.emplace_back(srcBatch.signal, stageMask, currentFrameIndex_);
+}
+
+void QueueSubmission::addBatchDependency(gfx::SubmissionBatchDependency const& externalDependency) 
+{
+    auto& dstBatch = batches_.back();
+    if (externalDependency.type() == gfx::SignalType::BINARY) {
+        dstBatch.binaryDependencies.push_back(externalDependency);
+    } else if (externalDependency.type() == gfx::SignalType::TIMELINE) {
+        dstBatch.timelineDependencies.push_back(externalDependency);
+    }
 }
 
 void QueueSubmission::endBatchRecording()

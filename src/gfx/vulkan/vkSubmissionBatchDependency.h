@@ -12,11 +12,23 @@ namespace cyclonite::gfx::vulkan {
 class SubmissionBatchDependency
 {
 public:
-    SubmissionBatchDependency(core::ResourceWeakRef signalRef, PipelineStageFlagBits stageMask);
+    SubmissionBatchDependency(core::ResourceWeakRef signalRef,
+                              PipelineStageFlagBits stageMask,
+                              uint64_t ccompletionValue);
 
-    [[nodiscard]] auto value() const -> uint64_t { return value_; } // TODO:: return form signal here
+    // binary dependency
+    SubmissionBatchDependency(core::ResourceWeakRef signalRef, PipelineStageFlagBits stageMask)
+      : SubmissionBatchDependency{ signalRef, stageMask, 1 }
+    {
+        [[maybe_unused]] auto signal = signalRef_.lock();
+        assert(signal.as<gfx::Signal>().type() == SignalType::BINARY);
+    }
 
-    // TODO:: add return completion value
+    [[nodiscard]] auto type() const -> SignalType;
+
+    [[nodiscard]] auto value() const -> uint64_t;
+
+    [[nodiscard]] auto completionValue() const -> uint64_t { return completionValue_; }
 
     [[nodiscard]] auto signal() const -> core::ResourceWeakRef { return signalRef_; }
 
@@ -28,11 +40,9 @@ public:
     }
 
 private:
-    core::ResourceWeakRef signalRef_;
+    mutable core::ResourceWeakRef signalRef_;
     PipelineStageFlagBits stageMask_;
-
-    // TODO:: make it completion value
-    uint64_t value_;
+    uint64_t completionValue_;
 };
 }
 #endif // GFX_DRIVER_VULKAN

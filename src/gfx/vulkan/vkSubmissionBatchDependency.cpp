@@ -5,17 +5,31 @@
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
-SubmissionBatchDependency::SubmissionBatchDependency(core::ResourceWeakRef signalRef, PipelineStageFlagBits stageMask)
+SubmissionBatchDependency::SubmissionBatchDependency(core::ResourceWeakRef signalRef,
+                                                     PipelineStageFlagBits stageMask,
+                                                     uint64_t ccompletionValue)
   : signalRef_{ signalRef }
   , stageMask_{ stageMask }
-  , value_{ 0 }
+  , completionValue_{ ccompletionValue }
+{
+    auto signal = signalRef_.lock();
+    assert(signal.valid());
+}
+
+auto SubmissionBatchDependency::value() const -> uint64_t
 {
     auto signal = signalRef_.lock();
     assert(signal.valid());
 
-    // store signal value here
-    // because meanwhile dependency creation signal is not in pending state
-    value_ = signal.as<gfx::Signal>().value();
+    return signal.as<gfx::Signal>().value();
+}
+
+auto SubmissionBatchDependency::type() const -> SignalType 
+{
+    auto signal = signalRef_.lock();
+    assert(signal.valid());
+
+    return signal.as<gfx::Signal>().type();
 }
 }
 #endif

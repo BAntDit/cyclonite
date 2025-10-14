@@ -22,6 +22,8 @@ private:
     void finish() { finish(false); }
 
     void addBatchDependency(size_t dependencyIndex, PipelineStageFlagBits stageMask);
+    
+    void addBatchDependency(gfx::SubmissionBatchDependency const& externalDependency);
 
     [[nodiscard]] auto addCommandList() -> CommandListRecorder;
 

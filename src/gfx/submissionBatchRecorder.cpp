@@ -62,6 +62,21 @@ void SubmissionBatchRecorder::addBatchDependency(size_t dependencyIndex, Pipelin
     queueSubmissionRecorder_->futures_.emplace_back(multithreading::TaskManager::submitTask(task, purpose));
 }
 
+void SubmissionBatchRecorder::addBatchDependency(gfx::SubmissionBatchDependency const& externalDependency) 
+{
+    auto purpose = queueSubmissionRecorder_->submission_->purpose();
+
+    auto task = [recorder = queueSubmissionRecorder_, dep = externalDependency]() -> void {
+        if (!recorder->submission_->isInBatchRecordingState()) {
+            throw std::runtime_error("batch recording is already finished");
+        }
+
+        recorder->submission_->addBatchDependency(dep);
+    };
+
+    queueSubmissionRecorder_->futures_.emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+}
+
 auto SubmissionBatchRecorder::submission() -> gfx::QueueSubmission&
 {
     return *queueSubmissionRecorder_->submission_;
