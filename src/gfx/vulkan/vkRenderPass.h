@@ -55,7 +55,7 @@ public:
 
     [[nodiscard]] auto acquireSwapchainSignal(uint64_t currentFrameIndex) -> core::ResourceSharedRef;
     
-    // [[nodiscard]] auto presentationSignal() const -> std::optional<core::ResourceSharedRef>;
+    [[nodiscard]] auto presentationSignal() const -> core::ResourceSharedRef;
 
     void getClearValues(uint32_t& clearValuesCount, VkClearValue* clearValues) const;
 

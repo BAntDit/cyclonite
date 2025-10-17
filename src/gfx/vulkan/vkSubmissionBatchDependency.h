@@ -14,7 +14,7 @@ class SubmissionBatchDependency
 public:
     SubmissionBatchDependency(core::ResourceWeakRef signalRef,
                               PipelineStageFlagBits stageMask,
-                              uint64_t ccompletionValue);
+                              uint64_t completionValue);
 
     // binary dependency
     SubmissionBatchDependency(core::ResourceWeakRef signalRef, PipelineStageFlagBits stageMask)

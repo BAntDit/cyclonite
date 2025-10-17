@@ -48,6 +48,8 @@ concept QueueSubmissionConcept = requires(T t, size_t batchIdx, PipelineStageFla
 
     { t.reset() } -> std::same_as<void>;
 
+    { t.currentFrameIndex() } -> std::same_as<uint64_t>;
+
     // { t.submit() } -> std::same_as<void>;
 };
 
@@ -62,6 +64,7 @@ public:
     using PlatformImplementation::beginCommandListRecording;
     using PlatformImplementation::beginRecording;
     using PlatformImplementation::commandListToRecord;
+    using PlatformImplementation::currentFrameIndex;
     using PlatformImplementation::endBatchRecording;
     using PlatformImplementation::endCommandListRecording;
     using PlatformImplementation::endRecording;

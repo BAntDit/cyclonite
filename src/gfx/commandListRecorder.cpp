@@ -4,6 +4,7 @@
 
 #include "commandListRecorder.h"
 
+#include "gfx/renderPass.h"
 #include "multithreading/taskManager.h"
 #include "queueSubmissionRecorder.h"
 #include "submissionBatchRecorder.h"
@@ -40,10 +41,19 @@ void CommandListRecorder::beginRenderPass(core::ResourceSharedRef renderPassRef)
 {
     auto purpose = batchRecorder_->submission().purpose();
 
-    auto task = [recorder = batchRecorder_, renderPassRef]() -> void {
+    auto task = [recorder = batchRecorder_, renderPassRef]() mutable -> void {
         if (!recorder->submission().isInCommandListRecordingState()) {
             throw std::runtime_error("command list recording is already finished");
         }
+
+        auto& renderPass = renderPassRef.as<gfx::RenderPass>();
+        if (renderPass.isPresentationPass()) {
+            auto&& swapchainSignal = renderPass.acquireSwapchainSignal(recorder->submission().currentFrameIndex());
+
+            recorder->addBatchDependency(gfx::SubmissionBatchDependency{
+              std::move(swapchainSignal), PipelineStageFlagBits{ PipelineStageFlags::FRAGMENT_SHADER_BIT } });
+        }
+
         recorder->submission().commandListToRecord().beginRenderPass(renderPassRef);
     };
 

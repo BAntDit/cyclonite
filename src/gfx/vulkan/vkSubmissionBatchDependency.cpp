@@ -7,10 +7,10 @@
 namespace cyclonite::gfx::vulkan {
 SubmissionBatchDependency::SubmissionBatchDependency(core::ResourceWeakRef signalRef,
                                                      PipelineStageFlagBits stageMask,
-                                                     uint64_t ccompletionValue)
+                                                     uint64_t completionValue)
   : signalRef_{ signalRef }
   , stageMask_{ stageMask }
-  , completionValue_{ ccompletionValue }
+  , completionValue_{ completionValue }
 {
     auto signal = signalRef_.lock();
     assert(signal.valid());
@@ -24,7 +24,7 @@ auto SubmissionBatchDependency::value() const -> uint64_t
     return signal.as<gfx::Signal>().value();
 }
 
-auto SubmissionBatchDependency::type() const -> SignalType 
+auto SubmissionBatchDependency::type() const -> SignalType
 {
     auto signal = signalRef_.lock();
     assert(signal.valid());

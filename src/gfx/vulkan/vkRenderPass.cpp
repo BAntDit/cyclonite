@@ -399,6 +399,13 @@ auto RenderPass::acquireSwapchainSignal(uint64_t currentFrameIndex) -> core::Res
     return result;
 }
 
-/*auto RenderPass::presentationSignal() const -> std::optional<core::ResourceSharedRef>{}*/
+auto RenderPass::presentationSignal() const -> core::ResourceSharedRef 
+{
+    auto result = core::ResourceSharedRef{};
+
+
+
+    return result;
+}
 }
 #endif
