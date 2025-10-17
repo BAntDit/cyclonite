@@ -64,6 +64,10 @@ public:
 
     void validateDepthStencil(Format format);
 
+    [[nodiscard]] auto nextSwapchainIndex(uint64_t currentFrameIndex) -> std::pair<uint32_t, core::ResourceSharedRef>;
+    
+    void present();
+
 private:
     core::ResourceSharedRef deviceRef_;
     VkExtent2D extent_;
@@ -72,7 +76,10 @@ private:
     Handle<VkSwapchainKHR> vkSwapchain_;
     std::array<core::ResourceSharedRef, config_t::max_swapchain_length_v> depthStencilRefs_;
     std::array<Handle<VkImageView>, config_t::max_swapchain_length_v> imageViews_;
+    std::array<core::ResourceSharedRef, config_t::max_swapchain_length_v> swapchainWaitSignals_;
+    std::array<core::ResourceSharedRef, config_t::max_swapchain_length_v> presentationWaitSignals_;
     uint32_t swapchainLength_;
+    uint32_t swapchainIndex_;
     gfx::Format colorOutputFormat_;
     gfx::Format depthStencilFormat_;
     gfx::PresentMode presentMode_;

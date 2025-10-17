@@ -93,9 +93,8 @@ auto getWindowProperty<HINSTANCE>(SDL_Window* window) -> HINSTANCE
 #endif
 
 template<typename... SurfaceArgs>
-auto createPlatformSurface(VkInstance vkInstance,
-                           SDL_Window* sdlWindow,
-                           metrix::type_list<SurfaceArgs...>) -> platform_surface_t*
+auto createPlatformSurface(VkInstance vkInstance, SDL_Window* sdlWindow, metrix::type_list<SurfaceArgs...>)
+  -> platform_surface_t*
 {
     return new platform_surface_t{ vkInstance, getWindowProperty<SurfaceArgs>(sdlWindow)... };
 }
@@ -123,7 +122,10 @@ RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
   , vkSwapchain_{ deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroySwapchainKHR }
   , depthStencilRefs_{}
   , imageViews_{}
+  , swapchainWaitSignals_{}
+  , presentationWaitSignals_{}
   , swapchainLength_{ 0 }
+  , swapchainIndex_{ std::numeric_limits<uint32_t>::max() }
   , colorOutputFormat_{ gfx::Format::UNDEFINED }
   , depthStencilFormat_{ gfx::Format::UNDEFINED }
   , presentMode_{ gfx::PresentMode::Immediate }
@@ -224,6 +226,9 @@ void RenderWindow::validateSwapchain(Format format, PresentMode presentMode)
             vkResult != VK_SUCCESS) {
             throw Exception{ vkResult, "vkCreateImageView" };
         }
+
+        swapchainWaitSignals_[i] = device.createSignal(SignalType::BINARY);
+        presentationWaitSignals_[i] = device.createSignal(SignalType::BINARY);
     }
 
     colorOutputFormat_ = format;
@@ -274,6 +279,52 @@ auto RenderWindow::getDSV(size_t swapchainIndex) -> VkImageView
     }
 
     return result;
+}
+
+auto RenderWindow::nextSwapchainIndex(uint64_t currentFrameIndex) -> std::pair<uint32_t, core::ResourceSharedRef>
+{
+    auto frame = static_cast<size_t>(currentFrameIndex % swapchainLength_);
+
+    auto const& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
+    auto const& signalRef = swapchainWaitSignals_[frame];
+    auto const& signal = signalRef.as<type_traits::platform_implementation_t<gfx::Signal>>();
+
+    if (auto vkResult = vkAcquireNextImageKHR(device.handle(),
+                                              static_cast<VkSwapchainKHR>(vkSwapchain_),
+                                              std::numeric_limits<uint64_t>::max(),
+                                              signal.handle(),
+                                              VK_NULL_HANDLE,
+                                              &swapchainIndex_);
+        (vkResult != VK_SUCCESS && vkResult != VK_SUBOPTIMAL_KHR)) {
+        throw Exception{ vkResult, "vkAcquireNextImageKHR" };
+    } // TODO:: handle suboptimal KHR (can happen on resize)
+
+    return std::pair{ swapchainIndex_, signalRef };
+}
+
+void RenderWindow::present()
+{
+    auto const& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
+
+    auto const& signalRef = presentationWaitSignals_[swapchainIndex_];
+    auto vkSignal = signalRef.as<type_traits::platform_implementation_t<gfx::Signal>>().handle(); 
+    auto vkSwapchain = static_cast<VkSwapchainKHR>(vkSwapchain_);
+    auto vkResult = VK_SUCCESS;
+
+    auto presentInfo = VkPresentInfoKHR{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = &vkSignal;
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = &vkSwapchain;
+    presentInfo.pImageIndices = &swapchainIndex_;
+    presentInfo.pResults = &vkResult;
+
+    vkQueuePresentKHR(device.graphicsQueue(), &presentInfo);
+
+    if (vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vkQueuePresentKHR" };
+    }
 }
 }
 #endif

@@ -12,7 +12,7 @@
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept RenderWindowConcept = requires(T t) {
+concept RenderWindowConcept = requires(T t, uint64_t i) {
     { t.width() } -> std::same_as<uint32_t>;
     { t.height() } -> std::same_as<uint32_t>;
 
@@ -25,6 +25,10 @@ concept RenderWindowConcept = requires(T t) {
     { t.depthStencilFormat() } -> std::same_as<gfx::Format>;
 
     { t.presentMode() } -> std::same_as<gfx::PresentMode>;
+
+    { t.nextSwapchainIndex(i) } -> std::same_as<std::pair<uint32_t, core::ResourceSharedRef>>;
+
+    { t.present() } -> std::same_as<void>;
 };
 
 template<RenderWindowConcept PlatformImplementation>
@@ -37,7 +41,9 @@ public:
     using PlatformImplementation::depthStencilFormat;
     using PlatformImplementation::hasDepth;
     using PlatformImplementation::height;
+    using PlatformImplementation::nextSwapchainIndex;
     using PlatformImplementation::PlatformImplementation;
+    using PlatformImplementation::present;
     using PlatformImplementation::presentMode;
     using PlatformImplementation::resourceBase;
     using PlatformImplementation::swapchainLength;

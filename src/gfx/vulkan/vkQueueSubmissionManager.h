@@ -35,7 +35,7 @@ public:
                                               CommandPoolFlagBits flags) -> core::ResourceSharedRef;
 
     // TODO::
-    // auto submit();
+    // auto flush();
 
 private:
     using queue_submission_ring_t = std::array<core::ResourceSharedRef, config_t::queue_submission_ring_size_v>;
