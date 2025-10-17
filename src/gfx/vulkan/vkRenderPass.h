@@ -51,6 +51,8 @@ public:
 
     [[nodiscard]] auto height() const -> uint32_t;
 
+    [[nodiscard]] auto isPresentationPass() const -> bool { return renderTargets_.index() == 0; }
+
     void getClearValues(uint32_t& clearValuesCount, VkClearValue* clearValues) const;
 
     using core::ResourceBase::resourceBase;

@@ -17,6 +17,8 @@ concept RenderPassConcept = requires(T t) {
     { t.width() } -> std::same_as<uint32_t>;
 
     { t.height() } -> std::same_as<uint32_t>;
+
+    { t.isPresentationPass() } -> std::same_as<bool>;
 };
 
 template<RenderPassConcept PlatformImplementation>
@@ -26,6 +28,7 @@ public:
     friend class core::ResourceBase;
 
     using PlatformImplementation::height;
+    using PlatformImplementation::isPresentationPass;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::resourceBase;
     using PlatformImplementation::width;
