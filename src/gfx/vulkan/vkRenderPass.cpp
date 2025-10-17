@@ -382,5 +382,23 @@ void RenderPass::getClearValues(uint32_t& clearValuesCount, VkClearValue* clearV
         }
     }
 }
+
+auto RenderPass::acquireSwapchainSignal(uint64_t currentFrameIndex) -> core::ResourceSharedRef
+{
+    auto result = core::ResourceSharedRef{};
+
+    if (auto* rw = std::get_if<core::ResourceSharedRef>(&renderTargets_)) {
+        auto& renderWindow = rw->as<type_traits::platform_implementation_t<gfx::RenderWindow>>();
+        auto&& [idx, signal] = renderWindow.nextSwapchainIndex(currentFrameIndex);
+        currentBufferIndex_ = idx;
+        result = std::move(signal);
+    } else { // in case of non-presentation pass
+        assert(false);
+    }
+
+    return result;
+}
+
+/*auto RenderPass::presentationSignal() const -> std::optional<core::ResourceSharedRef>{}*/
 }
 #endif

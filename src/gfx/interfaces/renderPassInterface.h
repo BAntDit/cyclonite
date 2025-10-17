@@ -11,7 +11,7 @@
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept RenderPassConcept = requires(T t) {
+concept RenderPassConcept = requires(T t, uint64_t i) {
     { t.resourceBase() } -> std::same_as<core::ResourceBase*>;
 
     { t.width() } -> std::same_as<uint32_t>;
@@ -19,6 +19,8 @@ concept RenderPassConcept = requires(T t) {
     { t.height() } -> std::same_as<uint32_t>;
 
     { t.isPresentationPass() } -> std::same_as<bool>;
+
+    { t.acquireSwapchainSignal(i) } -> std::same_as<core::ResourceSharedRef>;
 };
 
 template<RenderPassConcept PlatformImplementation>
@@ -27,6 +29,7 @@ class RenderPassInterface : private PlatformImplementation
 public:
     friend class core::ResourceBase;
 
+    using PlatformImplementation::acquireSwapchainSignal;
     using PlatformImplementation::height;
     using PlatformImplementation::isPresentationPass;
     using PlatformImplementation::PlatformImplementation;
