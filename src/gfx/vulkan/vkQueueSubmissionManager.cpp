@@ -10,7 +10,7 @@
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 QueueSubmissionManager::QueueSubmissionManager(core::ResourceSharedRef deviceRef)
-  : deviceRef_{ deviceRef }
+  : deviceRef_{ std::move(deviceRef) }
   , queueSubmissionRingMap_{}
   , currentFrameIndex_{ 1 }
 {
