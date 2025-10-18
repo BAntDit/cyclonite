@@ -303,6 +303,11 @@ auto RenderWindow::nextSwapchainIndex(uint64_t currentFrameIndex) -> std::pair<u
     return std::pair{ swapchainIndex_, signalRef };
 }
 
+auto RenderWindow::presentationSignal() const -> core::ResourceSharedRef
+{
+    return presentationWaitSignals_[swapchainIndex_];
+}
+
 void RenderWindow::present()
 {
     auto const& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();

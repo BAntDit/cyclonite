@@ -48,10 +48,12 @@ void CommandListRecorder::beginRenderPass(core::ResourceSharedRef renderPassRef)
 
         auto& renderPass = renderPassRef.as<gfx::RenderPass>();
         if (renderPass.isPresentationPass()) {
-            auto&& swapchainSignal = renderPass.acquireSwapchainSignal(recorder->submission().currentFrameIndex());
+            auto const& swapchainSignal = renderPass.acquireSwapchainSignal(recorder->submission().currentFrameIndex());
 
             recorder->addBatchDependency(gfx::SubmissionBatchDependency{
-              std::move(swapchainSignal), PipelineStageFlagBits{ PipelineStageFlags::FRAGMENT_SHADER_BIT } });
+              swapchainSignal, PipelineStageFlagBits{ PipelineStageFlags::FRAGMENT_SHADER_BIT } });
+
+            recorder->addPresentationSignal(renderPass.presentationSignal());
         }
 
         recorder->submission().commandListToRecord().beginRenderPass(renderPassRef);

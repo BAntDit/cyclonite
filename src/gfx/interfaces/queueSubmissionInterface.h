@@ -13,45 +13,48 @@
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept QueueSubmissionConcept = requires(T t, size_t batchIdx, PipelineStageFlagBits stageMask) {
-    { t.beginRecording() } -> std::same_as<void>;
+concept QueueSubmissionConcept =
+  requires(T t, size_t batchIdx, PipelineStageFlagBits stageMask, core::ResourceSharedRef const& signal) {
+      { t.beginRecording() } -> std::same_as<void>;
 
-    { t.endRecording() } -> std::same_as<void>;
+      { t.endRecording() } -> std::same_as<void>;
 
-    { t.resourceBase() } -> std::same_as<core::ResourceBase*>;
+      { t.resourceBase() } -> std::same_as<core::ResourceBase*>;
 
-    { t.isPending() } -> std::same_as<bool>;
+      { t.isPending() } -> std::same_as<bool>;
 
-    { t.isInInitialState() } -> std::same_as<bool>;
+      { t.isInInitialState() } -> std::same_as<bool>;
 
-    { t.isInRecordingState() } -> std::same_as<bool>;
+      { t.isInRecordingState() } -> std::same_as<bool>;
 
-    { t.isInBatchRecordingState() } -> std::same_as<bool>;
+      { t.isInBatchRecordingState() } -> std::same_as<bool>;
 
-    { t.isInCommandListRecordingState() } -> std::same_as<bool>;
+      { t.isInCommandListRecordingState() } -> std::same_as<bool>;
 
-    { t.waitOnCpu() } -> std::same_as<uint64_t>;
+      { t.waitOnCpu() } -> std::same_as<uint64_t>;
 
-    { t.purpose() } -> std::same_as<multithreading::Purpose>;
+      { t.purpose() } -> std::same_as<multithreading::Purpose>;
 
-    { t.beginBatchRecording() } -> std::same_as<void>;
+      { t.beginBatchRecording() } -> std::same_as<void>;
 
-    { t.addBatchDependency(batchIdx, stageMask) } -> std::same_as<void>;
+      { t.addBatchDependency(batchIdx, stageMask) } -> std::same_as<void>;
 
-    { t.endBatchRecording() } -> std::same_as<void>;
+      { t.endBatchRecording() } -> std::same_as<void>;
 
-    { t.beginCommandListRecording() } -> std::same_as<void>;
+      { t.beginCommandListRecording() } -> std::same_as<void>;
 
-    { t.endCommandListRecording() } -> std::same_as<void>;
+      { t.endCommandListRecording() } -> std::same_as<void>;
 
-    { t.commandListToRecord() } -> std::same_as<std::add_lvalue_reference_t<gfx::CommandList>>;
+      { t.commandListToRecord() } -> std::same_as<std::add_lvalue_reference_t<gfx::CommandList>>;
 
-    { t.reset() } -> std::same_as<void>;
+      { t.reset() } -> std::same_as<void>;
 
-    { t.currentFrameIndex() } -> std::same_as<uint64_t>;
+      { t.currentFrameIndex() } -> std::same_as<uint64_t>;
 
-    // { t.submit() } -> std::same_as<void>;
-};
+      { t.addPresentationSignal(signal) } -> std::same_as<void>;
+
+      { t.submit() } -> std::same_as<void>;
+  };
 
 template<QueueSubmissionConcept PlatformImplementation>
 class QueueSubmissionInterface : private PlatformImplementation
@@ -60,6 +63,7 @@ public:
     friend class core::ResourceBase;
 
     using PlatformImplementation::addBatchDependency;
+    using PlatformImplementation::addPresentationSignal;
     using PlatformImplementation::beginBatchRecording;
     using PlatformImplementation::beginCommandListRecording;
     using PlatformImplementation::beginRecording;

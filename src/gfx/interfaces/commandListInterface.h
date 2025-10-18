@@ -38,7 +38,7 @@ public:
 
     // TODO:: refactor
     [[nodiscard]] auto platformImplementation() const -> PlatformImplementation const& { return *this; }
-    [[nodiscard]] auto platformImplementation()-> PlatformImplementation& { return *this; }
+    [[nodiscard]] auto platformImplementation() -> PlatformImplementation& { return *this; }
 };
 }
 

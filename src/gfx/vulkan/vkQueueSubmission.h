@@ -34,6 +34,8 @@ public:
 
     void addBatchDependency(gfx::SubmissionBatchDependency const& externalDependency);
 
+    void addPresentationSignal(core::ResourceSharedRef const& signal);
+
     void beginCommandListRecording();
     void endCommandListRecording();
 
@@ -83,6 +85,7 @@ private:
         std::vector<gfx::SubmissionBatchDependency> binaryDependencies;
         std::vector<gfx::CommandList> commandLists;
         core::ResourceSharedRef signal;
+        core::ResourceSharedRef presentationSignal;
     };
 
     core::ResourceSharedRef commandPool_;
@@ -100,6 +103,7 @@ private:
     std::vector<VkSemaphore> waitSemaphores_;
     std::vector<VkPipelineStageFlags> waitStages_;
     std::vector<VkCommandBuffer> vkCommandBuffers_;
+    std::vector<VkSemaphore> vkSignals_;
     size_t timelineDependencyCount_;
     size_t binaryDependencyCount_;
     size_t commandBufferCount_;

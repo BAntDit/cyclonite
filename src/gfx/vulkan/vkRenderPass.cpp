@@ -389,9 +389,9 @@ auto RenderPass::acquireSwapchainSignal(uint64_t currentFrameIndex) -> core::Res
 
     if (auto* rw = std::get_if<core::ResourceSharedRef>(&renderTargets_)) {
         auto& renderWindow = rw->as<type_traits::platform_implementation_t<gfx::RenderWindow>>();
-        auto&& [idx, signal] = renderWindow.nextSwapchainIndex(currentFrameIndex);
+        auto const& [idx, signal] = renderWindow.nextSwapchainIndex(currentFrameIndex);
         currentBufferIndex_ = idx;
-        result = std::move(signal);
+        result = signal;
     } else { // in case of non-presentation pass
         assert(false);
     }
@@ -402,6 +402,13 @@ auto RenderPass::acquireSwapchainSignal(uint64_t currentFrameIndex) -> core::Res
 auto RenderPass::presentationSignal() const -> core::ResourceSharedRef
 {
     auto result = core::ResourceSharedRef{};
+
+    if (auto* rw = std::get_if<core::ResourceSharedRef>(&renderTargets_)) {
+        auto& renderWindow = rw->as<type_traits::platform_implementation_t<gfx::RenderWindow>>();
+        result = renderWindow.presentationSignal();
+    } else { // in case of non-presentation pass
+        assert(false);
+    }
 
     return result;
 }

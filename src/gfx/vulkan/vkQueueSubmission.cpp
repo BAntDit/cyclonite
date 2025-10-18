@@ -27,6 +27,7 @@ QueueSubmission::QueueSubmission(core::ResourceManagerBase* resourceManager,
   , timelineSemaphoreValues_{}
   , waitSemaphores_{}
   , vkCommandBuffers_{}
+  , vkSignals_{}
   , timelineDependencyCount_{ 0 }
   , binaryDependencyCount_{ 0 }
   , commandBufferCount_{ 0 }
@@ -78,6 +79,9 @@ void QueueSubmission::beginBatchRecording()
 
 void QueueSubmission::addBatchDependency(size_t fromBatch, PipelineStageFlagBits stageMask)
 {
+    [[maybe_unused]] auto submissionPurpose = purpose();
+    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
+
     assert(fromBatch < batches_.size());
     auto& srcBatch = batches_[fromBatch];
     auto& dstBatch = batches_.back();
@@ -88,6 +92,9 @@ void QueueSubmission::addBatchDependency(size_t fromBatch, PipelineStageFlagBits
 
 void QueueSubmission::addBatchDependency(gfx::SubmissionBatchDependency const& externalDependency)
 {
+    [[maybe_unused]] auto submissionPurpose = purpose();
+    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
+
     auto& dstBatch = batches_.back();
     if (externalDependency.type() == gfx::SignalType::BINARY) {
         dstBatch.binaryDependencies.push_back(externalDependency);
@@ -96,6 +103,15 @@ void QueueSubmission::addBatchDependency(gfx::SubmissionBatchDependency const& e
         dstBatch.timelineDependencies.push_back(externalDependency);
         timelineDependencyCount_++;
     }
+}
+
+void QueueSubmission::addPresentationSignal(core::ResourceSharedRef const& signal)
+{
+    [[maybe_unused]] auto submissionPurpose = purpose();
+    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
+
+    auto& dstBatch = batches_.back();
+    dstBatch.presentationSignal = signal;
 }
 
 void QueueSubmission::endBatchRecording()
@@ -192,6 +208,18 @@ void QueueSubmission::reset()
     commandPool_.as<gfx::CommandPool>().reset();
     completionFrameIndex_ = 0;
     state_.value = metrix::value_cast(QueueSubmissionStateFlags::Initial);
+
+    vkSubmissions_.clear();
+    vkTimelineSubmissions_.clear();
+    timelineSemaphoreValues_.clear();
+    waitSemaphores_.clear();
+    waitStages_.clear();
+    vkCommandBuffers_.clear();
+    vkSignals_.clear();
+
+    timelineDependencyCount_ = 0;
+    binaryDependencyCount_ = 0;
+    commandBufferCount_ = 0;
 }
 
 auto QueueSubmission::purpose() const -> multithreading::Purpose
@@ -261,6 +289,10 @@ void QueueSubmission::submit()
     vkCommandBuffers_.reserve(commandBufferCount_);
     auto commandBuffersOffset = size_t{ 0 };
 
+    vkSignals_.clear();
+    vkSignals_.reserve(submissionBatchCount * 2); // max two signals per batch
+    auto signalsOffset = size_t{ 0 };
+
     for (auto const& batch : batches_) {
         assert(vkSubmissions_.size() < vkSubmissions_.capacity());
         assert(vkTimelineSubmissions_.size() < vkTimelineSubmissions_.capacity());
@@ -312,6 +344,16 @@ void QueueSubmission::submit()
             vkCommandBuffers_.push_back(vkCommandList.handle());
         }
 
+        assert(batch.signal.valid());
+        auto signalCount = size_t{ 1 };
+        vkSignals_.push_back(batch.signal.as<type_traits::platform_implementation_t<gfx::Signal>>().handle());
+
+        if (batch.presentationSignal.valid()) {
+            signalCount++;
+            vkSignals_.push_back(
+              batch.presentationSignal.as<type_traits::platform_implementation_t<gfx::Signal>>().handle());
+        }
+
         vkBatch.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         vkBatch.pNext = &vkTimelineSubmission;
         vkBatch.waitSemaphoreCount = waitCount;
@@ -319,10 +361,13 @@ void QueueSubmission::submit()
         vkBatch.pWaitDstStageMask = waitStages_.data() + waitSemaphoresOffset;
         vkBatch.commandBufferCount = commandBufferCount;
         vkBatch.pCommandBuffers = vkCommandBuffers_.data() + commandBuffersOffset;
+        vkBatch.signalSemaphoreCount = signalCount;
+        vkBatch.pSignalSemaphores = vkSignals_.data() + signalsOffset;
 
         timelineValueOffset += timelineValueCount;
         waitSemaphoresOffset += waitCount;
         commandBuffersOffset += commandBufferCount;
+        signalsOffset += signalCount;
     }
 
     if (auto vkResult = vkQueueSubmit(queue, vkSubmissions_.size(), vkSubmissions_.data(), VK_NULL_HANDLE);

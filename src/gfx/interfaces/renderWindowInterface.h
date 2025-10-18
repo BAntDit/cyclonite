@@ -29,6 +29,8 @@ concept RenderWindowConcept = requires(T t, uint64_t i) {
     { t.nextSwapchainIndex(i) } -> std::same_as<std::pair<uint32_t, core::ResourceSharedRef>>;
 
     { t.present() } -> std::same_as<void>;
+
+    { t.presentationSignal() } -> std::same_as<core::ResourceSharedRef>;
 };
 
 template<RenderWindowConcept PlatformImplementation>
@@ -45,6 +47,7 @@ public:
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::present;
     using PlatformImplementation::presentMode;
+    using PlatformImplementation::presentSignal;
     using PlatformImplementation::resourceBase;
     using PlatformImplementation::swapchainLength;
     using PlatformImplementation::width;

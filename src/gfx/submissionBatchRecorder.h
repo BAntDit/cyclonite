@@ -36,6 +36,9 @@ private:
     [[nodiscard]] auto futures() const -> std::vector<std::future<void>> const&;
 
 private:
+    void addPresentationSignal(core::ResourceSharedRef const& signal);
+
+private:
     void finish(bool noexceptions);
 
     QueueSubmissionRecorder* queueSubmissionRecorder_;

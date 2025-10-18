@@ -21,6 +21,8 @@ concept RenderPassConcept = requires(T t, uint64_t i) {
     { t.isPresentationPass() } -> std::same_as<bool>;
 
     { t.acquireSwapchainSignal(i) } -> std::same_as<core::ResourceSharedRef>;
+
+    { t.presentationSignal() } -> std::same_as<core::ResourceSharedRef>;
 };
 
 template<RenderPassConcept PlatformImplementation>
@@ -33,6 +35,7 @@ public:
     using PlatformImplementation::height;
     using PlatformImplementation::isPresentationPass;
     using PlatformImplementation::PlatformImplementation;
+    using PlatformImplementation::presentationSignal;
     using PlatformImplementation::resourceBase;
     using PlatformImplementation::width;
 };

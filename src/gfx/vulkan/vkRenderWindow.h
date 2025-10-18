@@ -66,6 +66,8 @@ public:
 
     [[nodiscard]] auto nextSwapchainIndex(uint64_t currentFrameIndex) -> std::pair<uint32_t, core::ResourceSharedRef>;
 
+    [[nodiscard]] auto presentationSignal() const -> core::ResourceSharedRef;
+
     void present();
 
 private:
