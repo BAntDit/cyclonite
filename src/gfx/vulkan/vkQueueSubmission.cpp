@@ -370,6 +370,9 @@ void QueueSubmission::submit()
         signalsOffset += signalCount;
     }
 
+    state_.value = metrix::value_cast(QueueSubmissionStateFlags::Pending);
+    completionFrameIndex_ = currentFrameIndex_;
+
     if (auto vkResult = vkQueueSubmit(queue, vkSubmissions_.size(), vkSubmissions_.data(), VK_NULL_HANDLE);
         vkResult != VK_SUCCESS) {
         throw Exception{ vkResult, "vkQueueSubmit" };

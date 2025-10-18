@@ -34,8 +34,7 @@ public:
     [[nodiscard]] auto acquireQueueSubmission(multithreading::Purpose purpose,
                                               CommandPoolFlagBits flags) -> core::ResourceSharedRef;
 
-    // TODO::
-    // auto flush();
+    void flush();
 
 private:
     using queue_submission_ring_t = std::array<core::ResourceSharedRef, config_t::queue_submission_ring_size_v>;

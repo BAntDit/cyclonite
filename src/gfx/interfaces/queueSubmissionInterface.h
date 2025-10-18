@@ -23,6 +23,8 @@ concept QueueSubmissionConcept =
 
       { t.isPending() } -> std::same_as<bool>;
 
+      { t.isExecutable() } -> std::same_as<bool>;
+
       { t.isInInitialState() } -> std::same_as<bool>;
 
       { t.isInRecordingState() } -> std::same_as<bool>;
@@ -72,6 +74,7 @@ public:
     using PlatformImplementation::endBatchRecording;
     using PlatformImplementation::endCommandListRecording;
     using PlatformImplementation::endRecording;
+    using PlatformImplementation::isExecutable;
     using PlatformImplementation::isInBatchRecordingState;
     using PlatformImplementation::isInCommandListRecordingState;
     using PlatformImplementation::isInInitialState;

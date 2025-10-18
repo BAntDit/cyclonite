@@ -103,5 +103,22 @@ auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purp
 
     return queueSubmissionRef;
 }
+
+void QueueSubmissionManager::flush()
+{
+    for (auto&& [_, submissions] : queueSubmissionRingMap_) {
+        auto& submissionRef = submissions[currentFrameIndex_ % config_t::queue_submission_ring_size_v];
+
+        if (!submissionRef.valid()) {
+            continue;
+        }
+
+        auto& submission = submissionRef.as<gfx::QueueSubmission>();
+        if (submission.isExecutable()) {
+            submission.submit();
+        }
+    }
+    currentFrameIndex_++;
+}
 }
 #endif
