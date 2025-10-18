@@ -65,7 +65,7 @@ public:
     void validateDepthStencil(Format format);
 
     [[nodiscard]] auto nextSwapchainIndex(uint64_t currentFrameIndex) -> std::pair<uint32_t, core::ResourceSharedRef>;
-    
+
     void present();
 
 private:

@@ -91,6 +91,18 @@ private:
     uint64_t currentFrameIndex_;       // to signal on GPU (for batch signals)
     uint64_t lastCompletedFrameIndex_; // to set as initial value of signals
     QueueSubmissionStateFlagBits state_;
+
+    // TODO:: replace vector with own container
+    // that could not implicitly invalidate pointers and iterators from
+    std::vector<VkSubmitInfo> vkSubmissions_;
+    std::vector<VkTimelineSemaphoreSubmitInfo> vkTimelineSubmissions_;
+    std::vector<uint64_t> timelineSemaphoreValues_;
+    std::vector<VkSemaphore> waitSemaphores_;
+    std::vector<VkPipelineStageFlags> waitStages_;
+    std::vector<VkCommandBuffer> vkCommandBuffers_;
+    size_t timelineDependencyCount_;
+    size_t binaryDependencyCount_;
+    size_t commandBufferCount_;
 };
 }
 

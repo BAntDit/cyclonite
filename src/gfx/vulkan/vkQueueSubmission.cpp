@@ -6,6 +6,8 @@
 #include "multithreading/taskManager.h"
 #include <cassert>
 
+#include "vkException.h"
+
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 QueueSubmission::QueueSubmission(core::ResourceManagerBase* resourceManager,
@@ -20,6 +22,14 @@ QueueSubmission::QueueSubmission(core::ResourceManagerBase* resourceManager,
   , currentFrameIndex_{ 0 }
   , lastCompletedFrameIndex_{ 0 }
   , state_{}
+  , vkSubmissions_{}
+  , vkTimelineSubmissions_{}
+  , timelineSemaphoreValues_{}
+  , waitSemaphores_{}
+  , vkCommandBuffers_{}
+  , timelineDependencyCount_{ 0 }
+  , binaryDependencyCount_{ 0 }
+  , commandBufferCount_{ 0 }
 {
     state_.set(QueueSubmissionStateFlags::Initial);
 
@@ -33,6 +43,10 @@ void QueueSubmission::beginRecording()
 {
     [[maybe_unused]] auto submissionPurpose = purpose();
     assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
+
+    timelineDependencyCount_ = 0;
+    binaryDependencyCount_ = 0;
+    commandBufferCount_ = 0;
 
     assert(state_.value == metrix::value_cast(QueueSubmissionStateFlags::Initial));
     state_.value = metrix::value_cast(QueueSubmissionStateFlags::Recording);
@@ -69,15 +83,18 @@ void QueueSubmission::addBatchDependency(size_t fromBatch, PipelineStageFlagBits
     auto& dstBatch = batches_.back();
 
     dstBatch.timelineDependencies.emplace_back(srcBatch.signal, stageMask, currentFrameIndex_);
+    timelineDependencyCount_++;
 }
 
-void QueueSubmission::addBatchDependency(gfx::SubmissionBatchDependency const& externalDependency) 
+void QueueSubmission::addBatchDependency(gfx::SubmissionBatchDependency const& externalDependency)
 {
     auto& dstBatch = batches_.back();
     if (externalDependency.type() == gfx::SignalType::BINARY) {
         dstBatch.binaryDependencies.push_back(externalDependency);
+        binaryDependencyCount_++;
     } else if (externalDependency.type() == gfx::SignalType::TIMELINE) {
         dstBatch.timelineDependencies.push_back(externalDependency);
+        timelineDependencyCount_++;
     }
 }
 
@@ -97,6 +114,8 @@ void QueueSubmission::beginCommandListRecording()
 
     assert(!state_.test(QueueSubmissionStateFlags::CommandListRecording));
     state_.set(QueueSubmissionStateFlags::CommandListRecording);
+
+    commandBufferCount_++;
 
     auto& batch = batches_.back();
     auto& pool = commandPool_.as<type_traits::platform_implementation_t<gfx::CommandPool>>();
@@ -219,21 +238,97 @@ void QueueSubmission::submit()
     }
 
     auto submissionBatchCount = batches_.size();
-    auto vkSubmissions = std::vector<VkSubmitInfo>{};
 
-    vkSubmissions.reserve(submissionBatchCount);
+    vkSubmissions_.clear();
+    vkSubmissions_.reserve(submissionBatchCount);
+
+    vkTimelineSubmissions_.clear();
+    vkTimelineSubmissions_.reserve(submissionBatchCount);
+
+    timelineSemaphoreValues_.clear();
+    timelineSemaphoreValues_.reserve(timelineDependencyCount_);
+    auto timelineValueOffset = size_t{ 0 };
+
+    auto allWaitSemaphoreCount = timelineDependencyCount_ + binaryDependencyCount_;
+    auto waitSemaphoresOffset = size_t{ 0 };
+    waitSemaphores_.clear();
+    waitSemaphores_.reserve(allWaitSemaphoreCount);
+
+    waitStages_.clear();
+    waitStages_.reserve(allWaitSemaphoreCount);
+
+    vkCommandBuffers_.clear();
+    vkCommandBuffers_.reserve(commandBufferCount_);
+    auto commandBuffersOffset = size_t{ 0 };
 
     for (auto const& batch : batches_) {
-        auto vkBatch = vkSubmissions.emplace_back(VkSubmitInfo{});
+        assert(vkSubmissions_.size() < vkSubmissions_.capacity());
+        assert(vkTimelineSubmissions_.size() < vkTimelineSubmissions_.capacity());
 
-        auto timelineSubmitInfo = VkTimelineSemaphoreSubmitInfo{};
-        timelineSubmitInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+        auto& vkBatch = vkSubmissions_.emplace_back(VkSubmitInfo{});
+        auto& vkTimelineSubmission = vkTimelineSubmissions_.emplace_back(VkTimelineSemaphoreSubmitInfo{});
 
-        // batch.dependencies
+        auto timelineValueCount = batch.timelineDependencies.size();
+        for (auto const& dependency : batch.timelineDependencies) {
+            assert(timelineSemaphoreValues_.size() < timelineSemaphoreValues_.capacity());
+            timelineSemaphoreValues_.push_back(dependency.completionValue());
+
+            auto signalRef = dependency.signal().lock();
+            assert(signalRef.valid());
+            auto& vkWaitSignal = signalRef.as<type_traits::platform_implementation_t<gfx::Signal>>();
+
+            assert(waitSemaphores_.size() < waitSemaphores_.capacity());
+            waitSemaphores_.push_back(vkWaitSignal.handle());
+
+            assert(waitStages_.size() < waitStages_.capacity());
+            waitStages_.push_back(dependency.stageMask().cast_to<VkPipelineStageFlags>());
+        }
+
+        for (auto const& dependency : batch.binaryDependencies) {
+            auto signalRef = dependency.signal().lock();
+            assert(signalRef.valid());
+            auto& vkWaitSignal = signalRef.as<type_traits::platform_implementation_t<gfx::Signal>>();
+
+            assert(waitSemaphores_.size() < waitSemaphores_.capacity());
+            waitSemaphores_.push_back(vkWaitSignal.handle());
+
+            assert(waitStages_.size() < waitStages_.capacity());
+            waitStages_.push_back(dependency.stageMask().cast_to<VkPipelineStageFlags>());
+        }
+
+        auto waitCount = batch.timelineDependencies.size() + batch.binaryDependencies.size();
+
+        vkTimelineSubmission.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+        vkTimelineSubmission.waitSemaphoreValueCount = timelineValueCount;
+        vkTimelineSubmission.pWaitSemaphoreValues = timelineSemaphoreValues_.data() + timelineValueOffset;
+        vkTimelineSubmission.signalSemaphoreValueCount = 1;
+        vkTimelineSubmission.pSignalSemaphoreValues = &currentFrameIndex_;
+
+        auto commandBufferCount = batch.commandLists.size();
+        for (auto const& commandList : batch.commandLists) {
+            auto const& vkCommandList = commandList.platformImplementation();
+
+            assert(vkCommandBuffers_.size() < vkCommandBuffers_.capacity());
+            vkCommandBuffers_.push_back(vkCommandList.handle());
+        }
 
         vkBatch.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        vkBatch.pNext = &vkTimelineSubmission;
+        vkBatch.waitSemaphoreCount = waitCount;
+        vkBatch.pWaitSemaphores = waitSemaphores_.data() + waitSemaphoresOffset;
+        vkBatch.pWaitDstStageMask = waitStages_.data() + waitSemaphoresOffset;
+        vkBatch.commandBufferCount = commandBufferCount;
+        vkBatch.pCommandBuffers = vkCommandBuffers_.data() + commandBuffersOffset;
+
+        timelineValueOffset += timelineValueCount;
+        waitSemaphoresOffset += waitCount;
+        commandBuffersOffset += commandBufferCount;
     }
-    // TODO::
+
+    if (auto vkResult = vkQueueSubmit(queue, vkSubmissions_.size(), vkSubmissions_.data(), VK_NULL_HANDLE);
+        vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vkQueueSubmit" };
+    }
 }
 
 void QueueSubmission::setFrameIndices(uint64_t currentFrameIndex, uint64_t lastCompletedFrameIndex)

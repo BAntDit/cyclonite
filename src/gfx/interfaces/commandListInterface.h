@@ -35,6 +35,10 @@ public:
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::state;
     using PlatformImplementation::usage;
+
+    // TODO:: refactor
+    [[nodiscard]] auto platformImplementation() const -> PlatformImplementation const& { return *this; }
+    [[nodiscard]] auto platformImplementation()-> PlatformImplementation& { return *this; }
 };
 }
 

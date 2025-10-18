@@ -93,8 +93,9 @@ auto getWindowProperty<HINSTANCE>(SDL_Window* window) -> HINSTANCE
 #endif
 
 template<typename... SurfaceArgs>
-auto createPlatformSurface(VkInstance vkInstance, SDL_Window* sdlWindow, metrix::type_list<SurfaceArgs...>)
-  -> platform_surface_t*
+auto createPlatformSurface(VkInstance vkInstance,
+                           SDL_Window* sdlWindow,
+                           metrix::type_list<SurfaceArgs...>) -> platform_surface_t*
 {
     return new platform_surface_t{ vkInstance, getWindowProperty<SurfaceArgs>(sdlWindow)... };
 }
@@ -307,7 +308,7 @@ void RenderWindow::present()
     auto const& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
 
     auto const& signalRef = presentationWaitSignals_[swapchainIndex_];
-    auto vkSignal = signalRef.as<type_traits::platform_implementation_t<gfx::Signal>>().handle(); 
+    auto vkSignal = signalRef.as<type_traits::platform_implementation_t<gfx::Signal>>().handle();
     auto vkSwapchain = static_cast<VkSwapchainKHR>(vkSwapchain_);
     auto vkResult = VK_SUCCESS;
 

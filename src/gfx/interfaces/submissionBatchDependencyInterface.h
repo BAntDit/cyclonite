@@ -24,6 +24,7 @@ template<SubmissionBatchDependencyConcept PlatformImplementation>
 class SubmissionBatchDependencyInterface : private PlatformImplementation
 {
 public:
+    using PlatformImplementation::completionValue;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::signal;
     using PlatformImplementation::stageMask;

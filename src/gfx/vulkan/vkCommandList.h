@@ -35,6 +35,8 @@ public:
 
     void end();
 
+    [[nodiscard]] auto handle() const -> VkCommandBuffer { return vkCommandBuffer_; }
+
 private:
     std::vector<core::ResourceSharedRef> boundRefs_;
     core::ResourceWeakRef commandPool_;

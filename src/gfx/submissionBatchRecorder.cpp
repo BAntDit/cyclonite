@@ -62,7 +62,7 @@ void SubmissionBatchRecorder::addBatchDependency(size_t dependencyIndex, Pipelin
     queueSubmissionRecorder_->futures_.emplace_back(multithreading::TaskManager::submitTask(task, purpose));
 }
 
-void SubmissionBatchRecorder::addBatchDependency(gfx::SubmissionBatchDependency const& externalDependency) 
+void SubmissionBatchRecorder::addBatchDependency(gfx::SubmissionBatchDependency const& externalDependency)
 {
     auto purpose = queueSubmissionRecorder_->submission_->purpose();
 

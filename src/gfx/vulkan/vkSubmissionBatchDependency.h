@@ -4,6 +4,7 @@
 
 #include "core/resourceWeakRef.h"
 #include "gfx/common.h"
+#include "gfx/signal.h"
 
 #if defined(GFX_DRIVER_VULKAN)
 #include <vulkan/vulkan.h>
