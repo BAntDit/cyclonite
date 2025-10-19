@@ -34,6 +34,10 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
     auto deviceRef = cyclonite::core::ResourceSharedRef{ root_.gfxInstance().createDevice(deviceId) };
     assert(deviceRef.valid());
 
+    auto& device = deviceRef.as<cyclonite::gfx::Device>();
+    auto& limits = device.limits();
+    root_.initTaskManager(limits.dedicatedTransferQueue, limits.dedicatedComputeQueue);
+
     auto renderWindowBuilder = cyclonite::gfx::RenderWindowBuilder{};
     auto renderWindowRef =
       cyclonite::core::ResourceSharedRef{ renderWindowBuilder.setDevice(deviceRef)

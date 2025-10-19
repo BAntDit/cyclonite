@@ -37,6 +37,10 @@ public:
 
     void init(std::string_view appName);
 
+    void initTaskManager(bool dedicatedTransferRequired,
+                         bool dedicatedComputeRequired,
+                         size_t threadPoolSize = std::max(std::thread::hardware_concurrency(), 1u));
+
     [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
 
     [[nodiscard]] auto input() const -> Input const& { return input_; }
@@ -51,7 +55,7 @@ public:
 
 private:
     Capabilities capabilities_;
-    multithreading::TaskManager taskManager_;
+    std::unique_ptr<multithreading::TaskManager> taskManager_;
     std::unique_ptr<gfx::Instance> gfxInstance_;
     Input input_;
 };

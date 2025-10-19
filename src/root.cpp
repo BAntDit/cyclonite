@@ -9,8 +9,8 @@
 namespace cyclonite {
 Root::Root()
   : capabilities_{}
-  , taskManager_{}
-  , gfxInstance_{}
+  , taskManager_{ nullptr }
+  , gfxInstance_{ nullptr }
   , input_{}
 {
 }
@@ -21,8 +21,6 @@ void Root::init(std::string_view appName)
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         throw std::runtime_error("SDL: could not initialize SDL video subsystem");
     }
-
-    taskManager_.start();
 
     {
         auto const displayId = SDL_GetPrimaryDisplay();
@@ -53,9 +51,28 @@ void Root::init(std::string_view appName)
     }
 }
 
+void Root::initTaskManager(bool dedicatedTransferRequired,
+                           bool dedicatedComputeRequired,
+                           size_t threadPoolSize /* = std::max(std::thread::hardware_concurrency(), 1u)*/)
+{
+    if (taskManager_ = std::make_unique<multithreading::TaskManager>(
+          dedicatedTransferRequired, dedicatedComputeRequired, threadPoolSize);
+        taskManager_) {
+        taskManager_->start();
+        if (auto ex = taskManager_->getLastException()) {
+            std::rethrow_exception(ex);
+        }
+    } else {
+        throw std::runtime_error("Root:: could not initialize task manager");
+    }
+}
+
 void Root::reset()
 {
-    taskManager_.stop();
+    if (taskManager_) {
+        taskManager_->stop();
+        taskManager_.reset();
+    }
 
     SDL_Quit();
 }

@@ -56,5 +56,5 @@ void CommandPool::reset(bool releasePoolResources /* = false*/)
         throw Exception{ vkResult, "vkResetCommandPool" };
     }
 }
-
+}
 #endif

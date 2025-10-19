@@ -201,7 +201,6 @@ Device::Device(core::ResourceManagerBase* resourceManager,
   , transferQueue_{}
   , computeQueue_{}
   , vmaAllocator_{ VK_NULL_HANDLE }
-  , queueSubmissionRingMap_{}
 {
     if (!testRequiredDeviceExtensions(vkPhysicalDevice, requiredExtensions)) {
         throw std::runtime_error("gfx:: physical device does not supports required extensions. Device name: " + name_);

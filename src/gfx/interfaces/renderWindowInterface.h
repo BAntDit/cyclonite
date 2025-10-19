@@ -46,8 +46,8 @@ public:
     using PlatformImplementation::nextSwapchainIndex;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::present;
+    using PlatformImplementation::presentationSignal;
     using PlatformImplementation::presentMode;
-    using PlatformImplementation::presentSignal;
     using PlatformImplementation::resourceBase;
     using PlatformImplementation::swapchainLength;
     using PlatformImplementation::width;

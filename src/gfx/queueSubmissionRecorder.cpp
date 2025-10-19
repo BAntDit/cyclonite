@@ -13,7 +13,6 @@ QueueSubmissionRecorder::QueueSubmissionRecorder()
   : submissionRef_{}
   , submission_{ nullptr }
   , futures_{}
-  , currentFrameIndex_{ std::numeric_limits<uint64_t>::max() }
 {
 }
 
