@@ -90,7 +90,7 @@ void CommandListRecorder::end()
     batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
 }
 
-void CommandListRecorder::finish(bool noexceptions /* = false*/)
+void CommandListRecorder::finish(bool noexceptions)
 {
     try {
         auto purpose = batchRecorder_->submission().purpose();

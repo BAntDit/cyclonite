@@ -51,6 +51,10 @@ public:
 
     [[nodiscard]] auto gfxInstance() -> gfx::Instance& { return *gfxInstance_; }
 
+    [[nodiscard]] auto taskManager() const -> multithreading::TaskManager const& { return *taskManager_; }
+
+    [[nodiscard]] auto taskManager() -> multithreading::TaskManager& { return *taskManager_; }
+
     void reset();
 
 private:

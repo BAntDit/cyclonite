@@ -29,7 +29,7 @@ public:
     void finish() { finish(false); }
 
 private:
-    void finish(bool noexceptions = false);
+    void finish(bool noexceptions);
 
     SubmissionBatchRecorder* batchRecorder_;
 };

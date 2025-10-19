@@ -14,7 +14,7 @@ class SubmissionBatchRecorder
     friend class QueueSubmissionRecorder;
     friend class CommandListRecorder;
 
-private:
+public:
     explicit SubmissionBatchRecorder(QueueSubmissionRecorder* queueSubmissionRecorder);
 
     ~SubmissionBatchRecorder();

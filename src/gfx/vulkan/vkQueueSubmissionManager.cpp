@@ -5,6 +5,7 @@
 #include "vkQueueSubmissionManager.h"
 #include "gfx/device.h"
 #include "gfx/queueSubmission.h"
+#include "gfx/queueSubmissionManager.h"
 #include "multithreading/taskManager.h"
 
 #if defined(GFX_DRIVER_VULKAN)

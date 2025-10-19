@@ -4,7 +4,18 @@
 #include <boost/program_options.hpp>
 #include <cassert>
 
+#include "gfx/queueSubmissionRecorder.h"
+#include "gfx/vulkan/vkQueueSubmissionManager.h"
+
 namespace examples {
+BasicExample::BasicExample()
+  : cyclonite::EventReceivable{}
+  , root_{}
+  , submissionManager_{}
+  , shutdown_{ false }
+{
+}
+
 auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExample&
 {
     auto commandLineVariables = boost::program_options::variables_map{};
@@ -51,16 +62,78 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
     auto renderPassBuilder = cyclonite::gfx::RenderPassBuilder{};
     auto renderPassRef = renderPassBuilder.setDevice(deviceRef).setRenderWindow(renderWindowRef).build();
 
+    submissionManager_ = std::make_unique<cyclonite::gfx::QueueSubmissionManager>(deviceRef);
+
+    root_.input().quit += cyclonite::Event<>::EventHandler(this, &BasicExample::onQuit);
+    root_.input().keyDown += cyclonite::Event<SDL_Keycode, uint16_t>::EventHandler(this, &BasicExample::onKeyDown);
+
     return *this;
 }
 
+struct RenderTask
+{
+    explicit RenderTask(cyclonite::gfx::QueueSubmissionManager* submissionManager)
+      : submissionManager_{ submissionManager }
+    {
+    }
+
+    void operator()()
+    {
+        auto submissionRef = submissionManager_->acquireQueueSubmission(
+          cyclonite::multithreading::Purpose::Render,
+          cyclonite::gfx::CommandPoolFlagBits{ cyclonite::gfx::CommandPoolFlags::TRANSIENT });
+
+        // TODO:: reset submission
+
+        auto submissionRecorder = cyclonite::gfx::QueueSubmissionRecorder{};
+        submissionRecorder.setQueueSubmission(submissionRef);
+
+        auto batchRecorder = submissionRecorder.addBatch();
+
+        auto commandListRecorder = batchRecorder.addCommandList();
+
+        commandListRecorder.begin(cyclonite::gfx::CommandListUsageFlagBits{});
+
+        // TODO::
+
+        commandListRecorder.end();
+
+        commandListRecorder.finish();
+
+        batchRecorder.finish();
+
+        submissionRecorder.finish();
+
+        submissionManager_->flush();
+    }
+
+    cyclonite::gfx::QueueSubmissionManager* submissionManager_;
+};
+
 auto BasicExample::run() -> BasicExample&
 {
+    auto& taskManager = root_.taskManager();
+
+    while (!shutdown_) {
+        root_.input().pollEvent();
+
+        taskManager.submitTask(RenderTask{ submissionManager_.get() }, cyclonite::multithreading::Purpose::Render)
+          .get();
+    }
+
     return *this;
 }
 
 void BasicExample::done()
 {
     root_.reset();
+}
+
+void BasicExample::onKeyDown(SDL_Keycode keyCode, uint16_t mod)
+{
+    (void)mod;
+
+    if (keyCode == SDLK_ESCAPE)
+        onQuit();
 }
 }
