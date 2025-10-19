@@ -53,19 +53,19 @@ struct get_future_type<std::shared_future<void>>
 };
 
 template<typename R>
-auto get_one_future_result(std::variant<std::future<R>, std::shared_future<R>> const& v)
+auto get_one_future_result(std::shared_future<R> const& shared)
   -> std::conditional_t<std::is_same_v<void, R>, void_future_result_t, R>
 {
     if constexpr (std::is_same_v<R, void>) {
-        std::visit([](auto&& f) -> void { f.get(); }, v);
+        shared.get();
         return void_future_result_t{};
     } else {
-        return std::visit([](auto&& f) -> R { return f.get(); }, v);
+        return shared.get();
     }
 }
 
 template<typename R>
-auto try_get_one_future_result(std::variant<std::future<R>, std::shared_future<R>> const& v)
+auto try_get_one_future_result(std::shared_future<R> const& shared)
   -> std::optional<std::conditional_t<std::is_same_v<void, R>, void_future_result_t, R>>
 {
     auto r = std::optional<std::conditional_t<std::is_same_v<void, R>, void_future_result_t, R>>{};
@@ -74,8 +74,8 @@ auto try_get_one_future_result(std::variant<std::future<R>, std::shared_future<R
         return f.wait_for(std::chrono::microseconds{ 10 }) == std::future_status::ready;
     };
 
-    if (std::visit(is_ready_f, v)) {
-        r = get_one_future_result(v);
+    if (is_ready_f(shared)) {
+        r = get_one_future_result(shared);
     }
 
     return r;
@@ -88,8 +88,9 @@ concept FutureConcept =
 
 template<typename C>
 concept FutureContainerConcept =
-  metrix::is_iterable_v<C> && (metrix::is_specialization_of_v<typename C::value_type, std::future> ||
-                               metrix::is_specialization_of_v<typename C::value_type, std::shared_future>);
+  metrix::is_iterable_v<C> &&
+  (metrix::is_specialization_of_v<typename std::decay_t<C>::value_type, std::future> ||
+   metrix::is_specialization_of_v<typename std::decay_t<C>::value_type, std::shared_future>);
 
 template<typename I>
 concept FutureInteratorConcept =
@@ -117,20 +118,34 @@ auto when_all(F&&... f) -> std::future<std::tuple<future_type_t<F>...>>
 }
 
 template<FutureContainerConcept C>
-auto when_all(C const& container) -> std::future<std::vector<future_type_t<typename C::value_type>>>
+auto when_all(C&& container) -> std::future<std::vector<future_type_t<typename std::decay_t<C>::value_type>>>
 {
-    auto v = std::vector<future_type_t<typename C::value_type>>{};
+    auto v = std::vector<future_type_t<typename std::decay_t<C>::value_type>>{};
     v.reserve(std::size(container));
 
     auto promise = std::promise<decltype(v)>{};
     auto future = promise.get_future();
 
-    Executor::threadExecutor().submitTask([&container, v = std::move(v), p = std::move(promise)]() mutable -> void {
-        for (auto&& f : container) {
-            v.emplace_back(internal::get_one_future_result(std::move(f)));
-        }
-        p.set_value(v);
-    });
+    if constexpr (std::is_rvalue_reference_v<decltype(container)>) {
+        Executor::threadExecutor().submitTask(
+          [container = std::move(container), v = std::move(v), p = std::move(promise)]() mutable -> void {
+              for (auto&& f : container) {
+                  v.emplace_back(internal::get_one_future_result(std::move(f)));
+              }
+              p.set_value(v);
+          });
+    } else {
+        Executor::threadExecutor().submitTask([&container, v = std::move(v), p = std::move(promise)]() mutable -> void {
+            for (auto&& f : container) {
+                if constexpr (metrix::is_specialization_of_v<std::decay_t<decltype(f)>, std::future>) {
+                    v.emplace_back(internal::get_one_future_result(f.share()));
+                } else {
+                    v.emplace_back(internal::get_one_future_result(f));
+                }
+            }
+            p.set_value(v);
+        });
+    }
 
     return future;
 }
