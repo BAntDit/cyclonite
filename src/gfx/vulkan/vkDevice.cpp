@@ -498,7 +498,8 @@ auto Device::createCommandPool(uint32_t queueFamilyIndex, CommandPoolFlagBits fl
     return result;
 }
 
-auto Device::createQueueSubmission(uint32_t queueFamilyIndex,
+auto Device::createQueueSubmission(QueueSubmissionManager* queueSubmissionManager,
+                                   uint32_t queueFamilyIndex,
                                    CommandPoolFlagBits commandPoolFlags) -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
@@ -507,7 +508,8 @@ auto Device::createQueueSubmission(uint32_t queueFamilyIndex,
 
     auto deviceRef = getSharedFromThis(this);
 
-    result = resManager.allocResource<gfx::QueueSubmission>(deviceRef, queueFamilyIndex, commandPoolFlags);
+    result = resManager.allocResource<gfx::QueueSubmission>(
+      deviceRef, queueSubmissionManager, queueFamilyIndex, commandPoolFlags);
 
     return result;
 }

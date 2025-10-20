@@ -14,12 +14,15 @@
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
+class QueueSubmissionManager;
+
 class QueueSubmission : public core::ResourceBase
 {
 public:
     QueueSubmission(core::ResourceManagerBase* resourceManager,
                     core::ResourceId resourceId,
                     core::ResourceSharedRef deviceRef,
+                    QueueSubmissionManager* manager,
                     uint32_t queueFamilyIndex,
                     CommandPoolFlagBits commandPoolFlags);
 
@@ -88,6 +91,7 @@ private:
         core::ResourceSharedRef presentationSignal;
     };
 
+    QueueSubmissionManager* manager_;
     core::ResourceSharedRef commandPool_;
     std::vector<SubmissionBatch> batches_;
     uint64_t completionFrameIndex_;    // to wait for (on CPU for submission completion)

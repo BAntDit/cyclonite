@@ -5,14 +5,15 @@
 #include "vkQueueSubmissionManager.h"
 #include "gfx/device.h"
 #include "gfx/queueSubmission.h"
-#include "gfx/queueSubmissionManager.h"
 #include "multithreading/taskManager.h"
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 QueueSubmissionManager::QueueSubmissionManager(core::ResourceSharedRef deviceRef)
   : deviceRef_{ std::move(deviceRef) }
+  , signalPool_{}
   , queueSubmissionRingMap_{}
+  , completedFrames_{}
   , currentFrameIndex_{ 1 }
 {
 }
@@ -23,6 +24,25 @@ auto getPurposeBits(multithreading::Purpose purpose) -> multithreading::PurposeB
     assert(purpose != multithreading::Purpose::General);
     return multithreading::Executor::threadExecutor().taskManager().getExecutorPurposeBits(purpose);
 }
+}
+
+auto QueueSubmissionManager::acquireSignal(uint64_t signalInitialValue) -> core::ResourceSharedRef
+{
+    auto result = core::ResourceSharedRef{};
+    if (!signalPool_.empty()) {
+        result = signalPool_.back();
+        signalPool_.pop_back();
+    } else {
+        auto& device = deviceRef_.as<gfx::Device>();
+        result = device.createSignal(gfx::SignalType::TIMELINE, signalInitialValue);
+    }
+
+    return result;
+}
+
+void QueueSubmissionManager::returnSignal(core::ResourceSharedRef const& signal)
+{
+    signalPool_.push_back(signal);
 }
 
 auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purpose,
@@ -83,7 +103,7 @@ auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purp
                 }
             } // if pending
         } else { // new submission
-            submissionRef = device.createQueueSubmission(queueFamilyIndex, flags);
+            submissionRef = device.createQueueSubmission(this, queueFamilyIndex, flags);
         }
 
         {

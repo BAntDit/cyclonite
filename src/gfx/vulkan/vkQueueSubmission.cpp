@@ -1,5 +1,6 @@
 
 #include "vkQueueSubmission.h"
+#include "vkQueueSubmissionManager.h"
 #include "gfx/commandPool.h"
 #include "gfx/device.h"
 #include "gfx/signal.h"
@@ -13,9 +14,11 @@ namespace cyclonite::gfx::vulkan {
 QueueSubmission::QueueSubmission(core::ResourceManagerBase* resourceManager,
                                  core::ResourceId resourceId,
                                  core::ResourceSharedRef deviceRef,
+                                 QueueSubmissionManager* manager,
                                  uint32_t queueFamilyIndex,
                                  CommandPoolFlagBits commandPoolFlags)
   : core::ResourceBase{ resourceManager, resourceId, false }
+  , manager_{ manager }
   , commandPool_{}
   , batches_{}
   , completionFrameIndex_{ 0 }
@@ -74,7 +77,7 @@ void QueueSubmission::beginBatchRecording()
     auto& pool = commandPool_.as<type_traits::platform_implementation_t<gfx::CommandPool>>();
     auto& device = pool.device().as<gfx::Device>();
 
-    batch.signal = device.createSignal(gfx::SignalType::TIMELINE, lastCompletedFrameIndex_);
+    batch.signal = manager_->acquireSignal(lastCompletedFrameIndex_);
 }
 
 void QueueSubmission::addBatchDependency(size_t fromBatch, PipelineStageFlagBits stageMask)
@@ -204,7 +207,11 @@ void QueueSubmission::reset()
         return;
     }
 
+    for (auto& batch : batches_) {
+        manager_->returnSignal(batch.signal);
+    }
     batches_.clear();
+
     commandPool_.as<gfx::CommandPool>().reset();
     completionFrameIndex_ = 0;
     state_.value = metrix::value_cast(QueueSubmissionStateFlags::Initial);

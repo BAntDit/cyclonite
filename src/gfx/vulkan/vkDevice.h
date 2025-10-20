@@ -14,15 +14,14 @@
 #include "gfx/common.h"
 #include "gfx/config.h"
 #include "handle.h"
-#include "multithreading/common.h"
 #include "vmaUsage.h"
 #include <array>
 #include <string_view>
 
-#include "vkSignal.h"
-
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
+class QueueSubmissionManager;
+
 class Device
   : public core::ResourceBase
   , public core::EnableRefFromThis
@@ -100,7 +99,8 @@ public:
     [[nodiscard]] auto createCommandPool(uint32_t queueFamilyIndex,
                                          CommandPoolFlagBits flags) -> core::ResourceUniqueRef;
 
-    [[nodiscard]] auto createQueueSubmission(uint32_t queueFamilyIndex,
+    [[nodiscard]] auto createQueueSubmission(QueueSubmissionManager* queueSubmissionManager,
+                                             uint32_t queueFamilyIndex,
                                              CommandPoolFlagBits commandPoolFlags) -> core::ResourceUniqueRef;
 
     using core::ResourceBase::resourceBase;

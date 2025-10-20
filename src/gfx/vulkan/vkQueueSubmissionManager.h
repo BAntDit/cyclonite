@@ -36,6 +36,10 @@ public:
 
     void flush();
 
+    [[nodiscard]] auto acquireSignal(uint64_t signalInitialValue) -> core::ResourceSharedRef;
+
+    void returnSignal(core::ResourceSharedRef const& signal);
+
 private:
     using queue_submission_ring_t = std::array<core::ResourceSharedRef, config_t::queue_submission_ring_size_v>;
 
@@ -52,6 +56,8 @@ private:
                                                    std::underlying_type_t<gfx::CommandPoolFlags>>;
 
     core::ResourceSharedRef deviceRef_;
+
+    std::vector<core::ResourceSharedRef> signalPool_;
 
     queue_submission_map_t queueSubmissionRingMap_;
     completion_map_t completedFrames_;
