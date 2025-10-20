@@ -91,6 +91,10 @@ auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purp
             auto& submission = submissionRef.as<gfx::QueueSubmission>();
             if (submission.isPending()) {
                 auto submissionFrame = submission.waitOnCpu();
+                if (flags.test(gfx::CommandPoolFlags::TRANSIENT)) {
+                    assert(submission.isExecutable());
+                    submission.reset();
+                }
 
                 if (auto completionIt = completedFrames_.find(purposeBits.value, queueFamilyIndex, flags.value);
                     completionIt != completedFrames_.end()) {

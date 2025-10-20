@@ -17,7 +17,7 @@ namespace cyclonite::gfx::vulkan {
 class QueueSubmissionManager
 {
 public:
-    QueueSubmissionManager(core::ResourceSharedRef deviceRef);
+    explicit QueueSubmissionManager(core::ResourceSharedRef deviceRef);
 
     QueueSubmissionManager(QueueSubmissionManager const&) = delete;
 

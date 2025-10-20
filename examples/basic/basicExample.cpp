@@ -83,8 +83,6 @@ struct RenderTask
           cyclonite::multithreading::Purpose::Render,
           cyclonite::gfx::CommandPoolFlagBits{ cyclonite::gfx::CommandPoolFlags::TRANSIENT });
 
-        // TODO:: reset submission
-
         auto submissionRecorder = cyclonite::gfx::QueueSubmissionRecorder{};
         submissionRecorder.setQueueSubmission(submissionRef);
 
