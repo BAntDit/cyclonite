@@ -58,6 +58,12 @@ enum class DeviceVendor : uint32_t
     Qualcomm_AdrenoGPU = 0x5143
 };
 
+#if defined(PLATFORM_WINDOWS)
+#ifdef TRANSPARENT
+#undef TRANSPARENT
+#endif
+#endif
+
 enum class SurfaceFlags : uint64_t
 {
     FULLSCREEN = SDL_WINDOW_FULLSCREEN,

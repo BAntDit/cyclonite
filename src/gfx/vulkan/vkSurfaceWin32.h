@@ -13,6 +13,7 @@
 namespace cyclonite::gfx::vulkan {
 class SurfaceWin32 : public SurfaceKHR
 {
+public:
     SurfaceWin32(VkInstance vkInstance, HINSTANCE hinstance, HWND hwnd);
 
     SurfaceWin32(SurfaceWin32 const&) = delete;
