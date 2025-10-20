@@ -120,22 +120,28 @@ auto when_all(F&&... f) -> std::future<std::tuple<future_type_t<F>...>>
 template<FutureContainerConcept C>
 auto when_all(C&& container) -> std::future<std::vector<future_type_t<typename std::decay_t<C>::value_type>>>
 {
-    auto v = std::vector<future_type_t<typename std::decay_t<C>::value_type>>{};
+    using value_type_t = typename std::decay_t<C>::value_type;
+    auto v = std::vector<future_type_t<value_type_t>>{};
     v.reserve(std::size(container));
 
     auto promise = std::promise<decltype(v)>{};
     auto future = promise.get_future();
 
-    if constexpr (std::is_rvalue_reference_v<decltype(container)>) {
+    if constexpr (std::is_rvalue_reference_v<decltype(container)> ||
+                  metrix::is_specialization_of_v<value_type_t, std::future>) {
         Executor::threadExecutor().submitTask(
           [container = std::move(container), v = std::move(v), p = std::move(promise)]() mutable -> void {
               for (auto&& f : container) {
-                  v.emplace_back(internal::get_one_future_result(std::move(f)));
+                  if constexpr (metrix::is_specialization_of_v<std::decay_t<decltype(f)>, std::future>) {
+                      v.emplace_back(internal::get_one_future_result(f.share()));
+                  } else {
+                      v.emplace_back(internal::get_one_future_result(std::move(f)));
+                  }
               }
               p.set_value(v);
           });
     } else {
-        Executor::threadExecutor().submitTask([&container, v = std::move(v), p = std::move(promise)]() mutable -> void {
+        Executor::threadExecutor().submitTask([container, v = std::move(v), p = std::move(promise)]() mutable -> void {
             for (auto&& f : container) {
                 if constexpr (metrix::is_specialization_of_v<std::decay_t<decltype(f)>, std::future>) {
                     v.emplace_back(internal::get_one_future_result(f.share()));
