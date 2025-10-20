@@ -31,7 +31,7 @@ public:
 
     auto lock() -> ResourceSharedRef;
 
-    [[nodiscard]] auto useCount() const -> uint32_t { return ResourceSharedRef{ id_, resource_ }.refCount(); }
+    [[nodiscard]] auto useCount() const -> uint64_t { return ResourceSharedRef{ id_, resource_ }.refCount(); }
 
     [[nodiscard]] auto expired() const -> bool { return ResourceSharedRef{ id_, resource_ }.valid(); }
 
