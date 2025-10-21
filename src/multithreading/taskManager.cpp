@@ -64,7 +64,7 @@ TaskManager::TaskManager(bool dedicatedTransferRequired,
   , executorPurposes_{ std::make_unique_for_overwrite<PurposeBits[]>(executorCount_) }
   , executorIndexToStealTask_{ 0 }
   , taskPoolForStrand_{ config_t::strand_queue_max_size_v }
-  , strandDeque_{ nullptr }
+  , strandDeque_{ std::make_unique<StrandDeque>(config_t::strand_queue_max_size_v) }
   , alive_{ true }
   , noTasks_{ true }
   , noTaskCv_{}

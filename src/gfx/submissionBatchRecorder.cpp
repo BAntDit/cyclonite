@@ -22,7 +22,7 @@ void SubmissionBatchRecorder::finish(bool noexceptions)
     try {
         auto purpose = queueSubmissionRecorder_->submission_->purpose();
 
-        auto task = [recorder = queueSubmissionRecorder_, noexceptions]() -> void {
+        auto task = [recorder = queueSubmissionRecorder_]() -> void {
             if (!recorder->submission_->isInBatchRecordingState()) {
                 throw std::runtime_error("batch recording is already finished");
             }

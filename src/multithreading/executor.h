@@ -150,8 +150,6 @@ template<typename F>
     requires std::is_invocable_v<F>
 auto Executor::submitTaskMPSC(F&& f) -> std::future<std::invoke_result_t<F>>
 {
-    assert(canSubmit());
-
     using result_type_t = std::invoke_result_t<F>;
 
     auto* task = std::add_pointer_t<Task>{ nullptr };
