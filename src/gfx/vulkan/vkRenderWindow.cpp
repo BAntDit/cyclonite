@@ -228,6 +228,7 @@ void RenderWindow::validateSwapchain(Format format, PresentMode presentMode)
             throw Exception{ vkResult, "vkCreateImageView" };
         }
 
+        // TODO:: fix resource invalidation on allocation
         swapchainWaitSignals_[i] = device.createSignal(SignalType::BINARY);
         presentationWaitSignals_[i] = device.createSignal(SignalType::BINARY);
     }

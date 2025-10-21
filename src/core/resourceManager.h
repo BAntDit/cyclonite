@@ -191,11 +191,11 @@ auto ResourceManager<ResourceTypes...>::alloc(uint16_t type) -> std::pair<uint32
     auto blockIndex = std::numeric_limits<uint32_t>::max();
 
     if (storage_.freeIndices[type].empty()) {
-        blockIndex = storage_.freeIndices[type].size();
+        blockIndex = storage_.resources[type].size();
         storage_.resources[type].emplace_back();
     } else {
         blockIndex = storage_.freeIndices[type].back();
-        storage_.resources[type].pop_back();
+        storage_.freeIndices[type].pop_back();
     }
     assert(blockIndex < storage_.resources[type].size());
 
