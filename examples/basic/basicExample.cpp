@@ -54,15 +54,20 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
       cyclonite::core::ResourceSharedRef{ renderWindowBuilder.setDevice(deviceRef)
                                             .setTitle("basic.example")
                                             .setResolution(1024, 768)
-                                            .addFormatCandidate(cyclonite::gfx::Format::R8G8B8A8_SRGB)
+                                            .addFormatCandidate(cyclonite::gfx::Format::B8G8R8A8_SRGB)
                                             .addPresentModeCandidate(cyclonite::gfx::PresentMode::MailBox)
                                             .addPresentModeCandidate(cyclonite::gfx::PresentMode::FiFo)
                                             .build() };
 
     auto renderPassBuilder = cyclonite::gfx::RenderPassBuilder{};
-    auto renderPassRef = renderPassBuilder.setDevice(deviceRef).setRenderWindow(renderWindowRef).build();
+    auto renderPassRef = cyclonite::core::ResourceSharedRef{
+        renderPassBuilder.setDevice(deviceRef).setRenderWindow(renderWindowRef).build()
+    };
 
     submissionManager_ = std::make_unique<cyclonite::gfx::QueueSubmissionManager>(deviceRef);
+
+    deviceRef_ = deviceRef;
+    renderPassRef_ = renderPassRef;
 
     root_.input().quit += cyclonite::Event<>::EventHandler(this, &BasicExample::onQuit);
     root_.input().keyDown += cyclonite::Event<SDL_Keycode, uint16_t>::EventHandler(this, &BasicExample::onKeyDown);
@@ -72,8 +77,10 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
 
 struct RenderTask
 {
-    explicit RenderTask(cyclonite::gfx::QueueSubmissionManager* submissionManager)
-      : submissionManager_{ submissionManager }
+    explicit RenderTask(cyclonite::gfx::QueueSubmissionManager* submissionManager,
+                        cyclonite::core::ResourceSharedRef renderPassRef)
+      : renderPassRef_{ std::move(renderPassRef) }
+      , submissionManager_{ submissionManager }
     {
     }
 
@@ -92,7 +99,9 @@ struct RenderTask
 
         commandListRecorder.begin(cyclonite::gfx::CommandListUsageFlagBits{});
 
-        // TODO::
+        assert(renderPassRef_.valid());
+        commandListRecorder.beginRenderPass(renderPassRef_);
+        commandListRecorder.endRenderPass();
 
         commandListRecorder.end();
 
@@ -105,6 +114,7 @@ struct RenderTask
         submissionManager_->flush();
     }
 
+    cyclonite::core::ResourceSharedRef renderPassRef_;
     cyclonite::gfx::QueueSubmissionManager* submissionManager_;
 };
 
@@ -115,7 +125,9 @@ auto BasicExample::run() -> BasicExample&
     while (!shutdown_) {
         root_.input().pollEvent();
 
-        taskManager.submitTask(RenderTask{ submissionManager_.get() }, cyclonite::multithreading::Purpose::Render)
+        taskManager
+          .submitTask(RenderTask{ submissionManager_.get(), renderPassRef_ },
+                      cyclonite::multithreading::Purpose::Render)
           .get();
     }
 
@@ -124,6 +136,9 @@ auto BasicExample::run() -> BasicExample&
 
 void BasicExample::done()
 {
+    renderPassRef_ = cyclonite::core::ResourceSharedRef{};
+    deviceRef_ = cyclonite::core::ResourceSharedRef{};
+
     root_.reset();
 }
 

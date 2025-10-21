@@ -21,6 +21,8 @@ public:
 
 private:
     cyclonite::Root root_;
+    cyclonite::core::ResourceSharedRef deviceRef_;
+    cyclonite::core::ResourceSharedRef renderPassRef_;
     std::unique_ptr<cyclonite::gfx::QueueSubmissionManager> submissionManager_;
     bool shutdown_;
 };

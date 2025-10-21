@@ -200,9 +200,9 @@ auto ResourceManager<ResourceTypes...>::alloc(uint16_t type) -> std::pair<uint32
     assert(blockIndex < storage_.resources[type].size());
 
     auto headerIndex = std::numeric_limits<uint32_t>::max();
-    if (!emptyHeaders_.empty()) {
-        headerIndex = emptyHeaders_.size();
-        emptyHeaders_.emplace_back();
+    if (emptyHeaders_.empty()) {
+        headerIndex = headers_.size();
+        headers_.emplace_back();
     } else {
         headerIndex = emptyHeaders_.back();
         emptyHeaders_.pop_back();
