@@ -204,7 +204,7 @@ RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
                        uint8_t stencilClearValue)
   : core::ResourceBase{ resourceManager, resourceId, false }
   , deviceRef_{ deviceRef }
-  , renderTargets_{ renderWindowRef }
+  , renderTargets_{}
   , vkRenderPass_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyRenderPass }
   , vkFrameBuffers_{}
   , bufferCount_{ renderWindowRef.as<type_traits::platform_implementation_t<gfx::RenderWindow>>().swapchainLength() }
@@ -302,6 +302,8 @@ RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
         }
     }
 
+    renderTargets_ = std::move(renderWindowRef);
+
     colorClearValues_[0] = clearColor;
 }
 
@@ -311,11 +313,11 @@ auto RenderPass::getResolution() const -> std::pair<uint32_t, uint32_t>
       [](auto&& rt) -> std::pair<uint32_t, uint32_t> {
           auto result = std::pair<uint32_t, uint32_t>{};
 
-          if constexpr (std::is_same_v<decltype(rt), core::ResourceSharedRef>) {
+          if constexpr (std::is_same_v<std::decay_t<decltype(rt)>, core::ResourceSharedRef>) {
               result =
                 std::pair{ rt.template as<gfx::RenderWindow>().width(), rt.template as<gfx::RenderWindow>().height() };
           } else if constexpr (std::is_same_v<
-                                 decltype(rt),
+                                 std::decay_t<decltype(rt)>,
                                  std::pair<depth_stencil_ref,
                                            std::array<color_attachment_ref, config_t::max_color_attachment_count_v>>>) {
               auto& [ds, arr] = rt;
