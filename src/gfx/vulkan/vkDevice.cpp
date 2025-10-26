@@ -286,6 +286,7 @@ Device::Device(core::ResourceManagerBase* resourceManager,
             familyQueueUsages.remove(it);
 
             auto& deviceQueueCreateInfo = deviceQueueCreateInfoArray[queueCreateInfoCount++];
+            deviceQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             deviceQueueCreateInfo.queueFamilyIndex = transferQueueFamilyIndex;
             deviceQueueCreateInfo.queueCount = usageCount;
             deviceQueueCreateInfo.pQueuePriorities = transferQueuePriorities.data();
@@ -305,6 +306,7 @@ Device::Device(core::ResourceManagerBase* resourceManager,
             familyQueueUsages.remove(it);
 
             auto& deviceQueueCreateInfo = deviceQueueCreateInfoArray[queueCreateInfoCount++];
+            deviceQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             deviceQueueCreateInfo.queueFamilyIndex = computeQueueFamilyIndex;
             deviceQueueCreateInfo.queueCount = usageCount;
             deviceQueueCreateInfo.pQueuePriorities = computeQueuePriorities.data();
