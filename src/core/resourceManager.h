@@ -5,13 +5,18 @@
 #ifndef GFX_RESOURCE_MANAGER_H
 #define GFX_RESOURCE_MANAGER_H
 
+#include "core/configTraitMacro.h"
+#include "core/spinLock.h"
 #include "resourceUniqueRef.h"
 #include <array>
 #include <cassert>
+#include <chrono>
 #include <deque>
 #include <metrix/type_list.h>
+#include <mutex>
 #include <numeric>
 #include <type_traits>
+#include <unordered_map>
 #include <vector>
 
 namespace cyclonite::core {
@@ -26,31 +31,15 @@ public:
 
     virtual ~ResourceManagerBase() = default;
 
-    [[deprecated]]
-    void setCurrentFrame(uint_fast64_t frameNumber)
-    {
-        currentFrame_ = frameNumber;
-    }
-
-    void setLastCompletedFrame(uint_fast64_t frameNumber) { lastCompletedFrame_ = frameNumber; }
-
-    [[nodiscard]] auto currentFrame() const -> uint_fast64_t { return currentFrame_; }
-    [[nodiscard]] auto lastCompletedCurrentFrame() const -> uint_fast64_t { return lastCompletedFrame_; }
-
 protected:
     virtual void releaseResourceImmediate(ResourceId id) = 0;
 
-    [[deprecated]]
     virtual void releaseResourceDeferred(ResourceId id) = 0;
 
     static auto makeUniqueRef(ResourceBase* resource) -> ResourceUniqueRef
     {
         return ResourceUniqueRef{ resource->resourceId(), resource };
     }
-
-private:
-    uint_fast64_t currentFrame_;
-    uint_fast64_t lastCompletedFrame_;
 };
 
 namespace internal {
@@ -75,7 +64,22 @@ inline constexpr auto get_uniform_size() -> size_t
         return TypeSize;
     }
 }
-}
+
+template<typename T>
+struct resource_traits_decl
+{
+    using yes_t = uint8_t;
+    using no_t = uint16_t;
+
+    DECLARE_CONFIG_TRAIT(items_per_chunk_count, uint16_t, 256)
+};
+
+template<typename T>
+struct resource_traits
+{
+    static constexpr auto items_per_chunk_count_v = resource_traits_decl<T>::items_per_chunk_count();
+};
+} // internal
 
 template<typename T>
 concept ResourceConcept = std::is_base_of_v<ResourceBase, T>;
@@ -120,21 +124,63 @@ class ResourceManager final : public ResourceManagerBase
         resource_block_header_t()
           : deleter{ [](void*) -> void {} } // empty deleter
           , version{ 1 }
-          , index{ std::numeric_limits<uint32_t>::max() }
+          , chunk{ std::numeric_limits<uint16_t>::max() }
+          , index{ std::numeric_limits<uint16_t>::max() }
           , type{ std::numeric_limits<uint16_t>::max() }
         {
         }
 
         resource_deleter_f deleter;
         uint32_t version;
-        uint32_t index;
+        uint16_t chunk;
+        uint16_t index;
         uint16_t type;
+    };
+
+    struct resource_storage_chunk_t
+    {
+        explicit resource_storage_chunk_t(uint16_t size = 255)
+          : resources{}
+          , freeIndices{}
+        {
+            resources.resize(size, resource_block_t{});
+            freeIndices.resize(size, 0);
+
+            std::iota(freeIndices.begin(), freeIndices.end(), 0);
+        }
+
+        std::vector<resource_block_t> resources;
+        std::deque<uint32_t> freeIndices;
     };
 
     struct resource_storage_t
     {
-        std::array<std::vector<resource_block_t>, resource_meta_t::resource_type_count_v> resources = {};
-        std::array<std::vector<uint32_t>, resource_meta_t::resource_type_count_v> freeIndices = {};
+        std::array<std::unordered_map<uint16_t, resource_storage_chunk_t>, resource_meta_t::resource_type_count_v>
+          chunks = {};
+    };
+
+    struct resource_allocation_info_t
+    {
+        resource_allocation_info_t()
+          : headerIndex{ std::numeric_limits<uint32_t>::max() }
+          , typeIndex{ std::numeric_limits<uint8_t>::max() }
+          , chunkIndex{ std::numeric_limits<uint16_t>::max() }
+          , blockIndex{ std::numeric_limits<uint16_t>::max() }
+        {
+        }
+
+        resource_allocation_info_t(uint32_t header, uint8_t type, uint16_t chunk, uint16_t index)
+          : headerIndex{ header }
+          , typeIndex{ type }
+          , chunkIndex{ chunk }
+          , blockIndex{ index }
+        {
+        }
+
+        uint32_t headerIndex;
+        uint8_t typeIndex;
+        uint16_t chunkIndex;
+        uint16_t blockIndex;
     };
 
 public:
@@ -144,19 +190,18 @@ public:
 
     ResourceManager(ResourceManager const&) = delete;
 
-    ResourceManager(ResourceManager&&) = default;
+    ResourceManager(ResourceManager&&) = delete;
 
     ~ResourceManager() override;
 
     auto operator=(ResourceManager const&) -> ResourceManager& = delete;
 
-    auto operator=(ResourceManager&&) -> ResourceManager& = default;
+    auto operator=(ResourceManager&&) -> ResourceManager& = delete;
 
     template<typename ResourceType, typename... Args>
     auto allocResource(Args&&... args) -> ResourceUniqueRef
         requires(resource_type_list_t::template has_type<ResourceType>::value);
 
-    [[deprecated]]
     void gc(bool clearAll = false);
 
     [[nodiscard]] auto isResourceValid(ResourceId id) const -> bool override;
@@ -164,17 +209,19 @@ public:
 protected:
     void releaseResourceImmediate(ResourceId id) override;
 
-    [[deprecated]]
     void releaseResourceDeferred(ResourceId id) override;
 
-    auto alloc(uint16_t type) -> std::pair<uint32_t, uint32_t>;
+    template<typename ResourceType>
+    auto alloc() -> resource_allocation_info_t;
 
-    void free(uint32_t index);
+    void free(uint32_t headerIndex);
+
+    mutable core::SpinLock headersGuard_;
 
     std::vector<resource_block_header_t> headers_;
     std::vector<uint32_t> emptyHeaders_;
-    std::deque<std::pair<uint64_t, uint32_t>> garbage_;
     resource_storage_t storage_;
+    std::deque<std::pair<std::chrono::time_point<std::chrono::high_resolution_clock>, uint32_t>> garbage_;
 };
 
 template<ResourceConcept... ResourceTypes>
@@ -184,22 +231,12 @@ ResourceManager<ResourceTypes...>::~ResourceManager()
 }
 
 template<ResourceConcept... ResourceTypes>
-auto ResourceManager<ResourceTypes...>::alloc(uint16_t type) -> std::pair<uint32_t, uint32_t>
+template<typename ResourceType>
+auto ResourceManager<ResourceTypes...>::alloc() -> resource_allocation_info_t
 {
-    assert(type < resource_meta_t::resource_type_count_v);
-
-    auto blockIndex = std::numeric_limits<uint32_t>::max();
-
-    if (storage_.freeIndices[type].empty()) {
-        blockIndex = storage_.resources[type].size();
-        storage_.resources[type].emplace_back();
-    } else {
-        blockIndex = storage_.freeIndices[type].back();
-        storage_.freeIndices[type].pop_back();
-    }
-    assert(blockIndex < storage_.resources[type].size());
-
+    auto type = resource_meta_t::template type_index_v<ResourceType>();
     auto headerIndex = std::numeric_limits<uint32_t>::max();
+
     if (emptyHeaders_.empty()) {
         headerIndex = headers_.size();
         headers_.emplace_back();
@@ -209,26 +246,35 @@ auto ResourceManager<ResourceTypes...>::alloc(uint16_t type) -> std::pair<uint32
     }
     assert(headerIndex < headers_.size());
 
-    return std::pair{ headerIndex, blockIndex };
-}
+    auto resourceChunkIndex = std::numeric_limits<uint16_t>::max();
+    auto resourceBlockIndex = std::numeric_limits<uint16_t>::max();
 
-template<ResourceConcept... ResourceTypes>
-void ResourceManager<ResourceTypes...>::free(uint32_t index)
-{
-    auto& header = headers_[index];
-    auto idx = header.index;
-    auto type = header.type;
+    auto& chunks = storage_.chunks[type];
+    for (auto& [id, chunk] : chunks) {
+        if (!chunk.freeIndices.empty()) {
+            resourceChunkIndex = id;
+            break;
+        }
+    }
 
-    header.deleter(storage_.resources[type][idx].bytes);
+    if (resourceChunkIndex == std::numeric_limits<uint16_t>::max()) {
+        auto chunkIndexNew = chunks.size();
+        [[maybe_unused]] auto [_, success] = chunks.emplace(
+          chunkIndexNew, resource_storage_chunk_t{ internal::resource_traits<ResourceType>::items_per_chunk_count_v });
+        assert(success);
 
-    storage_.freeIndices[type].push_back(idx);
+        resourceChunkIndex = chunkIndexNew;
+    }
 
-    header.version++;
-    header.type = std::numeric_limits<uint16_t>::max();
-    header.index = std::numeric_limits<uint32_t>::max();
-    header.deleter = [](void*) -> void {};
+    assert(resourceChunkIndex != std::numeric_limits<uint16_t>::max());
+    auto& chunk = chunks[resourceChunkIndex];
+    resourceBlockIndex = chunk.freeIndices.back();
+    chunk.freeIndices.pop_back();
+    assert(resourceBlockIndex < chunk.resources.size());
 
-    emptyHeaders_.push_back(index);
+    return resource_allocation_info_t{
+        headerIndex, static_cast<uint8_t>(type), resourceChunkIndex, resourceBlockIndex
+    };
 }
 
 template<ResourceConcept... ResourceTypes>
@@ -236,28 +282,65 @@ template<typename ResourceType, typename... Args>
 auto ResourceManager<ResourceTypes...>::allocResource(Args&&... args) -> ResourceUniqueRef
     requires(resource_type_list_t::template has_type<ResourceType>::value)
 {
-    auto type = resource_meta_t::template type_index_v<ResourceType>();
-    auto [headerIndex, blockIndex] = alloc(type);
+    auto version = std::numeric_limits<uint32_t>::max();
+    auto allocationInfo = resource_allocation_info_t{};
 
-    auto& header = headers_[headerIndex];
-    header.type = type;
-    header.index = blockIndex;
-    header.deleter = [](void* ptr) -> void {
-        auto* p = std::launder(reinterpret_cast<ResourceType*>(ptr));
-        std::destroy_at(p);
-    };
+    {
+        auto lock = std::unique_lock{ headersGuard_ }; // guard header ref
+        allocationInfo = alloc<ResourceType>();
 
-    auto resourceId = ResourceId{ headerIndex, header.version };
+        auto& header = headers_[allocationInfo.headerIndex];
+        header.chunk = allocationInfo.chunkIndex;
+        header.index = allocationInfo.blockIndex;
+        header.type = allocationInfo.typeIndex;
+        header.deleter = [](void* ptr) -> void {
+            auto* p = std::launder(reinterpret_cast<ResourceType*>(ptr));
+            std::destroy_at(p);
+        };
 
-    auto* memory = storage_.resources[type][blockIndex].bytes;
+        version = header.version;
+    }
+
+    auto resourceId = ResourceId{ allocationInfo.headerIndex, version };
+
+    auto& chunks = storage_.chunks[allocationInfo.typeIndex];
+    auto& chunk = chunks[allocationInfo.chunkIndex];
+    auto* memory = chunk.resources[allocationInfo.blockIndex].bytes;
     auto* r = new (memory) ResourceType(this, resourceId, std::forward<Args>(args)...);
 
     return makeUniqueRef(r->resourceBase());
 }
 
 template<ResourceConcept... ResourceTypes>
+void ResourceManager<ResourceTypes...>::free(uint32_t headerIndex)
+{
+    auto lock = std::unique_lock{ headersGuard_ };
+
+    auto& header = headers_[headerIndex];
+    auto chunk = header.chunk;
+    auto idx = header.index;
+    auto type = header.type;
+
+    auto& chunks = storage_.chunks[type];
+
+    header.deleter(chunks[chunk].resources[idx].bytes);
+
+    chunks[chunk].freeIndices.push_back(idx);
+
+    header.version++;
+    header.type = std::numeric_limits<uint8_t>::max();
+    header.chunk = std::numeric_limits<uint16_t>::max();
+    header.index = std::numeric_limits<uint16_t>::max();
+    header.deleter = [](void*) -> void {};
+
+    emptyHeaders_.push_back(headerIndex);
+}
+
+template<ResourceConcept... ResourceTypes>
 auto ResourceManager<ResourceTypes...>::isResourceValid(ResourceId id) const -> bool
 {
+    auto lock = std::unique_lock{ headersGuard_ };
+
     assert(id.index() < headers_.size());
     auto const& header = headers_[id.index()];
 
@@ -271,26 +354,28 @@ void ResourceManager<ResourceTypes...>::releaseResourceImmediate(ResourceId id)
     free(id.index());
 }
 
-// TODO:: remove deferred release
 template<ResourceConcept... ResourceTypes>
 void ResourceManager<ResourceTypes...>::releaseResourceDeferred(ResourceId id)
 {
+    auto lock = std::unique_lock{ headersGuard_ };
+
     assert(isResourceValid(id));
-    garbage_.emplace_back(static_cast<uint64_t>(currentFrame()), id.index());
+    garbage_.emplace_back(std::chrono::high_resolution_clock::now(), id.index());
 }
 
 template<ResourceConcept... ResourceTypes>
 void ResourceManager<ResourceTypes...>::gc(bool clearAll)
 {
-    auto condition =
-      clearAll ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(lastCompletedCurrentFrame());
+    auto lock = std::unique_lock{ headersGuard_ };
 
     do {
         if (garbage_.empty())
             break;
-        auto [frame, index] = garbage_.front();
+        auto [tp, index] = garbage_.front();
 
-        if (frame <= condition) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - tp);
+        // TODO:: temporal gc logic
+        if (ms.count() >= 64 || clearAll) {
             garbage_.pop_front();
             free(index);
         } else {

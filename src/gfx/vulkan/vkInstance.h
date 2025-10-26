@@ -39,7 +39,7 @@ private:
 private:
     std::vector<VkPhysicalDevice> physicalDeviceList_;
     Handle<VkInstance> vkInstance_;
-    resource_manager_t resourceManager_;
+    std::unique_ptr<resource_manager_t> resourceManager_;
 };
 }
 

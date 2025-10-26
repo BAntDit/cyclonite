@@ -130,7 +130,7 @@ void testExtensions(std::array<char const*, N> const& reqExtensions)
 Instance::Instance(std::string_view applicationName)
   : physicalDeviceList_{}
   , vkInstance_{ vkDestroyInstance }
-  , resourceManager_{}
+  , resourceManager_{ std::make_unique<resource_manager_t>() }
 {
 #if !defined(NDEBUG)
     auto reqLayers = std::array<char const*, 1>{ "VK_LAYER_KHRONOS_validation" };
@@ -291,7 +291,7 @@ auto Instance::createDevice(uint32_t deviceId /* = std::numeric_limits<uint32_t>
         vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 
         if (physicalDeviceProperties.deviceID == deviceId) {
-            result = resourceManager_.allocResource<gfx::Device>(
+            result = resourceManager_->allocResource<gfx::Device>(
               static_cast<VkInstance>(vkInstance_), physicalDevice, physicalDeviceProperties, requiredExtensions);
             break;
         }
