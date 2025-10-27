@@ -7,6 +7,7 @@
 #include "gfx/common.h"
 #include "renderWindow.h"
 #include <cassert>
+#include <stdexcept>
 
 #if defined(GFX_DRIVER_VULKAN)
 #include "vulkan/internal/utils.h"

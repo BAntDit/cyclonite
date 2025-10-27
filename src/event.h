@@ -12,20 +12,16 @@
 #include <unordered_map>
 #include <utility>
 #include <variant>
+#include <cstddef>
+#include <array>
 
 namespace cyclonite {
 template<typename... Args>
 class Event
 {
 private:
-    struct Dummy
-    {
-        void func() {};
-        virtual void vFunc() {};
-    };
-
     using event_handler_identifier_t =
-      std::array<std::byte, sizeof(uint_fast64_t) + std::max(sizeof(&Dummy::func), sizeof(&Dummy::vFunc))>;
+      std::array<std::byte, sizeof(uint_fast64_t) + sizeof(uint64_t)>;
 
 public:
     class EventHandler
