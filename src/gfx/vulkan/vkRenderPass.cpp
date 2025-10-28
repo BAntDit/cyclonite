@@ -23,7 +23,7 @@ auto getAttachmentDescription(core::ResourceSharedRef textureRef) -> VkAttachmen
 
         attachmentDesc.format = internal::getFormat(t.format());
         attachmentDesc.samples = VK_SAMPLE_COUNT_1_BIT;
-        attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachmentDesc.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         attachmentDesc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         attachmentDesc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachmentDesc.stencilStoreOp =
@@ -224,7 +224,7 @@ RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
 
     attachmentDescs[0].format = vulkan::internal::getFormat(renderWindow.colorOutputFormat());
     attachmentDescs[0].samples = VK_SAMPLE_COUNT_1_BIT;
-    attachmentDescs[0].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachmentDescs[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachmentDescs[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     attachmentDescs[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     attachmentDescs[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -236,7 +236,7 @@ RenderPass::RenderPass(core::ResourceManagerBase* resourceManager,
 
         attachmentDescs[1].format = vulkan::internal::getFormat(renderWindow.depthStencilFormat());
         attachmentDescs[1].samples = VK_SAMPLE_COUNT_1_BIT;
-        attachmentDescs[1].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachmentDescs[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         attachmentDescs[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         attachmentDescs[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachmentDescs[1].stencilStoreOp = isStencilFormat(renderWindow.depthStencilFormat())
