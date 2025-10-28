@@ -157,6 +157,8 @@ auto BasicExample::run() -> BasicExample&
 
 void BasicExample::done()
 {
+    std::cout << "app is done!" << std::endl;
+
     windowRef_ = cyclonite::core::ResourceSharedRef{};
     renderPassRef_ = cyclonite::core::ResourceSharedRef{};
     deviceRef_ = cyclonite::core::ResourceSharedRef{};

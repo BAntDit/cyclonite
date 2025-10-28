@@ -148,7 +148,7 @@ void TaskManager::waitForTasks(size_t executorIndex)
         } else {
             count = generalTaskCount_.load(std::memory_order_acquire);
         }
-        return count > 0;
+        return count > 0 || !alive_.load(std::memory_order_acquire);
     });
 }
 
