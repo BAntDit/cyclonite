@@ -7,10 +7,16 @@
 #include "gfx/queueSubmissionRecorder.h"
 #include "gfx/vulkan/vkQueueSubmissionManager.h"
 
+#include <iostream>
+static uint32_t framIndex = 0;
+
 namespace examples {
 BasicExample::BasicExample()
   : cyclonite::EventReceivable{}
   , root_{}
+  , deviceRef_{}
+  , renderPassRef_{}
+  , windowRef_{}
   , submissionManager_{}
   , shutdown_{ false }
 {
@@ -60,14 +66,17 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
                                             .build() };
 
     auto renderPassBuilder = cyclonite::gfx::RenderPassBuilder{};
-    auto renderPassRef = cyclonite::core::ResourceSharedRef{
-        renderPassBuilder.setDevice(deviceRef).setRenderWindow(renderWindowRef).build()
-    };
+    auto renderPassRef =
+      cyclonite::core::ResourceSharedRef{ renderPassBuilder.setDevice(deviceRef)
+                                            .setRenderWindow(renderWindowRef,
+                                                             cyclonite::gfx::Color{ 0.f, 1.f, 0.f, 1.f })
+                                            .build() };
 
     submissionManager_ = std::make_unique<cyclonite::gfx::QueueSubmissionManager>(deviceRef);
 
     deviceRef_ = deviceRef;
     renderPassRef_ = renderPassRef;
+    windowRef_ = renderWindowRef;
 
     root_.input().quit += cyclonite::Event<>::EventHandler(this, &BasicExample::onQuit);
     root_.input().keyDown += cyclonite::Event<SDL_Keycode, uint16_t>::EventHandler(this, &BasicExample::onKeyDown);
@@ -78,8 +87,10 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
 struct RenderTask
 {
     explicit RenderTask(cyclonite::gfx::QueueSubmissionManager* submissionManager,
-                        cyclonite::core::ResourceSharedRef renderPassRef)
+                        cyclonite::core::ResourceSharedRef renderPassRef,
+                        cyclonite::core::ResourceSharedRef windowRef)
       : renderPassRef_{ std::move(renderPassRef) }
+      , windowRef_{ std::move(windowRef) }
       , submissionManager_{ submissionManager }
     {
     }
@@ -112,9 +123,13 @@ struct RenderTask
         submissionRecorder.finish();
 
         submissionManager_->flush();
+
+        auto& window = windowRef_.as<cyclonite::gfx::RenderWindow>();
+        window.present();
     }
 
     cyclonite::core::ResourceSharedRef renderPassRef_;
+    cyclonite::core::ResourceSharedRef windowRef_;
     cyclonite::gfx::QueueSubmissionManager* submissionManager_;
 };
 
@@ -125,10 +140,16 @@ auto BasicExample::run() -> BasicExample&
     while (!shutdown_) {
         root_.input().pollEvent();
 
-        taskManager
-          .submitTask(RenderTask{ submissionManager_.get(), renderPassRef_ },
-                      cyclonite::multithreading::Purpose::Render)
-          .get();
+        std::cout << "frame start: " << framIndex << std::endl;
+
+        auto&& future = taskManager.submitTask(RenderTask{ submissionManager_.get(), renderPassRef_, windowRef_ },
+                                               cyclonite::multithreading::Purpose::Render);
+
+        future.get();
+
+        std::cout << "frame end: " << framIndex << std::endl;
+
+        framIndex++;
     }
 
     return *this;
@@ -136,6 +157,7 @@ auto BasicExample::run() -> BasicExample&
 
 void BasicExample::done()
 {
+    windowRef_ = cyclonite::core::ResourceSharedRef{};
     renderPassRef_ = cyclonite::core::ResourceSharedRef{};
     deviceRef_ = cyclonite::core::ResourceSharedRef{};
 

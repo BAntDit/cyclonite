@@ -82,7 +82,7 @@ private:
 
     auto computeExecutor() -> Executor&;
 
-    void notifyNewTask();
+    void notifyNewTask(Purpose purpose);
 
     [[nodiscard]] auto poolSC() const -> TaskPoolSC const& { return taskPoolSC_; }
     [[nodiscard]] auto poolSC() -> TaskPoolSC& { return taskPoolSC_; }
@@ -123,25 +123,27 @@ auto Executor::submitTask(F&& f, Purpose purpose /*= Purpose::General*/) -> std:
             future = executeInPlace(std::forward<F>(f));
         } else {
             future = renderExecutor().submitTaskMPSC(std::forward<F>(f));
+            notifyNewTask(purpose);
         }
     } else if (purpose == Purpose::Transfer) {
         if (isInTransferThread()) {
             future = executeInPlace(std::forward<F>(f));
         } else {
             future = transferExecutor().submitTaskMPSC(std::forward<F>(f));
+            notifyNewTask(purpose);
         }
     } else if (purpose == Purpose::Compute) {
         if (isInComputeThread()) {
             future = executeInPlace(std::forward<F>(f));
         } else {
             future = computeExecutor().submitTaskMPSC(std::forward<F>(f));
+            notifyNewTask(purpose);
         }
     } else {
         assert(purpose == Purpose::General);
         future = submitTaskSPMC(std::forward<F>(f));
+        notifyNewTask(purpose);
     }
-
-    notifyNewTask();
 
     return future;
 }
@@ -203,8 +205,7 @@ auto Executor::executeInPlace(F&& f) -> std::future<std::invoke_result_t<F>>
     auto&& packedTask = std::packaged_task<result_type_t()>{ std::forward<F>(f) };
     auto future = packedTask.get_future();
 
-    auto&& task = Task{ std::move(packedTask) };
-    task();
+    packedTask();
 
     return future;
 }

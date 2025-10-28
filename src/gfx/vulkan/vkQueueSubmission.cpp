@@ -28,11 +28,11 @@ QueueSubmission::QueueSubmission(core::ResourceManagerBase* resourceManager,
   , vkSubmissions_{}
   , vkTimelineSubmissions_{}
   , timelineSemaphoreValues_{}
+  , signalValues_{}
   , waitSemaphores_{}
   , vkCommandBuffers_{}
   , vkSignals_{}
-  , timelineDependencyCount_{ 0 }
-  , binaryDependencyCount_{ 0 }
+  , dependencyCount_{ 0 }
   , commandBufferCount_{ 0 }
 {
     state_.set(QueueSubmissionStateFlags::Initial);
@@ -48,8 +48,7 @@ void QueueSubmission::beginRecording()
     [[maybe_unused]] auto submissionPurpose = purpose();
     assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
 
-    timelineDependencyCount_ = 0;
-    binaryDependencyCount_ = 0;
+    dependencyCount_ = 0;
     commandBufferCount_ = 0;
 
     assert(state_.value == metrix::value_cast(QueueSubmissionStateFlags::Initial));
@@ -74,8 +73,6 @@ void QueueSubmission::beginBatchRecording()
     state_.set(QueueSubmissionStateFlags::BatchRecording);
 
     auto& batch = batches_.emplace_back();
-    auto& pool = commandPool_.as<type_traits::platform_implementation_t<gfx::CommandPool>>();
-    auto& device = pool.device().as<gfx::Device>();
 
     batch.signal = manager_->acquireSignal(lastCompletedFrameIndex_);
 }
@@ -89,8 +86,9 @@ void QueueSubmission::addBatchDependency(size_t fromBatch, PipelineStageFlagBits
     auto& srcBatch = batches_[fromBatch];
     auto& dstBatch = batches_.back();
 
-    dstBatch.timelineDependencies.emplace_back(srcBatch.signal, stageMask, currentFrameIndex_);
-    timelineDependencyCount_++;
+    dstBatch.dependencies.emplace_back(srcBatch.signal, stageMask, currentFrameIndex_);
+
+    dependencyCount_++;
 }
 
 void QueueSubmission::addBatchDependency(gfx::SubmissionBatchDependency const& externalDependency)
@@ -99,13 +97,9 @@ void QueueSubmission::addBatchDependency(gfx::SubmissionBatchDependency const& e
     assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
 
     auto& dstBatch = batches_.back();
-    if (externalDependency.type() == gfx::SignalType::BINARY) {
-        dstBatch.binaryDependencies.push_back(externalDependency);
-        binaryDependencyCount_++;
-    } else if (externalDependency.type() == gfx::SignalType::TIMELINE) {
-        dstBatch.timelineDependencies.push_back(externalDependency);
-        timelineDependencyCount_++;
-    }
+    dstBatch.dependencies.push_back(externalDependency);
+
+    dependencyCount_++;
 }
 
 void QueueSubmission::addPresentationSignal(core::ResourceSharedRef const& signal)
@@ -219,13 +213,12 @@ void QueueSubmission::reset()
     vkSubmissions_.clear();
     vkTimelineSubmissions_.clear();
     timelineSemaphoreValues_.clear();
+    signalValues_.clear();
     waitSemaphores_.clear();
     waitStages_.clear();
     vkCommandBuffers_.clear();
     vkSignals_.clear();
 
-    timelineDependencyCount_ = 0;
-    binaryDependencyCount_ = 0;
     commandBufferCount_ = 0;
 }
 
@@ -281,10 +274,10 @@ void QueueSubmission::submit()
     vkTimelineSubmissions_.reserve(submissionBatchCount);
 
     timelineSemaphoreValues_.clear();
-    timelineSemaphoreValues_.reserve(timelineDependencyCount_);
+    timelineSemaphoreValues_.reserve(dependencyCount_);
     auto timelineValueOffset = size_t{ 0 };
 
-    auto allWaitSemaphoreCount = timelineDependencyCount_ + binaryDependencyCount_;
+    auto allWaitSemaphoreCount = dependencyCount_;
     auto waitSemaphoresOffset = size_t{ 0 };
     waitSemaphores_.clear();
     waitSemaphores_.reserve(allWaitSemaphoreCount);
@@ -298,6 +291,10 @@ void QueueSubmission::submit()
 
     vkSignals_.clear();
     vkSignals_.reserve(submissionBatchCount * 2); // max two signals per batch
+
+    signalValues_.clear();
+    signalValues_.reserve(submissionBatchCount * 2);
+
     auto signalsOffset = size_t{ 0 };
 
     for (auto const& batch : batches_) {
@@ -307,8 +304,8 @@ void QueueSubmission::submit()
         auto& vkBatch = vkSubmissions_.emplace_back(VkSubmitInfo{});
         auto& vkTimelineSubmission = vkTimelineSubmissions_.emplace_back(VkTimelineSemaphoreSubmitInfo{});
 
-        auto timelineValueCount = batch.timelineDependencies.size();
-        for (auto const& dependency : batch.timelineDependencies) {
+        auto waitCount = batch.dependencies.size();
+        for (auto const& dependency : batch.dependencies) {
             assert(timelineSemaphoreValues_.size() < timelineSemaphoreValues_.capacity());
             timelineSemaphoreValues_.push_back(dependency.completionValue());
 
@@ -323,25 +320,28 @@ void QueueSubmission::submit()
             waitStages_.push_back(dependency.stageMask().cast_to<VkPipelineStageFlags>());
         }
 
-        for (auto const& dependency : batch.binaryDependencies) {
-            auto signalRef = dependency.signal().lock();
-            assert(signalRef.valid());
-            auto& vkWaitSignal = signalRef.as<type_traits::platform_implementation_t<gfx::Signal>>();
+        assert(batch.signal.valid());
+        auto signalCount = size_t{ 1 };
 
-            assert(waitSemaphores_.size() < waitSemaphores_.capacity());
-            waitSemaphores_.push_back(vkWaitSignal.handle());
+        assert(signalValues_.size() < signalValues_.capacity());
+        signalValues_.push_back(currentFrameIndex_);
 
-            assert(waitStages_.size() < waitStages_.capacity());
-            waitStages_.push_back(dependency.stageMask().cast_to<VkPipelineStageFlags>());
+        vkSignals_.push_back(batch.signal.as<type_traits::platform_implementation_t<gfx::Signal>>().handle());
+
+        if (batch.presentationSignal.valid()) {
+            signalCount++;
+            vkSignals_.push_back(
+              batch.presentationSignal.as<type_traits::platform_implementation_t<gfx::Signal>>().handle());
+
+            assert(signalValues_.size() < signalValues_.capacity());
+            signalValues_.push_back(1); // binary signal value (actually no sense)
         }
 
-        auto waitCount = batch.timelineDependencies.size() + batch.binaryDependencies.size();
-
         vkTimelineSubmission.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
-        vkTimelineSubmission.waitSemaphoreValueCount = timelineValueCount;
+        vkTimelineSubmission.waitSemaphoreValueCount = waitCount;
         vkTimelineSubmission.pWaitSemaphoreValues = timelineSemaphoreValues_.data() + timelineValueOffset;
-        vkTimelineSubmission.signalSemaphoreValueCount = 1;
-        vkTimelineSubmission.pSignalSemaphoreValues = &currentFrameIndex_;
+        vkTimelineSubmission.signalSemaphoreValueCount = signalCount;
+        vkTimelineSubmission.pSignalSemaphoreValues = signalValues_.data() + signalsOffset; // signal values
 
         auto commandBufferCount = batch.commandLists.size();
         for (auto const& commandList : batch.commandLists) {
@@ -349,16 +349,6 @@ void QueueSubmission::submit()
 
             assert(vkCommandBuffers_.size() < vkCommandBuffers_.capacity());
             vkCommandBuffers_.push_back(vkCommandList.handle());
-        }
-
-        assert(batch.signal.valid());
-        auto signalCount = size_t{ 1 };
-        vkSignals_.push_back(batch.signal.as<type_traits::platform_implementation_t<gfx::Signal>>().handle());
-
-        if (batch.presentationSignal.valid()) {
-            signalCount++;
-            vkSignals_.push_back(
-              batch.presentationSignal.as<type_traits::platform_implementation_t<gfx::Signal>>().handle());
         }
 
         vkBatch.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -371,7 +361,7 @@ void QueueSubmission::submit()
         vkBatch.signalSemaphoreCount = signalCount;
         vkBatch.pSignalSemaphores = vkSignals_.data() + signalsOffset;
 
-        timelineValueOffset += timelineValueCount;
+        timelineValueOffset += waitCount;
         waitSemaphoresOffset += waitCount;
         commandBuffersOffset += commandBufferCount;
         signalsOffset += signalCount;

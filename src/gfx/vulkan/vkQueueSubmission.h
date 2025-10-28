@@ -84,8 +84,7 @@ public:
 private:
     struct SubmissionBatch
     {
-        std::vector<gfx::SubmissionBatchDependency> timelineDependencies;
-        std::vector<gfx::SubmissionBatchDependency> binaryDependencies;
+        std::vector<gfx::SubmissionBatchDependency> dependencies;
         std::vector<gfx::CommandList> commandLists;
         core::ResourceSharedRef signal;
         core::ResourceSharedRef presentationSignal;
@@ -104,12 +103,12 @@ private:
     std::vector<VkSubmitInfo> vkSubmissions_;
     std::vector<VkTimelineSemaphoreSubmitInfo> vkTimelineSubmissions_;
     std::vector<uint64_t> timelineSemaphoreValues_;
+    std::vector<uint64_t> signalValues_;
     std::vector<VkSemaphore> waitSemaphores_;
     std::vector<VkPipelineStageFlags> waitStages_;
     std::vector<VkCommandBuffer> vkCommandBuffers_;
     std::vector<VkSemaphore> vkSignals_;
-    size_t timelineDependencyCount_;
-    size_t binaryDependencyCount_;
+    size_t dependencyCount_;
     size_t commandBufferCount_;
 };
 }

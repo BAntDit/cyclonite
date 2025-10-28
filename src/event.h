@@ -7,21 +7,20 @@
 
 #include "eventReceivable.h"
 #include <algorithm>
+#include <array>
 #include <boost/functional/hash.hpp>
+#include <cstddef>
 #include <functional>
 #include <unordered_map>
 #include <utility>
 #include <variant>
-#include <cstddef>
-#include <array>
 
 namespace cyclonite {
 template<typename... Args>
 class Event
 {
 private:
-    using event_handler_identifier_t =
-      std::array<std::byte, sizeof(uint_fast64_t) + sizeof(uint64_t)>;
+    using event_handler_identifier_t = std::array<std::byte, sizeof(uint_fast64_t) + sizeof(uint64_t)>;
 
 public:
     class EventHandler

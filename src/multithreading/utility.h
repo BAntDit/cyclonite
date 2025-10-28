@@ -124,7 +124,7 @@ auto when_all(C&& container) -> std::future<std::vector<future_type_t<typename s
     auto v = std::vector<future_type_t<value_type_t>>{};
     v.reserve(std::size(container));
 
-    auto promise = std::promise<decltype(v)>{};
+    auto promise = std::promise<std::decay_t<decltype(v)>>{};
     auto future = promise.get_future();
 
     if constexpr (std::is_rvalue_reference_v<decltype(container)> ||

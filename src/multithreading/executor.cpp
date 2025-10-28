@@ -116,10 +116,13 @@ auto Executor::pendingTask() -> std::optional<Task>
 
     if (auto directedTask = mpscQueue().tryPop()) {
         task = std::move(*directedTask.value());
+        taskManager().decreaseTaskCount(false);
     } else if (auto ownTask = spmcQueue().tryPop()) {
         task = std::move(*ownTask.value());
+        taskManager().decreaseTaskCount(true);
     } else if (auto strandTask = taskManager().strandQueue().tryPop()) {
         task = std::move(*strandTask.value());
+        taskManager().decreaseTaskCount(true);
     } else {
         for (auto i = size_t{ 0 }, count = taskManager().executorCount(); i < count; i++) {
             auto executorIndex = taskManager().executorIndexToStealTask();
@@ -131,6 +134,7 @@ auto Executor::pendingTask() -> std::optional<Task>
 
             if (auto stolenTask = executor.spmcQueue().trySteal()) {
                 task = std::move(*stolenTask.value());
+                taskManager().decreaseTaskCount(true);
                 break;
             }
         }
@@ -159,12 +163,10 @@ void Executor::run(PurposeBits purpose /* = PurposeBits{ Purpose::General }*/)
     BEGIN_EXCEPTION_PROPAGATION();
 
     while (taskManager().keepAlive()) {
-        taskManager().waitForTasks();
+        taskManager().waitForTasks(executorIndex_);
 
         while (runOne()) {
         }
-
-        taskManager().notifyNoTasks();
     }
 
     END_EXCEPTION_PROPAGATION();
@@ -192,8 +194,8 @@ auto Executor::computeExecutor() -> Executor&
     return taskManager().executors()[TaskManager::computeExecutorIndex];
 }
 
-void Executor::notifyNewTask()
+void Executor::notifyNewTask(Purpose purpose)
 {
-    taskManager().notifyNewTask();
+    taskManager().notifyNewTask(purpose);
 }
 }

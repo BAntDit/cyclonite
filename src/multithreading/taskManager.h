@@ -69,9 +69,9 @@ private:
 
     [[nodiscard]] auto executorIndexToStealTask() -> size_t;
 
-    void waitForTasks();
-    void notifyNewTask();
-    void notifyNoTasks();
+    void decreaseTaskCount(bool isGeneralTask);
+    void notifyNewTask(Purpose purpose);
+    void waitForTasks(size_t executorIndex);
 
 #if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
     void propagateException(std::exception_ptr const& exception);
@@ -90,7 +90,9 @@ private:
 
     std::atomic<bool> alive_;
 
-    bool noTasks_;
+    std::atomic<uint32_t> generalTaskCount_;
+    std::atomic<uint32_t> specialPurposeTaskCount_;
+
     std::condition_variable_any noTaskCv_;
     core::SpinLock noTaskLock_;
 
@@ -130,7 +132,7 @@ auto TaskManager::strandTask(F&& f) -> std::future<std::invoke_result_t<F>>
     while (taskManager.strandQueue().tryEmplace(task))
         std::this_thread::yield();
 
-    taskManager.notifyNewTask();
+    taskManager.notifyNewTask(Purpose::General);
 
     return future;
 }

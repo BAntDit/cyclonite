@@ -66,7 +66,8 @@ TaskManager::TaskManager(bool dedicatedTransferRequired,
   , taskPoolForStrand_{ config_t::strand_queue_max_size_v }
   , strandDeque_{ std::make_unique<StrandDeque>(config_t::strand_queue_max_size_v) }
   , alive_{ true }
-  , noTasks_{ true }
+  , generalTaskCount_{ 0 }
+  , specialPurposeTaskCount_{ 0 }
   , noTaskCv_{}
   , noTaskLock_{}
 #if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
@@ -133,23 +134,50 @@ auto TaskManager::executorIndexToStealTask() -> size_t
     return executorIndexToStealTask_.fetch_add(1, std::memory_order_acq_rel) % executorCount_;
 }
 
-void TaskManager::waitForTasks()
+void TaskManager::waitForTasks(size_t executorIndex)
 {
+    auto executorPurposeBits = executorPurposes_[executorIndex];
+
     auto lk = std::unique_lock{ noTaskLock_ };
-    noTaskCv_.wait(lk, [&]() -> bool { return !noTasks_; });
+    noTaskCv_.wait(lk, [this, executorPurposeBits]() -> bool {
+        auto count = uint32_t{ 0 };
+        if (executorPurposeBits.test(Purpose::Compute) || executorPurposeBits.test(Purpose::Transfer) ||
+            executorPurposeBits.test(Purpose::Render)) {
+            count = generalTaskCount_.load(std::memory_order_acquire) +
+                    specialPurposeTaskCount_.load(std::memory_order_acquire);
+        } else {
+            count = generalTaskCount_.load(std::memory_order_acquire);
+        }
+        return count > 0;
+    });
 }
 
-void TaskManager::notifyNewTask()
+void TaskManager::notifyNewTask(Purpose purpose)
 {
+    if (purpose == Purpose::General) {
+        generalTaskCount_.fetch_add(1, std::memory_order_release);
+    } else {
+        specialPurposeTaskCount_.fetch_add(1, std::memory_order_release);
+    }
+
     auto lg = std::lock_guard{ noTaskLock_ };
-    noTasks_ = false;
     noTaskCv_.notify_all();
 }
 
-void TaskManager::notifyNoTasks()
+void TaskManager::decreaseTaskCount(bool isGeneralTask)
 {
-    auto lg = std::lock_guard{ noTaskLock_ };
-    noTasks_ = true;
+    auto decrease = [](std::atomic<uint32_t>& a) -> void {
+        auto count = a.load(std::memory_order_relaxed);
+        while (count > 0 &&
+               !a.compare_exchange_weak(count, count - 1, std::memory_order_acq_rel, std::memory_order_acquire)) {
+        }
+    };
+
+    if (isGeneralTask) {
+        decrease(generalTaskCount_);
+    } else {
+        decrease(specialPurposeTaskCount_);
+    }
 }
 
 auto TaskManager::getExecutorPurposeBits(Purpose purpose) const -> PurposeBits
