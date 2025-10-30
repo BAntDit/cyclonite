@@ -324,8 +324,12 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     features.inheritedQueries = VK_FALSE;
 
     // ext features
+    auto indexingFeatures = VkPhysicalDeviceDescriptorIndexingFeatures{};
+    indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+
     auto timelineSemaphoreFeatures = VkPhysicalDeviceTimelineSemaphoreFeatures{};
     timelineSemaphoreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+    timelineSemaphoreFeatures.pNext = &indexingFeatures;
 
     auto features2 = VkPhysicalDeviceFeatures2{};
     features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -335,10 +339,28 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     if (!timelineSemaphoreFeatures.timelineSemaphore) {
         throw std::runtime_error("select device does not support necessary feature: timeline semaphores");
     }
+    if (!indexingFeatures.shaderSampledImageArrayNonUniformIndexing) {
+        throw std::runtime_error("selected device does not support sampled image non-uniform indexing");
+    }
+    if (!indexingFeatures.descriptorBindingSampledImageUpdateAfterBind) {
+        throw std::runtime_error("selected device does not support sampled image descriptors update after bind");
+    }
+    if (!indexingFeatures.shaderUniformBufferArrayNonUniformIndexing) {
+        throw std::runtime_error("selected device does not support UBO array non-uniform indexing");
+    }
+    if (!indexingFeatures.descriptorBindingUniformBufferUpdateAfterBind) {
+        throw std::runtime_error("selected device does not support UBO descriptors update after bind");
+    }
+    if (!indexingFeatures.shaderStorageBufferArrayNonUniformIndexing) {
+        throw std::runtime_error("selected device does not support SSBO array non-uniform indexing");
+    }
+    if (!indexingFeatures.descriptorBindingStorageBufferUpdateAfterBind) {
+        throw std::runtime_error("seleced device does not support SSBO descriptors update after bind");
+    }
 
     auto deviceInfo = VkDeviceCreateInfo{};
     deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    deviceInfo.pNext = &timelineSemaphoreFeatures;
+    deviceInfo.pNext = &features2;
     deviceInfo.queueCreateInfoCount = queueCreateInfoCount;
     deviceInfo.pQueueCreateInfos = deviceQueueCreateInfoArray.data();
     deviceInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
