@@ -37,7 +37,7 @@ Texture::Texture(core::ResourceManagerBase* resourceManager,
                  TextureUsageFlagBits usageFlags)
   : core::ResourceBase{ resourceManager, resourceId, false }
   , core::EnableRefFromThis{}
-  , deviceRef_{ deviceRef }
+  , deviceRef_{ std::move(deviceRef) }
   , allocation_{ VK_NULL_HANDLE }
   , vkImage_{ VK_NULL_HANDLE }
   , state_{ TextureState::UNDEFINED }
@@ -85,11 +85,14 @@ Texture::Texture(core::ResourceManagerBase* resourceManager,
 
 Texture::~Texture()
 {
-    assert(deviceRef_.valid());
-    auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
-    auto allocator = device.allocator();
+    if (vkImage_ != VK_NULL_HANDLE) {
+        auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
+        auto allocator = device.allocator();
+        vmaDestroyImage(allocator, vkImage_, allocation_);
+    }
 
-    vmaDestroyImage(allocator, vkImage_, allocation_);
+    vkImage_ = VK_NULL_HANDLE;
+    allocation_ = VK_NULL_HANDLE;
 }
 
 auto Texture::getRTV(uint16_t mipLevel) -> core::ResourceWeakRef

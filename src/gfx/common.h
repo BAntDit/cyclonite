@@ -134,6 +134,22 @@ enum class TextureUsageFlags : uint32_t
 
 using TextureUsageFlagBits = metrix::enum_bits<TextureUsageFlags>;
 
+enum class BufferUsageFlags : uint32_t
+{
+    TRANSFER_SRC = 0x00000001,
+    TRANSFER_DST = 0x00000002,
+    UNIFORM_TEXEL_BUFFER = 0x00000004,
+    STORAGE_TEXEL_BUFFER = 0x00000008,
+    UNIFORM_BUFFER = 0x00000010,
+    STORAGE_BUFFER = 0x00000020,
+    INDEX_BUFFER = 0x00000040,
+    VERTEX_BUFFER = 0x00000080,
+    INDIRECT_BUFFER = 0x00000100,
+    SHADER_DEVICE_ADDRESS = 0x00020000
+};
+
+using BufferUsageFlagBits = metrix::enum_bits<BufferUsageFlags>;
+
 enum class GpuMemoryAllocationFlags : uint8_t
 {
     DEDICATED_MEMORY = 1 << 0,
