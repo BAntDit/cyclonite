@@ -11,7 +11,6 @@
 #include <metrix/type_list.h>
 #include <metrix/type_traits.h>
 #include <string_view>
-#include <utility>
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
@@ -60,6 +59,12 @@ concept DeviceConcept = requires(T t,
                                               TextureTiling,
                                               TextureUsageFlagBits>,
                             metrix::member_function_argument_type_list_t<decltype(&T::createTexture)>>;
+
+    requires std::is_member_function_pointer_v<decltype(&T::createBuffer)> &&
+               std::is_same_v<core::ResourceUniqueRef,
+                              metrix::member_function_return_type_t<decltype(&T::createBuffer)>> &&
+               std::is_same_v<metrix::type_list<GpuMemoryAllocationFlagBits, BufferUsageFlagBits, size_t>,
+                              metrix::member_function_argument_type_list_t<decltype(&T::createBuffer)>>;
 };
 
 template<DeviceConcept PlatformImplementation>
@@ -68,6 +73,7 @@ class DeviceInterface : private PlatformImplementation
 public:
     friend class core::ResourceBase;
 
+    using PlatformImplementation::createBuffer;
     using PlatformImplementation::createCommandPool;
     using PlatformImplementation::createRenderWindow;
     using PlatformImplementation::createSignal;

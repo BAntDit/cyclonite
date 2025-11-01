@@ -27,6 +27,7 @@ public:
 
     using PlatformImplementation::map;
     using PlatformImplementation::PlatformImplementation;
+    using PlatformImplementation::resourceBase;
     using PlatformImplementation::unmap;
     using PlatformImplementation::usage;
 };

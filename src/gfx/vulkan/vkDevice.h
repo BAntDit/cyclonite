@@ -69,6 +69,10 @@ public:
                                           std::string_view title,
                                           SurfaceFlagBits flags) -> core::ResourceUniqueRef;
 
+    [[nodiscard]] auto createBuffer(GpuMemoryAllocationFlagBits allocationFlags,
+                                    BufferUsageFlagBits usageFlags,
+                                    size_t size) -> core::ResourceUniqueRef;
+
     [[nodiscard]] auto createTexture(GpuMemoryAllocationFlagBits allocationFlags,
                                      TextureCreationFlagBits imageCreateFlags,
                                      TextureType textureType,

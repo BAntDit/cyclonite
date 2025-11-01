@@ -413,6 +413,21 @@ auto Device::createSignal(SignalType signalType, uint64_t initialValue /* = 0*/)
     return result;
 }
 
+auto Device::createBuffer(GpuMemoryAllocationFlagBits allocationFlags,
+                          BufferUsageFlagBits usageFlags,
+                          size_t size) -> core::ResourceUniqueRef
+{
+    auto result = core::ResourceUniqueRef{};
+
+    auto& resManager = static_cast<resource_manager_t&>(resourceManager());
+
+    auto deviceRef = getSharedFromThis(this);
+
+    result = resManager.allocResource<gfx::Buffer>(deviceRef, size, allocationFlags, usageFlags);
+
+    return result;
+}
+
 auto Device::createTexture(GpuMemoryAllocationFlagBits allocationFlags,
                            TextureCreationFlagBits imageCreateFlags,
                            TextureType textureType,
