@@ -19,6 +19,7 @@ Buffer::Buffer(core::ResourceManagerBase* resourceManager,
   , allocation_{ VK_NULL_HANDLE }
   , vkBuffer_{ VK_NULL_HANDLE }
   , usageFlags_{ usageFlags }
+  , allocationFlags_{ allocationFlags }
 {
     assert(deviceRef_.valid());
     auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
@@ -51,5 +52,61 @@ Buffer::~Buffer()
 
     vkBuffer_ = VK_NULL_HANDLE;
     allocation_ = VK_NULL_HANDLE;
+}
+
+auto Buffer::map() -> void*
+{
+    assert(deviceRef_.valid());
+    auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
+    auto allocator = device.allocator();
+
+    auto allocationInfo = VmaAllocationInfo{};
+    vmaGetAllocationInfo(allocator, allocation_, &allocationInfo);
+
+    if (allocationInfo.pMappedData != nullptr) {
+        return allocationInfo.pMappedData;
+    }
+
+    auto memoryPropertyFlags = VkMemoryPropertyFlags{};
+    vmaGetAllocationMemoryProperties(allocator, allocation_, &memoryPropertyFlags);
+
+    assert((memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0);
+
+    auto* pData = std::add_pointer_t<void>{ nullptr };
+    if (auto vkResult = vmaMapMemory(allocator, allocation_, &pData); vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vmaMapMemory" };
+    }
+
+    return pData;
+}
+
+void Buffer::unmap()
+{
+    assert(deviceRef_.valid());
+    auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
+    auto allocator = device.allocator();
+
+    auto allocationInfo = VmaAllocationInfo{};
+    vmaGetAllocationInfo(allocator, allocation_, &allocationInfo);
+
+    auto memoryPropertyFlags = VkMemoryPropertyFlags{};
+    vmaGetAllocationMemoryProperties(allocator, allocation_, &memoryPropertyFlags);
+
+    auto isHostCoherent = memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    if (allocationFlags_.test(gfx::GpuMemoryAllocationFlags::PERSISTENT_MAPPED_MEMORY)) {
+        if (!isHostCoherent) {
+            if (auto vkResult = vmaFlushAllocation(allocator, allocation_, 0, VK_WHOLE_SIZE); vkResult != VK_SUCCESS) {
+                throw Exception{ vkResult, "vmaFlushAllocation" };
+            }
+        }
+    } else {
+        vmaUnmapMemory(allocator, allocation_);
+        if (!isHostCoherent) {
+            if (auto vkResult = vmaFlushAllocation(allocator, allocation_, 0, VK_WHOLE_SIZE); vkResult != VK_SUCCESS) {
+                throw Exception{ vkResult, "vmaFlushAllocation" };
+            }
+        }
+    }
 }
 }

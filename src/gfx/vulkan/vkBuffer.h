@@ -28,11 +28,16 @@ public:
 
     [[nodiscard]] auto usage() const -> BufferUsageFlagBits { return usageFlags_; }
 
+    auto map() -> void*;
+
+    void unmap();
+
 private:
     core::ResourceSharedRef deviceRef_;
     VmaAllocation allocation_;
     VkBuffer vkBuffer_;
     BufferUsageFlagBits usageFlags_;
+    GpuMemoryAllocationFlagBits allocationFlags_;
 };
 }
 
