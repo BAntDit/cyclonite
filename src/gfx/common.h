@@ -33,6 +33,12 @@ struct DeviceLimits
     uint8_t maxColorAttachmentCount;
 };
 
+enum class PipelineType : uint_fast8_t
+{
+    Compute = 0,
+    Graphics = 1
+};
+
 enum class PresentMode : uint_fast8_t
 {
     Immediate = 0,
@@ -76,7 +82,6 @@ enum class SurfaceFlags : uint64_t
     ALWAYS_ON_TOP = SDL_WINDOW_ALWAYS_ON_TOP,
     TRANSPARENT = SDL_WINDOW_TRANSPARENT
 };
-
 using SurfaceFlagBits = metrix::enum_bits<SurfaceFlags>;
 
 enum class TextureType : uint_fast8_t
@@ -117,7 +122,6 @@ enum class TextureCreationFlags : uint32_t
     MUTABLE_FORMAT = 0x00000008,
     CUBE_COMPATIBLE = 0x00000010
 };
-
 using TextureCreationFlagBits = metrix::enum_bits<TextureCreationFlags>;
 
 enum class TextureUsageFlags : uint32_t
@@ -131,7 +135,6 @@ enum class TextureUsageFlags : uint32_t
     TRANSIENT_ATTACHMENT = 0x00000040,
     INPUT_ATTACHMENT = 0x00000080
 };
-
 using TextureUsageFlagBits = metrix::enum_bits<TextureUsageFlags>;
 
 enum class BufferUsageFlags : uint32_t
@@ -147,8 +150,39 @@ enum class BufferUsageFlags : uint32_t
     INDIRECT_BUFFER = 0x00000100,
     SHADER_DEVICE_ADDRESS = 0x00020000
 };
-
 using BufferUsageFlagBits = metrix::enum_bits<BufferUsageFlags>;
+
+enum class PipelineCreationFlags : uint32_t
+{
+    DISABLE_OPTIMIZATION = 0x00000001,
+    ALLOW_DERIVATIVES = 0x00000002,
+    DERIVATIVE = 0x00000004,
+    VIEW_INDEX_FROM_DEVICE = 0x00000008,
+    DISPATCH_BASE = 0x00000010,
+    FAIL_ON_PIPELINE_COMPILE_REQUIRED = 0x00000100,
+    EARLY_RETURN_ON_FAILURE = 0x00000200
+};
+using PipelineCreationFlagBits = metrix::enum_bits<PipelineCreationFlags>;
+
+enum class ShaderStageCreationFlags : uint32_t
+{
+    ALLOW_VARYING_SUBGROUP_SIZE = 0x00000001,
+    REQUIRE_FULL_SUBGROUPS = 0x00000002
+};
+using ShaderStageCreationFlagBits = metrix::enum_bits<ShaderStageCreationFlags>;
+
+enum class ShaderStageFlags: uint32_t
+{
+    VERTEX = 0x00000001,
+    TESSELLATION_CONTROL = 0x00000002,
+    TESSELLATION_EVALUATION = 0x00000004,
+    GEOMETRY = 0x00000008,
+    FRAGMENT = 0x00000010,
+    COMPUTE = 0x00000020,
+    ALL_GRAPHICS = 0x0000001F,
+    ALL = 0x7FFFFFFF
+};
+using ShaderStageFlagBits = metrix::enum_bits<ShaderStageFlags>;
 
 enum class GpuMemoryAllocationFlags : uint8_t
 {
@@ -161,7 +195,6 @@ enum class GpuMemoryAllocationFlags : uint8_t
     MIN_TIME_STRATEGY = 1 << 6,
     MIN_OFFSET_STRATEGY = 1 << 7
 };
-
 using GpuMemoryAllocationFlagBits = metrix::enum_bits<GpuMemoryAllocationFlags>;
 
 inline constexpr auto isColorFormat(Format format) -> bool
@@ -233,7 +266,6 @@ enum class PipelineStageFlags : uint32_t
     ALL_GRAPHICS_BIT = 1 << 15,
     ALL_COMMANDS_BIT = 1 << 16
 };
-
 using PipelineStageFlagBits = metrix::enum_bits<PipelineStageFlags>;
 
 enum class QueueSubmissionStateFlags : uint32_t
@@ -246,7 +278,6 @@ enum class QueueSubmissionStateFlags : uint32_t
     Executable = 1 << 5,
     Pending = 1 << 6
 };
-
 using QueueSubmissionStateFlagBits = metrix::enum_bits<QueueSubmissionStateFlags>;
 
 }
