@@ -14,6 +14,7 @@
 #include "renderPass.h"
 #include "renderTargetView.h"
 #include "renderWindow.h"
+#include "shader.h"
 #include "texture.h"
 
 namespace cyclonite::gfx {
@@ -23,6 +24,7 @@ using resource_manager_t = core::ResourceManager<gfx::Device,
                                                  gfx::RenderPass,
                                                  gfx::Texture,
                                                  gfx::Buffer,
+                                                 gfx::Shader,
                                                  gfx::Signal,
                                                  gfx::CommandPool,
                                                  gfx::QueueSubmission>;

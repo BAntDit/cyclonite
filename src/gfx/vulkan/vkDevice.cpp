@@ -16,6 +16,8 @@
 #include <tuple>
 #include <utility>
 
+#include "gfx/shader.h"
+
 #if defined(GFX_DRIVER_VULKAN)
 
 namespace cyclonite::gfx::vulkan {
@@ -458,6 +460,19 @@ auto Device::createTexture(GpuMemoryAllocationFlagBits allocationFlags,
                                                     arrayLayerCount,
                                                     tiling,
                                                     usageFlags);
+
+    return result;
+}
+
+auto Device::createShader(size_t codeSize, uint32_t const* code) -> core::ResourceUniqueRef
+{
+    auto result = core::ResourceUniqueRef{};
+
+    auto& resManager = static_cast<resource_manager_t&>(resourceManager());
+
+    auto deviceRef = getSharedFromThis(this);
+
+    result = resManager.allocResource<gfx::Shader>(deviceRef, codeSize, code);
 
     return result;
 }

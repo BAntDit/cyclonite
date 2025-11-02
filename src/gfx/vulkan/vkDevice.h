@@ -73,6 +73,8 @@ public:
                                     BufferUsageFlagBits usageFlags,
                                     size_t size) -> core::ResourceUniqueRef;
 
+    [[nodiscard]] auto createShader(size_t codeSize, uint32_t const* code) -> core::ResourceUniqueRef;
+
     [[nodiscard]] auto createTexture(GpuMemoryAllocationFlagBits allocationFlags,
                                      TextureCreationFlagBits imageCreateFlags,
                                      TextureType textureType,

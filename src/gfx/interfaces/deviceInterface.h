@@ -65,6 +65,8 @@ concept DeviceConcept = requires(T t,
                               metrix::member_function_return_type_t<decltype(&T::createBuffer)>> &&
                std::is_same_v<metrix::type_list<GpuMemoryAllocationFlagBits, BufferUsageFlagBits, size_t>,
                               metrix::member_function_argument_type_list_t<decltype(&T::createBuffer)>>;
+
+    requires std::is_member_function_pointer_v<decltype(&T::createShader)>;
 };
 
 template<DeviceConcept PlatformImplementation>
@@ -76,6 +78,7 @@ public:
     using PlatformImplementation::createBuffer;
     using PlatformImplementation::createCommandPool;
     using PlatformImplementation::createRenderWindow;
+    using PlatformImplementation::createShader;
     using PlatformImplementation::createSignal;
     using PlatformImplementation::createTexture;
     using PlatformImplementation::limits;
