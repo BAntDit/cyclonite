@@ -42,23 +42,21 @@ concept DeviceConcept = requires(T t,
     requires std::is_same_v<core::ResourceUniqueRef,
                             metrix::member_function_return_type_t<decltype(&T::createRenderPassWithRTVs)>>;
 
-    requires std::is_member_function_pointer_v<decltype(&T::createTexture)>;
-
-    requires std::is_same_v<core::ResourceUniqueRef,
-                            metrix::member_function_return_type_t<decltype(&T::createTexture)>>;
-
-    requires std::is_same_v<metrix::type_list<GpuMemoryAllocationFlagBits,
-                                              TextureCreationFlagBits,
-                                              TextureType,
-                                              Format,
-                                              uint32_t,
-                                              uint32_t,
-                                              uint32_t,
-                                              uint32_t,
-                                              uint32_t,
-                                              TextureTiling,
-                                              TextureUsageFlagBits>,
-                            metrix::member_function_argument_type_list_t<decltype(&T::createTexture)>>;
+    requires std::is_member_function_pointer_v<decltype(&T::createTexture)> &&
+               std::is_same_v<core::ResourceUniqueRef,
+                              metrix::member_function_return_type_t<decltype(&T::createTexture)>> &&
+               std::is_same_v<metrix::type_list<GpuMemoryAllocationFlagBits,
+                                                TextureCreationFlagBits,
+                                                TextureType,
+                                                Format,
+                                                uint32_t,
+                                                uint32_t,
+                                                uint32_t,
+                                                uint32_t,
+                                                uint32_t,
+                                                TextureTiling,
+                                                TextureUsageFlagBits>,
+                              metrix::member_function_argument_type_list_t<decltype(&T::createTexture)>>;
 
     requires std::is_member_function_pointer_v<decltype(&T::createBuffer)> &&
                std::is_same_v<core::ResourceUniqueRef,
@@ -66,7 +64,9 @@ concept DeviceConcept = requires(T t,
                std::is_same_v<metrix::type_list<GpuMemoryAllocationFlagBits, BufferUsageFlagBits, size_t>,
                               metrix::member_function_argument_type_list_t<decltype(&T::createBuffer)>>;
 
-    requires std::is_member_function_pointer_v<decltype(&T::createShader)>;
+    requires std::is_member_function_pointer_v<decltype(&T::createShader)> &&
+               std::is_same_v<core::ResourceUniqueRef,
+                              metrix::member_function_return_type_t<decltype(&T::createShader)>>;
 };
 
 template<DeviceConcept PlatformImplementation>
