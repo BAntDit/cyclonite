@@ -109,6 +109,11 @@ public:
                                              uint32_t queueFamilyIndex,
                                              CommandPoolFlagBits commandPoolFlags) -> core::ResourceUniqueRef;
 
+    [[nodiscard]] auto pipelineCache() const -> VkPipelineCache
+    {
+        return static_cast<VkPipelineCache>(vkPipelineCache_);
+    }
+
     using core::ResourceBase::resourceBase;
 
 private:
@@ -124,6 +129,7 @@ private:
     Handle<VkQueue> graphicsQueue_;
     Handle<VkQueue> transferQueue_;
     Handle<VkQueue> computeQueue_;
+    Handle<VkPipelineCache> vkPipelineCache_;
     VmaAllocator vmaAllocator_;
 };
 }
