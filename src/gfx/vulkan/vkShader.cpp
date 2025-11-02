@@ -8,6 +8,7 @@
 #include "vkException.h"
 #include <atomic>
 
+#if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 namespace {
 std::atomic<uint32_t> lastShaderId_ = 1;
@@ -38,3 +39,4 @@ Shader::Shader(core::ResourceManagerBase* resourceManager,
     }
 }
 }
+#endif

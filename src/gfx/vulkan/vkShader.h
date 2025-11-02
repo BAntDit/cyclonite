@@ -10,6 +10,7 @@
 #include "gfx/common.h"
 #include "handle.h"
 
+#if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 class Shader : public core::ResourceBase
 {
@@ -29,5 +30,5 @@ private:
     Handle<VkShaderModule> vkShaderModule_;
 };
 }
-
+#endif // GFX_DRIVER_VULKAN
 #endif // CYCLONITE_VK_SHADER_H
