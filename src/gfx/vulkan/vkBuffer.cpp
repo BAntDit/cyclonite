@@ -7,6 +7,7 @@
 #include "internal/utils.h"
 #include "vkException.h"
 
+#if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 Buffer::Buffer(core::ResourceManagerBase* resourceManager,
                core::ResourceId resourceId,
@@ -110,3 +111,4 @@ void Buffer::unmap()
     }
 }
 }
+#endif

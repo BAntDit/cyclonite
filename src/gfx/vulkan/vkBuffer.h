@@ -11,6 +11,7 @@
 #include "handle.h"
 #include "vmaUsage.h"
 
+#if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 class Buffer : public core::ResourceBase
 {
@@ -40,5 +41,5 @@ private:
     GpuMemoryAllocationFlagBits allocationFlags_;
 };
 }
-
+#endif // GFX_DRIVER_VULKAN
 #endif // CYCLONITE_VK_BUFFER_H
