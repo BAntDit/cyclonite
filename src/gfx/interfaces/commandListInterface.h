@@ -36,7 +36,7 @@ public:
     using PlatformImplementation::state;
     using PlatformImplementation::usage;
 
-    // TODO:: refactor
+    // TODO:: refactor (adds platform_impl_mixin)
     [[nodiscard]] auto platformImplementation() const -> PlatformImplementation const& { return *this; }
     [[nodiscard]] auto platformImplementation() -> PlatformImplementation& { return *this; }
 };
