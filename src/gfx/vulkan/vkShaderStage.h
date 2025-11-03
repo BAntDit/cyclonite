@@ -47,7 +47,7 @@ public:
 
     [[nodiscard]] auto stage() const -> ShaderStageFlags { return stage_; }
 
-    [[nodiscard]] auto entryPointName() const -> std::string_view { return entryPointName_.data(); }
+    [[nodiscard]] auto entryPointName() const -> std::string_view { return entryPointName_; }
 
 private:
     core::ResourceWeakRef shaderRef_;

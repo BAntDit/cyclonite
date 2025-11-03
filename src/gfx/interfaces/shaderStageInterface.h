@@ -7,11 +7,9 @@
 #include <concepts>
 #include <string>
 
-namespace cyclonite::gfx::interfaces 
-{
+namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept ShaderStageConcept = requires(T t) 
-{
+concept ShaderStageConcept = requires(T t) {
     { t.shader() } -> std::same_as<core::ResourceWeakRef>;
 
     { t.creationFlags() } -> std::same_as<ShaderStageCreationFlagBits>;
@@ -25,11 +23,11 @@ template<ShaderStageConcept PlatformImplementation>
 class ShaderStageInterface : private PlatformImplementation
 {
 public:
+    using PlatformImplementation::creationFlags;
+    using PlatformImplementation::entryPointName;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::shader;
-    using PlatformImplementation::creationFlags;
     using PlatformImplementation::stage;
-    using PlatformImplementation::entryPointName;
 
     [[nodiscard]] auto platformImplementation() const -> PlatformImplementation const& { return *this; }
     [[nodiscard]] auto platformImplementation() -> PlatformImplementation& { return *this; }

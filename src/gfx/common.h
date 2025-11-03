@@ -171,7 +171,7 @@ enum class ShaderStageCreationFlags : uint32_t
 };
 using ShaderStageCreationFlagBits = metrix::enum_bits<ShaderStageCreationFlags>;
 
-enum class ShaderStageFlags: uint32_t
+enum class ShaderStageFlags : uint32_t
 {
     VERTEX = 0x00000001,
     TESSELLATION_CONTROL = 0x00000002,
