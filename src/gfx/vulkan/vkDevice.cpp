@@ -415,9 +415,8 @@ auto Device::createSignal(SignalType signalType, uint64_t initialValue /* = 0*/)
     return result;
 }
 
-auto Device::createBuffer(GpuMemoryAllocationFlagBits allocationFlags,
-                          BufferUsageFlagBits usageFlags,
-                          size_t size) -> core::ResourceUniqueRef
+auto Device::createBuffer(GpuMemoryAllocationFlagBits allocationFlags, BufferUsageFlagBits usageFlags, size_t size)
+  -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 
@@ -464,7 +463,11 @@ auto Device::createTexture(GpuMemoryAllocationFlagBits allocationFlags,
     return result;
 }
 
-auto Device::createShader(size_t codeSize, uint32_t const* code) -> core::ResourceUniqueRef
+auto Device::createShader(size_t codeSize,
+                          uint32_t const* code,
+                          ShaderStageCreationFlagBits creationFlags,
+                          ShaderStageFlags stage,
+                          std::string_view entryPointName) -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 
@@ -472,15 +475,13 @@ auto Device::createShader(size_t codeSize, uint32_t const* code) -> core::Resour
 
     auto deviceRef = getSharedFromThis(this);
 
-    result = resManager.allocResource<gfx::Shader>(deviceRef, codeSize, code);
+    result = resManager.allocResource<gfx::Shader>(deviceRef, codeSize, code, creationFlags, stage, entryPointName);
 
     return result;
 }
 
-auto Device::createRenderWindow(uint32_t width,
-                                uint32_t height,
-                                std::string_view title,
-                                SurfaceFlagBits flags) -> core::ResourceUniqueRef
+auto Device::createRenderWindow(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
+  -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 

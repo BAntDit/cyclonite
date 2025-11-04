@@ -10,19 +10,21 @@
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
-namespace {
-std::atomic<uint32_t> lastShaderId_ = 1;
-}
-
 Shader::Shader(core::ResourceManagerBase* resourceManager,
                core::ResourceId resourceId,
                core::ResourceSharedRef deviceRef,
                size_t codeWordCount,
-               uint32_t const* codeWords)
+               uint32_t const* codeWords,
+               ShaderStageCreationFlagBits creationFlags,
+               ShaderStageFlags stage,
+               std::string_view entryPointName)
   : core::ResourceBase{ resourceManager, resourceId, false }
-  , id_{ lastShaderId_.fetch_add(1, std::memory_order_acq_rel) }
   , vkShaderModule_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(),
                      vkDestroyShaderModule }
+  , entryPointName_{ entryPointName }
+  , creationFlags_{ creationFlags }
+  , stage_{ stage }
+  , specializationInfo_{}
 {
     auto shaderModuleCreateInfo = VkShaderModuleCreateInfo{};
     shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
