@@ -13,6 +13,51 @@
 #include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan::internal {
+inline constexpr auto getPrimitiveTopology(PrimitiveTopology primitiveTopology) -> VkPrimitiveTopology 
+{
+    auto result = VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
+
+    switch (primitiveTopology) {
+        case PrimitiveTopology::POINT_LIST:
+            result = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+            break;
+        case PrimitiveTopology::LINE_LIST:
+            result = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+            break;
+        case PrimitiveTopology::LINE_STRIP:
+            result = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+            break;
+        case PrimitiveTopology::TRIANGLE_LIST:
+            result = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            break;
+        case PrimitiveTopology::TRIANGLE_STRIP:
+            result = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+            break;
+        case PrimitiveTopology::TRIANGLE_FAN:
+            result = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+            break;
+        case PrimitiveTopology::LINE_LIST_WITH_ADJACENCY:
+            result = VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY;
+            break;
+        case PrimitiveTopology::LINE_STRIP_WITH_ADJACENCY:
+            result = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY;
+            break;
+        case PrimitiveTopology::TRIANGLE_LIST_WITH_ADJACENCY:
+            result = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY;
+            break;
+        case PrimitiveTopology::TRIANGLE_STRIP_WITH_ADJACENCY:
+            result = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY;
+            break;
+        case PrimitiveTopology::PATCH_LIST:
+            result = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+            break;
+        default:
+            assert(false);
+    }
+
+    return result;
+}
+
 inline constexpr auto getPresentMode(PresentMode presentMode) -> VkPresentModeKHR
 {
     auto result = VK_PRESENT_MODE_IMMEDIATE_KHR;

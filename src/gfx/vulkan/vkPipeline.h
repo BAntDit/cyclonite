@@ -22,10 +22,14 @@ public:
              core::ResourceSharedRef deviceRef,
              PipelineType type,
              PipelineCreationFlagBits creationFlags,
+             PrimitiveTopology primitiveTopology,
+             bool primitiveRestartEnable,
              std::array<core::ResourceSharedRef, config_t::max_shader_stage_count_v> const& shaders);
 
 private:
     void initGraphicsPipeline(PipelineCreationFlagBits creationFlags,
+                              PrimitiveTopology primitiveTopology,
+                              bool primitiveRestartEnable,
                               std::array<core::ResourceSharedRef, config_t::max_shader_stage_count_v> const& shaders);
 
 private:
