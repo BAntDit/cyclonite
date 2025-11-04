@@ -10,6 +10,7 @@
 #include "gfx/common.h"
 #include "handle.h"
 #include <memory>
+#include <string>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
@@ -52,6 +53,8 @@ public:
     [[nodiscard]] auto stage() const -> ShaderStageFlags { return stage_; }
 
     [[nodiscard]] auto entryPointName() const -> std::string_view { return entryPointName_; }
+
+    [[nodiscard]] auto vulkanStage() const -> VkShaderStageFlagBits;
 
 private:
     Handle<VkShaderModule> vkShaderModule_;

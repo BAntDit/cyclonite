@@ -8,7 +8,9 @@
 #include "core/resourceBase.h"
 #include "core/resourceSharedRef.h"
 #include "gfx/common.h"
+#include "gfx/config.h"
 #include "handle.h"
+#include <array>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
@@ -19,10 +21,12 @@ public:
              core::ResourceId resourceId,
              core::ResourceSharedRef deviceRef,
              PipelineType type,
-             PipelineCreationFlagBits creationFlags);
+             PipelineCreationFlagBits creationFlags,
+             std::array<core::ResourceSharedRef, config_t::max_shader_stage_count_v> const& shaders);
 
 private:
-    void initGraphicsPipeline(PipelineCreationFlagBits creationFlags);
+    void initGraphicsPipeline(PipelineCreationFlagBits creationFlags,
+                              std::array<core::ResourceSharedRef, config_t::max_shader_stage_count_v> const& shaders);
 
 private:
     Handle<VkPipeline> vkPipeline_;

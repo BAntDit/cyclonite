@@ -40,5 +40,35 @@ Shader::Shader(core::ResourceManagerBase* resourceManager,
         throw Exception{ vkResult, "vkCreateShaderModule" };
     }
 }
+
+auto Shader::vulkanStage() const -> VkShaderStageFlagBits
+{
+    auto vkStage = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
+    switch (stage_) {
+        case ShaderStageFlags::VERTEX:
+            vkStage = VK_SHADER_STAGE_VERTEX_BIT;
+            break;
+        case ShaderStageFlags::TESSELLATION_EVALUATION:
+            vkStage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+            break;
+        case ShaderStageFlags::TESSELLATION_CONTROL:
+            vkStage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+            break;
+        case ShaderStageFlags::GEOMETRY:
+            vkStage = VK_SHADER_STAGE_GEOMETRY_BIT;
+            break;
+        case ShaderStageFlags::FRAGMENT:
+            vkStage = VK_SHADER_STAGE_FRAGMENT_BIT;
+            break;
+        case ShaderStageFlags::COMPUTE:
+            vkStage = VK_SHADER_STAGE_COMPUTE_BIT;
+            break;
+        default:
+            vkStage = VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
+    }
+    assert(VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM);
+
+    return vkStage;
+}
 }
 #endif
