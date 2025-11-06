@@ -22,7 +22,6 @@ struct config_traits_declaration
     DECLARE_CONFIG_TRAIT(max_swapchain_length, uint8_t, 8)
     DECLARE_CONFIG_TRAIT(max_queue_submission_ring_count, size_t, 64)
     DECLARE_CONFIG_TRAIT(queue_submission_ring_size, size_t, 8)
-    DECLARE_CONFIG_TRAIT(max_shader_stage_count, uint8_t, 6)
 };
 }
 
@@ -34,7 +33,6 @@ struct ConfigTraits
     DEFINE_CONFIG_TRAIT(max_swapchain_length)
     DEFINE_CONFIG_TRAIT(max_queue_submission_ring_count)
     DEFINE_CONFIG_TRAIT(queue_submission_ring_size)
-    DEFINE_CONFIG_TRAIT(max_shader_stage_count)
 };
 }
 

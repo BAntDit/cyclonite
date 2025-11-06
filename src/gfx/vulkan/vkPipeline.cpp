@@ -4,6 +4,7 @@
 
 #include "vkPipeline.h"
 #include "gfx/device.h"
+#include "gfx/renderPass.h"
 #include "gfx/shader.h"
 #include "internal/utils.h"
 #include <bit>
@@ -12,33 +13,38 @@
 // TODO:: move all shaders, reflection and root signture (pipeline layout) into one class (Shader Set)
 
 namespace cyclonite::gfx::vulkan {
-Pipeline::Pipeline(core::ResourceManagerBase* resourceManager,
-                   core::ResourceId resourceId,
-                   core::ResourceSharedRef deviceRef,
-                   PipelineType type,
-                   PipelineCreationFlagBits creationFlags,
-                   PrimitiveTopology primitiveTopology,
-                   bool primitiveRestartEnable,
-                   std::array<core::ResourceSharedRef, config_t::max_shader_stage_count_v> const& shaders)
+Pipeline::Pipeline(
+  core::ResourceManagerBase* resourceManager,
+  core::ResourceId resourceId,
+  core::ResourceSharedRef deviceRef,
+  PipelineType type,
+  PipelineCreationFlagBits creationFlags,
+  PrimitiveTopology primitiveTopology,
+  bool primitiveRestartEnable,
+  core::ResourceSharedRef renderPassRef,
+  std::array<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT)> const& shaders)
   : core::ResourceBase{ resourceManager, resourceId, false }
+  , shaders_{}
+  , renderPassRef_{ std::move(renderPassRef) }
   , vkPipeline_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyPipeline }
 {
-    if (type == PipelineType::Graphics) {
-        initGraphicsPipeline(creationFlags, primitiveTopology, primitiveRestartEnable, shaders);
+    if (type == PipelineType::PrimitiveRasterization) {
+        initPrimitiveRasterizationPipeline(creationFlags, primitiveTopology, primitiveRestartEnable, shaders);
     } else if (type == PipelineType::Compute) {
         // TODO:: ...
     }
 }
 
-void Pipeline::initGraphicsPipeline(
+void Pipeline::initPrimitiveRasterizationPipeline(
   PipelineCreationFlagBits creationFlags,
   PrimitiveTopology primitiveTopology,
   bool primitiveRestartEnable,
-  std::array<core::ResourceSharedRef, config_t::max_shader_stage_count_v> const& shaders)
+  std::array<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT)> const& shaders)
 {
     // shader stages:
     auto shaderStageBits = ShaderStageFlagBits{};
-    auto shaderStages = std::array<VkPipelineShaderStageCreateInfo, config_t::max_shader_stage_count_v>{};
+    auto shaderStages =
+      std::array<VkPipelineShaderStageCreateInfo, metrix::value_cast(ShaderStageFlags::STAGE_COUNT)>{};
 
     for (auto const& shaderRef : shaders) {
         if (shaderRef.valid()) {
@@ -55,6 +61,8 @@ void Pipeline::initGraphicsPipeline(
             stageInfo.stage = shader.vulkanStage();
             stageInfo.module = shader.handle();
             stageInfo.pName = shader.entryPointName().data();
+
+            shaders_.add(shaderRef, shader.stage());
         }
     }
 
@@ -68,9 +76,31 @@ void Pipeline::initGraphicsPipeline(
     assemblyState.topology = internal::getPrimitiveTopology(primitiveTopology);
     assemblyState.primitiveRestartEnable = VkBool32{ primitiveRestartEnable };
 
-    // tesselation state (not supported yet) // TODO:: 
+    // tesselation state (not supported yet) // TODO::
     auto tesselationState = VkPipelineTessellationStateCreateInfo{};
     tesselationState.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
+
+    assert(renderPassRef_.valid());
+    auto& renderPass = renderPassRef_.as<gfx::RenderPass>();
+
+    auto viewport = VkViewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(renderPass.width());
+    viewport.height = static_cast<float>(renderPass.height());
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    auto scissor = VkRect2D{};
+    scissor.offset = { 0, 0 };
+    scissor.extent = { renderPass.width(), renderPass.height() };
+
+    auto viewportState = VkPipelineViewportStateCreateInfo{};
+    viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewportState.viewportCount = 1;
+    viewportState.pViewports = &viewport;
+    viewportState.scissorCount = 1;
+    viewportState.pScissors = &scissor;
 
     auto pipelineInfo = VkGraphicsPipelineCreateInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -80,6 +110,7 @@ void Pipeline::initGraphicsPipeline(
     pipelineInfo.pVertexInputState = &vertexInfo;
     pipelineInfo.pInputAssemblyState = &assemblyState;
     pipelineInfo.pTessellationState = &tesselationState;
+    pipelineInfo.pViewportState = &viewportState;
 }
 }
 #endif // GFX_DRIVER_VULKAN

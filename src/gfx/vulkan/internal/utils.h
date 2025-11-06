@@ -13,7 +13,7 @@
 #include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan::internal {
-inline constexpr auto getPrimitiveTopology(PrimitiveTopology primitiveTopology) -> VkPrimitiveTopology 
+inline constexpr auto getPrimitiveTopology(PrimitiveTopology primitiveTopology) -> VkPrimitiveTopology
 {
     auto result = VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
 

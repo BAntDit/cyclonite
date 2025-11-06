@@ -415,8 +415,9 @@ auto Device::createSignal(SignalType signalType, uint64_t initialValue /* = 0*/)
     return result;
 }
 
-auto Device::createBuffer(GpuMemoryAllocationFlagBits allocationFlags, BufferUsageFlagBits usageFlags, size_t size)
-  -> core::ResourceUniqueRef
+auto Device::createBuffer(GpuMemoryAllocationFlagBits allocationFlags,
+                          BufferUsageFlagBits usageFlags,
+                          size_t size) -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 
@@ -480,8 +481,10 @@ auto Device::createShader(size_t codeSize,
     return result;
 }
 
-auto Device::createRenderWindow(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
-  -> core::ResourceUniqueRef
+auto Device::createRenderWindow(uint32_t width,
+                                uint32_t height,
+                                std::string_view title,
+                                SurfaceFlagBits flags) -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 

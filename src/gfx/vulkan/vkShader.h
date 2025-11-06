@@ -62,7 +62,7 @@ private:
     ShaderStageCreationFlagBits creationFlags_;
     ShaderStageFlags stage_;
 
-     // TODO:: make possible to setup specialization info
+    // TODO:: make possible to setup specialization info
     std::unique_ptr<SpecializationInfo> specializationInfo_;
 };
 }

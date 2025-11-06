@@ -36,7 +36,9 @@ struct DeviceLimits
 enum class PipelineType : uint_fast8_t
 {
     Compute = 0,
-    Graphics = 1
+    PrimitiveRasterization = 1,
+    RayTracing = 2,
+    GeometricShading = 3
 };
 
 enum class PresentMode : uint_fast8_t
@@ -180,9 +182,77 @@ enum class ShaderStageFlags : uint32_t
     FRAGMENT = 0x00000010,
     COMPUTE = 0x00000020,
     ALL_GRAPHICS = 0x0000001F,
-    ALL = 0x7FFFFFFF
+    ALL = 0x7FFFFFFF,
+    RAYGEN = 0x00000100,
+    ANY_HIT = 0x00000200,
+    CLOSEST_HIT = 0x00000400,
+    MISS = 0x00000800,
+    INTERSECTION = 0x00001000,
+    CALLABLE = 0x00002000,
+    TASK = 0x00000040,
+    MESH = 0x00000080,
+    STAGE_COUNT = 14
 };
 using ShaderStageFlagBits = metrix::enum_bits<ShaderStageFlags>;
+
+enum class RasterizationStateFlags : uint16_t
+{
+    DEPTH_CLAMP_ENABLE = 1 << 0,
+    RASTERIZER_DISCARD_ENABLE = 1 << 1,
+    DEPTH_BIAS_ENABLE = 1 << 2,
+    DEPTH_TEST_ENABLE = 1 << 3,
+    DEPTH_WRITE_ENABLE = 1 << 4,
+    DEPTH_BOUNDS_TEST_ENABLE = 1 << 5,
+    STENCIL_TEST_ENABLE = 1 << 6,
+    BLEND_ENABLE = 1 << 7,
+    BLEND_LOGICAL_OP_ENABLE = 1 << 8
+};
+using RasterizationStateFlagBits = metrix::enum_bits<RasterizationStateFlags>;
+
+enum class PolygonMode : uint8_t
+{
+    FILL = 0,
+    LINE = 1,
+    POINT = 2
+};
+
+enum class CullMode : uint8_t
+{
+    NONE = 0,
+    FRONT = 1,
+    BACK = 2,
+    FRONT_AND_BACK = 3
+};
+
+enum class FrontFace : uint8_t
+{
+    COUNTER_CLOCKWISE = 0,
+    CLOCKWISE = 1
+};
+
+enum class CompareOp : uint8_t
+{
+    NEVER = 0,
+    LESS = 1,
+    EQUAL = 2,
+    LESS_OR_EQUAL = 3,
+    GREATER = 4,
+    NOT_EQUAL = 5,
+    GREATER_OR_EQUAL = 6,
+    ALWAYS = 7
+};
+
+enum class StencilOp : uint8_t
+{
+    KEEP = 0,
+    ZERO = 1,
+    REPLACE = 2,
+    INCREMENT_AND_CLAMP = 3,
+    DECREMENT_AND_CLAMP = 4,
+    INVERT = 5,
+    INCREMENT_AND_WRAP = 6,
+    DECREMENT_AND_WRAP = 7
+};
 
 enum class GpuMemoryAllocationFlags : uint8_t
 {

@@ -5,10 +5,10 @@
 #ifndef CYCLONITE_GFX_VK_PIPELINE_H
 #define CYCLONITE_GFX_VK_PIPELINE_H
 
+#include "core/hashTable.h"
 #include "core/resourceBase.h"
 #include "core/resourceSharedRef.h"
 #include "gfx/common.h"
-#include "gfx/config.h"
 #include "handle.h"
 #include <array>
 
@@ -24,15 +24,20 @@ public:
              PipelineCreationFlagBits creationFlags,
              PrimitiveTopology primitiveTopology,
              bool primitiveRestartEnable,
-             std::array<core::ResourceSharedRef, config_t::max_shader_stage_count_v> const& shaders);
+             core::ResourceSharedRef renderPassRef,
+             std::array<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT)> const& shaders);
 
 private:
-    void initGraphicsPipeline(PipelineCreationFlagBits creationFlags,
-                              PrimitiveTopology primitiveTopology,
-                              bool primitiveRestartEnable,
-                              std::array<core::ResourceSharedRef, config_t::max_shader_stage_count_v> const& shaders);
+    void initPrimitiveRasterizationPipeline(
+      PipelineCreationFlagBits creationFlags,
+      PrimitiveTopology primitiveTopology,
+      bool primitiveRestartEnable,
+      std::array<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT)> const& shaders);
 
 private:
+    core::StaticHashTable<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT), ShaderStageFlags>
+      shaders_;
+    core::ResourceSharedRef renderPassRef_;
     Handle<VkPipeline> vkPipeline_;
 };
 }
