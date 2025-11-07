@@ -13,6 +13,129 @@
 #include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan::internal {
+inline constexpr auto getStencilOp(StencilOp stencilOp) -> VkStencilOp 
+{
+    auto result = VK_STENCIL_OP_MAX_ENUM;
+
+    switch (stencilOp) {
+        case StencilOp::ZERO:
+            result = VK_STENCIL_OP_ZERO;
+            break;
+        case StencilOp::KEEP:
+            result = VK_STENCIL_OP_KEEP;
+            break;
+        case StencilOp::REPLACE:
+            result = VK_STENCIL_OP_REPLACE;
+            break;
+        case StencilOp::INVERT:
+            result = VK_STENCIL_OP_INVERT;
+            break;
+        case StencilOp::DECREMENT_AND_CLAMP:
+            result = VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+            break;
+        case StencilOp::DECREMENT_AND_WRAP:
+            result = VK_STENCIL_OP_DECREMENT_AND_WRAP;
+            break;
+        case StencilOp::INCREMENT_AND_CLAMP:
+            result = VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+            break;
+        case StencilOp::INCREMENT_AND_WRAP:
+            result = VK_STENCIL_OP_INCREMENT_AND_WRAP;
+            break;
+        default:
+            assert(false);
+    }
+
+    return result;
+}
+
+inline constexpr auto getCompareOp(CompareOp compareOp) -> VkCompareOp
+{
+    auto result = VK_COMPARE_OP_MAX_ENUM;
+
+    switch (compareOp) 
+    {
+        case CompareOp::NEVER:
+            result = VK_COMPARE_OP_NEVER;
+            break;
+        case CompareOp::LESS:
+            result = VK_COMPARE_OP_LESS;
+            break;
+        case CompareOp::LESS_OR_EQUAL:
+            result = VK_COMPARE_OP_LESS_OR_EQUAL;
+            break;
+        case CompareOp::EQUAL:
+            result = VK_COMPARE_OP_EQUAL;
+            break;
+        case CompareOp::NOT_EQUAL:
+            result = VK_COMPARE_OP_NOT_EQUAL;
+            break;
+        case CompareOp::GREATER:
+            result = VK_COMPARE_OP_GREATER;
+            break;
+        case CompareOp::GREATER_OR_EQUAL:
+            result = VK_COMPARE_OP_GREATER_OR_EQUAL;
+            break;
+        case CompareOp::ALWAYS:
+            result = VK_COMPARE_OP_ALWAYS;
+            break;
+        default:
+            assert(false);
+    }
+
+    return result;
+}
+
+inline constexpr auto getFrontFace(FrontFace frontFace) -> VkFrontFace
+{
+    return (frontFace == FrontFace::COUNTER_CLOCKWISE) ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
+}
+
+inline constexpr auto getCullMode(CullMode cullMode) -> VkCullModeFlags
+{
+    auto result = VK_CULL_MODE_FLAG_BITS_MAX_ENUM;
+
+    switch (cullMode) {
+        case CullMode::NONE:
+            result = VK_CULL_MODE_NONE;
+            break;
+        case CullMode::FRONT:
+            result = VK_CULL_MODE_FRONT_BIT;
+            break;
+        case CullMode::BACK:
+            result = VK_CULL_MODE_BACK_BIT;
+            break;
+        case CullMode::FRONT_AND_BACK:
+            result = VK_CULL_MODE_FRONT_AND_BACK;
+            break;
+        default:
+            break;
+    }
+
+    return result;
+}
+
+inline constexpr auto getPolygonMode(PolygonMode polygoneMode) -> VkPolygonMode
+{
+    auto result = VK_POLYGON_MODE_MAX_ENUM;
+
+    switch (polygoneMode) {
+        case PolygonMode::FILL:
+            result = VK_POLYGON_MODE_FILL;
+            break;
+        case PolygonMode::LINE:
+            result = VK_POLYGON_MODE_LINE;
+            break;
+        case PolygonMode::POINT:
+            result = VK_POLYGON_MODE_POINT;
+            break;
+        default:
+            assert(false);
+    }
+
+    return result;
+}
+
 inline constexpr auto getPrimitiveTopology(PrimitiveTopology primitiveTopology) -> VkPrimitiveTopology
 {
     auto result = VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;

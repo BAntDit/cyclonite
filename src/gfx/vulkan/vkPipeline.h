@@ -8,6 +8,7 @@
 #include "core/hashTable.h"
 #include "core/resourceBase.h"
 #include "core/resourceSharedRef.h"
+#include "gfx/renderStates.h"
 #include "gfx/common.h"
 #include "handle.h"
 #include <array>
@@ -23,8 +24,9 @@ public:
              PipelineType type,
              PipelineCreationFlagBits creationFlags,
              PrimitiveTopology primitiveTopology,
-             bool primitiveRestartEnable,
+             bool primitiveRestartEnable, 
              core::ResourceSharedRef renderPassRef,
+             RasterizationState const& rasterizationState,
              std::array<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT)> const& shaders);
 
 private:
@@ -32,6 +34,7 @@ private:
       PipelineCreationFlagBits creationFlags,
       PrimitiveTopology primitiveTopology,
       bool primitiveRestartEnable,
+      RasterizationState const& rasterizationState,
       std::array<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT)> const& shaders);
 
 private:

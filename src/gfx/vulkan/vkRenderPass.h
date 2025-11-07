@@ -47,6 +47,8 @@ public:
         return static_cast<VkFramebuffer>(vkFrameBuffers_[currentBufferIndex_]);
     }
 
+    [[nodiscard]] auto colorAttachmentCount() const -> uint32_t { return colorAttachmentCount_; }
+
     [[nodiscard]] auto width() const -> uint32_t;
 
     [[nodiscard]] auto height() const -> uint32_t;

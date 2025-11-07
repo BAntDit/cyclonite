@@ -14,6 +14,8 @@ template<typename T>
 concept RenderPassConcept = requires(T t, uint64_t i) {
     { t.resourceBase() } -> std::same_as<core::ResourceBase*>;
 
+    { t.colorAttachmentCount() } -> std::same_as<uint32_t>;
+
     { t.width() } -> std::same_as<uint32_t>;
 
     { t.height() } -> std::same_as<uint32_t>;
@@ -32,6 +34,7 @@ public:
     friend class core::ResourceBase;
 
     using PlatformImplementation::acquireSwapchainSignal;
+    using PlatformImplementation::colorAttachmentCount;
     using PlatformImplementation::height;
     using PlatformImplementation::isPresentationPass;
     using PlatformImplementation::PlatformImplementation;
