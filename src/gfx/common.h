@@ -270,6 +270,21 @@ enum class DescriptorType : uint_fast8_t
     INLINE_UNIFORM_ATTACHMENT = 11
 };
 
+enum class DescriptorSetFlags : uint32_t
+{
+    UPDATE_AFTER_BIND = 0x00000002
+};
+using DescriptorSetFlagBits = metrix::enum_bits<DescriptorSetFlags>;
+
+enum class BindingFlags : uint32_t
+{
+    UPDATE_AFTER_BIND = 0x00000001,
+    UPDATE_UNUSED_WHILE_PENDING = 0x00000002,
+    PARTIALLY_BOUND = 0x00000004,
+    VARIABLE_DESCRIPTOR_COUNT = 0x00000008
+};
+using BindingFlagBits = metrix::enum_bits<BindingFlags>;
+
 enum class GpuMemoryAllocationFlags : uint8_t
 {
     DEDICATED_MEMORY = 1 << 0,
