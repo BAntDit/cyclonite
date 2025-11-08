@@ -14,11 +14,18 @@ namespace cyclonite::gfx::vulkan {
 class Binding
 {
 public:
-    Binding(uint32_t set, uint32_t binding, DescriptorType descriptorType, ShaderStageFlagBits stageFlags)
+    Binding(uint32_t set,
+            uint32_t binding,
+            DescriptorType descriptorType,
+            ShaderStageFlagBits stageFlags,
+            DescriptorSetFlagBits setFlags,
+            BindingFlagBits bindingFlags)
       : set_{ set }
       , binding_{ binding }
       , descriptorType_{ descriptorType }
       , stageFlags_{ stageFlags }
+      , setFlags_{ setFlags }
+      , bindingFlags_{ bindingFlags }
     {
     }
 
@@ -30,11 +37,17 @@ public:
 
     [[nodiscard]] auto stageFlags() const -> ShaderStageFlagBits { return stageFlags_; }
 
+    [[nodiscard]] auto descriptorSetFlags() const -> DescriptorSetFlagBits { return setFlags_; }
+
+    [[nodiscard]] auto bindingFlags() const -> BindingFlagBits { return bindingFlags_; }
+
 private:
     uint32_t set_;
     uint32_t binding_;
     DescriptorType descriptorType_;
     ShaderStageFlagBits stageFlags_;
+    DescriptorSetFlagBits setFlags_;
+    BindingFlagBits bindingFlags_;
     // VkSampler* sampler_; TODO::
 };
 }
