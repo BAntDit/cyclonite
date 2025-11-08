@@ -13,7 +13,7 @@
 #include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan::internal {
-inline constexpr auto getStencilOp(StencilOp stencilOp) -> VkStencilOp 
+inline constexpr auto getStencilOp(StencilOp stencilOp) -> VkStencilOp
 {
     auto result = VK_STENCIL_OP_MAX_ENUM;
 
@@ -53,8 +53,7 @@ inline constexpr auto getCompareOp(CompareOp compareOp) -> VkCompareOp
 {
     auto result = VK_COMPARE_OP_MAX_ENUM;
 
-    switch (compareOp) 
-    {
+    switch (compareOp) {
         case CompareOp::NEVER:
             result = VK_COMPARE_OP_NEVER;
             break;
