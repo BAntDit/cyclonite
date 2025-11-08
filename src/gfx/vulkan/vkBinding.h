@@ -41,6 +41,8 @@ public:
 
     [[nodiscard]] auto bindingFlags() const -> BindingFlagBits { return bindingFlags_; }
 
+    friend auto operator==(const Binding& lhs, const Binding& rhs) -> bool;
+
 private:
     uint32_t set_;
     uint32_t binding_;
@@ -50,6 +52,13 @@ private:
     BindingFlagBits bindingFlags_;
     // VkSampler* sampler_; TODO::
 };
+
+inline auto operator==(const Binding& lhs, const Binding& rhs) -> bool
+{
+    return lhs.set_ == rhs.set_ && lhs.binding_ == rhs.binding_ && lhs.descriptorType_ == rhs.descriptorType_ &&
+           lhs.stageFlags_ == rhs.stageFlags_ && lhs.setFlags_ == rhs.setFlags_ &&
+           lhs.bindingFlags_ == rhs.bindingFlags_;
+}
 }
 #endif // GFX_DRIVER_VULKAN
 #endif // CYCLONITE_VK_BINDING_H

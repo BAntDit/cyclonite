@@ -25,6 +25,13 @@ concept BindingConcept = requires(T t) {
 };
 
 template<BindingConcept PlatformImplementation>
+class BindingInterface;
+
+template<BindingConcept PlatformImplementation>
+auto operator==(BindingInterface<PlatformImplementation> const& lhs,
+                BindingInterface<PlatformImplementation> const& rhs) -> bool;
+
+template<BindingConcept PlatformImplementation>
 class BindingInterface : private PlatformImplementation
 {
 public:
@@ -35,7 +42,20 @@ public:
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::set;
     using PlatformImplementation::stageFlags;
+
+    [[nodiscard]] auto platformImplementation() const -> PlatformImplementation const& { return *this; }
+    [[nodiscard]] auto platformImplementation() -> PlatformImplementation& { return *this; }
+
+    friend auto operator== <PlatformImplementation>(BindingInterface<PlatformImplementation> const& lhs,
+                                                    BindingInterface<PlatformImplementation> const& rhs) -> bool;
 };
+
+template<BindingConcept PlatformImplementation>
+auto operator==(BindingInterface<PlatformImplementation> const& lhs,
+                BindingInterface<PlatformImplementation> const& rhs) -> bool
+{
+    return lhs.platformImplementation() == rhs.platformImplementation();
+}
 }
 
 #endif // CYCLONITE_BINDING_INTERFACE_H
