@@ -52,7 +52,6 @@ auto PipelineManager::getOrCreatePipelineBindingSchema(std::span<Binding const> 
     }
 
     if (!bindingSchemaRef.valid()) {
-
     }
 
     return bindingSchemaRef;
