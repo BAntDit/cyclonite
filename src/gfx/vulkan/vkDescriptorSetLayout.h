@@ -18,7 +18,8 @@ public:
                         core::ResourceId resourceId,
                         VkDevice vkDeviceHandle,
                         VkDescriptorSetLayoutCreateFlags flags,
-                        std::span<const VkDescriptorSetLayoutBinding> bindings);
+                        std::span<VkDescriptorBindingFlags const> bindingFlags,
+                        std::span<VkDescriptorSetLayoutBinding const> bindings);
 
     [[nodiscard]] auto handle() const -> VkDescriptorSetLayout
     {

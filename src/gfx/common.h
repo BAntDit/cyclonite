@@ -270,11 +270,12 @@ enum class DescriptorType : uint_fast8_t
     INLINE_UNIFORM_ATTACHMENT = 11
 };
 
-enum class DescriptorSetFlags : uint32_t
+enum class DescriptorSetLayoutFlags : uint32_t
 {
+    PUSH_DESCRIPTOR = 0x00000001,
     UPDATE_AFTER_BIND = 0x00000002
 };
-using DescriptorSetFlagBits = metrix::enum_bits<DescriptorSetFlags>;
+using DescriptorSetLayoutFlagBits = metrix::enum_bits<DescriptorSetLayoutFlags>;
 
 enum class BindingFlags : uint32_t
 {
@@ -396,6 +397,12 @@ enum class QueueSubmissionStateFlags : uint32_t
 };
 using QueueSubmissionStateFlagBits = metrix::enum_bits<QueueSubmissionStateFlags>;
 
+struct PushConstantRange
+{
+    uint32_t size;
+    uint32_t offset;
+    ShaderStageFlagBits stage;
+};
 }
 
 #endif // GFX_COMMON_H

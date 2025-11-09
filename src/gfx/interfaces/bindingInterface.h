@@ -19,9 +19,11 @@ concept BindingConcept = requires(T t) {
 
     { t.stageFlags() } -> std::same_as<ShaderStageFlagBits>;
 
-    { t.descriptorSetFlags() } -> std::same_as<DescriptorSetFlagBits>;
+    { t.descriptorSetFlags() } -> std::same_as<DescriptorSetLayoutFlagBits>;
 
     { t.bindingFlags() } -> std::same_as<BindingFlagBits>;
+
+    { t.descriptorCount() } -> std::same_as<uint32_t>;
 };
 
 template<BindingConcept PlatformImplementation>
@@ -37,6 +39,7 @@ class BindingInterface : private PlatformImplementation
 public:
     using PlatformImplementation::binding;
     using PlatformImplementation::bindingFlags;
+    using PlatformImplementation::descriptorCount;
     using PlatformImplementation::descriptorSetFlags;
     using PlatformImplementation::descriptorType;
     using PlatformImplementation::PlatformImplementation;

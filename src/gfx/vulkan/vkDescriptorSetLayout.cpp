@@ -11,12 +11,19 @@ DescriptorSetLayout::DescriptorSetLayout(core::ResourceManagerBase* resourceMana
                                          core::ResourceId resourceId,
                                          VkDevice vkDeviceHandle,
                                          VkDescriptorSetLayoutCreateFlags flags,
-                                         std::span<const VkDescriptorSetLayoutBinding> bindings)
+                                         std::span<VkDescriptorBindingFlags const> bindingFlags,
+                                         std::span<VkDescriptorSetLayoutBinding const> bindings)
   : core::ResourceBase{ resourceManager, resourceId, false }
   , vkDescriptorSetLayout_{ vkDeviceHandle, vkDestroyDescriptorSetLayout }
 {
+    auto bindingFlagsCreateInfo = VkDescriptorSetLayoutBindingFlagsCreateInfo{};
+    bindingFlagsCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+    bindingFlagsCreateInfo.bindingCount = bindingFlags.size();
+    bindingFlagsCreateInfo.pBindingFlags = bindingFlags.data();
+
     auto createInfo = VkDescriptorSetLayoutCreateInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    createInfo.pNext = &bindingFlagsCreateInfo;
     createInfo.flags = flags;
     createInfo.bindingCount = bindings.size();
     createInfo.pBindings = bindings.data();

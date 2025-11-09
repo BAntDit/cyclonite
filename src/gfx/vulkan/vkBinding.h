@@ -17,11 +17,13 @@ public:
     Binding(uint32_t set,
             uint32_t binding,
             DescriptorType descriptorType,
+            uint32_t descriptorCount,
             ShaderStageFlagBits stageFlags,
-            DescriptorSetFlagBits setFlags,
+            DescriptorSetLayoutFlagBits setFlags,
             BindingFlagBits bindingFlags)
       : set_{ set }
       , binding_{ binding }
+      , descriptorCount_{ descriptorCount }
       , descriptorType_{ descriptorType }
       , stageFlags_{ stageFlags }
       , setFlags_{ setFlags }
@@ -37,18 +39,21 @@ public:
 
     [[nodiscard]] auto stageFlags() const -> ShaderStageFlagBits { return stageFlags_; }
 
-    [[nodiscard]] auto descriptorSetFlags() const -> DescriptorSetFlagBits { return setFlags_; }
+    [[nodiscard]] auto descriptorSetFlags() const -> DescriptorSetLayoutFlagBits { return setFlags_; }
 
     [[nodiscard]] auto bindingFlags() const -> BindingFlagBits { return bindingFlags_; }
+
+    [[nodiscard]] auto descriptorCount() const -> uint32_t { return descriptorCount_; }
 
     friend auto operator==(const Binding& lhs, const Binding& rhs) -> bool;
 
 private:
     uint32_t set_;
     uint32_t binding_;
+    uint32_t descriptorCount_;
     DescriptorType descriptorType_;
     ShaderStageFlagBits stageFlags_;
-    DescriptorSetFlagBits setFlags_;
+    DescriptorSetLayoutFlagBits setFlags_;
     BindingFlagBits bindingFlags_;
     // VkSampler* sampler_; TODO::
 };
@@ -57,7 +62,7 @@ inline auto operator==(const Binding& lhs, const Binding& rhs) -> bool
 {
     return lhs.set_ == rhs.set_ && lhs.binding_ == rhs.binding_ && lhs.descriptorType_ == rhs.descriptorType_ &&
            lhs.stageFlags_ == rhs.stageFlags_ && lhs.setFlags_ == rhs.setFlags_ &&
-           lhs.bindingFlags_ == rhs.bindingFlags_;
+           lhs.bindingFlags_ == rhs.bindingFlags_ && lhs.descriptorCount_ == rhs.descriptorCount_;
 }
 }
 #endif // GFX_DRIVER_VULKAN

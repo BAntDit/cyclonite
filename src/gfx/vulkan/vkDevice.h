@@ -10,12 +10,14 @@
 #include "core/resourceBase.h"
 #include "core/resourceSharedRef.h"
 #include "core/resourceUniqueRef.h"
+#include "gfx/binding.h"
 #include "gfx/color.h"
 #include "gfx/common.h"
 #include "gfx/config.h"
 #include "handle.h"
 #include "vmaUsage.h"
 #include <array>
+#include <span>
 #include <string_view>
 
 #if defined(GFX_DRIVER_VULKAN)
@@ -113,6 +115,8 @@ public:
                                              uint32_t queueFamilyIndex,
                                              CommandPoolFlagBits commandPoolFlags) -> core::ResourceUniqueRef;
 
+    [[nodiscard]] auto createDescriptorSetLayout(std::span<Binding const> bindings) -> core::ResourceUniqueRef;
+
     [[nodiscard]] auto pipelineCache() const -> VkPipelineCache
     {
         return static_cast<VkPipelineCache>(vkPipelineCache_);
@@ -135,6 +139,7 @@ private:
     Handle<VkQueue> computeQueue_;
     Handle<VkPipelineCache> vkPipelineCache_;
     VmaAllocator vmaAllocator_;
+    std::unique_ptr<core::ResourceManagerBase> internalResourceManager_;
 };
 }
 

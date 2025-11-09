@@ -5,6 +5,8 @@
 #include "vkDevice.h"
 #include "core/hashTable.h"
 #include "gfx/resourceManager.h"
+#include "gfx/shader.h"
+#include "internal/internalResourceManager.h"
 #include "multithreading/executor.h"
 #include "multithreading/taskManager.h"
 #include "vkException.h"
@@ -12,11 +14,10 @@
 #include <cstring>
 #include <limits>
 #include <metrix/enum.h>
+#include <ranges>
 #include <stdexcept>
 #include <tuple>
 #include <utility>
-
-#include "gfx/shader.h"
 
 #if defined(GFX_DRIVER_VULKAN)
 
@@ -203,6 +204,7 @@ Device::Device(core::ResourceManagerBase* resourceManager,
   , transferQueue_{}
   , computeQueue_{}
   , vmaAllocator_{ VK_NULL_HANDLE }
+  , internalResourceManager_{ std::make_unique<internal::internal_resource_manager_t>() }
 {
     if (!testRequiredDeviceExtensions(vkPhysicalDevice, requiredExtensions)) {
         throw std::runtime_error("gfx:: physical device does not supports required extensions. Device name: " + name_);
@@ -572,8 +574,47 @@ auto Device::createQueueSubmission(QueueSubmissionManager* queueSubmissionManage
     return result;
 }
 
+auto Device::createDescriptorSetLayout(std::span<Binding const> bindings) -> core::ResourceUniqueRef
+{
+    auto result = core::ResourceUniqueRef{};
+
+    assert(internalResourceManager_);
+    auto* internalResManager = static_cast<internal::internal_resource_manager_t*>(internalResourceManager_.get());
+
+    auto setFlags = VkDescriptorSetLayoutCreateFlags{};
+    setFlags = std::accumulate(
+      bindings.begin(), bindings.end(), setFlags, [](auto flags, auto const& b) -> VkDescriptorSetLayoutCreateFlags {
+          flags |= b.descriptorSetFlags().template cast_to<VkDescriptorSetLayoutCreateFlags>();
+          return flags;
+      });
+
+    auto bindingsFlags = bindings | std::views::transform([](auto const& binding) -> VkDescriptorBindingFlags {
+                             return binding.bindingFlags().template cast_to<VkDescriptorBindingFlags>();
+                         });
+
+    auto vkBindings = bindings | std::views::transform([](auto const& binding) -> VkDescriptorSetLayoutBinding {
+                          auto vkBinding = VkDescriptorSetLayoutBinding{};
+
+                          vkBinding.binding = binding.binding();
+                          // vkBinding.descriptorType = binding.descriptorType(); // TODO::
+                          vkBinding.descriptorCount = binding.descriptorCount();
+
+                          return vkBinding;
+                      });
+
+    auto bindingFlagVec = std::vector<VkDescriptorBindingFlags>(bindingsFlags.begin(), bindingsFlags.end());
+    auto bindingVec = std::vector<VkDescriptorSetLayoutBinding>(vkBindings.begin(), vkBindings.end());
+
+    result =
+      internalResManager->allocResource<vulkan::DescriptorSetLayout>(handle(), setFlags, bindingFlagVec, bindingVec);
+
+    return result;
+}
+
 Device::~Device()
 {
+    internalResourceManager_.reset();
+
     assert(vmaAllocator_ != VK_NULL_HANDLE);
     vmaDestroyAllocator(vmaAllocator_);
 }
