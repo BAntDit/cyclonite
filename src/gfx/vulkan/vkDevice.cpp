@@ -7,6 +7,7 @@
 #include "gfx/resourceManager.h"
 #include "gfx/shader.h"
 #include "internal/internalResourceManager.h"
+#include "internal/utils.h"
 #include "multithreading/executor.h"
 #include "multithreading/taskManager.h"
 #include "vkException.h"
@@ -588,22 +589,29 @@ auto Device::createDescriptorSetLayout(std::span<Binding const> bindings) -> cor
           return flags;
       });
 
-    auto bindingsFlags = bindings | std::views::transform([](auto const& binding) -> VkDescriptorBindingFlags {
-                             return binding.bindingFlags().template cast_to<VkDescriptorBindingFlags>();
-                         });
+    auto bindingFlagVec = std::vector<VkDescriptorBindingFlags>{};
+    bindingFlagVec.reserve(bindings.size());
+    std::transform(bindings.begin(),
+                   bindings.end(),
+                   std::back_inserter(bindingFlagVec),
+                   [](auto const& binding) -> VkDescriptorBindingFlags {
+                       return binding.bindingFlags().template cast_to<VkDescriptorBindingFlags>();
+                   });
 
-    auto vkBindings = bindings | std::views::transform([](auto const& binding) -> VkDescriptorSetLayoutBinding {
-                          auto vkBinding = VkDescriptorSetLayoutBinding{};
+    auto bindingVec = std::vector<VkDescriptorSetLayoutBinding>{};
+    bindingVec.reserve(bindings.size());
+    std::transform(bindings.begin(),
+                   bindings.end(),
+                   std::back_inserter(bindingVec),
+                   [](auto const& binding) -> VkDescriptorSetLayoutBinding {
+                       auto vkBinding = VkDescriptorSetLayoutBinding{};
+                       vkBinding.binding = binding.binding();
+                       vkBinding.descriptorType = internal::getDescriptorType(binding.descriptorType());
+                       vkBinding.descriptorCount = binding.descriptorCount();
+                       vkBinding.stageFlags = binding.stageFlags().template cast_to<VkShaderStageFlags>();
 
-                          vkBinding.binding = binding.binding();
-                          // vkBinding.descriptorType = binding.descriptorType(); // TODO::
-                          vkBinding.descriptorCount = binding.descriptorCount();
-
-                          return vkBinding;
-                      });
-
-    auto bindingFlagVec = std::vector<VkDescriptorBindingFlags>(bindingsFlags.begin(), bindingsFlags.end());
-    auto bindingVec = std::vector<VkDescriptorSetLayoutBinding>(vkBindings.begin(), vkBindings.end());
+                       return vkBinding;
+                   });
 
     result =
       internalResManager->allocResource<vulkan::DescriptorSetLayout>(handle(), setFlags, bindingFlagVec, bindingVec);

@@ -13,6 +13,8 @@
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
+class Device;
+
 class PipelineManager
 {
 public:
@@ -29,7 +31,7 @@ private:
     static constexpr auto max_descriptor_set_layout_count_v = 128;
     static constexpr auto max_pipeline_set_layout_count_v = 1024;
 
-    core::ResourceSharedRef deviceRef_;
+    Device* device_;
 
     // TODO:: find better way to cache descriptor set layouts nad pipeline layouts
     // vector contains descriptor set layout ids
@@ -38,6 +40,7 @@ private:
                           std::pair<core::ResourceSharedRef, std::chrono::high_resolution_clock::time_point>>,
                max_pipeline_set_layout_count_v>
       pipelineLayouts_;
+    uint32_t pipelineLayoutCount_;
 
     std::array<std::tuple<std::vector<Binding>,
                           std::pair<core::ResourceSharedRef, std::chrono::high_resolution_clock::time_point>>,

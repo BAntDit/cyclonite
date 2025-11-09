@@ -3,7 +3,8 @@
 //
 
 #include "vkPipelineManager.h"
-#include "gfx/device.h"
+#include "vkDevice.h"
+#include <algorithm>
 #include <ranges>
 
 #if defined(GFX_DRIVER_VULKAN)
@@ -16,8 +17,42 @@ auto PipelineManager::getOrCreatePipelineBindingSchema(std::span<Binding const> 
 
     auto sets = bindings | std::views::transform([](auto const& binding) -> uint32_t { return binding.set(); });
 
+    auto descrSets = std::vector<core::ResourceSharedRef>{};
+    descrSets.reserve(sets.size());
+
     for (auto set : sets) {
         auto sb = bindings | std::views::filter([=](auto const& binding) -> uint32_t { return binding.set() == set; });
+        descrSets.emplace_back(getOrCreateDescriptorSetLayout(std::vector<Binding>(sb.begin(), sb.end())));
+    }
+
+    for (auto i = uint32_t{ 0 }; i < pipelineLayoutCount_; i++) {
+        auto& [vs, vr, p] = pipelineLayouts_[i];
+
+        if (vs.size() == descrSets.size() && vr.size() == pushConstantRanges.size()) {
+            if (!std::equal(vs.begin(), vs.end(), descrSets.begin(), [](auto a, auto const& b) -> bool {
+                    return a == static_cast<uint64_t>(b.id());
+                }))
+                continue;
+
+            if (!std::equal(vr.begin(), vr.end(), pushConstantRanges.begin(), [](auto const& a, auto const& b) -> bool {
+                    auto [size1, offset1, state1] = a;
+                    auto [size2, offset2, state2] = b;
+
+                    return size1 == size2 && offset1 == offset2 && state1 == state2;
+                }))
+                continue;
+
+            auto& [r, tp] = p;
+
+            tp = std::chrono::high_resolution_clock::now();
+            bindingSchemaRef = r;
+
+            break;
+        }
+    }
+
+    if (!bindingSchemaRef.valid()) {
+
     }
 
     return bindingSchemaRef;
@@ -33,6 +68,8 @@ auto PipelineManager::getOrCreateDescriptorSetLayout(std::span<Binding const> bi
             auto& [r, tp] = p;
             descriptorSetLayoutRef = r;
             tp = std::chrono::high_resolution_clock::now();
+
+            break;
         }
     }
 
@@ -42,14 +79,15 @@ auto PipelineManager::getOrCreateDescriptorSetLayout(std::span<Binding const> bi
             freeDescriptorSetLayouts(countToRelease);
         }
 
-        assert(deviceRef_.valid());
-        auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
+        assert(device_ != nullptr);
 
         auto& [vb, p] = descriptorSetLayouts_[descriptorSetLayoutCount_];
         auto& [r, tp] = p;
         vb = std::vector<Binding>(bindings.begin(), bindings.end());
         tp = std::chrono::high_resolution_clock::now();
-        r = device.createDescriptorSetLayout(bindings);
+        r = device_->createDescriptorSetLayout(bindings);
+
+        descriptorSetLayoutCount_++;
 
         descriptorSetLayoutRef = r;
     }
@@ -66,7 +104,7 @@ void PipelineManager::freeDescriptorSetLayouts(uint32_t count)
         auto const& [_3, tp1] = p1;
         auto const& [_4, tp2] = p1;
 
-        return tp1 < tp2;
+        return tp1 > tp2; // old one first
     });
 
     for (auto i = count; i != 0; i--) {

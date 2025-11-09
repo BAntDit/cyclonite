@@ -267,7 +267,7 @@ enum class DescriptorType : uint_fast8_t
     UNIFORM_BUFFER_DYNAMIC = 8,
     STORAGE_BUFFER_DYNAMIC = 9,
     INPUT_ATTACHMENT = 10,
-    INLINE_UNIFORM_ATTACHMENT = 11
+    INLINE_UNIFORM_BLOCK = 11
 };
 
 enum class DescriptorSetLayoutFlags : uint32_t

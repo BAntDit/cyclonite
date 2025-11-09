@@ -351,6 +351,54 @@ inline constexpr auto getImageType(TextureType type) -> VkImageType
     return result;
 }
 
+inline constexpr auto getDescriptorType(DescriptorType type) -> VkDescriptorType
+{
+    auto result = VkDescriptorType{ VK_DESCRIPTOR_TYPE_MAX_ENUM };
+
+    switch (type) {
+        case DescriptorType::SAMPLER:
+            result = VK_DESCRIPTOR_TYPE_SAMPLER;
+            break;
+        case DescriptorType::COMBINED_IMAGE_SAMPLER:
+            result = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            break;
+        case DescriptorType::SAMPLED_IMAGE:
+            result = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            break;
+        case DescriptorType::STORAGE_IMAGE:
+            result = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+            break;
+        case DescriptorType::UNIFORM_TEXEL_BUFFER:
+            result = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+            break;
+        case DescriptorType::STORAGE_TEXEL_BUFFER:
+            result = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+            break;
+        case DescriptorType::UNIFORM_BUFFER:
+            result = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            break;
+        case DescriptorType::STORAGE_BUFFER:
+            result = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            break;
+        case DescriptorType::UNIFORM_BUFFER_DYNAMIC:
+            result = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+            break;
+        case DescriptorType::STORAGE_BUFFER_DYNAMIC:
+            result = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+            break;
+        case DescriptorType::INPUT_ATTACHMENT:
+            result = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+            break;
+        case DescriptorType::INLINE_UNIFORM_BLOCK:
+            result = VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK;
+            break;
+        default:
+            assert(false);
+    }
+
+    return result;
+}
+
 inline constexpr auto getFormat(Format format) -> VkFormat
 {
     auto vkFormat = VkFormat{ VK_FORMAT_UNDEFINED };
