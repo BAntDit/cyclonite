@@ -10,6 +10,7 @@
 #include "core/resourceManager.h"
 #include "device.h"
 #include "gfx/signal.h"
+#include "pipelineBindingSchema.h"
 #include "queueSubmission.h"
 #include "renderPass.h"
 #include "renderTargetView.h"
@@ -27,7 +28,8 @@ using resource_manager_t = core::ResourceManager<gfx::Device,
                                                  gfx::Shader,
                                                  gfx::Signal,
                                                  gfx::CommandPool,
-                                                 gfx::QueueSubmission>;
+                                                 gfx::QueueSubmission,
+                                                 gfx::PipelineBindingSchema>;
 }
 
 #endif // CYCLONITE_RESOURCEMANAGER_H
