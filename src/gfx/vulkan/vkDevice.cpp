@@ -619,6 +619,21 @@ auto Device::createDescriptorSetLayout(std::span<Binding const> bindings) -> cor
     return result;
 }
 
+auto Device::createPipelineBindingSchema(std::span<core::ResourceSharedRef const> setLayouts,
+                                         std::span<PushConstantRange const> pushConstantRanges)
+  -> core::ResourceUniqueRef
+{
+    auto result = core::ResourceUniqueRef{};
+
+    auto& resManager = static_cast<resource_manager_t&>(resourceManager());
+
+    auto deviceRef = getSharedFromThis(this);
+
+    result = resManager.allocResource<gfx::PipelineBindingSchema>(deviceRef, setLayouts, pushConstantRanges);
+
+    return result;
+}
+
 Device::~Device()
 {
     internalResourceManager_.reset();

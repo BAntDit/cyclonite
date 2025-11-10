@@ -108,8 +108,8 @@ public:
                                                         real depthClearValue,
                                                         uint8_t stencilClearValue) -> core::ResourceUniqueRef;
 
-    [[nodiscard]] auto createCommandPool(uint32_t queueFamilyIndex,
-                                         CommandPoolFlagBits flags) -> core::ResourceUniqueRef;
+    [[nodiscard]] auto createCommandPool(uint32_t queueFamilyIndex, CommandPoolFlagBits flags)
+      -> core::ResourceUniqueRef;
 
     [[nodiscard]] auto createQueueSubmission(QueueSubmissionManager* queueSubmissionManager,
                                              uint32_t queueFamilyIndex,
@@ -117,7 +117,9 @@ public:
 
     [[nodiscard]] auto createDescriptorSetLayout(std::span<Binding const> bindings) -> core::ResourceUniqueRef;
 
-    // todo:: createPipelineBindingSchema method -> uiqueRef ()
+    [[nodiscard]] auto createPipelineBindingSchema(std::span<core::ResourceSharedRef const> setLayouts,
+                                                   std::span<PushConstantRange const> pushConstantRanges)
+      -> core::ResourceUniqueRef;
 
     [[nodiscard]] auto pipelineCache() const -> VkPipelineCache
     {
