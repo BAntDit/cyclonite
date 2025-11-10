@@ -30,6 +30,8 @@ public:
              RasterizationState const& rasterizationState,
              std::array<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT)> const& shaders);
 
+    [[nodiscard]] auto type() const -> PipelineType { return type_; }
+
 private:
     void initPrimitiveRasterizationPipeline(
       core::ResourceSharedRef const& deviceRef,
@@ -45,6 +47,7 @@ private:
     core::ResourceSharedRef bindingSchemaRef_;
     core::ResourceSharedRef renderPassRef_;
     Handle<VkPipeline> vkPipeline_;
+    PipelineType type_;
 };
 }
 #endif // GFX_DRIVER_VULKAN

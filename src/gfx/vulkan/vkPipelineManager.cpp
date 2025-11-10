@@ -78,7 +78,7 @@ auto PipelineManager::getOrCreatePipelineBindingSchema(std::span<Binding const> 
 
         ds.clear();
         std::transform(descrSets.begin(), descrSets.end(), std::back_inserter(ds), [](auto const& r) -> uint64_t {
-            return static_cast<uint64_t>(r.id);
+            return static_cast<uint64_t>(r.id());
         });
 
         pc = std::vector<PushConstantRange>(pushConstantRanges.begin(), pushConstantRanges.end());

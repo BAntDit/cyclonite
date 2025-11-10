@@ -18,7 +18,7 @@ class Device;
 class PipelineManager
 {
 public:
-    PipelineManager(Device* device);
+    explicit PipelineManager(Device* device);
 
     auto getOrCreatePipelineBindingSchema(std::span<Binding const> bindings,
                                           std::span<PushConstantRange const> pushConstantRanges)

@@ -30,6 +30,7 @@ Pipeline::Pipeline(
   , bindingSchemaRef_{ std::move(bindingSchemaRef) }
   , renderPassRef_{ std::move(renderPassRef) }
   , vkPipeline_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyPipeline }
+  , type_{ type }
 {
     if (type == PipelineType::PrimitiveRasterization) {
         initPrimitiveRasterizationPipeline(

@@ -5,7 +5,7 @@
 #ifndef CYCLONITE_GFX_BUFFER_INTERFACE_H
 #define CYCLONITE_GFX_BUFFER_INTERFACE_H
 
-#include "core/resourceWeakRef.h"
+#include "core/resourceBase.h"
 #include "gfx/common.h"
 #include <concepts>
 
