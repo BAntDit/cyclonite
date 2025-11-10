@@ -6,6 +6,7 @@
 #include "vkDevice.h"
 #include <algorithm>
 #include <ranges>
+#include <unordered_set>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
@@ -15,7 +16,10 @@ auto PipelineManager::getOrCreatePipelineBindingSchema(std::span<Binding const> 
 {
     auto bindingSchemaRef = core::ResourceSharedRef();
 
-    auto sets = bindings | std::views::transform([](auto const& binding) -> uint32_t { return binding.set(); });
+    auto sets = std::unordered_set<uint32_t>{};
+    std::transform(bindings.begin(), bindings.end(), std::inserter(sets, sets.end()), [](auto const& b) -> uint32_t {
+        return b.set();
+    });
 
     auto descrSets = std::vector<core::ResourceSharedRef>{};
     descrSets.reserve(sets.size());
