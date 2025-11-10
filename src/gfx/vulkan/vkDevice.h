@@ -123,6 +123,10 @@ public:
                                                    std::span<PushConstantRange const> pushConstantRanges)
       -> core::ResourceUniqueRef;
 
+    [[nodiscard]] auto getOrCreatePipelineBindingSchema(std::span<Binding const> bindings,
+                                                        std::span<PushConstantRange const> pushConstantRanges)
+      -> core::ResourceSharedRef;
+
     [[nodiscard]] auto pipelineCache() const -> VkPipelineCache
     {
         return static_cast<VkPipelineCache>(vkPipelineCache_);

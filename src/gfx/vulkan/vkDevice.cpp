@@ -638,6 +638,14 @@ auto Device::createPipelineBindingSchema(std::span<core::ResourceSharedRef const
     return result;
 }
 
+auto Device::getOrCreatePipelineBindingSchema(std::span<Binding const> bindings,
+                                              std::span<PushConstantRange const> pushConstantRanges)
+  -> core::ResourceSharedRef
+{
+    assert(pipelineManager_);
+    return pipelineManager_->getOrCreatePipelineBindingSchema(bindings, pushConstantRanges);
+}
+
 Device::~Device()
 {
     pipelineManager_.reset();
