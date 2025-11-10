@@ -23,6 +23,7 @@ public:
              core::ResourceSharedRef deviceRef,
              PipelineType type,
              PipelineCreationFlagBits creationFlags,
+             core::ResourceSharedRef bindingSchemaRef,
              PrimitiveTopology primitiveTopology,
              bool primitiveRestartEnable,
              core::ResourceSharedRef renderPassRef,
@@ -31,6 +32,7 @@ public:
 
 private:
     void initPrimitiveRasterizationPipeline(
+      core::ResourceSharedRef const& deviceRef,
       PipelineCreationFlagBits creationFlags,
       PrimitiveTopology primitiveTopology,
       bool primitiveRestartEnable,
@@ -40,6 +42,7 @@ private:
 private:
     core::StaticHashTable<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT), ShaderStageFlags>
       shaders_;
+    core::ResourceSharedRef bindingSchemaRef_;
     core::ResourceSharedRef renderPassRef_;
     Handle<VkPipeline> vkPipeline_;
 };

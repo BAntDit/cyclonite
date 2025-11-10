@@ -4,9 +4,11 @@
 
 #include "vkPipeline.h"
 #include "gfx/device.h"
+#include "gfx/pipelineBindingSchema.h"
 #include "gfx/renderPass.h"
 #include "gfx/shader.h"
 #include "internal/utils.h"
+#include "vkException.h"
 #include <bit>
 
 #if defined(GFX_DRIVER_VULKAN)
@@ -17,6 +19,7 @@ Pipeline::Pipeline(
   core::ResourceSharedRef deviceRef,
   PipelineType type,
   PipelineCreationFlagBits creationFlags,
+  core::ResourceSharedRef bindingSchemaRef,
   PrimitiveTopology primitiveTopology,
   bool primitiveRestartEnable,
   core::ResourceSharedRef renderPassRef,
@@ -24,24 +27,29 @@ Pipeline::Pipeline(
   std::array<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT)> const& shaders)
   : core::ResourceBase{ resourceManager, resourceId, false }
   , shaders_{}
+  , bindingSchemaRef_{ std::move(bindingSchemaRef) }
   , renderPassRef_{ std::move(renderPassRef) }
   , vkPipeline_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(), vkDestroyPipeline }
 {
     if (type == PipelineType::PrimitiveRasterization) {
         initPrimitiveRasterizationPipeline(
-          creationFlags, primitiveTopology, primitiveRestartEnable, rasterizationState, shaders);
+          deviceRef, creationFlags, primitiveTopology, primitiveRestartEnable, rasterizationState, shaders);
     } else if (type == PipelineType::Compute) {
         // TODO:: ...
     }
 }
 
 void Pipeline::initPrimitiveRasterizationPipeline(
+  core::ResourceSharedRef const& deviceRef,
   PipelineCreationFlagBits creationFlags,
   PrimitiveTopology primitiveTopology,
   bool primitiveRestartEnable,
   RasterizationState const& rasterizationState,
   std::array<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT)> const& shaders)
 {
+    assert(deviceRef.valid());
+    auto const& device = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>();
+
     // shader stages:
     auto shaderStageBits = ShaderStageFlagBits{};
     auto shaderStages =
@@ -82,7 +90,7 @@ void Pipeline::initPrimitiveRasterizationPipeline(
     tesselationState.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
 
     assert(renderPassRef_.valid());
-    auto& renderPass = renderPassRef_.as<gfx::RenderPass>();
+    auto& renderPass = renderPassRef_.as<type_traits::platform_implementation_t<gfx::RenderPass>>();
 
     auto viewport = VkViewport{};
     viewport.x = 0.0f;
@@ -175,6 +183,9 @@ void Pipeline::initPrimitiveRasterizationPipeline(
     colorBlendState.attachmentCount = actualAttachmentCount;
     colorBlendState.pAttachments = attachmentBlendStates.data();
 
+    assert(bindingSchemaRef_.valid());
+    auto& bindingSchema = bindingSchemaRef_.as<type_traits::platform_implementation_t<gfx::PipelineBindingSchema>>();
+
     auto pipelineInfo = VkGraphicsPipelineCreateInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.flags = creationFlags.cast_to<VkPipelineCreateFlags>();
@@ -188,6 +199,14 @@ void Pipeline::initPrimitiveRasterizationPipeline(
     pipelineInfo.pMultisampleState = &multisampleState;
     pipelineInfo.pDepthStencilState = &depthStencilState;
     pipelineInfo.pColorBlendState = &colorBlendState;
+    pipelineInfo.layout = bindingSchema.handle();
+    pipelineInfo.renderPass = renderPass.handle();
+
+    if (auto vkResult =
+          vkCreateGraphicsPipelines(device.handle(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &vkPipeline_);
+        vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vkCreateGraphicsPipelines" };
+    }
 }
 }
 #endif // GFX_DRIVER_VULKAN
