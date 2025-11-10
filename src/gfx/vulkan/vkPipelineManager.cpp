@@ -10,6 +10,16 @@
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
+PipelineManager::PipelineManager(Device* device)
+  : device_{ device }
+  , pipelineLayouts_{}
+  , pipelineLayoutCount_{ 0 }
+  , descriptorSetLayouts_{}
+  , descriptorSetLayoutCount_{ 0 }
+  , descriptorPools_{}
+{
+}
+
 auto PipelineManager::getOrCreatePipelineBindingSchema(std::span<Binding const> bindings,
                                                        std::span<PushConstantRange const> pushConstantRanges)
   -> core::ResourceSharedRef
@@ -56,9 +66,32 @@ auto PipelineManager::getOrCreatePipelineBindingSchema(std::span<Binding const> 
     }
 
     if (!bindingSchemaRef.valid()) {
-        // TODO:: 
+        if (pipelineLayoutCount_ == max_pipeline_set_layout_count_v) {
+            const auto countToRelease = uint32_t{ 16 };
+            freePipelineLayouts(countToRelease);
+        }
+
+        assert(device_ != nullptr);
+
+        auto& [ds, pc, p] = pipelineLayouts_[pipelineLayoutCount_];
+        auto& [r, tp] = p;
+
+        ds.clear();
+        std::transform(descrSets.begin(), descrSets.end(), std::back_inserter(ds), [](auto const& r) -> uint64_t {
+            return static_cast<uint64_t>(r.id);
+        });
+
+        pc = std::vector<PushConstantRange>(pushConstantRanges.begin(), pushConstantRanges.end());
+
+        tp = std::chrono::high_resolution_clock::now();
+        r = device_->createPipelineBindingSchema(descrSets, pushConstantRanges);
+
+        descriptorSetLayoutCount_++;
+
+        bindingSchemaRef = r;
     }
 
+    assert(bindingSchemaRef.valid());
     return bindingSchemaRef;
 }
 
@@ -119,6 +152,30 @@ void PipelineManager::freeDescriptorSetLayouts(uint32_t count)
         r = core::ResourceSharedRef();
 
         descriptorSetLayoutCount_--;
+    }
+}
+
+void PipelineManager::freePipelineLayouts(uint32_t count)
+{
+    std::ranges::sort(pipelineLayouts_, [](auto const& a, auto const& b) -> bool {
+        auto const& [_00, _10, p1] = a;
+        auto const& [_01, _11, p2] = b;
+        auto const& [_2, tp1] = p1;
+        auto const& [_3, tp2] = p1;
+
+        return tp1 > tp2; // old one first
+    });
+
+    for (auto i = count; i != 0; i--) {
+        auto& pipelineLayout = pipelineLayouts_[i];
+        auto& [ds, pc, p] = pipelineLayout;
+        auto& [r, tp] = p;
+
+        ds = std::vector<uint64_t>{};
+        pc = std::vector<PushConstantRange>{};
+        r = core::ResourceSharedRef();
+
+        pipelineLayoutCount_--;
     }
 }
 }

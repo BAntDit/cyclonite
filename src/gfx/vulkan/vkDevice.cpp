@@ -11,6 +11,7 @@
 #include "multithreading/executor.h"
 #include "multithreading/taskManager.h"
 #include "vkException.h"
+#include "vkPipelineManager.h"
 #include <array>
 #include <cstring>
 #include <limits>
@@ -206,6 +207,7 @@ Device::Device(core::ResourceManagerBase* resourceManager,
   , computeQueue_{}
   , vmaAllocator_{ VK_NULL_HANDLE }
   , internalResourceManager_{ std::make_unique<internal::internal_resource_manager_t>() }
+  , pipelineManager_{}
 {
     if (!testRequiredDeviceExtensions(vkPhysicalDevice, requiredExtensions)) {
         throw std::runtime_error("gfx:: physical device does not supports required extensions. Device name: " + name_);
@@ -403,6 +405,8 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     }
 
     limits_.maxColorAttachmentCount = static_cast<uint8_t>(physicalDeviceProperties.limits.maxColorAttachments);
+
+    pipelineManager_ = std::make_unique<PipelineManager>(this);
 }
 
 auto Device::createSignal(SignalType signalType, uint64_t initialValue /* = 0*/) -> core::ResourceUniqueRef
@@ -636,6 +640,8 @@ auto Device::createPipelineBindingSchema(std::span<core::ResourceSharedRef const
 
 Device::~Device()
 {
+    pipelineManager_.reset();
+
     internalResourceManager_.reset();
 
     assert(vmaAllocator_ != VK_NULL_HANDLE);

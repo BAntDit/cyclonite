@@ -18,6 +18,8 @@ class Device;
 class PipelineManager
 {
 public:
+    PipelineManager(Device* device);
+
     auto getOrCreatePipelineBindingSchema(std::span<Binding const> bindings,
                                           std::span<PushConstantRange const> pushConstantRanges)
       -> core::ResourceSharedRef;
@@ -26,6 +28,8 @@ private:
     auto getOrCreateDescriptorSetLayout(std::span<Binding const> bindings) -> core::ResourceSharedRef;
 
     void freeDescriptorSetLayouts(uint32_t count);
+
+    void freePipelineLayouts(uint32_t count);
 
 private:
     static constexpr auto max_descriptor_set_layout_count_v = 128;

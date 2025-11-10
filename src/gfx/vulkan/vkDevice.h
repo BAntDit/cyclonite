@@ -24,6 +24,8 @@
 namespace cyclonite::gfx::vulkan {
 class QueueSubmissionManager;
 
+class PipelineManager;
+
 class Device
   : public core::ResourceBase
   , public core::EnableRefFromThis
@@ -144,6 +146,7 @@ private:
     Handle<VkPipelineCache> vkPipelineCache_;
     VmaAllocator vmaAllocator_;
     std::unique_ptr<core::ResourceManagerBase> internalResourceManager_;
+    std::unique_ptr<PipelineManager> pipelineManager_;
 };
 }
 
