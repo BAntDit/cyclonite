@@ -6,6 +6,7 @@
 #define CYCLONITE_VK_PIPELINE_MANAGER_H
 
 #include "core/resourceSharedRef.h"
+#include "core/hashTable.h"
 #include "gfx/binding.h"
 #include <chrono>
 #include <map>
@@ -32,12 +33,15 @@ private:
     void freePipelineLayouts(uint32_t count);
 
 private:
+    // TODO:: move to config
     static constexpr auto max_descriptor_set_layout_count_v = 128;
     static constexpr auto max_pipeline_set_layout_count_v = 1024;
+    static constexpr auto primitive_rasterization_pipeline_cache_size_v = 2048;
+    static constexpr auto primitive_rasterization_shader_set_cache_size_v = 1024;
 
     Device* device_;
 
-    // TODO:: find better way to cache descriptor set layouts nad pipeline layouts
+    // TODO:: find better way to cache descriptor set layouts and pipeline layouts
     // vector contains descriptor set layout ids
     std::array<std::tuple<std::vector<uint64_t>,
                           std::vector<PushConstantRange>,
@@ -54,6 +58,8 @@ private:
 
     // key is layout resource Id
     std::multimap<uint64_t, core::ResourceSharedRef> descriptorPools_;
+
+    // TODO:: add primitive rasterization shader set as an internal resource
 };
 }
 #endif // GFX_DRIVER_VULKAN
