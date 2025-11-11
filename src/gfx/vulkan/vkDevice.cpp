@@ -422,9 +422,8 @@ auto Device::createSignal(SignalType signalType, uint64_t initialValue /* = 0*/)
     return result;
 }
 
-auto Device::createBuffer(GpuMemoryAllocationFlagBits allocationFlags,
-                          BufferUsageFlagBits usageFlags,
-                          size_t size) -> core::ResourceUniqueRef
+auto Device::createBuffer(GpuMemoryAllocationFlagBits allocationFlags, BufferUsageFlagBits usageFlags, size_t size)
+  -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 
@@ -488,10 +487,8 @@ auto Device::createShader(size_t codeSize,
     return result;
 }
 
-auto Device::createRenderWindow(uint32_t width,
-                                uint32_t height,
-                                std::string_view title,
-                                SurfaceFlagBits flags) -> core::ResourceUniqueRef
+auto Device::createRenderWindow(uint32_t width, uint32_t height, std::string_view title, SurfaceFlagBits flags)
+  -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 
@@ -644,6 +641,32 @@ auto Device::getOrCreatePipelineBindingSchema(std::span<Binding const> bindings,
 {
     assert(pipelineManager_);
     return pipelineManager_->getOrCreatePipelineBindingSchema(bindings, pushConstantRanges);
+}
+
+auto Device::createPrimitiveShadingPipeline(PipelineCreationFlagBits creationFlags,
+                                            core::ResourceSharedRef bindingSchemaRef,
+                                            PrimitiveTopology primitiveTopology,
+                                            bool primitiveRestartEnable,
+                                            core::ResourceSharedRef renderPassRef,
+                                            RasterizationState const& rasterizationState,
+                                            std::span<core::ResourceSharedRef const> shaders) -> core::ResourceUniqueRef
+{
+    auto result = core::ResourceUniqueRef{};
+
+    auto& resManager = static_cast<resource_manager_t&>(resourceManager());
+
+    auto deviceRef = getSharedFromThis(this);
+
+    result = resManager.allocResource<gfx::Pipeline>(std::move(deviceRef),
+                                                     creationFlags,
+                                                     std::move(bindingSchemaRef),
+                                                     primitiveTopology,
+                                                     primitiveRestartEnable,
+                                                     std::move(renderPassRef),
+                                                     rasterizationState,
+                                                     shaders);
+
+    return result;
 }
 
 Device::~Device()

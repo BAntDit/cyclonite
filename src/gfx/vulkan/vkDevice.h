@@ -20,6 +20,10 @@
 #include <span>
 #include <string_view>
 
+namespace cyclonite::gfx {
+struct RasterizationState;
+}
+
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 class QueueSubmissionManager;
@@ -126,6 +130,15 @@ public:
     [[nodiscard]] auto getOrCreatePipelineBindingSchema(std::span<Binding const> bindings,
                                                         std::span<PushConstantRange const> pushConstantRanges)
       -> core::ResourceSharedRef;
+
+    [[nodiscard]] auto createPrimitiveShadingPipeline(PipelineCreationFlagBits creationFlags,
+                                                      core::ResourceSharedRef bindingSchemaRef,
+                                                      PrimitiveTopology primitiveTopology,
+                                                      bool primitiveRestartEnable,
+                                                      core::ResourceSharedRef renderPassRef,
+                                                      RasterizationState const& rasterizationState,
+                                                      std::span<core::ResourceSharedRef const> shaders)
+      -> core::ResourceUniqueRef;
 
     [[nodiscard]] auto pipelineCache() const -> VkPipelineCache
     {

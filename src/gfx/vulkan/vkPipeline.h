@@ -21,6 +21,17 @@ public:
     Pipeline(core::ResourceManagerBase* resourceManager,
              core::ResourceId resourceId,
              core::ResourceSharedRef deviceRef,
+             PipelineCreationFlagBits creationFlags,
+             core::ResourceSharedRef bindingSchemaRef,
+             PrimitiveTopology primitiveTopology,
+             bool primitiveRestartEnable,
+             core::ResourceSharedRef renderPassRef,
+             RasterizationState const& rasterizationState,
+             std::span<core::ResourceSharedRef const> shaders);
+
+    Pipeline(core::ResourceManagerBase* resourceManager,
+             core::ResourceId resourceId,
+             core::ResourceSharedRef deviceRef,
              PipelineType type,
              PipelineCreationFlagBits creationFlags,
              core::ResourceSharedRef bindingSchemaRef,
@@ -33,13 +44,12 @@ public:
     [[nodiscard]] auto type() const -> PipelineType { return type_; }
 
 private:
-    void initPrimitiveRasterizationPipeline(
-      core::ResourceSharedRef const& deviceRef,
-      PipelineCreationFlagBits creationFlags,
-      PrimitiveTopology primitiveTopology,
-      bool primitiveRestartEnable,
-      RasterizationState const& rasterizationState,
-      std::span<core::ResourceSharedRef const> shaders);
+    void initPrimitiveRasterizationPipeline(core::ResourceSharedRef const& deviceRef,
+                                            PipelineCreationFlagBits creationFlags,
+                                            PrimitiveTopology primitiveTopology,
+                                            bool primitiveRestartEnable,
+                                            RasterizationState const& rasterizationState,
+                                            std::span<core::ResourceSharedRef const> shaders);
 
 private:
     core::StaticHashTable<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT), ShaderStageFlags>

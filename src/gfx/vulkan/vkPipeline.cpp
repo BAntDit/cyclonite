@@ -13,18 +13,17 @@
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
-Pipeline::Pipeline(
-  core::ResourceManagerBase* resourceManager,
-  core::ResourceId resourceId,
-  core::ResourceSharedRef deviceRef,
-  PipelineType type,
-  PipelineCreationFlagBits creationFlags,
-  core::ResourceSharedRef bindingSchemaRef,
-  PrimitiveTopology primitiveTopology,
-  bool primitiveRestartEnable,
-  core::ResourceSharedRef renderPassRef,
-  RasterizationState const& rasterizationState,
-  std::span<core::ResourceSharedRef const> shaders)
+Pipeline::Pipeline(core::ResourceManagerBase* resourceManager,
+                   core::ResourceId resourceId,
+                   core::ResourceSharedRef deviceRef,
+                   PipelineType type,
+                   PipelineCreationFlagBits creationFlags,
+                   core::ResourceSharedRef bindingSchemaRef,
+                   PrimitiveTopology primitiveTopology,
+                   bool primitiveRestartEnable,
+                   core::ResourceSharedRef renderPassRef,
+                   RasterizationState const& rasterizationState,
+                   std::span<core::ResourceSharedRef const> shaders)
   : core::ResourceBase{ resourceManager, resourceId, false }
   , shaders_{}
   , bindingSchemaRef_{ std::move(bindingSchemaRef) }
@@ -40,13 +39,36 @@ Pipeline::Pipeline(
     }
 }
 
-void Pipeline::initPrimitiveRasterizationPipeline(
-  core::ResourceSharedRef const& deviceRef,
-  PipelineCreationFlagBits creationFlags,
-  PrimitiveTopology primitiveTopology,
-  bool primitiveRestartEnable,
-  RasterizationState const& rasterizationState,
-  std::span<core::ResourceSharedRef const> shaders)
+Pipeline::Pipeline(core::ResourceManagerBase* resourceManager,
+                   core::ResourceId resourceId,
+                   core::ResourceSharedRef deviceRef,
+                   PipelineCreationFlagBits creationFlags,
+                   core::ResourceSharedRef bindingSchemaRef,
+                   PrimitiveTopology primitiveTopology,
+                   bool primitiveRestartEnable,
+                   core::ResourceSharedRef renderPassRef,
+                   RasterizationState const& rasterizationState,
+                   std::span<core::ResourceSharedRef const> shaders)
+  : Pipeline{ resourceManager,
+              resourceId,
+              std::move(deviceRef),
+              PipelineType::PrimitiveRasterization,
+              creationFlags,
+              std::move(bindingSchemaRef),
+              primitiveTopology,
+              primitiveRestartEnable,
+              std::move(renderPassRef),
+              rasterizationState,
+              shaders }
+{
+}
+
+void Pipeline::initPrimitiveRasterizationPipeline(core::ResourceSharedRef const& deviceRef,
+                                                  PipelineCreationFlagBits creationFlags,
+                                                  PrimitiveTopology primitiveTopology,
+                                                  bool primitiveRestartEnable,
+                                                  RasterizationState const& rasterizationState,
+                                                  std::span<core::ResourceSharedRef const> shaders)
 {
     assert(deviceRef.valid());
     auto const& device = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>();
