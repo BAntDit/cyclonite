@@ -11,7 +11,7 @@
 #include "gfx/common.h"
 #include "gfx/renderStates.h"
 #include "handle.h"
-#include <array>
+#include <span>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
@@ -28,7 +28,7 @@ public:
              bool primitiveRestartEnable,
              core::ResourceSharedRef renderPassRef,
              RasterizationState const& rasterizationState,
-             std::array<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT)> const& shaders);
+             std::span<core::ResourceSharedRef const> shaders);
 
     [[nodiscard]] auto type() const -> PipelineType { return type_; }
 
@@ -39,7 +39,7 @@ private:
       PrimitiveTopology primitiveTopology,
       bool primitiveRestartEnable,
       RasterizationState const& rasterizationState,
-      std::array<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT)> const& shaders);
+      std::span<core::ResourceSharedRef const> shaders);
 
 private:
     core::StaticHashTable<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT), ShaderStageFlags>

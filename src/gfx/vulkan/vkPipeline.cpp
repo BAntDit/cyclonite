@@ -24,7 +24,7 @@ Pipeline::Pipeline(
   bool primitiveRestartEnable,
   core::ResourceSharedRef renderPassRef,
   RasterizationState const& rasterizationState,
-  std::array<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT)> const& shaders)
+  std::span<core::ResourceSharedRef const> shaders)
   : core::ResourceBase{ resourceManager, resourceId, false }
   , shaders_{}
   , bindingSchemaRef_{ std::move(bindingSchemaRef) }
@@ -46,7 +46,7 @@ void Pipeline::initPrimitiveRasterizationPipeline(
   PrimitiveTopology primitiveTopology,
   bool primitiveRestartEnable,
   RasterizationState const& rasterizationState,
-  std::array<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT)> const& shaders)
+  std::span<core::ResourceSharedRef const> shaders)
 {
     assert(deviceRef.valid());
     auto const& device = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>();
