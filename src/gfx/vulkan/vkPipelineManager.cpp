@@ -8,11 +8,15 @@
 #include <ranges>
 #include <unordered_set>
 
+#include "gfx/shader.h"
+
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
 namespace {
-auto packRasterizationParams(CompareOp depthCompareOp, PolygonMode polygonMode, CullMode cullMode, FrontFace frontFace)
-  -> uint32_t
+auto packRasterizationParams(CompareOp depthCompareOp,
+                             PolygonMode polygonMode,
+                             CullMode cullMode,
+                             FrontFace frontFace) -> uint32_t
 {
     auto packed = uint32_t{ 0 };
     auto* dst = reinterpret_cast<uint8_t*>(&packed);
@@ -33,6 +37,39 @@ auto packRasterizationParams(CompareOp depthCompareOp, PolygonMode polygonMode, 
     std::memcpy(dst + 1, &polygonModeByte, sizeof(uint8_t));
     std::memcpy(dst + 2, &cullModeByte, sizeof(uint8_t));
     std::memcpy(dst + 3, &frontFaceByte, sizeof(uint8_t));
+
+    return packed;
+}
+
+auto packStencilParams(StencilState stencilState) -> uint64_t
+{
+    auto packed = uint64_t{ 0 };
+    auto* dst = reinterpret_cast<uint8_t*>(&packed);
+
+    static_assert(sizeof(std::underlying_type_t<StencilOp>) == sizeof(uint8_t));
+    auto failOpByte = metrix::value_cast(stencilState.failOp);
+    auto depthFailOpByte = metrix::value_cast(stencilState.depthFailOp);
+    auto passOpByte = metrix::value_cast(stencilState.passOp);
+
+    static_assert(sizeof(std::underlying_type_t<CompareOp>) == sizeof(uint8_t));
+    auto compareOpByte = metrix::value_cast(stencilState.compareOp);
+
+    assert(stencilState.compareMask < std::numeric_limits<uint8_t>::max());
+    auto compareMaskByte = static_cast<uint8_t>(stencilState.compareMask);
+
+    assert(stencilState.writeMask < std::numeric_limits<uint8_t>::max());
+    auto writeMaskByte = static_cast<uint8_t>(stencilState.writeMask);
+
+    assert(stencilState.reference < std::numeric_limits<uint8_t>::max());
+    auto referenceByte = static_cast<uint8_t>(stencilState.reference);
+
+    std::memcpy(dst + 0, &failOpByte, sizeof(uint8_t));
+    std::memcpy(dst + 1, &depthFailOpByte, sizeof(uint8_t));
+    std::memcpy(dst + 2, &passOpByte, sizeof(uint8_t));
+    std::memcpy(dst + 3, &compareOpByte, sizeof(uint8_t));
+    std::memcpy(dst + 4, &compareMaskByte, sizeof(uint8_t));
+    std::memcpy(dst + 5, &writeMaskByte, sizeof(uint8_t));
+    std::memcpy(dst + 6, &referenceByte, sizeof(uint8_t));
 
     return packed;
 }
@@ -159,6 +196,164 @@ auto PipelineManager::getOrCreateDescriptorSetLayout(std::span<Binding const> bi
 
     assert(descriptorSetLayoutRef.valid());
     return descriptorSetLayoutRef;
+}
+
+auto PipelineManager::getOrCreatePrimitiveRasterizationPipeline(PipelineCreationFlagBits creationFlags,
+                                                                core::ResourceSharedRef const& bindingSchemaRef,
+                                                                PrimitiveTopology primitiveTopology,
+                                                                bool primitiveRestartEnable,
+                                                                core::ResourceSharedRef const& renderPassRef,
+                                                                RasterizationState const& rasterizationState,
+                                                                std::span<core::ResourceSharedRef const> shaders)
+  -> core::ResourceSharedRef
+{
+    assert(bindingSchemaRef.valid());
+    assert(renderPassRef.valid());
+
+    auto pipelineRef = core::ResourceSharedRef();
+
+    auto packedRasterParams = packRasterizationParams(rasterizationState.depthComparison,
+                                                      rasterizationState.polygonMode,
+                                                      rasterizationState.cullMode,
+                                                      rasterizationState.frontFace);
+
+    auto packedStencilFront = packStencilParams(rasterizationState.frontStencilState);
+    auto packedStencilBack = packStencilParams(rasterizationState.backStencilState);
+
+    auto vertexShaderRef = core::ResourceSharedRef();
+    auto tessControlShaderRef = core::ResourceSharedRef();
+    auto tessEvalShaderRef = core::ResourceSharedRef();
+    auto geometryShaderRef = core::ResourceSharedRef();
+    auto fragmentShaderRef = core::ResourceSharedRef();
+
+    for (auto& shaderRef : shaders) {
+        auto& shader = shaderRef.as<gfx::Shader>();
+
+        switch (shader.stage()) {
+            case ShaderStageFlags::VERTEX:
+                if (!vertexShaderRef.valid()) {
+                    vertexShaderRef = shaderRef;
+                } else {
+                    throw std::runtime_error("primitive rasterization pipeline must have only one vertex shader");
+                }
+                break;
+            case ShaderStageFlags::TESSELLATION_CONTROL:
+                if (!tessControlShaderRef.valid()) {
+                    tessControlShaderRef = shaderRef;
+                } else {
+                    throw std::runtime_error("primitive rasterization pipeline must have only one tess ctrl shader");
+                }
+                break;
+            case ShaderStageFlags::TESSELLATION_EVALUATION:
+                if (!tessControlShaderRef.valid()) {
+                    tessEvalShaderRef = shaderRef;
+                } else {
+                    throw std::runtime_error("primitive rasterization pipeline must have only one tess eval shader");
+                }
+                break;
+            case ShaderStageFlags::GEOMETRY:
+                if (!geometryShaderRef.valid()) {
+                    geometryShaderRef = shaderRef;
+                } else {
+                    throw std::runtime_error("primitive rasterization pipeline must have only one geometry shader");
+                }
+                break;
+            case ShaderStageFlags::FRAGMENT:
+                if (!geometryShaderRef.valid()) {
+                    fragmentShaderRef = shaderRef;
+                } else {
+                    throw std::runtime_error("primitive rasterization pipeline must have only one fragment shader");
+                }
+                break;
+            default:
+                throw std::runtime_error("primitive rasterization pipeline met unexpected shader stage");
+        }
+    }
+
+    if (!vertexShaderRef.valid()) {
+        throw std::runtime_error("primitive rasterization pipeline must contains vertex stage shader");
+    }
+
+    if (!fragmentShaderRef.valid()) {
+        throw std::runtime_error("primitive rasterization pipeline must contains fragment stage shader");
+    }
+
+    auto pipelineRefIt = primitiveRasterizationPipelineCache_.find(
+      creationFlags.value,
+      static_cast<uint64_t>(bindingSchemaRef.id()),
+      metrix::value_cast(primitiveTopology),
+      primitiveRestartEnable,
+      static_cast<uint64_t>(renderPassRef.id()),
+      rasterizationState.flags.value,
+      packedRasterParams,
+      packedStencilFront,
+      packedStencilBack,
+      static_cast<uint64_t>(vertexShaderRef.id()),
+      (tessControlShaderRef.valid() ? static_cast<uint64_t>(tessControlShaderRef.id()) : uint64_t{ 0 }),
+      (tessEvalShaderRef.valid() ? static_cast<uint64_t>(tessEvalShaderRef.id()) : uint64_t{ 0 }),
+      (geometryShaderRef.valid() ? static_cast<uint64_t>(geometryShaderRef.id()) : uint64_t{ 0 }),
+      static_cast<uint64_t>(fragmentShaderRef.id()));
+
+    if (pipelineRefIt != primitiveRasterizationPipelineCache_.end()) {
+        auto& [k, v] = *pipelineRefIt;
+        auto& [r, tp] = v;
+
+        pipelineRef = r;
+        tp = std::chrono::high_resolution_clock::now();
+    } else {
+        pipelineRef = device_->createPrimitiveShadingPipeline(creationFlags,
+                                                              bindingSchemaRef,
+                                                              primitiveTopology,
+                                                              primitiveRestartEnable,
+                                                              renderPassRef,
+                                                              rasterizationState,
+                                                              shaders);
+
+        auto [_1, success] = primitiveRasterizationPipelineCache_.add(
+          std::make_pair(pipelineRef, std::chrono::high_resolution_clock::now()),
+          creationFlags.value,
+          static_cast<uint64_t>(bindingSchemaRef.id()),
+          metrix::value_cast(primitiveTopology),
+          primitiveRestartEnable,
+          static_cast<uint64_t>(renderPassRef.id()),
+          rasterizationState.flags.value,
+          packedRasterParams,
+          packedStencilFront,
+          packedStencilBack,
+          static_cast<uint64_t>(vertexShaderRef.id()),
+          (tessControlShaderRef.valid() ? static_cast<uint64_t>(tessControlShaderRef.id()) : uint64_t{ 0 }),
+          (tessEvalShaderRef.valid() ? static_cast<uint64_t>(tessEvalShaderRef.id()) : uint64_t{ 0 }),
+          (geometryShaderRef.valid() ? static_cast<uint64_t>(geometryShaderRef.id()) : uint64_t{ 0 }),
+          static_cast<uint64_t>(fragmentShaderRef.id()));
+
+        if (!success) {
+            // TODO:: clear cach
+
+            auto [_2, success2] = primitiveRasterizationPipelineCache_.add(
+              std::make_pair(pipelineRef, std::chrono::high_resolution_clock::now()),
+              creationFlags.value,
+              static_cast<uint64_t>(bindingSchemaRef.id()),
+              metrix::value_cast(primitiveTopology),
+              primitiveRestartEnable,
+              static_cast<uint64_t>(renderPassRef.id()),
+              rasterizationState.flags.value,
+              packedRasterParams,
+              packedStencilFront,
+              packedStencilBack,
+              static_cast<uint64_t>(vertexShaderRef.id()),
+              (tessControlShaderRef.valid() ? static_cast<uint64_t>(tessControlShaderRef.id()) : uint64_t{ 0 }),
+              (tessEvalShaderRef.valid() ? static_cast<uint64_t>(tessEvalShaderRef.id()) : uint64_t{ 0 }),
+              (geometryShaderRef.valid() ? static_cast<uint64_t>(geometryShaderRef.id()) : uint64_t{ 0 }),
+              static_cast<uint64_t>(fragmentShaderRef.id()));
+
+            if (!success2) {
+                throw std::runtime_error("failed to cache rasterization pipeline");
+            }
+        }
+    }
+
+    assert(pipelineRef.valid());
+    return pipelineRef;
 }
 
 void PipelineManager::freeDescriptorSetLayouts(uint32_t count)

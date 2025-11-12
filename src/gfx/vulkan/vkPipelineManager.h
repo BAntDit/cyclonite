@@ -8,6 +8,7 @@
 #include "core/hashTable.h"
 #include "core/resourceSharedRef.h"
 #include "gfx/binding.h"
+#include "gfx/renderStates.h"
 #include <chrono>
 #include <map>
 #include <span>
@@ -23,6 +24,15 @@ public:
 
     auto getOrCreatePipelineBindingSchema(std::span<Binding const> bindings,
                                           std::span<PushConstantRange const> pushConstantRanges)
+      -> core::ResourceSharedRef;
+
+    auto getOrCreatePrimitiveRasterizationPipeline(PipelineCreationFlagBits creationFlags,
+                                                   core::ResourceSharedRef const& bindingSchemaRef,
+                                                   PrimitiveTopology primitiveTopology,
+                                                   bool primitiveRestartEnable,
+                                                   core::ResourceSharedRef const& renderPassRef,
+                                                   RasterizationState const& rasterizationState,
+                                                   std::span<core::ResourceSharedRef const> shaders)
       -> core::ResourceSharedRef;
 
 private:
@@ -70,19 +80,23 @@ private:
     // 5. render pass id
     // 6. RasterizationStateFlagBits
     // 7. packed to uint32_t CompareOp + polygonMode + cullMode + frontFace;
-    // 8. packed to uint64_t fornt face stencil state
+    // 8. packed to uint64_t front face stencil state
     // 9. packed to uint64_t back face stencil state
-    // 10. shader set
-    // TODO:: move them to dynamic state: 10 - 13. depth parameters
+    // 10-14. shader set
+    // TODO:: move them to dynamic state: 14 - 17. depth parameters
     core::StaticHashTable<std::pair<core::ResourceSharedRef, std::chrono::high_resolution_clock::time_point>,
                           max_primitive_rasterization_shader_set_count_v,
-                          typename PipelineCreationFlagBits::type_t,
+                          typename PipelineCreationFlagBits::type_t,   // 1. creation flags
+                          uint64_t,                                    // 2. binding schema id
+                          std::underlying_type_t<PrimitiveTopology>,   // 3. PrimitiveTopology
+                          bool,                                        // 4. primitiveRestartEnable
+                          uint64_t,                                    // 5. render pass id
+                          typename RasterizationStateFlagBits::type_t, // 6. RasterizationStateFlagBits
+                          uint32_t, // 7. packed to uint32_t CompareOp + polygonMode + cullMode + frontFace;
+                          uint64_t, // 8. packed to uint64_t front face stencil state
+                          uint64_t, // 9. packed to uint64_t back face stencil state
+                          uint64_t, // 10. vertex shader
                           uint64_t,
-                          std::underlying_type_t<PrimitiveTopology>,
-                          bool,
-                          uint64_t,
-                          typename RasterizationStateFlagBits::type_t,
-                          uint32_t,
                           uint64_t,
                           uint64_t,
                           uint64_t>
