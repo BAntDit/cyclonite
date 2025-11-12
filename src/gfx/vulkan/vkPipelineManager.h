@@ -5,8 +5,8 @@
 #ifndef CYCLONITE_VK_PIPELINE_MANAGER_H
 #define CYCLONITE_VK_PIPELINE_MANAGER_H
 
-#include "core/resourceSharedRef.h"
 #include "core/hashTable.h"
+#include "core/resourceSharedRef.h"
 #include "gfx/binding.h"
 #include <chrono>
 #include <map>
@@ -34,10 +34,11 @@ private:
 
 private:
     // TODO:: move to config
-    static constexpr auto max_descriptor_set_layout_count_v = 128;
-    static constexpr auto max_pipeline_set_layout_count_v = 1024;
-    static constexpr auto primitive_rasterization_pipeline_cache_size_v = 2048;
-    static constexpr auto primitive_rasterization_shader_set_cache_size_v = 1024;
+    static constexpr auto max_descriptor_set_layout_count_v = size_t{ 128 };
+    static constexpr auto max_pipeline_set_layout_count_v = size_t{ 1024 };
+    static constexpr auto max_primitive_rasterization_shader_set_count_v = size_t{ 512 };
+    static constexpr auto primitive_rasterization_pipeline_cache_size_v = size_t{ 2048 };
+    static constexpr auto primitive_rasterization_shader_set_cache_size_v = size_t{ 1024 };
 
     Device* device_;
 
@@ -60,6 +61,32 @@ private:
     std::multimap<uint64_t, core::ResourceSharedRef> descriptorPools_;
 
     // TODO:: add primitive rasterization shader set as an internal resource
+
+    // key:
+    // 1. creation flags
+    // 2. binding schema id
+    // 3. PrimitiveTopology
+    // 4. primitiveRestartEnable
+    // 5. render pass id
+    // 6. RasterizationStateFlagBits
+    // 7. packed to uint32_t CompareOp + polygonMode + cullMode + frontFace;
+    // 8. packed to uint64_t fornt face stencil state
+    // 9. packed to uint64_t back face stencil state
+    // 10. shader set
+    // TODO:: move them to dynamic state: 10 - 13. depth parameters
+    core::StaticHashTable<std::pair<core::ResourceSharedRef, std::chrono::high_resolution_clock::time_point>,
+                          max_primitive_rasterization_shader_set_count_v,
+                          typename PipelineCreationFlagBits::type_t,
+                          uint64_t,
+                          std::underlying_type_t<PrimitiveTopology>,
+                          bool,
+                          uint64_t,
+                          typename RasterizationStateFlagBits::type_t,
+                          uint32_t,
+                          uint64_t,
+                          uint64_t,
+                          uint64_t>
+      primitiveRasterizationPipelineCache_;
 };
 }
 #endif // GFX_DRIVER_VULKAN

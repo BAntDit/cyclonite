@@ -10,6 +10,34 @@
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
+namespace {
+auto packRasterizationParams(CompareOp depthCompareOp, PolygonMode polygonMode, CullMode cullMode, FrontFace frontFace)
+  -> uint32_t
+{
+    auto packed = uint32_t{ 0 };
+    auto* dst = reinterpret_cast<uint8_t*>(&packed);
+
+    static_assert(sizeof(std::underlying_type_t<CompareOp>) == sizeof(uint8_t));
+    auto depthCompByte = metrix::value_cast(depthCompareOp);
+
+    static_assert(sizeof(std::underlying_type_t<PolygonMode>) == sizeof(uint8_t));
+    auto polygonModeByte = metrix::value_cast(polygonMode);
+
+    static_assert(sizeof(std::underlying_type_t<CullMode>) == sizeof(uint8_t));
+    auto cullModeByte = metrix::value_cast(cullMode);
+
+    static_assert(sizeof(std::underlying_type_t<FrontFace>) == sizeof(uint8_t));
+    auto frontFaceByte = metrix::value_cast(frontFace);
+
+    std::memcpy(dst + 0, &depthCompByte, sizeof(uint8_t));
+    std::memcpy(dst + 1, &polygonModeByte, sizeof(uint8_t));
+    std::memcpy(dst + 2, &cullModeByte, sizeof(uint8_t));
+    std::memcpy(dst + 3, &frontFaceByte, sizeof(uint8_t));
+
+    return packed;
+}
+}
+
 PipelineManager::PipelineManager(Device* device)
   : device_{ device }
   , pipelineLayouts_{}
