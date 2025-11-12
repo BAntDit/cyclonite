@@ -156,9 +156,9 @@ public:
             return a.hashTableData_ != b.hashTableData_ || a.index_ != b.index_;
         }
 
-    private:
         Iterator();
 
+    private:
         Iterator(table_data_t* hashTableData, size_t pos);
 
         [[nodiscard]] auto index() const -> size_t { return index_; }

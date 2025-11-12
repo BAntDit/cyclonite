@@ -131,14 +131,24 @@ public:
                                                         std::span<PushConstantRange const> pushConstantRanges)
       -> core::ResourceSharedRef;
 
-    [[nodiscard]] auto createPrimitiveShadingPipeline(PipelineCreationFlagBits creationFlags,
-                                                      core::ResourceSharedRef bindingSchemaRef,
-                                                      PrimitiveTopology primitiveTopology,
-                                                      bool primitiveRestartEnable,
-                                                      core::ResourceSharedRef renderPassRef,
-                                                      RasterizationState const& rasterizationState,
-                                                      std::span<core::ResourceSharedRef const> shaders)
+    [[nodiscard]] auto createPrimitiveRasterizationPipeline(PipelineCreationFlagBits creationFlags,
+                                                            core::ResourceSharedRef bindingSchemaRef,
+                                                            PrimitiveTopology primitiveTopology,
+                                                            bool primitiveRestartEnable,
+                                                            core::ResourceSharedRef renderPassRef,
+                                                            RasterizationState const& rasterizationState,
+                                                            std::span<core::ResourceSharedRef const> shaders)
       -> core::ResourceUniqueRef;
+
+    auto getOrCreatePrimitiveRasterizationPipeline(PipelineCreationFlagBits creationFlags,
+                                                   std::span<Binding const> bindings,
+                                                   std::span<PushConstantRange const> pushConstantRanges,
+                                                   PrimitiveTopology primitiveTopology,
+                                                   bool primitiveRestartEnable,
+                                                   core::ResourceSharedRef const& renderPassRef,
+                                                   RasterizationState const& rasterizationState,
+                                                   std::span<core::ResourceSharedRef const> shaders)
+      -> core::ResourceSharedRef;
 
     [[nodiscard]] auto pipelineCache() const -> VkPipelineCache
     {

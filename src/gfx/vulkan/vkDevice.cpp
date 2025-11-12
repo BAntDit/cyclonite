@@ -646,13 +646,14 @@ auto Device::getOrCreatePipelineBindingSchema(std::span<Binding const> bindings,
     return pipelineManager_->getOrCreatePipelineBindingSchema(bindings, pushConstantRanges);
 }
 
-auto Device::createPrimitiveShadingPipeline(PipelineCreationFlagBits creationFlags,
-                                            core::ResourceSharedRef bindingSchemaRef,
-                                            PrimitiveTopology primitiveTopology,
-                                            bool primitiveRestartEnable,
-                                            core::ResourceSharedRef renderPassRef,
-                                            RasterizationState const& rasterizationState,
-                                            std::span<core::ResourceSharedRef const> shaders) -> core::ResourceUniqueRef
+auto Device::createPrimitiveRasterizationPipeline(PipelineCreationFlagBits creationFlags,
+                                                  core::ResourceSharedRef bindingSchemaRef,
+                                                  PrimitiveTopology primitiveTopology,
+                                                  bool primitiveRestartEnable,
+                                                  core::ResourceSharedRef renderPassRef,
+                                                  RasterizationState const& rasterizationState,
+                                                  std::span<core::ResourceSharedRef const> shaders)
+  -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 
@@ -670,6 +671,28 @@ auto Device::createPrimitiveShadingPipeline(PipelineCreationFlagBits creationFla
                                                      shaders);
 
     return result;
+}
+
+auto Device::getOrCreatePrimitiveRasterizationPipeline(PipelineCreationFlagBits creationFlags,
+                                                       std::span<Binding const> bindings,
+                                                       std::span<PushConstantRange const> pushConstantRanges,
+                                                       PrimitiveTopology primitiveTopology,
+                                                       bool primitiveRestartEnable,
+                                                       core::ResourceSharedRef const& renderPassRef,
+                                                       RasterizationState const& rasterizationState,
+                                                       std::span<core::ResourceSharedRef const> shaders)
+  -> core::ResourceSharedRef
+{
+    assert(pipelineManager_);
+    auto pipelineBindingSchemaRef = getOrCreatePipelineBindingSchema(bindings, pushConstantRanges);
+
+    return pipelineManager_->getOrCreatePrimitiveRasterizationPipeline(creationFlags,
+                                                                       pipelineBindingSchemaRef,
+                                                                       primitiveTopology,
+                                                                       primitiveRestartEnable,
+                                                                       renderPassRef,
+                                                                       rasterizationState,
+                                                                       shaders);
 }
 
 Device::~Device()

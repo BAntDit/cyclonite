@@ -301,35 +301,17 @@ auto PipelineManager::getOrCreatePrimitiveRasterizationPipeline(PipelineCreation
         pipelineRef = r;
         tp = std::chrono::high_resolution_clock::now();
     } else {
-        pipelineRef = device_->createPrimitiveShadingPipeline(creationFlags,
-                                                              bindingSchemaRef,
-                                                              primitiveTopology,
-                                                              primitiveRestartEnable,
-                                                              renderPassRef,
-                                                              rasterizationState,
-                                                              shaders);
+        pipelineRef = device_->createPrimitiveRasterizationPipeline(creationFlags,
+                                                                    bindingSchemaRef,
+                                                                    primitiveTopology,
+                                                                    primitiveRestartEnable,
+                                                                    renderPassRef,
+                                                                    rasterizationState,
+                                                                    shaders);
 
-        auto [_1, success] = primitiveRasterizationPipelineCache_.add(
-          std::make_pair(pipelineRef, std::chrono::high_resolution_clock::now()),
-          creationFlags.value,
-          static_cast<uint64_t>(bindingSchemaRef.id()),
-          metrix::value_cast(primitiveTopology),
-          primitiveRestartEnable,
-          static_cast<uint64_t>(renderPassRef.id()),
-          rasterizationState.flags.value,
-          packedRasterParams,
-          packedStencilFront,
-          packedStencilBack,
-          static_cast<uint64_t>(vertexShaderRef.id()),
-          (tessControlShaderRef.valid() ? static_cast<uint64_t>(tessControlShaderRef.id()) : uint64_t{ 0 }),
-          (tessEvalShaderRef.valid() ? static_cast<uint64_t>(tessEvalShaderRef.id()) : uint64_t{ 0 }),
-          (geometryShaderRef.valid() ? static_cast<uint64_t>(geometryShaderRef.id()) : uint64_t{ 0 }),
-          static_cast<uint64_t>(fragmentShaderRef.id()));
-
-        if (!success) {
-            // TODO:: clear cach
-
-            auto [_2, success2] = primitiveRasterizationPipelineCache_.add(
+        constexpr auto max_pipeline_to_release_count_v = size_t{ 32 };
+        while (primitiveRasterizationPipelineCache_.size() > max_pipeline_to_release_count_v) {
+            auto [_, success] = primitiveRasterizationPipelineCache_.add(
               std::make_pair(pipelineRef, std::chrono::high_resolution_clock::now()),
               creationFlags.value,
               static_cast<uint64_t>(bindingSchemaRef.id()),
@@ -346,10 +328,38 @@ auto PipelineManager::getOrCreatePrimitiveRasterizationPipeline(PipelineCreation
               (geometryShaderRef.valid() ? static_cast<uint64_t>(geometryShaderRef.id()) : uint64_t{ 0 }),
               static_cast<uint64_t>(fragmentShaderRef.id()));
 
-            if (!success2) {
-                throw std::runtime_error("failed to cache rasterization pipeline");
+            if (success) {
+                break;
             }
-        }
+
+            auto pipelineToReleaseCount = size_t{ 0 };
+            auto pipelineToReleaseIndex = size_t{ 0 };
+            auto lastUsageTimestamp = std::chrono::high_resolution_clock::now();
+
+            auto pipelinesToRelease = std::array<typename decltype(primitiveRasterizationPipelineCache_)::iterator_t,
+                                                 max_pipeline_to_release_count_v>{};
+
+            for (auto it = primitiveRasterizationPipelineCache_.begin();
+                 it != primitiveRasterizationPipelineCache_.end();
+                 it++) {
+                auto& [k, v] = *it;
+                auto& [r, tp] = v;
+
+                if (tp <= lastUsageTimestamp) {
+                    lastUsageTimestamp = tp;
+                    pipelinesToRelease[pipelineToReleaseIndex++ % max_pipeline_to_release_count_v] = it;
+                    pipelineToReleaseCount = std::max(++pipelineToReleaseCount, max_pipeline_to_release_count_v);
+                }
+            }
+
+            if (pipelineToReleaseCount == 0)
+                break;
+
+            for (auto i = size_t{ 0 }; i < pipelineToReleaseCount; i++) {
+                auto it = pipelinesToRelease[i];
+                primitiveRasterizationPipelineCache_.remove(it);
+            }
+        } // while
     }
 
     assert(pipelineRef.valid());

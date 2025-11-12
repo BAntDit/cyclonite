@@ -67,6 +67,11 @@ concept DeviceConcept = requires(T t,
     requires std::is_member_function_pointer_v<decltype(&T::createShader)> &&
                std::is_same_v<core::ResourceUniqueRef,
                               metrix::member_function_return_type_t<decltype(&T::createShader)>>;
+
+    requires std::is_member_function_pointer_v<decltype(&T::getOrCreatePrimitiveRasterizationPipeline)> &&
+               std::is_same_v<
+                 core::ResourceSharedRef,
+                 metrix::member_function_return_type_t<decltype(&T::getOrCreatePrimitiveRasterizationPipeline)>>;
 };
 
 template<DeviceConcept PlatformImplementation>
@@ -81,6 +86,7 @@ public:
     using PlatformImplementation::createShader;
     using PlatformImplementation::createSignal;
     using PlatformImplementation::createTexture;
+    using PlatformImplementation::getOrCreatePrimitiveRasterizationPipeline;
     using PlatformImplementation::limits;
     using PlatformImplementation::name;
     using PlatformImplementation::PlatformImplementation;
