@@ -96,10 +96,10 @@ private:
                           uint64_t, // 8. packed to uint64_t front face stencil state
                           uint64_t, // 9. packed to uint64_t back face stencil state
                           uint64_t, // 10. vertex shader
-                          uint64_t,
-                          uint64_t,
-                          uint64_t,
-                          uint64_t>
+                          uint64_t, // 11. tess control shader 
+                          uint64_t, // 12. tess eval shader
+                          uint64_t, // 13. geometry shader
+                          uint64_t> // 14. fragment shader
       primitiveRasterizationPipelineCache_;
 };
 }

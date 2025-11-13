@@ -32,6 +32,13 @@ public:
     Pipeline(core::ResourceManagerBase* resourceManager,
              core::ResourceId resourceId,
              core::ResourceSharedRef deviceRef,
+             PipelineCreationFlagBits creationFlags,
+             core::ResourceSharedRef bindingSchemaRef,
+             core::ResourceSharedRef shaderRef);
+
+    Pipeline(core::ResourceManagerBase* resourceManager,
+             core::ResourceId resourceId,
+             core::ResourceSharedRef deviceRef,
              PipelineType type,
              PipelineCreationFlagBits creationFlags,
              core::ResourceSharedRef bindingSchemaRef,
@@ -50,6 +57,10 @@ private:
                                             bool primitiveRestartEnable,
                                             RasterizationState const& rasterizationState,
                                             std::span<core::ResourceSharedRef const> shaders);
+
+    void initComputePipeline(core::ResourceSharedRef const& deviceRef,
+                             PipelineCreationFlagBits creationFlags,
+                             core::ResourceSharedRef shaderRef);
 
 private:
     core::StaticHashTable<core::ResourceSharedRef, metrix::value_cast(ShaderStageFlags::STAGE_COUNT), ShaderStageFlags>

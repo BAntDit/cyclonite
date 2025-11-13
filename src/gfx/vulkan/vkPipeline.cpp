@@ -35,7 +35,12 @@ Pipeline::Pipeline(core::ResourceManagerBase* resourceManager,
         initPrimitiveRasterizationPipeline(
           deviceRef, creationFlags, primitiveTopology, primitiveRestartEnable, rasterizationState, shaders);
     } else if (type == PipelineType::Compute) {
-        // TODO:: ...
+        assert(shaders.size() == 1);
+        initComputePipeline(deviceRef, creationFlags, shaders[0]);
+    } else if (type == PipelineType::GeometricShading) {
+        // TODO:: 
+    } else if (type == PipelineType::RayTracing) {
+        // TODO:: 
     }
 }
 
@@ -60,6 +65,28 @@ Pipeline::Pipeline(core::ResourceManagerBase* resourceManager,
               std::move(renderPassRef),
               rasterizationState,
               shaders }
+{
+}
+
+Pipeline::Pipeline(core::ResourceManagerBase* resourceManager,
+                   core::ResourceId resourceId,
+                   core::ResourceSharedRef deviceRef,
+                   PipelineCreationFlagBits creationFlags,
+                   core::ResourceSharedRef bindingSchemaRef,
+                   core::ResourceSharedRef shaderRef)
+  : Pipeline{ resourceManager,
+              resourceId,
+              std::move(deviceRef),
+              PipelineType::Compute,
+              creationFlags,
+              std::move(bindingSchemaRef),
+              PrimitiveTopology::LINE_LIST,
+              false,
+              core::ResourceSharedRef{},
+              RasterizationState{},
+              std::array<core::ResourceSharedRef, 1>{ std::move(shaderRef) }
+
+  }
 {
 }
 
@@ -229,6 +256,39 @@ void Pipeline::initPrimitiveRasterizationPipeline(core::ResourceSharedRef const&
           vkCreateGraphicsPipelines(device.handle(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &vkPipeline_);
         vkResult != VK_SUCCESS) {
         throw Exception{ vkResult, "vkCreateGraphicsPipelines" };
+    }
+}
+
+void Pipeline::initComputePipeline(core::ResourceSharedRef const& deviceRef,
+                                   PipelineCreationFlagBits creationFlags,
+                                   core::ResourceSharedRef shaderRef)
+{
+    assert(deviceRef.valid());
+    auto const& device = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>();
+
+    assert(shaderRef.valid());
+    auto const& shader = shaderRef.as<type_traits::platform_implementation_t<gfx::Shader>>();
+
+    auto shaderStageInfo = VkPipelineShaderStageCreateInfo{};
+    shaderStageInfo.flags = shader.creationFlags().cast_to<VkPipelineShaderStageCreateFlags>();
+    shaderStageInfo.stage = shader.vulkanStage();
+    shaderStageInfo.module = shader.handle();
+    shaderStageInfo.pName = shader.entryPointName().data();
+    shaders_.add(shaderRef, shader.stage());
+
+    assert(bindingSchemaRef_.valid());
+    auto& bindingSchema = bindingSchemaRef_.as<type_traits::platform_implementation_t<gfx::PipelineBindingSchema>>();
+
+    auto pipelineCreateInfo = VkComputePipelineCreateInfo{};
+    pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    pipelineCreateInfo.flags = creationFlags.cast_to<VkPipelineCreateFlags>();
+    pipelineCreateInfo.stage = shaderStageInfo;
+    pipelineCreateInfo.layout = bindingSchema.handle();
+
+    if (auto vkResult =
+          vkCreateComputePipelines(device.handle(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &vkPipeline_);
+        vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vkCreateComputePipelines" };
     }
 }
 }
