@@ -9,7 +9,7 @@
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
-class DescriptorPool : public core::ResourceBase
+class DescriptorPool : public core::ResourceBase // internal vk resource
 {
 public:
     DescriptorPool(core::ResourceManagerBase* resourceManager,

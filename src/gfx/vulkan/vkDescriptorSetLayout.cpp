@@ -14,7 +14,9 @@ DescriptorSetLayout::DescriptorSetLayout(core::ResourceManagerBase* resourceMana
                                          std::span<VkDescriptorBindingFlags const> bindingFlags,
                                          std::span<VkDescriptorSetLayoutBinding const> bindings)
   : core::ResourceBase{ resourceManager, resourceId, false }
+  , bindings_(bindings.begin(), bindings.end())
   , vkDescriptorSetLayout_{ vkDeviceHandle, vkDestroyDescriptorSetLayout }
+  , flags_{ flags }
 {
     auto bindingFlagsCreateInfo = VkDescriptorSetLayoutBindingFlagsCreateInfo{};
     bindingFlagsCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
@@ -25,8 +27,8 @@ DescriptorSetLayout::DescriptorSetLayout(core::ResourceManagerBase* resourceMana
     createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     createInfo.pNext = &bindingFlagsCreateInfo;
     createInfo.flags = flags;
-    createInfo.bindingCount = bindings.size();
-    createInfo.pBindings = bindings.data();
+    createInfo.bindingCount = bindings_.size();
+    createInfo.pBindings = bindings_.data();
 
     if (auto vkResult = vkCreateDescriptorSetLayout(vkDeviceHandle, &createInfo, nullptr, &vkDescriptorSetLayout_);
         vkResult != VK_SUCCESS) {

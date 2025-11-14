@@ -8,6 +8,7 @@
 #include "core/resourceBase.h"
 #include "handle.h"
 #include <span>
+#include <vector>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
@@ -26,10 +27,16 @@ public:
         return static_cast<VkDescriptorSetLayout>(vkDescriptorSetLayout_);
     }
 
+    [[nodiscard]] auto flags() const -> VkDescriptorSetLayoutCreateFlags { return flags_; }
+
+    [[nodiscard]] auto bindings() const -> std::vector<VkDescriptorSetLayoutBinding> const& { return bindings_; }
+
     using core::ResourceBase::resourceBase;
 
 private:
+    std::vector<VkDescriptorSetLayoutBinding> bindings_;
     Handle<VkDescriptorSetLayout> vkDescriptorSetLayout_;
+    VkDescriptorSetLayoutCreateFlags flags_;
 };
 }
 #endif // GFX_DRIVER_VULKAN
