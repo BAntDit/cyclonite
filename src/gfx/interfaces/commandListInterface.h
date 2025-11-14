@@ -22,6 +22,8 @@ concept CommandListConcept = requires(T t, CommandListUsageFlagBits usage, core:
     { t.beginRenderPass(ref) } -> std::same_as<void>;
 
     { t.endRenderPass() } -> std::same_as<void>;
+
+    { t.bindPipeline(ref) } -> std::same_as<void>;
 };
 
 template<CommandListConcept PlatformImplementation>
@@ -30,6 +32,7 @@ class CommandListInterface : private PlatformImplementation
 public:
     using PlatformImplementation::begin;
     using PlatformImplementation::beginRenderPass;
+    using PlatformImplementation::bindPipeline;
     using PlatformImplementation::end;
     using PlatformImplementation::endRenderPass;
     using PlatformImplementation::PlatformImplementation;

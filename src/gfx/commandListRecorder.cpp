@@ -90,6 +90,20 @@ void CommandListRecorder::end()
     batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
 }
 
+void CommandListRecorder::bindPipeline(core::ResourceSharedRef pipeline)
+{
+    auto purpose = batchRecorder_->submission().purpose();
+
+    auto task = [recorder = batchRecorder_, pipeline = std::move(pipeline)]() -> void {
+        if (!recorder->submission().isInCommandListRecordingState()) {
+            throw std::runtime_error("command list recording is already finished");
+        }
+        recorder->submission().commandListToRecord().bindPipeline(std::move(pipeline));
+    };
+
+    batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+}
+
 void CommandListRecorder::finish(bool noexceptions)
 {
     try {

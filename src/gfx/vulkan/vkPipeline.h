@@ -50,6 +50,8 @@ public:
 
     [[nodiscard]] auto type() const -> PipelineType { return type_; }
 
+    [[nodiscard]] auto handle() const -> VkPipeline { static_cast<VkPipeline>(vkPipeline_); }
+
 private:
     void initPrimitiveRasterizationPipeline(core::ResourceSharedRef const& deviceRef,
                                             PipelineCreationFlagBits creationFlags,

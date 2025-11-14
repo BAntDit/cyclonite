@@ -24,6 +24,8 @@ public:
 
     void endRenderPass();
 
+    void bindPipeline(core::ResourceSharedRef pipeline);
+
     void end();
 
     void finish() { finish(false); }

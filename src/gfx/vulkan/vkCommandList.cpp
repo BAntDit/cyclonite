@@ -5,12 +5,37 @@
 #include "vkCommandList.h"
 #include "gfx/commandPool.h"
 #include "gfx/device.h"
+#include "gfx/pipeline.h"
 #include "gfx/renderPass.h"
 #include "vkException.h"
 #include <cassert>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
+namespace {
+auto getPipelineBindingPoint(PipelineType pipelineType) -> VkPipelineBindPoint
+{
+    auto bindingPoint = VkPipelineBindPoint{ VK_PIPELINE_BIND_POINT_MAX_ENUM };
+
+    switch (pipelineType) {
+        case PipelineType::RayTracing:
+            [[fallthrough]];
+        case PipelineType::GeometricShading:
+            [[fallthrough]];
+        case PipelineType::PrimitiveRasterization:
+            bindingPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+            break;
+        case PipelineType::Compute:
+            bindingPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+            break;
+        default:
+            assert(false);
+    }
+
+    return bindingPoint;
+}
+}
+
 CommandList::CommandList(core::ResourceWeakRef commandPool)
   : boundRefs_{}
   , commandPool_{ commandPool }
@@ -84,6 +109,16 @@ void CommandList::beginRenderPass(core::ResourceSharedRef renderPassRef)
     beginInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(vkCommandBuffer_, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void CommandList::bindPipeline(core::ResourceSharedRef pipelineRef)
+{
+    assert(vkCommandBuffer_ != VK_NULL_HANDLE);
+    assert(pipelineRef.valid());
+
+    auto& pipeline = pipelineRef.as<type_traits::platform_implementation_t<gfx::Pipeline>>();
+    auto bindPoint = getPipelineBindingPoint(pipeline.type());
+    vkCmdBindPipeline(vkCommandBuffer_, bindPoint, pipeline.handle());
 }
 
 void CommandList::endRenderPass()
