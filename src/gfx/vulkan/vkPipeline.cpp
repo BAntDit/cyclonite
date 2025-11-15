@@ -38,9 +38,9 @@ Pipeline::Pipeline(core::ResourceManagerBase* resourceManager,
         assert(shaders.size() == 1);
         initComputePipeline(deviceRef, creationFlags, shaders[0]);
     } else if (type == PipelineType::GeometricShading) {
-        // TODO:: 
+        // TODO::
     } else if (type == PipelineType::RayTracing) {
-        // TODO:: 
+        // TODO::
     }
 }
 

@@ -31,7 +31,7 @@ public:
 
     void beginRenderPass(core::ResourceSharedRef renderPassRef);
 
-    void bindPipeline(core::ResourceSharedRef pipelineRef); 
+    void bindPipeline(core::ResourceSharedRef pipelineRef);
 
     void endRenderPass();
 
