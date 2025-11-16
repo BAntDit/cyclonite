@@ -366,6 +366,75 @@ auto PipelineManager::getOrCreatePrimitiveRasterizationPipeline(PipelineCreation
     return pipelineRef;
 }
 
+auto PipelineManager::getOrCreateComputePipeline(PipelineCreationFlagBits creationFlags,
+                                                 core::ResourceSharedRef const& bindingSchemaRef,
+                                                 core::ResourceSharedRef const& shaderRef) -> core::ResourceSharedRef
+{
+    auto pipelineRef = core::ResourceSharedRef();
+
+    assert(shaderRef.valid());
+
+    auto const& shader = shaderRef.as<gfx::Shader>();
+    if (shader.stage() != ShaderStageFlags::COMPUTE) {
+        throw std::runtime_error("wrong shader stage");
+    }
+
+    auto pipelineRefIt = computePipelineCache_.find(
+      creationFlags.value, static_cast<uint64_t>(bindingSchemaRef.id()), static_cast<uint64_t>(shaderRef.id()));
+
+    if (pipelineRefIt != computePipelineCache_.end()) {
+        auto& [k, v] = *pipelineRefIt;
+        auto& [r, tp] = v;
+
+        pipelineRef = r;
+        tp = std::chrono::high_resolution_clock::now();
+    } else {
+        pipelineRef = device_->createComputePipeline(creationFlags, bindingSchemaRef, shaderRef);
+
+        constexpr auto max_pipeline_to_release_count_v = size_t{ 8 };
+        while (computePipelineCache_.size() > max_pipeline_to_release_count_v) {
+            auto [_, success] =
+              computePipelineCache_.add(std::make_pair(pipelineRef, std::chrono::high_resolution_clock::now()),
+                                        creationFlags.value,
+                                        static_cast<uint64_t>(bindingSchemaRef.id()),
+                                        static_cast<uint64_t>(shaderRef.id()));
+
+            if (success) {
+                break;
+            }
+
+            auto pipelineToReleaseCount = size_t{ 0 };
+            auto pipelineToReleaseIndex = size_t{ 0 };
+            auto lastUsageTimestamp = std::chrono::high_resolution_clock::now();
+
+            auto pipelinesToRelease =
+              std::array<typename decltype(computePipelineCache_)::iterator_t, max_pipeline_to_release_count_v>{};
+
+            for (auto it = computePipelineCache_.begin(); it != computePipelineCache_.end(); it++) {
+                auto& [k, v] = *it;
+                auto& [r, tp] = v;
+
+                if (tp <= lastUsageTimestamp) {
+                    lastUsageTimestamp = tp;
+                    pipelinesToRelease[pipelineToReleaseIndex++ % max_pipeline_to_release_count_v] = it;
+                    pipelineToReleaseCount = std::max(++pipelineToReleaseCount, max_pipeline_to_release_count_v);
+                }
+            }
+
+            if (pipelineToReleaseCount == 0)
+                break;
+
+            for (auto i = size_t{ 0 }; i < pipelineToReleaseCount; i++) {
+                auto it = pipelinesToRelease[i];
+                computePipelineCache_.remove(it);
+            }
+        } // while
+    }
+
+    assert(pipelineRef.valid());
+    return pipelineRef;
+}
+
 void PipelineManager::freeDescriptorSetLayouts(uint32_t count)
 {
     std::ranges::sort(descriptorSetLayouts_, [](auto const& a, auto const& b) -> bool {

@@ -140,15 +140,24 @@ public:
                                                             std::span<core::ResourceSharedRef const> shaders)
       -> core::ResourceUniqueRef;
 
-    auto getOrCreatePrimitiveRasterizationPipeline(PipelineCreationFlagBits creationFlags,
-                                                   std::span<Binding const> bindings,
-                                                   std::span<PushConstantRange const> pushConstantRanges,
-                                                   PrimitiveTopology primitiveTopology,
-                                                   bool primitiveRestartEnable,
-                                                   core::ResourceSharedRef const& renderPassRef,
-                                                   RasterizationState const& rasterizationState,
-                                                   std::span<core::ResourceSharedRef const> shaders)
+    [[nodiscard]] auto createComputePipeline(PipelineCreationFlagBits creationFlags,
+                                             core::ResourceSharedRef bindingSchemaRef,
+                                             core::ResourceSharedRef shaderRef) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto getOrCreatePrimitiveRasterizationPipeline(PipelineCreationFlagBits creationFlags,
+                                                                 std::span<Binding const> bindings,
+                                                                 std::span<PushConstantRange const> pushConstantRanges,
+                                                                 PrimitiveTopology primitiveTopology,
+                                                                 bool primitiveRestartEnable,
+                                                                 core::ResourceSharedRef const& renderPassRef,
+                                                                 RasterizationState const& rasterizationState,
+                                                                 std::span<core::ResourceSharedRef const> shaders)
       -> core::ResourceSharedRef;
+
+    [[nodiscard]] auto getOrCreateComputePipeline(PipelineCreationFlagBits creationFlags,
+                                                  std::span<Binding const> bindings,
+                                                  std::span<PushConstantRange const> pushConstantRanges,
+                                                  core::ResourceSharedRef const& shaderRef) -> core::ResourceSharedRef;
 
     [[nodiscard]] auto pipelineCache() const -> VkPipelineCache
     {

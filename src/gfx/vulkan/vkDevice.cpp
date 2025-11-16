@@ -673,6 +673,22 @@ auto Device::createPrimitiveRasterizationPipeline(PipelineCreationFlagBits creat
     return result;
 }
 
+auto Device::createComputePipeline(PipelineCreationFlagBits creationFlags,
+                                   core::ResourceSharedRef bindingSchemaRef,
+                                   core::ResourceSharedRef shaderRef) -> core::ResourceUniqueRef
+{
+    auto result = core::ResourceUniqueRef{};
+
+    auto& resManager = static_cast<resource_manager_t&>(resourceManager());
+
+    auto deviceRef = getSharedFromThis(this);
+
+    result = resManager.allocResource<gfx::Pipeline>(
+      std::move(deviceRef), creationFlags, std::move(bindingSchemaRef), std::move(shaderRef));
+
+    return result;
+}
+
 auto Device::getOrCreatePrimitiveRasterizationPipeline(PipelineCreationFlagBits creationFlags,
                                                        std::span<Binding const> bindings,
                                                        std::span<PushConstantRange const> pushConstantRanges,
@@ -693,6 +709,17 @@ auto Device::getOrCreatePrimitiveRasterizationPipeline(PipelineCreationFlagBits 
                                                                        renderPassRef,
                                                                        rasterizationState,
                                                                        shaders);
+}
+
+auto Device::getOrCreateComputePipeline(PipelineCreationFlagBits creationFlags,
+                                        std::span<Binding const> bindings,
+                                        std::span<PushConstantRange const> pushConstantRanges,
+                                        core::ResourceSharedRef const& shaderRef) -> core::ResourceSharedRef
+{
+    assert(pipelineManager_);
+    auto pipelineBindingSchemaRef = getOrCreatePipelineBindingSchema(bindings, pushConstantRanges);
+
+    return pipelineManager_->getOrCreateComputePipeline(creationFlags, pipelineBindingSchemaRef, shaderRef);
 }
 
 Device::~Device()

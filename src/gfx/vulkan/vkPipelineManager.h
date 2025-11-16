@@ -22,21 +22,25 @@ class PipelineManager
 public:
     explicit PipelineManager(Device* device);
 
-    auto getOrCreatePipelineBindingSchema(std::span<Binding const> bindings,
-                                          std::span<PushConstantRange const> pushConstantRanges)
+    [[nodiscard]] auto getOrCreatePipelineBindingSchema(std::span<Binding const> bindings,
+                                                        std::span<PushConstantRange const> pushConstantRanges)
       -> core::ResourceSharedRef;
 
-    auto getOrCreatePrimitiveRasterizationPipeline(PipelineCreationFlagBits creationFlags,
-                                                   core::ResourceSharedRef const& bindingSchemaRef,
-                                                   PrimitiveTopology primitiveTopology,
-                                                   bool primitiveRestartEnable,
-                                                   core::ResourceSharedRef const& renderPassRef,
-                                                   RasterizationState const& rasterizationState,
-                                                   std::span<core::ResourceSharedRef const> shaders)
+    [[nodiscard]] auto getOrCreatePrimitiveRasterizationPipeline(PipelineCreationFlagBits creationFlags,
+                                                                 core::ResourceSharedRef const& bindingSchemaRef,
+                                                                 PrimitiveTopology primitiveTopology,
+                                                                 bool primitiveRestartEnable,
+                                                                 core::ResourceSharedRef const& renderPassRef,
+                                                                 RasterizationState const& rasterizationState,
+                                                                 std::span<core::ResourceSharedRef const> shaders)
       -> core::ResourceSharedRef;
+
+    [[nodiscard]] auto getOrCreateComputePipeline(PipelineCreationFlagBits creationFlags,
+                                                  core::ResourceSharedRef const& bindingSchemaRef,
+                                                  core::ResourceSharedRef const& shaderRef) -> core::ResourceSharedRef;
 
 private:
-    auto getOrCreateDescriptorSetLayout(std::span<Binding const> bindings) -> core::ResourceSharedRef;
+    [[nodiscard]] auto getOrCreateDescriptorSetLayout(std::span<Binding const> bindings) -> core::ResourceSharedRef;
 
     void freeDescriptorSetLayouts(uint32_t count);
 
@@ -46,8 +50,8 @@ private:
     // TODO:: move to config
     static constexpr auto max_descriptor_set_layout_count_v = size_t{ 128 };
     static constexpr auto max_pipeline_set_layout_count_v = size_t{ 1024 };
-    static constexpr auto max_primitive_rasterization_shader_set_count_v = size_t{ 512 };
     static constexpr auto primitive_rasterization_pipeline_cache_size_v = size_t{ 2048 };
+    static constexpr auto compute_pipeline_cache_size_v = size_t{ 512 };
     static constexpr auto primitive_rasterization_shader_set_cache_size_v = size_t{ 1024 };
 
     Device* device_;
@@ -70,8 +74,6 @@ private:
     // key is layout resource Id
     std::multimap<uint64_t, core::ResourceSharedRef> descriptorPools_;
 
-    // TODO:: add primitive rasterization shader set as an internal resource
-
     // key:
     // 1. creation flags
     // 2. binding schema id
@@ -85,7 +87,7 @@ private:
     // 10-14. shader set
     // TODO:: move them to dynamic state: 14 - 17. depth parameters
     core::StaticHashTable<std::pair<core::ResourceSharedRef, std::chrono::high_resolution_clock::time_point>,
-                          max_primitive_rasterization_shader_set_count_v,
+                          primitive_rasterization_pipeline_cache_size_v,
                           typename PipelineCreationFlagBits::type_t,   // 1. creation flags
                           uint64_t,                                    // 2. binding schema id
                           std::underlying_type_t<PrimitiveTopology>,   // 3. PrimitiveTopology
@@ -101,6 +103,13 @@ private:
                           uint64_t, // 13. geometry shader
                           uint64_t> // 14. fragment shader
       primitiveRasterizationPipelineCache_;
+
+    core::StaticHashTable<std::pair<core::ResourceSharedRef, std::chrono::high_resolution_clock::time_point>,
+                          compute_pipeline_cache_size_v,
+                          typename PipelineCreationFlagBits::type_t, // 1. creation flags
+                          uint64_t,                                  // 2. binding schema
+                          uint64_t>                                  // 3. compute shader
+      computePipelineCache_;
 };
 }
 #endif // GFX_DRIVER_VULKAN
