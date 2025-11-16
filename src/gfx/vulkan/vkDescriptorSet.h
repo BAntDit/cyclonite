@@ -14,15 +14,19 @@ class DescriptorSet : public core::ResourceBase
 public:
     DescriptorSet(core::ResourceManagerBase* resourceManager,
                   core::ResourceId resourceId,
-                  core::ResourceSharedRef descriptorPool);
+                  core::ResourceSharedRef descriptorPool,
+                  uint32_t setIndex);
 
     ~DescriptorSet();
+
+    [[nodiscard]] auto index() const -> uint32_t { return index_; }
 
     [[nodiscard]] auto handle() const -> VkDescriptorSet { return vkDescriptorSet_; }
 
 private:
     core::ResourceSharedRef descriptorPool_;
     VkDescriptorSet vkDescriptorSet_;
+    uint32_t index_;
 };
 }
 #endif // GFX_DRIVER_VULKAN

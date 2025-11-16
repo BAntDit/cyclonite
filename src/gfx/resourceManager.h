@@ -8,6 +8,7 @@
 #include "buffer.h"
 #include "commandPool.h"
 #include "core/resourceManager.h"
+#include "descriptorSet.h"
 #include "device.h"
 #include "gfx/signal.h"
 #include "pipeline.h"
@@ -31,7 +32,8 @@ using resource_manager_t = core::ResourceManager<gfx::Device,
                                                  gfx::CommandPool,
                                                  gfx::QueueSubmission,
                                                  gfx::PipelineBindingSchema,
-                                                 gfx::Pipeline>;
+                                                 gfx::Pipeline,
+                                                 gfx::DescriptorSet>;
 }
 
 #endif // CYCLONITE_RESOURCEMANAGER_H

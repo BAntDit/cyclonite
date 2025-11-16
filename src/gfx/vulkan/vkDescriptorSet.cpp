@@ -9,10 +9,12 @@
 namespace cyclonite::gfx::vulkan {
 DescriptorSet::DescriptorSet(core::ResourceManagerBase* resourceManager,
                              core::ResourceId resourceId,
-                             core::ResourceSharedRef descriptorPool)
+                             core::ResourceSharedRef descriptorPool,
+                             uint32_t setIndex)
   : core::ResourceBase{ resourceManager, resourceId, false }
   , descriptorPool_{ std::move(descriptorPool) }
   , vkDescriptorSet_{ VK_NULL_HANDLE }
+  , index_{ setIndex }
 {
     assert(descriptorPool_.valid());
     auto& pool = descriptorPool_.as<DescriptorPool>();
