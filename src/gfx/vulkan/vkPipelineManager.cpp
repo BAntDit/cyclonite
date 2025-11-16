@@ -3,12 +3,15 @@
 //
 
 #include "vkPipelineManager.h"
+#include "gfx/pipelineBindingSchema.h"
 #include "vkDevice.h"
 #include <algorithm>
 #include <ranges>
 #include <unordered_set>
 
+#include "gfx/descriptorSet.h"
 #include "gfx/shader.h"
+#include "vkDescriptorSetLayout.h"
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
@@ -433,6 +436,59 @@ auto PipelineManager::getOrCreateComputePipeline(PipelineCreationFlagBits creati
 
     assert(pipelineRef.valid());
     return pipelineRef;
+}
+
+auto PipelineManager::allocateDescriptorSetBySchema(core::ResourceSharedRef const& schemaRef,
+                                                    uint32_t setIndex,
+                                                    bool resetable) -> core::ResourceUniqueRef
+{
+    auto descriptorSetRef = core::ResourceUniqueRef{};
+
+    assert(schemaRef.valid());
+    auto& schema = schemaRef.as<gfx::PipelineBindingSchema>();
+    auto const& descriptorSetLayouts = schema.descriptorSetLayouts();
+    auto const& setLayoutRef = descriptorSetLayouts[setIndex];
+
+    assert(setLayoutRef.valid());
+    auto [beginIt, endIt] =
+      descriptorPools_.equal_range(std::make_pair(static_cast<uint64_t>(setLayoutRef.id()), resetable));
+
+    for (auto it = beginIt; it != endIt; it++) {
+        auto const& [_, poolRef] = *it;
+
+        auto ref = device_->allocateDescriptorSetFromPool(poolRef, setIndex);
+
+        assert(ref.valid());
+        auto& ds = ref.as<type_traits::platform_implementation_t<gfx::DescriptorSet>>();
+
+        if (ds.handle() != VK_NULL_HANDLE) {
+            descriptorSetRef = std::move(ref);
+            break;
+        }
+    }
+
+    if (!descriptorSetRef.valid()) {
+        auto poolUniqueRef =
+          device_->createDescriptorPool(setLayoutRef, max_allocation_per_descriptor_pool_count_v, resetable);
+
+        auto it = descriptorPools_.emplace(std::make_pair(static_cast<uint64_t>(setLayoutRef.id()), resetable),
+                                           core::ResourceSharedRef{ std::move(poolUniqueRef) });
+        assert(it != descriptorPools_.end());
+
+        auto const& [_, poolRef] = *it;
+
+        auto ref = device_->allocateDescriptorSetFromPool(poolRef, setIndex);
+
+        assert(ref.valid());
+        auto& ds = ref.as<type_traits::platform_implementation_t<gfx::DescriptorSet>>();
+
+        if (ds.handle() != VK_NULL_HANDLE) {
+            descriptorSetRef = std::move(ref);
+        }
+    }
+
+    assert(descriptorSetRef.valid());
+    return descriptorSetRef;
 }
 
 void PipelineManager::freeDescriptorSetLayouts(uint32_t count)

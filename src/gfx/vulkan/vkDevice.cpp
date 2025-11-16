@@ -722,6 +722,43 @@ auto Device::getOrCreateComputePipeline(PipelineCreationFlagBits creationFlags,
     return pipelineManager_->getOrCreateComputePipeline(creationFlags, pipelineBindingSchemaRef, shaderRef);
 }
 
+auto Device::allocateDescriptorSetFromPool(core::ResourceSharedRef poolRef,
+                                           uint32_t setIndex) -> core::ResourceUniqueRef
+{
+    auto result = core::ResourceUniqueRef{};
+
+    auto& resManager = static_cast<resource_manager_t&>(resourceManager());
+
+    result = resManager.allocResource<gfx::DescriptorSet>(std::move(poolRef), setIndex);
+
+    return result;
+}
+
+auto Device::allocateDescriptorSetBySchema(core::ResourceSharedRef const& schemaRef,
+                                           uint32_t setIndex,
+                                           bool resetable) -> core::ResourceUniqueRef
+{
+    assert(pipelineManager_);
+    return pipelineManager_->allocateDescriptorSetBySchema(schemaRef, setIndex, resetable);
+}
+
+auto Device::createDescriptorPool(core::ResourceSharedRef layoutRef,
+                                  uint32_t maxSetCount,
+                                  bool allowReset) -> core::ResourceUniqueRef
+{
+    auto result = core::ResourceUniqueRef{};
+
+    assert(internalResourceManager_);
+    auto* internalResManager = static_cast<internal::internal_resource_manager_t*>(internalResourceManager_.get());
+
+    auto deviceRef = getSharedFromThis(this);
+
+    result = internalResManager->allocResource<vulkan::DescriptorPool>(
+      std::move(deviceRef), std::move(layoutRef), maxSetCount, allowReset);
+
+    return result;
+}
+
 Device::~Device()
 {
     pipelineManager_.reset();

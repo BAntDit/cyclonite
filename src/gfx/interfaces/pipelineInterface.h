@@ -13,6 +13,8 @@ namespace cyclonite::gfx::interfaces {
 template<typename T>
 concept PipelineConcept = requires(T t) {
     { t.type() } -> std::same_as<PipelineType>;
+
+    { t.bindingSchema() } -> std::same_as<core::ResourceSharedRef>;
 };
 
 template<PipelineConcept PlatformImplementation>
@@ -21,6 +23,7 @@ class PipelineInterface : private PlatformImplementation
 public:
     friend class core::ResourceBase;
 
+    using PlatformImplementation::bindingSchema;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::resourceBase;
     using PlatformImplementation::type;

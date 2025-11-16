@@ -17,6 +17,7 @@ concept DescriptorSetConcept = requires(T t) {
 template<DescriptorSetConcept PlatformImplementation>
 class DescriptorSetInterface : private PlatformImplementation
 {
+public:
     friend class core::ResourceBase;
 
     using PlatformImplementation::index;

@@ -28,6 +28,8 @@ public:
 
     void freeDescriptorSet(VkDescriptorSet vkDescriptorSet);
 
+    using core::ResourceBase::resourceBase;
+
 private:
     core::ResourceSharedRef deviceRef_;
     core::ResourceSharedRef layoutRef_;

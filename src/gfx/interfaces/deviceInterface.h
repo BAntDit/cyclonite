@@ -76,6 +76,10 @@ concept DeviceConcept = requires(T t,
     requires std::is_member_function_pointer_v<decltype(&T::getOrCreateComputePipeline)> &&
                std::is_same_v<core::ResourceSharedRef,
                               metrix::member_function_return_type_t<decltype(&T::getOrCreateComputePipeline)>>;
+
+    requires std::is_member_function_pointer_v<decltype(&T::allocateDescriptorSetBySchema)> &&
+               std::is_same_v<core::ResourceUniqueRef,
+                              metrix::member_function_return_type_t<decltype(&T::allocateDescriptorSetBySchema)>>;
 };
 
 template<DeviceConcept PlatformImplementation>
@@ -84,6 +88,7 @@ class DeviceInterface : private PlatformImplementation
 public:
     friend class core::ResourceBase;
 
+    using PlatformImplementation::allocateDescriptorSetBySchema;
     using PlatformImplementation::createBuffer;
     using PlatformImplementation::createCommandPool;
     using PlatformImplementation::createRenderWindow;

@@ -28,9 +28,9 @@ public:
                           core::ResourceSharedRef deviceRef,
                           std::span<core::ResourceSharedRef const> descriptorSetLayouts);
 
-    [[nodiscard]] auto descriptorSetLayoutCount() const -> uint32_t
+    [[nodiscard]] auto descriptorSetLayouts() const -> std::vector<core::ResourceSharedRef> const&
     {
-        return static_cast<uint32_t>(descriptorSetLayouts_.size());
+        return descriptorSetLayouts_;
     }
 
     [[nodiscard]] auto handle() const -> VkPipelineLayout { return static_cast<VkPipelineLayout>(pipelineLayout_); }

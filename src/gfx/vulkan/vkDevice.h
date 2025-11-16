@@ -159,6 +159,17 @@ public:
                                                   std::span<PushConstantRange const> pushConstantRanges,
                                                   core::ResourceSharedRef const& shaderRef) -> core::ResourceSharedRef;
 
+    [[nodiscard]] auto allocateDescriptorSetFromPool(core::ResourceSharedRef poolRef,
+                                                     uint32_t setIndex) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto allocateDescriptorSetBySchema(core::ResourceSharedRef const& schemaRef,
+                                                     uint32_t setIndex,
+                                                     bool resetable) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto createDescriptorPool(core::ResourceSharedRef layoutRef,
+                                            uint32_t maxSetCount,
+                                            bool allowReset) -> core::ResourceUniqueRef;
+
     [[nodiscard]] auto pipelineCache() const -> VkPipelineCache
     {
         return static_cast<VkPipelineCache>(vkPipelineCache_);

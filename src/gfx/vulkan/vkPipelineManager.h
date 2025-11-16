@@ -39,6 +39,10 @@ public:
                                                   core::ResourceSharedRef const& bindingSchemaRef,
                                                   core::ResourceSharedRef const& shaderRef) -> core::ResourceSharedRef;
 
+    [[nodiscard]] auto allocateDescriptorSetBySchema(core::ResourceSharedRef const& schemaRef,
+                                                     uint32_t setIndex,
+                                                     bool resetable) -> core::ResourceUniqueRef;
+
 private:
     [[nodiscard]] auto getOrCreateDescriptorSetLayout(std::span<Binding const> bindings) -> core::ResourceSharedRef;
 
@@ -53,6 +57,7 @@ private:
     static constexpr auto primitive_rasterization_pipeline_cache_size_v = size_t{ 2048 };
     static constexpr auto compute_pipeline_cache_size_v = size_t{ 512 };
     static constexpr auto primitive_rasterization_shader_set_cache_size_v = size_t{ 1024 };
+    static constexpr auto max_allocation_per_descriptor_pool_count_v = size_t{ 128 };
 
     Device* device_;
 
@@ -72,7 +77,7 @@ private:
     uint32_t descriptorSetLayoutCount_;
 
     // key is layout resource Id
-    std::multimap<uint64_t, core::ResourceSharedRef> descriptorPools_;
+    std::multimap<std::pair<uint64_t, bool>, core::ResourceSharedRef> descriptorPools_;
 
     // key:
     // 1. creation flags
