@@ -286,6 +286,12 @@ enum class BindingFlags : uint32_t
 };
 using BindingFlagBits = metrix::enum_bits<BindingFlags>;
 
+enum class PipelineBindPoint : uint_fast8_t
+{
+    GRAPHICS = 0,
+    COMPUTE = 1
+};
+
 enum class GpuMemoryAllocationFlags : uint8_t
 {
     DEDICATED_MEMORY = 1 << 0,

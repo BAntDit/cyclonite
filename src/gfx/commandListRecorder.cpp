@@ -62,6 +62,29 @@ void CommandListRecorder::beginRenderPass(core::ResourceSharedRef renderPassRef)
     batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
 }
 
+void CommandListRecorder::bindDescriptorSet(PipelineBindPoint bindPoint,
+                                            core::ResourceSharedRef bindingSchemaRef,
+                                            core::ResourceSharedRef descriptorSetRef,
+                                            std::span<uint32_t> dynamicOffsets)
+{
+    auto purpose = batchRecorder_->submission().purpose();
+
+    auto task = [recorder = batchRecorder_,
+                 bindPoint,
+                 bindingSchemaRef = std::move(bindingSchemaRef),
+                 descriptorSetRef = std::move(descriptorSetRef),
+                 dynamicOffsets]() mutable -> void {
+        if (!recorder->submission().isInCommandListRecordingState()) {
+            throw std::runtime_error("command list recording is already finished");
+        }
+
+        recorder->submission().commandListToRecord().bindDescriptorSet(
+          bindPoint, std::move(bindingSchemaRef), std::move(descriptorSetRef), dynamicOffsets);
+    };
+
+    batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+}
+
 void CommandListRecorder::endRenderPass()
 {
     auto purpose = batchRecorder_->submission().purpose();

@@ -4,8 +4,10 @@
 
 #include "vkCommandList.h"
 #include "gfx/commandPool.h"
+#include "gfx/descriptorSet.h"
 #include "gfx/device.h"
 #include "gfx/pipeline.h"
+#include "gfx/pipelineBindingSchema.h"
 #include "gfx/renderPass.h"
 #include "vkException.h"
 #include <cassert>
@@ -116,9 +118,41 @@ void CommandList::bindPipeline(core::ResourceSharedRef pipelineRef)
     assert(vkCommandBuffer_ != VK_NULL_HANDLE);
     assert(pipelineRef.valid());
 
+    boundRefs_.emplace_back(pipelineRef);
+
     auto& pipeline = pipelineRef.as<type_traits::platform_implementation_t<gfx::Pipeline>>();
     auto bindPoint = getPipelineBindingPoint(pipeline.type());
     vkCmdBindPipeline(vkCommandBuffer_, bindPoint, pipeline.handle());
+}
+
+void CommandList::bindDescriptorSet(PipelineBindPoint bindPoint,
+                                    core::ResourceSharedRef bindingSchemaRef,
+                                    core::ResourceSharedRef descriptorSetRef,
+                                    std::span<uint32_t> dynamicOffsets /* = {}*/)
+{
+    assert(vkCommandBuffer_ != VK_NULL_HANDLE);
+    assert(bindingSchemaRef.valid());
+    assert(descriptorSetRef.valid());
+
+    boundRefs_.emplace_back(bindingSchemaRef);
+    boundRefs_.emplace_back(descriptorSetRef);
+
+    auto& bindingSchema = bindingSchemaRef.as<type_traits::platform_implementation_t<gfx::PipelineBindingSchema>>();
+    auto& descriptorSet = descriptorSetRef.as<type_traits::platform_implementation_t<gfx::DescriptorSet>>();
+
+    auto vkBindPoint =
+      bindPoint == PipelineBindPoint::GRAPHICS ? VK_PIPELINE_BIND_POINT_GRAPHICS : VK_PIPELINE_BIND_POINT_COMPUTE;
+
+    auto vkDescriptorSet = descriptorSet.handle();
+
+    vkCmdBindDescriptorSets(vkCommandBuffer_,
+                            vkBindPoint,
+                            bindingSchema.handle(),
+                            descriptorSet.index(),
+                            1,
+                            &vkDescriptorSet,
+                            dynamicOffsets.size(),
+                            dynamicOffsets.data());
 }
 
 void CommandList::endRenderPass()

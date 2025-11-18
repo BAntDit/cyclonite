@@ -7,6 +7,7 @@
 
 #include "core/resourceSharedRef.h"
 #include "gfx/common.h"
+#include <span>
 
 namespace cyclonite::gfx {
 class SubmissionBatchRecorder;
@@ -25,6 +26,11 @@ public:
     void endRenderPass();
 
     void bindPipeline(core::ResourceSharedRef pipeline);
+
+    void bindDescriptorSet(PipelineBindPoint bindPoint,
+                           core::ResourceSharedRef bindingSchemaRef,
+                           core::ResourceSharedRef descriptorSetRef,
+                           std::span<uint32_t> dynamicOffsets = {});
 
     void end();
 

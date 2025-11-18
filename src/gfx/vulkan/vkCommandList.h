@@ -8,6 +8,7 @@
 #include "core/resourceSharedRef.h"
 #include "core/resourceWeakRef.h"
 #include "gfx/common.h"
+#include <span>
 #include <vector>
 
 #if defined(GFX_DRIVER_VULKAN)
@@ -32,6 +33,11 @@ public:
     void beginRenderPass(core::ResourceSharedRef renderPassRef);
 
     void bindPipeline(core::ResourceSharedRef pipelineRef);
+
+    void bindDescriptorSet(PipelineBindPoint bindPoint,
+                           core::ResourceSharedRef bindingSchemaRef,
+                           core::ResourceSharedRef descriptorSetRef,
+                           std::span<uint32_t> dynamicOffsets = {});
 
     void endRenderPass();
 

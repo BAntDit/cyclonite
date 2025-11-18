@@ -8,10 +8,15 @@
 #include "core/resourceSharedRef.h"
 #include "gfx/common.h"
 #include <concepts>
+#include <span>
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept CommandListConcept = requires(T t, CommandListUsageFlagBits usage, core::ResourceSharedRef ref) {
+concept CommandListConcept = requires(T t,
+                                      CommandListUsageFlagBits usage,
+                                      core::ResourceSharedRef ref,
+                                      PipelineBindPoint bindPoint,
+                                      std::span<uint32_t> ofs) {
     { t.state() } -> std::same_as<CommandListState>;
     { t.usage() } -> std::same_as<CommandListUsageFlagBits>;
 
@@ -24,6 +29,8 @@ concept CommandListConcept = requires(T t, CommandListUsageFlagBits usage, core:
     { t.endRenderPass() } -> std::same_as<void>;
 
     { t.bindPipeline(ref) } -> std::same_as<void>;
+
+    { t.bindDescriptorSet(bindPoint, ref, ref, ofs) } -> std::same_as<void>;
 };
 
 template<CommandListConcept PlatformImplementation>
@@ -32,6 +39,7 @@ class CommandListInterface : private PlatformImplementation
 public:
     using PlatformImplementation::begin;
     using PlatformImplementation::beginRenderPass;
+    using PlatformImplementation::bindDescriptorSet;
     using PlatformImplementation::bindPipeline;
     using PlatformImplementation::end;
     using PlatformImplementation::endRenderPass;
