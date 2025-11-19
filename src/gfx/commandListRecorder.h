@@ -32,6 +32,8 @@ public:
                            core::ResourceSharedRef descriptorSetRef,
                            std::span<uint32_t> dynamicOffsets = {});
 
+    void bindIndexBuffer(core::ResourceSharedRef bufferRef, size_t offset, IndexType indexType);
+
     void end();
 
     void finish() { finish(false); }

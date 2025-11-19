@@ -85,6 +85,21 @@ void CommandListRecorder::bindDescriptorSet(PipelineBindPoint bindPoint,
     batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
 }
 
+void CommandListRecorder::bindIndexBuffer(core::ResourceSharedRef bufferRef, size_t offset, IndexType indexType)
+{
+    auto purpose = batchRecorder_->submission().purpose();
+
+    auto task = [recorder = batchRecorder_, bufferRef = std::move(bufferRef), offset, indexType]() mutable -> void {
+        if (!recorder->submission().isInCommandListRecordingState()) {
+            throw std::runtime_error("command list recording is already finished");
+        }
+
+        recorder->submission().commandListToRecord().bindIndexBuffer(std::move(bufferRef), offset, indexType);
+    };
+
+    batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+}
+
 void CommandListRecorder::endRenderPass()
 {
     auto purpose = batchRecorder_->submission().purpose();

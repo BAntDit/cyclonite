@@ -3,6 +3,7 @@
 //
 
 #include "vkCommandList.h"
+#include "gfx/buffer.h"
 #include "gfx/commandPool.h"
 #include "gfx/descriptorSet.h"
 #include "gfx/device.h"
@@ -153,6 +154,19 @@ void CommandList::bindDescriptorSet(PipelineBindPoint bindPoint,
                             &vkDescriptorSet,
                             dynamicOffsets.size(),
                             dynamicOffsets.data());
+}
+
+void CommandList::bindIndexBuffer(core::ResourceSharedRef bufferRef, size_t offset, IndexType indexType)
+{
+    assert(vkCommandBuffer_ != VK_NULL_HANDLE);
+    assert(bufferRef.valid());
+
+    boundRefs_.emplace_back(bufferRef);
+    auto& buffer = bufferRef.as<type_traits::platform_implementation_t<gfx::Buffer>>();
+
+    auto vkIndexType = (indexType == IndexType::TYPE_UINT32) ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
+
+    vkCmdBindIndexBuffer(vkCommandBuffer_, buffer.handle(), static_cast<VkDeviceSize>(offset), vkIndexType);
 }
 
 void CommandList::endRenderPass()
