@@ -292,7 +292,7 @@ enum class PipelineBindPoint : uint_fast8_t
     COMPUTE = 1
 };
 
-enum class IndexType: uint_fast8_t
+enum class IndexType : uint_fast8_t
 {
     TYPE_UINT16 = 0,
     TYPE_UINT32 = 1

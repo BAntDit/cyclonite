@@ -34,6 +34,18 @@ public:
 
     void bindIndexBuffer(core::ResourceSharedRef bufferRef, size_t offset, IndexType indexType);
 
+    void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);
+
+    void drawIndexed(uint32_t indexCount,
+                     uint32_t instanceCount,
+                     uint32_t firstIndex,
+                     int32_t vertexOffset,
+                     uint32_t firstInstance);
+
+    void drawIndirect(core::ResourceSharedRef bufferRef, size_t offset, uint32_t count);
+
+    void drawIndexedIndirect(core::ResourceSharedRef bufferRef, size_t offset, uint32_t count);
+
     void end();
 
     void finish() { finish(false); }

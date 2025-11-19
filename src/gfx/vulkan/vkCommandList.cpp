@@ -85,7 +85,7 @@ void CommandList::begin(CommandListUsageFlagBits usage)
     state_ = CommandListState::Recording;
 }
 
-void CommandList::beginRenderPass(core::ResourceSharedRef renderPassRef)
+void CommandList::beginRenderPass(core::ResourceSharedRef const& renderPassRef)
 {
     assert(vkCommandBuffer_ != VK_NULL_HANDLE);
     assert(renderPassRef.valid());
@@ -114,7 +114,7 @@ void CommandList::beginRenderPass(core::ResourceSharedRef renderPassRef)
     vkCmdBeginRenderPass(vkCommandBuffer_, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 
-void CommandList::bindPipeline(core::ResourceSharedRef pipelineRef)
+void CommandList::bindPipeline(core::ResourceSharedRef const& pipelineRef)
 {
     assert(vkCommandBuffer_ != VK_NULL_HANDLE);
     assert(pipelineRef.valid());
@@ -127,8 +127,8 @@ void CommandList::bindPipeline(core::ResourceSharedRef pipelineRef)
 }
 
 void CommandList::bindDescriptorSet(PipelineBindPoint bindPoint,
-                                    core::ResourceSharedRef bindingSchemaRef,
-                                    core::ResourceSharedRef descriptorSetRef,
+                                    core::ResourceSharedRef const& bindingSchemaRef,
+                                    core::ResourceSharedRef const& descriptorSetRef,
                                     std::span<uint32_t> dynamicOffsets /* = {}*/)
 {
     assert(vkCommandBuffer_ != VK_NULL_HANDLE);
@@ -156,17 +156,59 @@ void CommandList::bindDescriptorSet(PipelineBindPoint bindPoint,
                             dynamicOffsets.data());
 }
 
-void CommandList::bindIndexBuffer(core::ResourceSharedRef bufferRef, size_t offset, IndexType indexType)
+void CommandList::bindIndexBuffer(core::ResourceSharedRef const& bufferRef, size_t offset, IndexType indexType)
 {
     assert(vkCommandBuffer_ != VK_NULL_HANDLE);
     assert(bufferRef.valid());
 
     boundRefs_.emplace_back(bufferRef);
-    auto& buffer = bufferRef.as<type_traits::platform_implementation_t<gfx::Buffer>>();
+    auto const& buffer = bufferRef.as<type_traits::platform_implementation_t<gfx::Buffer>>();
 
     auto vkIndexType = (indexType == IndexType::TYPE_UINT32) ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
 
     vkCmdBindIndexBuffer(vkCommandBuffer_, buffer.handle(), static_cast<VkDeviceSize>(offset), vkIndexType);
+}
+
+void CommandList::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+{
+    assert(vkCommandBuffer_ != VK_NULL_HANDLE);
+    vkCmdDraw(vkCommandBuffer_, vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
+void CommandList::drawIndexed(uint32_t indexCount,
+                              uint32_t instanceCount,
+                              uint32_t firstIndex,
+                              int32_t vertexOffset,
+                              uint32_t firstInstance)
+{
+    assert(vkCommandBuffer_ != VK_NULL_HANDLE);
+    vkCmdDrawIndexed(vkCommandBuffer_, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+}
+
+void CommandList::drawIndirect(core::ResourceSharedRef const& bufferRef, size_t offset, uint32_t count)
+{
+    assert(vkCommandBuffer_ != VK_NULL_HANDLE);
+
+    assert(bufferRef.valid());
+    boundRefs_.emplace_back(bufferRef);
+
+    auto& buffer = bufferRef.as<type_traits::platform_implementation_t<gfx::Buffer>>();
+
+    // stride has no sense cause of PVP
+    vkCmdDrawIndirect(vkCommandBuffer_, buffer.handle(), static_cast<VkDeviceSize>(offset), count, 0);
+}
+
+void CommandList::drawIndexedIndirect(core::ResourceSharedRef const& bufferRef, size_t offset, uint32_t count)
+{
+    assert(vkCommandBuffer_ != VK_NULL_HANDLE);
+
+    assert(bufferRef.valid());
+    boundRefs_.emplace_back(bufferRef);
+
+    auto& buffer = bufferRef.as<type_traits::platform_implementation_t<gfx::Buffer>>();
+
+    // stride has no sense cause of PVP
+    vkCmdDrawIndexedIndirect(vkCommandBuffer_, buffer.handle(), static_cast<VkDeviceSize>(offset), count, 0);
 }
 
 void CommandList::endRenderPass()

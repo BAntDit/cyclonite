@@ -30,16 +30,28 @@ public:
 
     void begin(CommandListUsageFlagBits usage);
 
-    void beginRenderPass(core::ResourceSharedRef renderPassRef);
+    void beginRenderPass(core::ResourceSharedRef const& renderPassRef);
 
-    void bindPipeline(core::ResourceSharedRef pipelineRef);
+    void bindPipeline(core::ResourceSharedRef const& pipelineRef);
 
     void bindDescriptorSet(PipelineBindPoint bindPoint,
-                           core::ResourceSharedRef bindingSchemaRef,
-                           core::ResourceSharedRef descriptorSetRef,
+                           core::ResourceSharedRef const& bindingSchemaRef,
+                           core::ResourceSharedRef const& descriptorSetRef,
                            std::span<uint32_t> dynamicOffsets = {});
 
-    void bindIndexBuffer(core::ResourceSharedRef bufferRef, size_t offset, IndexType indexType);
+    void bindIndexBuffer(core::ResourceSharedRef const& bufferRef, size_t offset, IndexType indexType);
+
+    void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);
+
+    void drawIndexed(uint32_t indexCount,
+                     uint32_t instanceCount,
+                     uint32_t firstIndex,
+                     int32_t vertexOffset,
+                     uint32_t firstInstance);
+
+    void drawIndirect(core::ResourceSharedRef const& bufferRef, size_t offset, uint32_t count);
+
+    void drawIndexedIndirect(core::ResourceSharedRef const& bufferRef, size_t offset, uint32_t count);
 
     void endRenderPass();
 

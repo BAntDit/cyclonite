@@ -18,6 +18,8 @@ concept CommandListConcept = requires(T t,
                                       PipelineBindPoint bindPoint,
                                       size_t a,
                                       IndexType indexType,
+                                      uint32_t val,
+                                      int32_t val2,
                                       std::span<uint32_t> ofs) {
     { t.state() } -> std::same_as<CommandListState>;
     { t.usage() } -> std::same_as<CommandListUsageFlagBits>;
@@ -35,6 +37,14 @@ concept CommandListConcept = requires(T t,
     { t.bindDescriptorSet(bindPoint, ref, ref, ofs) } -> std::same_as<void>;
 
     { t.bindIndexBuffer(ref, a, indexType) } -> std::same_as<void>;
+
+    { t.draw(val, val, val, val) } -> std::same_as<void>;
+
+    { t.drawIndexed(val, val, val, val2, val) } -> std::same_as<void>;
+
+    { t.drawIndirect(ref, a, val) } -> std::same_as<void>;
+
+    { t.drawIndexedIndirect(ref, a, val) } -> std::same_as<void>;
 };
 
 template<CommandListConcept PlatformImplementation>
@@ -46,6 +56,10 @@ public:
     using PlatformImplementation::bindDescriptorSet;
     using PlatformImplementation::bindIndexBuffer;
     using PlatformImplementation::bindPipeline;
+    using PlatformImplementation::draw;
+    using PlatformImplementation::drawIndexed;
+    using PlatformImplementation::drawIndexedIndirect;
+    using PlatformImplementation::drawIndirect;
     using PlatformImplementation::end;
     using PlatformImplementation::endRenderPass;
     using PlatformImplementation::PlatformImplementation;

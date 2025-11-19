@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <ranges>
 #include <unordered_set>
-
+#include <cstring>
 #include "gfx/descriptorSet.h"
 #include "gfx/shader.h"
 #include "vkDescriptorSetLayout.h"
@@ -497,7 +497,7 @@ void PipelineManager::freeDescriptorSetLayouts(uint32_t count)
         auto const& [_1, p1] = a;
         auto const& [_2, p2] = b;
         auto const& [_3, tp1] = p1;
-        auto const& [_4, tp2] = p1;
+        auto const& [_4, tp2] = p2;
 
         return tp1 > tp2; // old one first
     });
@@ -519,7 +519,7 @@ void PipelineManager::freePipelineLayouts(uint32_t count)
         auto const& [_00, _10, p1] = a;
         auto const& [_01, _11, p2] = b;
         auto const& [_2, tp1] = p1;
-        auto const& [_3, tp2] = p1;
+        auto const& [_3, tp2] = p2;
 
         return tp1 > tp2; // old one first
     });
