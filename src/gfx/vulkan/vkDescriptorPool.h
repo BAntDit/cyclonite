@@ -26,6 +26,8 @@ public:
 
     [[nodiscard]] auto unused() const -> bool;
 
+    [[nodiscard]] auto device() const -> core::ResourceSharedRef const& { return deviceRef_; }
+
     void freeDescriptorSet(VkDescriptorSet vkDescriptorSet);
 
     using core::ResourceBase::resourceBase;
