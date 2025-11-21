@@ -423,6 +423,22 @@ struct PushConstantRange
     uint32_t offset;
     ShaderStageFlagBits stage;
 };
+
+struct ResourceDescription
+{
+    DescriptorType type;
+};
+
+struct BufferResourceDescription : public ResourceDescription
+{
+    size_t offset;
+    size_t size;
+};
+
+struct TextureResourceDescription : public ResourceDescription
+{
+    TextureState state;
+};
 }
 
 #endif // GFX_COMMON_H
