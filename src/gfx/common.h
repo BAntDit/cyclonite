@@ -86,6 +86,21 @@ enum class SurfaceFlags : uint64_t
 };
 using SurfaceFlagBits = metrix::enum_bits<SurfaceFlags>;
 
+enum class TextureFilter
+{
+    NEAREST = 0,
+    LINEAR = 1
+};
+
+enum class TextureAddressMode
+{
+    REPEAT = 0,
+    MIRRORED_REPEAT = 1,
+    CLAMP_TO_EDGE = 2,
+    CLAMP_TO_BORDER = 3,
+    MIRROR_CLAMP_TO_EDGE = 4
+};
+
 enum class TextureType : uint_fast8_t
 {
     TEXTURE_1D = 0,
