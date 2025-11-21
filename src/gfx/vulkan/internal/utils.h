@@ -236,6 +236,30 @@ inline constexpr auto getImageLayout(TextureState state) -> VkImageLayout
         case TextureState::PREINITIALIZED:
             result = VK_IMAGE_LAYOUT_PREINITIALIZED;
             break;
+        case TextureState::DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL: 
+            result = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
+            break;
+        case TextureState::DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:
+            result = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL; 
+            break;
+        case TextureState::DEPTH_ATTACHMENT_OPTIMAL:
+            result = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+            break;
+        case TextureState::DEPTH_READ_ONLY_OPTIMAL: 
+            result = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+            break;
+        case TextureState::STENCIL_ATTACHMENT_OPTIMAL:
+            result = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
+            break;
+        case TextureState::STENCIL_READ_ONLY_OPTIMAL: 
+            result = VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL;
+            break;
+        case TextureState::READ_ONLY_OPTIMAL:
+            result = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+            break;
+        case TextureState::ATTACHMENT_OPTIMAL:
+            result = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+            break;
         default:
             assert(false);
     }
