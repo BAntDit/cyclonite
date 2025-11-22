@@ -17,6 +17,7 @@
 #include "renderPass.h"
 #include "renderTargetView.h"
 #include "renderWindow.h"
+#include "sampler.h"
 #include "shader.h"
 #include "texture.h"
 
@@ -26,6 +27,7 @@ using resource_manager_t = core::ResourceManager<gfx::Device,
                                                  gfx::RenderTargetView,
                                                  gfx::RenderPass,
                                                  gfx::Texture,
+                                                 gfx::Sampler,
                                                  gfx::Buffer,
                                                  gfx::Shader,
                                                  gfx::Signal,

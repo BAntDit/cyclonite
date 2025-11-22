@@ -52,6 +52,8 @@ public:
     [[nodiscard]] auto maxLod() const -> real { return maxLod_; }
     [[nodiscard]] auto minLod() const -> real { return minLod_; }
 
+    using core::ResourceBase::resourceBase;
+
 private:
     TextureFilter magFilter_;
     TextureFilter minFilter_;
