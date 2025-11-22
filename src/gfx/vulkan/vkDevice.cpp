@@ -471,6 +471,44 @@ auto Device::createTexture(GpuMemoryAllocationFlagBits allocationFlags,
     return result;
 }
 
+auto Device::createSampler(TextureFilter magFilter,
+                           TextureFilter minFilter,
+                           TextureFilter mipFilter,
+                           TextureAddressMode addressModeU,
+                           TextureAddressMode addressModeV,
+                           TextureAddressMode addressModeW,
+                           real mipLodBias,
+                           real maxAnisotropy,
+                           CompareOp compareOp,
+                           real minLod,
+                           real maxLod,
+                           BorderColor borderColor,
+                           bool unnormalizedCoords) -> core::ResourceUniqueRef
+{
+    auto result = core::ResourceUniqueRef{};
+
+    auto& resManager = static_cast<resource_manager_t&>(resourceManager());
+
+    auto deviceRef = getSharedFromThis(this);
+
+    result = resManager.allocResource<gfx::Sampler>(deviceRef,
+                                                    magFilter,
+                                                    minFilter,
+                                                    mipFilter,
+                                                    addressModeU,
+                                                    addressModeV,
+                                                    addressModeW,
+                                                    mipLodBias,
+                                                    maxAnisotropy,
+                                                    compareOp,
+                                                    minLod,
+                                                    maxLod,
+                                                    borderColor,
+                                                    unnormalizedCoords);
+
+    return result;
+}
+
 auto Device::createShader(size_t codeSize,
                           uint32_t const* code,
                           ShaderStageCreationFlagBits creationFlags,

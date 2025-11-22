@@ -58,6 +58,24 @@ concept DeviceConcept = requires(T t,
                                                 TextureUsageFlagBits>,
                               metrix::member_function_argument_type_list_t<decltype(&T::createTexture)>>;
 
+    requires std::is_member_function_pointer_v<decltype(&T::createSampler)> &&
+               std::is_same_v<core::ResourceUniqueRef,
+                              metrix::member_function_return_type_t<decltype(&T::createSampler)>> &&
+               std::is_same_v<metrix::type_list<TextureFilter,
+                                                TextureFilter,
+                                                TextureFilter,
+                                                TextureAddressMode,
+                                                TextureAddressMode,
+                                                TextureAddressMode,
+                                                real,
+                                                real,
+                                                CompareOp,
+                                                real,
+                                                real,
+                                                BorderColor,
+                                                bool>,
+                              metrix::member_function_argument_type_list_t<decltype(&T::createSampler)>>;
+
     requires std::is_member_function_pointer_v<decltype(&T::createBuffer)> &&
                std::is_same_v<core::ResourceUniqueRef,
                               metrix::member_function_return_type_t<decltype(&T::createBuffer)>> &&
@@ -92,6 +110,7 @@ public:
     using PlatformImplementation::createBuffer;
     using PlatformImplementation::createCommandPool;
     using PlatformImplementation::createRenderWindow;
+    using PlatformImplementation::createSampler;
     using PlatformImplementation::createShader;
     using PlatformImplementation::createSignal;
     using PlatformImplementation::createTexture;

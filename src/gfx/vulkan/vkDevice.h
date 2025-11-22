@@ -99,6 +99,20 @@ public:
                                      TextureTiling tiling,
                                      TextureUsageFlagBits usageFlags) -> core::ResourceUniqueRef;
 
+    [[nodiscard]] auto createSampler(TextureFilter magFilter,
+                                     TextureFilter minFilter,
+                                     TextureFilter mipFilter,
+                                     TextureAddressMode addressModeU,
+                                     TextureAddressMode addressModeV,
+                                     TextureAddressMode addressModeW,
+                                     real mipLodBias,
+                                     real maxAnisotropy,
+                                     CompareOp compareOp,
+                                     real minLod,
+                                     real maxLod,
+                                     BorderColor borderColor,
+                                     bool unnormalizedCoords) -> core::ResourceUniqueRef;
+
     [[nodiscard]] auto createRenderPassWithRTVs(
       core::ResourceSharedRef depthStencilRef,
       std::array<core::ResourceSharedRef, config_t::max_color_attachment_count_v> colorAttachmentRefs,
