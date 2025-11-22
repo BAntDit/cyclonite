@@ -13,6 +13,62 @@
 #include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan::internal {
+inline constexpr auto getBorderColor(BorderColor borderColor) -> VkBorderColor
+{
+    auto result = VK_BORDER_COLOR_MAX_ENUM;
+
+    switch (borderColor) {
+        case BorderColor::FLOAT_OPAQUE_BLACK:
+            result = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+            break;
+        case BorderColor::FLOAT_OPAQUE_WHITE:
+            result = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+            break;
+        case BorderColor::FLOAT_TRANSPARENT_BLACK:
+            result = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+            break;
+        case BorderColor::INT_TRANSPARENT_BLACK:
+            result = VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
+            break;
+        case BorderColor::INT_OPAQUE_BLACK:
+            result = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+            break;
+        case BorderColor::INT_OPAQUE_WHITE:
+            result = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+            break;
+        default:
+            assert(false);
+    }
+
+    return result;
+}
+
+inline constexpr auto getAddressMode(TextureAddressMode addressMode) -> VkSamplerAddressMode
+{
+    auto result = VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
+
+    switch (addressMode) {
+        case TextureAddressMode::REPEAT:
+            result = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            break;
+        case TextureAddressMode::MIRRORED_REPEAT:
+            result = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+            break;
+        case TextureAddressMode::CLAMP_TO_EDGE:
+            result = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            break;
+        case TextureAddressMode::CLAMP_TO_BORDER:
+            result = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+            break;
+        case TextureAddressMode::MIRROR_CLAMP_TO_EDGE:
+            result = VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
+            break;
+        default:
+            assert(false);
+    }
+
+    return result;
+}
 inline constexpr auto getStencilOp(StencilOp stencilOp) -> VkStencilOp
 {
     auto result = VK_STENCIL_OP_MAX_ENUM;
@@ -236,22 +292,22 @@ inline constexpr auto getImageLayout(TextureState state) -> VkImageLayout
         case TextureState::PREINITIALIZED:
             result = VK_IMAGE_LAYOUT_PREINITIALIZED;
             break;
-        case TextureState::DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL: 
+        case TextureState::DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL:
             result = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
             break;
         case TextureState::DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:
-            result = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL; 
+            result = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL;
             break;
         case TextureState::DEPTH_ATTACHMENT_OPTIMAL:
             result = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
             break;
-        case TextureState::DEPTH_READ_ONLY_OPTIMAL: 
+        case TextureState::DEPTH_READ_ONLY_OPTIMAL:
             result = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
             break;
         case TextureState::STENCIL_ATTACHMENT_OPTIMAL:
             result = VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
             break;
-        case TextureState::STENCIL_READ_ONLY_OPTIMAL: 
+        case TextureState::STENCIL_READ_ONLY_OPTIMAL:
             result = VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL;
             break;
         case TextureState::READ_ONLY_OPTIMAL:

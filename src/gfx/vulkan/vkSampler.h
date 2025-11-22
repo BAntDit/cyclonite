@@ -30,10 +30,10 @@ public:
             CompareOp compareOp,
             real minLod,
             real maxLod,
-            gfx::Color borderColor,
+            BorderColor borderColor,
             bool unnormalizedCoords);
 
-    [[nodiscard]] auto handler() const -> VkSampler { return static_cast<VkSampler>(sampler_); }
+    [[nodiscard]] auto handler() const -> VkSampler { return static_cast<VkSampler>(vkSampler_); }
 
     [[nodiscard]] auto magFilter() const -> TextureFilter { return magFilter_; }
 
@@ -41,13 +41,13 @@ public:
 
     [[nodiscard]] auto mipFilter() const -> TextureFilter { return mipFilter_; }
 
-    [[nodicard]] auto addressModeUVW() const -> texture_address_mode_uvw_t
+    [[nodiscard]] auto addressModeUVW() const -> texture_address_mode_uvw_t
     {
         return std::make_tuple(addressModeU_, addressModeV_, addressModeW_);
     }
 
     [[nodiscard]] auto maxAnisatropy() const -> real { return maxAnisatropy_; }
-    
+
     [[nodiscard]] auto mipLodBias() const -> real { return mipLodBias_; }
     [[nodiscard]] auto maxLod() const -> real { return maxLod_; }
     [[nodiscard]] auto minLod() const -> real { return minLod_; }
@@ -67,7 +67,7 @@ private:
 
     real maxAnisatropy_;
 
-    Handle<VkSampler> sampler_;
+    Handle<VkSampler> vkSampler_;
 };
 }
 #endif // GFX_DRIVER_VULKAN
