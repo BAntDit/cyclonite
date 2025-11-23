@@ -49,8 +49,10 @@ Texture::Texture(core::ResourceManagerBase* resourceManager,
   , depth_{ depth }
   , mipCount_{ mipCount }
   , type_{ textureType }
+  , srv_{}
   , rtvs_{}
   , rtvsGuard_{}
+  , srvGuard_{}
 {
     assert(deviceRef_.valid());
     auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
@@ -95,6 +97,27 @@ Texture::~Texture()
 
     vkImage_ = VK_NULL_HANDLE;
     allocation_ = VK_NULL_HANDLE;
+}
+
+auto Texture::getSRV() -> core::ResourceSharedRef
+{
+    auto lock = std::lock_guard{ rtvsGuard_ };
+
+    auto srv = core::ResourceSharedRef{};
+
+    if (auto srvRef = srv_.lock(); srvRef.valid()) {
+        srv = srvRef;
+    } else {
+        auto& resManager = static_cast<resource_manager_t&>(resourceManager());
+
+        auto thisRef = getWeakFromThis(this);
+
+        srv = resManager.allocResource<gfx::ShaderResourceView>(thisRef, mipCount_, uint32_t{ 1 });
+
+        srv_ = srv;
+    }
+
+    return srv;
 }
 
 auto Texture::getRTV(uint16_t mipLevel) -> core::ResourceWeakRef

@@ -59,7 +59,7 @@ public:
 
     [[nodiscard]] auto getRTV(uint16_t mipLevel) -> core::ResourceWeakRef;
 
-    // [[nodiscard]] auto getSRV(uint16_t mipLevel) -> core::ResourceWeakRef;
+    [[nodiscard]] auto getSRV() -> core::ResourceSharedRef;
 
 private:
     core::ResourceSharedRef deviceRef_;
@@ -73,8 +73,10 @@ private:
     uint32_t depth_;
     uint32_t mipCount_;
     TextureType type_;
+    core::ResourceWeakRef srv_;
     std::unordered_map<uint32_t, core::ResourceSharedRef> rtvs_;
     core::SpinLock rtvsGuard_;
+    core::SpinLock srvGuard_;
 };
 }
 #endif // GFX_DRIVER_VULKAN

@@ -27,6 +27,8 @@ concept TextureConcept = requires(T t, uint16_t a) {
     { t.sampler() } -> std::same_as<core::ResourceSharedRef>;
 
     { t.getRTV(a) } -> std::same_as<core::ResourceWeakRef>;
+
+    { t.getSRV() } -> std::same_as<void>;
 };
 
 template<TextureConcept PlatformImplementation>
@@ -39,6 +41,7 @@ public:
     using PlatformImplementation::depth;
     using PlatformImplementation::format;
     using PlatformImplementation::getRTV;
+    using PlatformImplementation::getSRV;
     using PlatformImplementation::height;
     using PlatformImplementation::mipCount;
     using PlatformImplementation::PlatformImplementation;
