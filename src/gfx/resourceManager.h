@@ -19,6 +19,7 @@
 #include "renderWindow.h"
 #include "sampler.h"
 #include "shader.h"
+#include "shaderResourceView.h"
 #include "texture.h"
 
 namespace cyclonite::gfx {
@@ -30,6 +31,7 @@ using resource_manager_t = core::ResourceManager<gfx::Device,
                                                  gfx::Sampler,
                                                  gfx::Buffer,
                                                  gfx::Shader,
+                                                 gfx::ShaderResourceView,
                                                  gfx::Signal,
                                                  gfx::CommandPool,
                                                  gfx::QueueSubmission,
