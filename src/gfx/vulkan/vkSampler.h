@@ -4,7 +4,6 @@
 
 #include "core/resourceBase.h"
 #include "core/resourceSharedRef.h"
-#include "gfx/color.h"
 #include "gfx/common.h"
 #include "handle.h"
 #include <tuple>

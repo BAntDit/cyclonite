@@ -89,6 +89,7 @@ public:
 
     [[nodiscard]] auto createTexture(GpuMemoryAllocationFlagBits allocationFlags,
                                      TextureCreationFlagBits imageCreateFlags,
+                                     core::ResourceSharedRef samplerRef,
                                      TextureType textureType,
                                      Format format,
                                      uint32_t width,

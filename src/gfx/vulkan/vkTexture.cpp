@@ -24,6 +24,7 @@ auto rtvKey(uint16_t mip, uint16_t layer) -> uint32_t
 Texture::Texture(core::ResourceManagerBase* resourceManager,
                  core::ResourceId resourceId,
                  core::ResourceSharedRef deviceRef,
+                 core::ResourceSharedRef samplerRef,
                  GpuMemoryAllocationFlagBits allocationFlags,
                  TextureCreationFlagBits imageCreateFlags,
                  TextureType textureType,
@@ -38,6 +39,7 @@ Texture::Texture(core::ResourceManagerBase* resourceManager,
   : core::ResourceBase{ resourceManager, resourceId, false }
   , core::EnableRefFromThis{}
   , deviceRef_{ std::move(deviceRef) }
+  , samplerRef_{ std::move(samplerRef) }
   , allocation_{ VK_NULL_HANDLE }
   , vkImage_{ VK_NULL_HANDLE }
   , state_{ TextureState::UNDEFINED }

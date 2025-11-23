@@ -47,6 +47,7 @@ concept DeviceConcept = requires(T t,
                               metrix::member_function_return_type_t<decltype(&T::createTexture)>> &&
                std::is_same_v<metrix::type_list<GpuMemoryAllocationFlagBits,
                                                 TextureCreationFlagBits,
+                                                core::ResourceSharedRef,
                                                 TextureType,
                                                 Format,
                                                 uint32_t,

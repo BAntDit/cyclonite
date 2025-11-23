@@ -24,6 +24,8 @@ concept TextureConcept = requires(T t, uint16_t a) {
 
     { t.type() } -> std::same_as<TextureType>;
 
+    { t.sampler() } -> std::same_as<core::ResourceSharedRef>;
+
     { t.getRTV(a) } -> std::same_as<core::ResourceWeakRef>;
 };
 

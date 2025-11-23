@@ -439,6 +439,7 @@ auto Device::createBuffer(GpuMemoryAllocationFlagBits allocationFlags,
 
 auto Device::createTexture(GpuMemoryAllocationFlagBits allocationFlags,
                            TextureCreationFlagBits imageCreateFlags,
+                           core::ResourceSharedRef samplerRef,
                            TextureType textureType,
                            Format format,
                            uint32_t width,
@@ -456,6 +457,7 @@ auto Device::createTexture(GpuMemoryAllocationFlagBits allocationFlags,
     auto deviceRef = getSharedFromThis(this);
 
     result = resManager.allocResource<gfx::Texture>(deviceRef,
+                                                    std::move(samplerRef),
                                                     allocationFlags,
                                                     imageCreateFlags,
                                                     textureType,

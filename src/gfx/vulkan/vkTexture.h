@@ -22,6 +22,7 @@ public:
     Texture(core::ResourceManagerBase* resourceManager,
             core::ResourceId resourceId,
             core::ResourceSharedRef deviceRef,
+            core::ResourceSharedRef samplerRef,
             GpuMemoryAllocationFlagBits allocationFlags,
             TextureCreationFlagBits imageCreateFlags,
             TextureType textureType,
@@ -54,10 +55,15 @@ public:
 
     [[nodiscard]] auto handle() const -> VkImage { return vkImage_; }
 
+    [[nodiscard]] auto sampler() const -> core::ResourceSharedRef { return samplerRef_; }
+
     [[nodiscard]] auto getRTV(uint16_t mipLevel) -> core::ResourceWeakRef;
+
+    // [[nodiscard]] auto getSRV(uint16_t mipLevel) -> core::ResourceWeakRef;
 
 private:
     core::ResourceSharedRef deviceRef_;
+    core::ResourceSharedRef samplerRef_;
     VmaAllocation allocation_;
     VkImage vkImage_;
     TextureState state_;
