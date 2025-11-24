@@ -45,6 +45,7 @@ void SubmissionBatchRecorder::finish(bool noexceptions)
             std::rethrow_exception(ex);
         }
     }
+    queueSubmissionRecorder_ = nullptr;
 }
 
 void SubmissionBatchRecorder::addBatchDependency(size_t dependencyIndex, PipelineStageFlagBits stageMask)

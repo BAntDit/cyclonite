@@ -109,7 +109,7 @@ RenderWindow::RenderWindow(core::ResourceManagerBase* resourceManager,
                            std::string_view title,
                            SurfaceFlagBits flags)
   : core::ResourceBase{ resourceManager, resourceId, false }
-  , deviceRef_{ deviceRef }
+  , deviceRef_{ std::move(deviceRef) }
   , extent_{}
   , sdlWindowPtr_{ SDL_CreateWindow(title.data(),
                                     static_cast<int>(width),
@@ -252,6 +252,7 @@ void RenderWindow::validateDepthStencil(Format format)
 
         depthStencilRefs_[i] = device.createTexture(allocationFlags,
                                                     creationFlags,
+                                                    core::ResourceSharedRef{},
                                                     TextureType::TEXTURE_2D,
                                                     format,
                                                     extent_.width,

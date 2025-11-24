@@ -93,8 +93,6 @@ void QueueSubmissionRecorder::finish(bool noexceptions)
         if (auto ex = multithreading::Executor::threadExecutor().taskManager().getLastException(); ex) {
             std::rethrow_exception(ex);
         }
-
-        submissionRef_ = core::ResourceSharedRef{};
     } catch (...) {
         if (noexceptions) {
             submission_->reset();
@@ -105,5 +103,7 @@ void QueueSubmissionRecorder::finish(bool noexceptions)
             std::rethrow_exception(ex);
         }
     }
+
+    submissionRef_ = core::ResourceSharedRef{};
 }
 }

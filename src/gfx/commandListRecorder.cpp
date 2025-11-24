@@ -235,5 +235,6 @@ void CommandListRecorder::finish(bool noexceptions)
             std::rethrow_exception(ex);
         }
     }
+    batchRecorder_ = nullptr;
 }
 }

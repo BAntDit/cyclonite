@@ -85,7 +85,7 @@ void DescriptorSet::update(std::span<DescriptorWriteData const> updateData)
 
             imageInfo.imageView = VK_NULL_HANDLE;
             imageInfo.sampler = sampler.handle();
-            imageInfo.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
             writeDesc.pImageInfo = &imageInfo;
         }
