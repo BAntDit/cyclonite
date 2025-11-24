@@ -5,7 +5,10 @@
 #include "core/resourceBase.h"
 #include "core/resourceSharedRef.h"
 #include "gfx/common.h"
+#include "gfx/descriptorUpdateData.h"
 #include "handle.h"
+#include <span>
+#include <variant>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
@@ -22,6 +25,8 @@ public:
     [[nodiscard]] auto index() const -> uint32_t { return index_; }
 
     [[nodiscard]] auto handle() const -> VkDescriptorSet { return vkDescriptorSet_; }
+
+    void update(std::span<DescriptorWriteData const> updateData);
 
 private:
     core::ResourceSharedRef descriptorPool_;

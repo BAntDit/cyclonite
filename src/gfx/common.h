@@ -9,6 +9,7 @@
 #include <SDL3/SDL_video.h>
 #include <common.h>
 #include <metrix/enum.h>
+#include <variant>
 
 namespace cyclonite::gfx {
 namespace type_traits {

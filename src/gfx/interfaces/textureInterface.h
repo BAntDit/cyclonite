@@ -28,7 +28,7 @@ concept TextureConcept = requires(T t, uint16_t a) {
 
     { t.getRTV(a) } -> std::same_as<core::ResourceWeakRef>;
 
-    { t.getSRV() } -> std::same_as<void>;
+    { t.getSRV() } -> std::same_as<core::ResourceSharedRef>;
 };
 
 template<TextureConcept PlatformImplementation>
