@@ -32,7 +32,7 @@ public:
             BorderColor borderColor,
             bool unnormalizedCoords);
 
-    [[nodiscard]] auto handler() const -> VkSampler { return static_cast<VkSampler>(vkSampler_); }
+    [[nodiscard]] auto handle() const -> VkSampler { return static_cast<VkSampler>(vkSampler_); }
 
     [[nodiscard]] auto magFilter() const -> TextureFilter { return magFilter_; }
 

@@ -6,12 +6,16 @@
 #define CYCLONITE_GFX_DESCRIPTOR_SET_INTERFACE_H
 
 #include "core/resourceBase.h"
+#include "gfx/descriptorUpdateData.h"
 #include <concepts>
+#include <span>
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept DescriptorSetConcept = requires(T t) {
+concept DescriptorSetConcept = requires(T t, std::span<DescriptorWriteData const> data) {
     { t.index() } -> std::same_as<uint32_t>;
+
+    { t.update(data) } -> std::same_as<void>;
 };
 
 template<DescriptorSetConcept PlatformImplementation>
@@ -23,6 +27,7 @@ public:
     using PlatformImplementation::index;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::resourceBase;
+    using PlatformImplementation::update;
 };
 }
 

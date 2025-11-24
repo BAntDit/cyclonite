@@ -7,6 +7,7 @@
 #include "gfx/device.h"
 #include "gfx/sampler.h"
 #include "gfx/texture.h"
+#include "gfx/shaderResourceView.h"
 #include "internal/utils.h"
 #include "vkDescriptorPool.h"
 #include <vector>
@@ -51,25 +52,40 @@ void DescriptorSet::update(std::span<DescriptorWriteData const> updateData)
         if (descType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || descType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
             descType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
             descType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC) {
+            auto bufferInfo = VkDescriptorBufferInfo{};
 
-            // TODO::
+            auto const& bufferDesc = std::get<BufferResourceDescription>(desc);
+            auto& buffer = resource.as<type_traits::platform_implementation_t<gfx::Buffer>>();
 
+            bufferInfo.buffer = buffer.handle();
+            bufferInfo.offset = bufferDesc.offset;
+            bufferInfo.range = bufferDesc.size;
+
+            writeDesc.pBufferInfo = &bufferInfo;
         } else if (descType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
             auto imageInfo = VkDescriptorImageInfo{};
 
             auto& texture = resource.as<type_traits::platform_implementation_t<gfx::Texture>>();
             auto srvRef = texture.getSRV();
-            auto sampler = texture.sampler();
+            auto samplerRef = texture.sampler();
 
-            // TODO::
+            auto& srv = srvRef.as<type_traits::platform_implementation_t<gfx::ShaderResourceView>>();
+            auto& sampler = samplerRef.as<type_traits::platform_implementation_t<gfx::Sampler>>();
+
+            auto const & imageDesc = std::get<TextureResourceDescription>(desc);
+
+            imageInfo.imageView = srv.handle();
+            imageInfo.sampler = sampler.handle();
+            imageInfo.imageLayout = internal::getImageLayout(imageDesc.state);
 
             writeDesc.pImageInfo = &imageInfo;
         } else if (descType == VK_DESCRIPTOR_TYPE_SAMPLER) {
             auto imageInfo = VkDescriptorImageInfo{};
             auto& sampler = resource.as<type_traits::platform_implementation_t<gfx::Sampler>>();
 
-
-            // TODO::
+            imageInfo.imageView = VK_NULL_HANDLE;
+            imageInfo.sampler = sampler.handle();
+            imageInfo.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
 
             writeDesc.pImageInfo = &imageInfo;
         }
