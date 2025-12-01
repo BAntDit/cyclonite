@@ -32,7 +32,7 @@ class CycloniteRecipe(ConanFile):
 
     settings = "os", "compiler", "arch", "build_type"
 
-    export_sources = "CMakeLists.txt", "*.cmake", ".clang-format", ".md", "src/*", "tests/*", "examples/*", "cmake/*"
+    export_sources = "CMakeLists.txt", "*.cmake", ".clang-format", ".md", "src/*", "tests/*", "examples/*", "cmake/*", "tools/*"
 
     def build_requirements(self):
         self.tool_requires("cmake/[>=3.10]")
@@ -48,12 +48,13 @@ class CycloniteRecipe(ConanFile):
         self.requires("sdl/3.2.6")
 
         if self.options.gapi == "vulkan":
+            self.requires("spirv-headers/1.3.243.0")
+            self.requires("spirv-tools/1.3.243.0")
+            self.requires("glslang/1.3.243.0")
+            self.requires("spirv-cross/1.3.243.0")
             self.requires("vulkan-validationlayers/1.3.243.0")
             self.requires("vulkan-loader/1.3.243.0")
             self.requires("vulkan-headers/1.3.243.0")
-            self.requires("glslang/1.3.243.0")
-            self.requires("spirv-tools/1.3.243.0")
-            self.requires("spirv-headers/1.3.243.0")
             self.requires("vulkan-memory-allocator/3.0.1")
 
         self.requires("boost/1.87.0")

@@ -1,0 +1,8 @@
+//
+// Created by anton on 11/29/25.
+//
+
+#ifndef CYCLONITE_COMPILER_INPUT_H
+#define CYCLONITE_COMPILER_INPUT_H
+
+#endif // CYCLONITE_COMPILER_INPUT_H

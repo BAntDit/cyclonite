@@ -251,6 +251,11 @@ CODE_STYLE_CORRECTION("${ALL_SOURCES_FOR_STYLE_CORRECTION}")
 
 include(SubDirectoryList.cmake)
 
+SUBDIRLIST(TOOLDIRS "${CMAKE_CURRENT_SOURCE_DIR}/tools")
+foreach(tool ${TOOLDIRS})
+    add_subdirectory("tools/${tool}")
+endforeach()
+
 SUBDIRLIST(EXANPLEDIRS "${CMAKE_CURRENT_SOURCE_DIR}/examples")
 foreach(example ${EXANPLEDIRS})
   add_subdirectory("examples/${example}")
