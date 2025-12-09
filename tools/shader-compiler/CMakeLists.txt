@@ -7,3 +7,4 @@ file(GLOB TOOLS_SHADER_COMPILER_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/includes/*.
 set(TOOL_COMMON_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/includes/")
 
 add_subdirectory("lib")
+add_subdirectory("app")
