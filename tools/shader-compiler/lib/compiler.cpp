@@ -3,8 +3,11 @@
 //
 
 #include "compiler.h"
+#if !defined(_WIN32) // _WIN32 / _WIN64 at once
 #include <dxc/WinAdapter.h>
+#endif
 #include <stdexcept>
+#include <utility>
 
 namespace cyclonite::tools
 {
@@ -55,5 +58,13 @@ Compiler::~Compiler()
         dxcLibrary_->Release();
         dxcLibrary_ = nullptr;
     }
+}
+
+auto Compiler::operator=(Compiler&& rhs) noexcept -> Compiler& 
+{
+    dxcLibrary_ = std::exchange(rhs.dxcLibrary_, nullptr);
+    dxcUtils_ = std::exchange(rhs.dxcUtils_, nullptr);
+    dxcCompiler_ = std::exchange(rhs.dxcCompiler_, nullptr);
+    return *this;
 }
 }

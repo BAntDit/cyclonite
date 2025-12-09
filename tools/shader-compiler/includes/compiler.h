@@ -5,7 +5,12 @@
 #ifndef CYCLONITE_TOOLS_COMPILER_H
 #define CYCLONITE_TOOLS_COMPILER_H
 
+#if !defined(_WIN32) // _WIN32 / _WIN64 at once 
 #include <dxc/dxcapi.h>
+#else
+#include <windows.h>
+#include <dxcapi.h>
+#endif
 
 namespace cyclonite::tools {
 class Compiler
@@ -18,6 +23,10 @@ public:
     Compiler(Compiler&& compiler) noexcept;
 
     ~Compiler();
+
+    auto operator=(Compiler const&) -> Compiler& = delete;
+
+    auto operator=(Compiler&& rhs) noexcept -> Compiler&; 
 
 private:
     IDxcLibrary* dxcLibrary_;
