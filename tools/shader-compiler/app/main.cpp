@@ -122,5 +122,11 @@ int main(int argc, char* argv[])
         ("verifyrootsignature", "Verify shader bytecode with root signature")
         ("Wno", "Enable/Disable the specified warning");
 
+    auto vm = po::variables_map{};
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+
+    // TODO:: save cmd into options struct
+
     return 0;
 }
