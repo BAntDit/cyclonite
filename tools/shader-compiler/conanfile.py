@@ -13,7 +13,36 @@ class ToolsShaderCompilerRecipe(ConanFile):
 
     def requirements(self):
         self.requires("dxcompiler/1.8.2505@")
-        self.requires("boost/1.87.0")
+        self.requires("boost/1.87.0", options={
+            "header_only": True,
+            "without_stacktrace": True,
+            "without_locale": True,
+            "without_serialization": True,
+            "without_wave": True,
+            "without_graph": True,
+            "without_math": True,
+            "without_regex": True,
+            "without_test": True,
+            "without_log": True,
+            "without_coroutine": True,
+            "without_fiber": True,
+            "without_context": True,
+            "without_contract": True,
+            "without_type_erasure": True,
+            "without_cobalt": True,
+            "without_iostreams": True,
+            "without_process": True,
+            "without_thread": True,
+            "without_random": True,
+            "without_system": True,
+            "without_python": True,
+            "without_chrono": True,
+            "without_atomic": True,
+            "without_filesystem": True,
+            "without_json": True,
+            "without_nowide": True,
+            "without_url": True
+        })
 
     def configure(self):
         self.settings.compiler.cppstd = "20"
