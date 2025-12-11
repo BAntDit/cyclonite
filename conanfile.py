@@ -51,7 +51,6 @@ class CycloniteRecipe(ConanFile):
             self.requires("spirv-headers/1.3.243.0")
             self.requires("spirv-tools/1.3.243.0")
             self.requires("glslang/1.3.243.0")
-            self.requires("spirv-cross/1.3.243.0")
             self.requires("vulkan-validationlayers/1.3.243.0")
             self.requires("vulkan-loader/1.3.243.0")
             self.requires("vulkan-headers/1.3.243.0")
