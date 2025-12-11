@@ -5,33 +5,33 @@
 #ifndef CYCLONITE_TOOLS_COMPILER_H
 #define CYCLONITE_TOOLS_COMPILER_H
 
-#if !defined(_WIN32) // _WIN32 / _WIN64 at once 
+#if !defined(_WIN32) // _WIN32 / _WIN64 at once
 #include <dxc/dxcapi.h>
 #else
-#include <windows.h>
 #include <dxcapi.h>
+#include <windows.h>
 #endif
 
 namespace cyclonite::tools {
 class Compiler
 {
 public:
-    Compiler();
+  Compiler();
 
-    Compiler(Compiler const&) = delete;
+  Compiler(Compiler const&) = delete;
 
-    Compiler(Compiler&& compiler) noexcept;
+  Compiler(Compiler&& compiler) noexcept;
 
-    ~Compiler();
+  ~Compiler();
 
-    auto operator=(Compiler const&) -> Compiler& = delete;
+  auto operator=(Compiler const&) -> Compiler& = delete;
 
-    auto operator=(Compiler&& rhs) noexcept -> Compiler&; 
+  auto operator=(Compiler&& rhs) noexcept -> Compiler&;
 
 private:
-    IDxcLibrary* dxcLibrary_;
-    IDxcUtils* dxcUtils_;
-    IDxcCompiler* dxcCompiler_;
+  IDxcLibrary* dxcLibrary_;
+  IDxcUtils* dxcUtils_;
+  IDxcCompiler* dxcCompiler_;
 };
 }
 

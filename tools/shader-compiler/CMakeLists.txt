@@ -6,5 +6,14 @@ file(GLOB TOOLS_SHADER_COMPILER_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/includes/*.
 
 set(TOOL_COMMON_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/includes/")
 
-#add_subdirectory("lib")
+file(GLOB_RECURSE ALL_HEADERS "includes/*.h")
+file(GLOB_RECURSE ALL_LIB_SOURCES "lib/*.cpp")
+file(GLOB_RECURSE ALL_APP_SOURCES "app/*.cpp")
+
+set(ALL_SOURCES_FOR_STYLE_CORRECTION ${ALL_HEADERS} ${ALL_LIB_SOURCES} ${ALL_APP_SOURCES})
+
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../ClangFormat.cmake")
+CODE_STYLE_CORRECTION("${ALL_SOURCES_FOR_STYLE_CORRECTION}")
+
+add_subdirectory("lib")
 add_subdirectory("app")
