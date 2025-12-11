@@ -16,22 +16,22 @@ namespace cyclonite::tools {
 class Compiler
 {
 public:
-  Compiler();
+    Compiler();
 
-  Compiler(Compiler const&) = delete;
+    Compiler(Compiler const&) = delete;
 
-  Compiler(Compiler&& compiler) noexcept;
+    Compiler(Compiler&& compiler) noexcept;
 
-  ~Compiler();
+    ~Compiler();
 
-  auto operator=(Compiler const&) -> Compiler& = delete;
+    auto operator=(Compiler const&) -> Compiler& = delete;
 
-  auto operator=(Compiler&& rhs) noexcept -> Compiler&;
+    auto operator=(Compiler&& rhs) noexcept -> Compiler&;
 
 private:
-  IDxcLibrary* dxcLibrary_;
-  IDxcUtils* dxcUtils_;
-  IDxcCompiler* dxcCompiler_;
+    IDxcLibrary* dxcLibrary_;
+    IDxcUtils* dxcUtils_;
+    IDxcCompiler* dxcCompiler_;
 };
 }
 

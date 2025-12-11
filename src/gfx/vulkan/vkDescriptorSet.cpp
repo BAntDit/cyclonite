@@ -6,8 +6,8 @@
 #include "gfx/buffer.h"
 #include "gfx/device.h"
 #include "gfx/sampler.h"
-#include "gfx/texture.h"
 #include "gfx/shaderResourceView.h"
+#include "gfx/texture.h"
 #include "internal/utils.h"
 #include "vkDescriptorPool.h"
 #include <vector>
@@ -72,7 +72,7 @@ void DescriptorSet::update(std::span<DescriptorWriteData const> updateData)
             auto& srv = srvRef.as<type_traits::platform_implementation_t<gfx::ShaderResourceView>>();
             auto& sampler = samplerRef.as<type_traits::platform_implementation_t<gfx::Sampler>>();
 
-            auto const & imageDesc = std::get<TextureResourceDescription>(desc);
+            auto const& imageDesc = std::get<TextureResourceDescription>(desc);
 
             imageInfo.imageView = srv.handle();
             imageInfo.sampler = sampler.handle();

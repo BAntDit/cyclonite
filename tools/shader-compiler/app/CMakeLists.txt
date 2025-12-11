@@ -28,5 +28,5 @@ endif()
 
 target_include_directories("${PROJECT_NAME}-app" PUBLIC "${TOOL_COMMON_INCLUDE_DIRS}")
 
-find_package(Boost COMPONENTS program_options REQUIRED)
+find_package(Boost COMPONENTS)
 target_link_libraries("${PROJECT_NAME}-app" boost::boost)
