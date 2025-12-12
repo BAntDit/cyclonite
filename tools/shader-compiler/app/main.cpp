@@ -29,8 +29,7 @@ int main(int argc, char* argv[])
       "generation for late validation. (Ignored if /Zi is passed)")(
       "Fd",
       "Write debug information to the given file, or automatically named file in "
-      "directory")("Fe", "Output warnings and errors to the given file")(
-      "Fh", "Output header file containing object code")("Fi", "Set preprocess output file name (with /P)")(
+      "directory")("Fe", "Output warnings and errors to the given file")("Fi", "Set preprocess output file name (with /P)")(
       "flegacy-macro-expansion",
       "Expand the operands before performing token-pasting operation (fxc "
       "behavior)")("fnew-inlining-behavior",
@@ -80,8 +79,8 @@ int main(int argc, char* argv[])
       "Collect all global constants outside cbuffer declarations into cbuffer "
       "GlobalCB")("extract-entry-uniforms", "Move uniform parameters from entry point to global scope")(
       "global-extern-by-default", "Set extern on non-static globals")("keep-user-macro",
-                                                                      "Write out user defines after rewritten HLSL")(
-      "line-directive", "Add line directive")("remove-unused-functions", "Remove unused functions and types")(
+                                                                      "Write out user defines after rewritten HLSL")
+        ("remove-unused-functions", "Remove unused functions and types")(
       "remove-unused-globals",
       "Remove unused static globals and functions")("skip-fn-body", "Translate function definitions to declarations")(
       "skip-static", "Remove static functions and globals when used with -skip-fn-body")(
@@ -95,9 +94,7 @@ int main(int argc, char* argv[])
       "name.")("fspv-extension", "Specify SPIR-V extension permitted to use.")(
       "fspv-flatten-resource-arrays",
       "Flatten arrays of resources so each array element takes one binding "
-      "number.")("fspv-flatten-resource-arrays",
-                 "Flatten arrays of resources so each array element takes one "
-                 "binding number.")("fspv-max-id",
+      "number.")("fspv-max-id",
                                     "Set the maximum value for an id in the SPIR-V binary. Default is "
                                     "0x3FFFFF, which is the largest value all drivers must support.")(
       "fspv-preserve-bindings",
