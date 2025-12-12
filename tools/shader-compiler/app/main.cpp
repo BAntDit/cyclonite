@@ -13,22 +13,14 @@ int main(int argc, char* argv[])
       "auto-binding-space", "Set auto binding space - enables auto resource binding in libraries")(
       "default-linkage",
       "Set default linkage for non-shader functions when compiling or linking to "
-      "a library target (internal, external)")(
-      "disable-payload-qualifiers",
-      "Disables support for payload access qualifiers for raytracing payloads in "
-      "SM 6.7.")("D", "Define macro")("enable-16bit-types",
-                                      "Enable 16bit types and disable min precision types. Available in HLSL "
-                                      "2018 and shader model 6.2")("enable-lifetime-markers",
-                                                                   "Enable generation of lifetime markers")(
-      "enable-payload-qualifiers",
-      "Enables support for payload access qualifiers for raytracing payloads in "
-      "SM 6.6.")("encoding",
-                 "Set default encoding for source inputs and text outputs "
-                 "(utf8	utf16(win)	utf32(*nix)	wide) default=utf8")("export-shaders-only",
-                                                                     "Only export shaders when compiling a library.")(
-      "exports",
-      "Specify exports when compiling a library: "
-      "export1[[,export1_clone,…]=internal_name][;…]")("E", "Entry point name")(
+      "a library target (internal, external)")("D", "Define macro")(
+      "enable-16bit-types",
+      "Enable 16bit types and disable min precision types. Available in HLSL "
+      "2018 and shader model 6.2")("enable-lifetime-markers", "Enable generation of lifetime markers")(
+      "encoding",
+      "Set default encoding for source inputs and text outputs "
+      "(utf8	utf16(win)	utf32(*nix)	wide) default=utf8")(
+      "export-shaders-only", "Only export shaders when compiling a library.")("E", "Entry point name")(
       "fdiagnostics-format",
       "Select diagnostic message format. Supported values: clang, msvc, "
       "mdvc-fallback, vi")("fdiagnostics-show-option", "Print option name with mappable diagnostics")(

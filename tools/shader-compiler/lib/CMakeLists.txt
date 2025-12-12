@@ -30,3 +30,4 @@ target_include_directories("${PROJECT_NAME}-lib" PUBLIC "${TOOL_COMMON_INCLUDE_D
 find_package(dxcompiler REQUIRED)
 target_link_libraries("${PROJECT_NAME}-lib" PRIVATE dxcompiler::dxcompiler)
 
+
