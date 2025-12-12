@@ -1,6 +1,9 @@
 
 #include <boost/program_options.hpp>
 #include <iostream>
+#include <string>
+#include <cstdint>
+#include <array>
 
 int main(int argc, char* argv[])
 {
@@ -11,37 +14,40 @@ int main(int argc, char* argv[])
       "Qunused-arguments", "Don’t emit warning for unused driver arguments")("all-resources-bound",
                                                                              "Enables aggressive flattening")(
       "auto-binding-space", "Set auto binding space - enables auto resource binding in libraries")(
-      "default-linkage",
+      "default-linkage", po::value<std::string>(),
       "Set default linkage for non-shader functions when compiling or linking to "
-      "a library target (internal, external)")("D", "Define macro")(
+      "a library target (internal, external)")("D", po::value<std::string>(), "Define macro")(
       "enable-16bit-types",
       "Enable 16bit types and disable min precision types. Available in HLSL "
       "2018 and shader model 6.2")("enable-lifetime-markers", "Enable generation of lifetime markers")(
-      "encoding",
+      "encoding", po::value<std::string>(),
       "Set default encoding for source inputs and text outputs "
       "(utf8	utf16(win)	utf32(*nix)	wide) default=utf8")(
       "export-shaders-only", "Only export shaders when compiling a library.")("E", "Entry point name")(
-      "fdiagnostics-format",
+      "fdiagnostics-format", po::value<std::string>(),
       "Select diagnostic message format. Supported values: clang, msvc, "
       "mdvc-fallback, vi")("fdiagnostics-show-option", "Print option name with mappable diagnostics")(
       "fdisable-loc-tracking",
       "Disable source location tracking in IR. This will break diagnostic "
       "generation for late validation. (Ignored if /Zi is passed)")(
-      "Fd",
+      "Fd", po::value<std::string>(),
       "Write debug information to the given file, or automatically named file in "
-      "directory")("Fe", "Output warnings and errors to the given file")("Fi", "Set preprocess output file name (with /P)")(
+      "directory")("Fe", po::value<std::string>(), "Output warnings and errors to the given file")
+      ("Fi", po::value<std::string>(), "Set preprocess output file name (with /P)")(
       "flegacy-macro-expansion",
       "Expand the operands before performing token-pasting operation (fxc "
       "behavior)")("fnew-inlining-behavior",
                    "Experimental option to use heuristics-driven late inlining "
                    "and disable alwaysinline annotation for library shaders")(
       "fno-diagnostics-show-option", "Do not print option name with mappable diagnostics")(
-      "force-rootsig-ver", "force root signature version (rootsig_1_1 if omitted)")("Fo", "Output file")(
-      "Fre", "Output reflection to the given file")("Frs", "Output root signature to the given file")(
-      "Fsh", "Output shader hash to the given file")("Gec", "Enable backward compatibility mode")(
+      "force-rootsig-ver", "force root signature version (rootsig_1_1 if omitted)")
+      ("Fo", po::value<std::string>(), "Output file")(
+      "Fre", po::value<std::string>(), "Output reflection to the given file")
+      ("Frs", po::value<std::string>(), "Output root signature to the given file")(
+      "Fsh", po::value<std::string>(), "Output shader hash to the given file")("Gec", "Enable backward compatibility mode")(
       "Ges", "Enable strict mode")("Gfa", "Avoid flow control constructs")("Gfp", "Prefer flow control constructs")(
-      "Gis", "Force IEEE strictness")("HV", "HLSL version (2016, 2017, 2018, 2021). Default is 2021")(
-      "ignore-line-directives", "Ignore line directives")("I", "Add directory to include search path")(
+      "Gis", "Force IEEE strictness")("HV", po::value<uint16_t>(), "HLSL version (2016, 2017, 2018, 2021). Default is 2021")(
+      "ignore-line-directives", "Ignore line directives")("I", po::value<std::string>(), "Add directory to include search path")(
       "Ni", "Output instruction numbers in assembly listings")("no-warnings",
                                                                "Suppress warnings")("Od", "Disable optimizations")(
       "pack-optimized",
@@ -49,8 +55,8 @@ int main(int argc, char* argv[])
       "connecting stage")("pack-prefix-stable",
                           "(default) Pack signatures preserving prefix-stable property - appended "
                           "elements will not disturb placement of prior elements")(
-      "res-may-alias", "Assume that UAVs/SRVs may alias")("rootsig-define", "Read root signature from a #define")(
-      "T",
+      "res-may-alias", "Assume that UAVs/SRVs may alias")("rootsig-define", po::value<std::string>(), "Read root signature from a #define")(
+      "T", po::value<uint8_t>(),
       "Set target profile. profile: ps_6_0, ps_6_1, ps_6_2, ps_6_3, ps_6_4, "
       "ps_6_5, ps_6_6, ps_6_7, ps_6_8, ps_6_9, vs_6_0, vs_6_1, vs_6_2, vs_6_3, "
       "vs_6_4, vs_6_5, vs_6_6, vs_6_7, vs_6_8, vs_6_9, gs_6_0, gs_6_1, gs_6_2, "
@@ -85,16 +91,16 @@ int main(int argc, char* argv[])
       "Remove unused static globals and functions")("skip-fn-body", "Translate function definitions to declarations")(
       "skip-static", "Remove static functions and globals when used with -skip-fn-body")(
       "unchanged", "Rewrite HLSL, without changes.")(
-      "fspv-debug",
+      "fspv-debug", po::value<std::string>(),
       "Specify whitelist of debug info category (file -> source -> line, tool, "
       "vulkan-with-source)")("fspv-enable-maximal-reconvergence",
                              "Enables the MaximallyReconvergesKHR execution mode for this module.")(
-      "fspv-entrypoint-name",
+      "fspv-entrypoint-name", po::value<std::string>(),
       "Specify the SPIR-V entry point name. Defaults to the HLSL entry point "
-      "name.")("fspv-extension", "Specify SPIR-V extension permitted to use.")(
+      "name.")("fspv-extension", po::value<std::string>(), "Specify SPIR-V extension permitted to use.")(
       "fspv-flatten-resource-arrays",
       "Flatten arrays of resources so each array element takes one binding "
-      "number.")("fspv-max-id",
+      "number.")("fspv-max-id", po::value<uint32_t>(),
                                     "Set the maximum value for an id in the SPIR-V binary. Default is "
                                     "0x3FFFFF, which is the largest value all drivers must support.")(
       "fspv-preserve-bindings",
@@ -105,22 +111,22 @@ int main(int argc, char* argv[])
       "fspv-reduce-load-size",
       "Replaces loads of composite objects to reduce memory pressure for the "
       "loads")("fspv-reflect", "Emit additional SPIR-V instructions to aid reflection")(
-      "fspv-target-env", "Specify the target environment: vulkan1.0 (default)")(
+      "fspv-target-env", po::value<std::string>(), "Specify the target environment: vulkan1.0 (default)")(
       "fspv-use-legacy-buffer-matrix-order",
       "Assume the legacy matrix order (row major) when accessing raw buffers "
       "(e.g., ByteAdddressBuffer)")("fspv-use-vulkan-memory-model",
                                     "Generates SPIR-V modules that use the "
                                     "Vulkan memory model instead of GLSL450.")(
       "fvk-auto-shift-bindings", "Apply fvk-*-shift to resources without an explicit register assignment.")(
-      "fvk-b-shift", "Specify Vulkan binding number shift for b-type register")(
-      "fvk-bind-counter-heap", "Specify Vulkan binding number and set number for the counter heap.")(
-      "fvk-bind-globals", "Specify Vulkan binding number and set number for the globals cbuffer")(
-      "fvk-bind-register", "Specify Vulkan descriptor set and binding for a specific register")(
-      "fvk-bind-resource-heap", "Specify Vulkan binding number and set number for the resource heap.")(
-      "fvk-bind-sampler-heap", "Specify Vulkan binding number and set number for the sampler heap.")(
+      "fvk-b-shift", po::value<uint32_t>(), "Specify Vulkan binding number shift for b-type register")(
+      "fvk-bind-counter-heap", po::value<std::array<uint32_t, 2>>()->multitoken(), "Specify Vulkan binding number and set number for the counter heap.")(
+      "fvk-bind-globals", po::value<std::array<uint32_t, 2>>()->multitoken(), "Specify Vulkan binding number and set number for the globals cbuffer")(
+      "fvk-bind-register", po::value<std::array<uint32_t, 2>>()->multitoken(), "Specify Vulkan descriptor set and binding for a specific register")(
+      "fvk-bind-resource-heap", po::value<std::array<uint32_t, 2>>()->multitoken(), "Specify Vulkan binding number and set number for the resource heap.")(
+      "fvk-bind-sampler-heap", po::value<std::array<uint32_t, 2>>()->multitoken(), "Specify Vulkan binding number and set number for the sampler heap.")(
       "fvk-invert-y",
       "Negate SV_Position.y before writing to stage output in VS/DS/GS/MS/Lib to "
-      "accommodate Vulkan’s coordinate system.")("fvk-s-shift",
+      "accommodate Vulkan’s coordinate system.")("fvk-s-shift", po::value<uint32_t>(),
                                                  "Specify Vulkan binding number shift for s-type register")(
       "fvk-support-nonzero-base-instance",
       "Follow Vulkan spec to use gl_BaseInstance as the first vertex instance, "
@@ -129,25 +135,22 @@ int main(int argc, char* argv[])
       "fvk-support-nonzero-base-vertex",
       "Follow Vulkan spec to use gl_BaseVertex as the first vertex, which makes "
       "SV_VertexID = gl_VertexIndex - gl_BaseVertex (without this option, "
-      "SV_VertexID = gl_VertexIndex)")("fvk-t-shift", "Specify Vulkan binding number shift for t-type register")(
-      "fvk-u-shift", "Specify Vulkan binding number shift for u-type register")(
+      "SV_VertexID = gl_VertexIndex)")("fvk-t-shift", po::value<uint32_t>(), "Specify Vulkan binding number shift for t-type register")(
+      "fvk-u-shift", po::value<uint32_t>(), "Specify Vulkan binding number shift for u-type register")(
       "fvk-use-dx-layout", "Use DirectX memory layout for Vulkan resources")(
       "fvk-use-dx-position-w",
       "Reciprocate SV_Position.w after reading from stage input in PS to "
       "accommodate the difference between Vulkan and DirectX")(
       "fvk-use-gl-layout", "Use strict OpenGL std140/std430 memory layout for Vulkan resources")(
-      "fvk-use-scalar-layout", "Use scalar memory layout for Vulkan resources")("metal", "Generate Metal code")(
-      "Oconfig",
-      "Specify a comma-separated list of SPIRV-Tools passes to customize "
-      "optimization configuration (see http://khr.io/hlsl2spirv#optimization)")("spirv", "Generate SPIR-V code")(
+      "fvk-use-scalar-layout", "Use scalar memory layout for Vulkan resources")("metal", "Generate Metal code")
+      ("spirv", "Generate SPIR-V code")(
       "P", "Preprocess to file")("Qembed_debug", "Embed PDB in shader container (must be used with /Zi)")(
       "Qsource_in_debug_module", "Embed source code in PDB")("Qstrip_debug",
                                                              "Strip debug information from 4_0+ shader "
                                                              "bytecode (must be used with /Fo )")(
       "Qstrip_rootsignature", "Strip root signature data from shader bytecode (must be used with /Fo )")(
       "setrootsignature", "Attach root signature to shader bytecode")(
-      "verifyrootsignature", "Verify shader bytecode with root signature")("Wno",
-                                                                           "Enable/Disable the specified warning");
+      "verifyrootsignature", "Verify shader bytecode with root signature");
 
     auto vm = po::variables_map{};
     po::store(po::parse_command_line(argc, argv, desc), vm);
