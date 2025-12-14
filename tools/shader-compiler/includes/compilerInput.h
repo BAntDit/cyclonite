@@ -10,6 +10,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <limits>
 
 namespace cyclonite::tools {
 struct Options
@@ -115,10 +116,10 @@ struct Options
     std::vector<std::wstring> spvExtensions;                    // -fspv-extension
 
     uint32_t spvMaxId = 0x3FFFFF; // -fspv-max-id
-    uint32_t vkBShift = 0;        // -fvk-b-shift
-    uint32_t vkSShift = 0;        // -fvk-s-shift
-    uint32_t vkTShift = 0;        // -fvk-t-shift
-    uint32_t vkUShift = 0;        // -fvk-u-shift
+    uint32_t vkBShift = std::numeric_limits<uint32_t>::max(); // -fvk-b-shift
+    uint32_t vkSShift = std::numeric_limits<uint32_t>::max(); // -fvk-s-shift
+    uint32_t vkTShift = std::numeric_limits<uint32_t>::max(); // -fvk-t-shift
+    uint32_t vkUShift = std::numeric_limits<uint32_t>::max(); // -fvk-u-shift
 
     std::array<uint32_t, 2> vkBindCounterHeap;  // -fvk-bind-counter-heap
     std::array<uint32_t, 2> vkBindGlobals;      // -fvk-bind-globals

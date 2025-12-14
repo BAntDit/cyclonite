@@ -641,5 +641,41 @@ int main(int argc, char* argv[])
     options.spvReflect = vm.contains("fspv-reflect");
     options.spvMaxId = vm["fspv-max-id"].as<uint32_t>();
 
+    if (vm.contains("fspv-target-env")) {
+        auto s = vm["fspv-target-env"].as<std::string>();
+        if (s == "vulkan1.0") {
+            options.targetEnv = cyclonite::tools::SpvTargetEnv::Vulkan_1_0;
+        } else if (s == "vulkan1.1") {
+            options.targetEnv = cyclonite::tools::SpvTargetEnv::Vulkan_1_1;
+        } else if (s == "vulkan1.2") {
+            options.targetEnv = cyclonite::tools::SpvTargetEnv::Vulkan_1_2;
+        } else if (s == "vulkan1.3") {
+            options.targetEnv = cyclonite::tools::SpvTargetEnv::Vulkan_1_3;
+        } else if (s == "vulkan1.1_spv1.4") {
+            options.targetEnv = cyclonite::tools::SpvTargetEnv::Vulkan_1_1_Spirv_1_4;
+        } else if (s == "universal1.5") {
+            options.targetEnv = cyclonite::tools::SpvTargetEnv::Universal_1_5;
+        } else {
+            throw std::invalid_argument("Unknown spv-target-env option value");
+        }
+    }
+
+    options.spvUseLegacyBufferMatrixOrder = vm.contains("fspv-use-legacy-buffer-matrix-order");
+    options.spvUseVulkanMemoryModel = vm.contains("fspv-use-vulkan-memory-model");
+    options.vkAutoShiftBindings = vm.contains("fvk-auto-shift-bindings");
+
+    if (vm.contains("fvk-b-shift")) {
+        options.vkBShift = vm["fvk-b-shift"].as<uint32_t>();
+    }
+    if (vm.contains("fvk-s-shift")) {
+        options.vkSShift = vm["fvk-s-shift"].as<uint32_t>();
+    }
+    if (vm.contains("fvk-t-shift")) {
+        options.vkTShift = vm["fvk-t-shift"].as<uint32_t>();
+    }
+    if (vm.contains("fvk-u-shift")) {
+        options.vkUShift = vm["fvk-u-shift"].as<uint32_t>();
+    }
+
     return 0;
 }
