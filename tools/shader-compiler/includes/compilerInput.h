@@ -50,6 +50,7 @@ struct Options
     uint64_t noWarnings : 1;                                // -no-warnings
     uint64_t packOptimized : 1;                             // -pack-optimized
     uint64_t packPrefixStable : 1;                          // -pack-prefix-stable
+    uint64_t resMayAlias : 1;                               // -res-may-alias
     uint64_t disableValidation : 1;                         // -Vd
     uint64_t verify : 1;                                    // -verify
     uint64_t warningsAsErrors : 1;                          // -Wx
@@ -73,6 +74,9 @@ struct Options
     uint64_t stripDebug : 1;                                // -Qstrip_debug
     uint64_t stripRootSignature : 1;                        // -Qstrip_rootsignature
     uint64_t verifyRootSignature : 1;                       // -verifyrootsignature
+
+    TargetPlatform platform;
+    TargetGAPI gapi;
 
     OptionValue finiteMathOnly = OptionValue::Default; // ffinite-math-only / fno-finite-math-only
 

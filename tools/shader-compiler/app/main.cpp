@@ -13,11 +13,13 @@ int main(int argc, char* argv[])
     namespace po = boost::program_options;
 
     auto desc = po::options_description{ "shader-compiler options" };
-    desc.add_options()                                                        // options:
-      ("help", "Produce help message")                                        // --help
-      ("version", "Display compiler version information")                     // --version
-      ("Qunused-arguments", "Don’t emit warning for unused driver arguments") // --Qunused-arguments
-      ("all-resources-bound", "Enables aggressive flattening")                //
+    desc.add_options()                                                           // options:
+      ("help", "Produce help message")                                           // --help
+      ("version", "Display compiler version information")                        // --version
+      ("target-platform", po::value<std::string>(), "Specifies target platform") // --target-platform
+      ("target-gapi", po::value<std::string>(), "Specifies target GAPI")         // --target-gapi
+      ("Qunused-arguments", "Don’t emit warning for unused driver arguments")    // --Qunused-arguments
+      ("all-resources-bound", "Enables aggressive flattening")                   //
       ("auto-binding-space", "Set auto binding space - enables auto resource binding in libraries") //
       ("default-linkage",
        po::value<std::string>(),
@@ -70,8 +72,7 @@ int main(int argc, char* argv[])
       ("no-warnings", "Suppress warnings")                                                    //
       ("Od", "Disable optimizations")                                                         //
       ("pack-optimized",
-       "Optimize signature packing assuming identical signature provided for each "
-       "connecting stage") //
+       "Optimize signature packing assuming identical signature provided for each connecting stage") //
       ("pack-prefix-stable",
        "(default) Pack signatures preserving prefix-stable property - appended "
        "elements will not disturb placement of prior elements")                          //
@@ -99,8 +100,7 @@ int main(int argc, char* argv[])
       ("Zsb", "Compute Shader Hash considering only output binary")        //
       ("Zss", "Compute Shader Hash considering source information")        //
       ("Zs",
-       "Generate small PDB with just sources and compile options. Cannot be used "
-       "together with -Zi") //
+       "Generate small PDB with just sources and compile options. Cannot be used together with -Zi") //
       ("ffinite-math-only",
        "Allow optimizations for floating-point arithmetic that assume that "
        "arguments and results are not NaNs or +-Infs.") //
@@ -130,32 +130,28 @@ int main(int argc, char* argv[])
        "Enables the MaximallyReconvergesKHR execution mode for this module.") //
       ("fspv-entrypoint-name",
        po::value<std::string>(),
-       "Specify the SPIR-V entry point name. Defaults to the HLSL entry point "
-       "name.") //
-      ("fspv-extension", po::value<std::string>()->multitoken(), "Specify SPIR-V extension permitted to use.")(
-        "fspv-flatten-resource-arrays",
-        "Flatten arrays of resources so each array element takes one binding "
-        "number.") //
+       "Specify the SPIR-V entry point name. Defaults to the HLSL entry point name.") //
+      ("fspv-extension",
+       po::value<std::vector<std::string>>()->multitoken(),
+       "Specify SPIR-V extension permitted to use.") //
+      ("fspv-flatten-resource-arrays",
+       "Flatten arrays of resources so each array element takes one binding number.") //
       ("fspv-max-id",
-       po::value<uint32_t>(),
+       po::value<uint32_t>()->default_value(0x3FFFFF),
        "Set the maximum value for an id in the SPIR-V binary. Default is "
        "0x3FFFFF, which is the largest value all drivers must support.") //
       ("fspv-preserve-bindings",
        "Preserves all bindings declared within the module, even when those bindings are unused") //
       ("fspv-preserve-interface",
-       "Preserves all interface variables in the entry "
-       "point, even when those variables are unused") //
+       "Preserves all interface variables in the entry point, even when those variables are unused") //
       ("fspv-reduce-load-size",
-       "Replaces loads of composite objects to reduce memory pressure for the "
-       "loads")                                                                                            //
+       "Replaces loads of composite objects to reduce memory pressure for the loads")                      //
       ("fspv-reflect", "Emit additional SPIR-V instructions to aid reflection")                            //
       ("fspv-target-env", po::value<std::string>(), "Specify the target environment: vulkan1.0 (default)") //
       ("fspv-use-legacy-buffer-matrix-order",
-       "Assume the legacy matrix order (row major) when accessing raw buffers "
-       "(e.g., ByteAdddressBuffer)") //
+       "Assume the legacy matrix order (row major) when accessing raw buffers (e.g., ByteAdddressBuffer)") //
       ("fspv-use-vulkan-memory-model",
-       "Generates SPIR-V modules that use the "
-       "Vulkan memory model instead of GLSL450.")                                                            //
+       "Generates SPIR-V modules that use the Vulkan memory model instead of GLSL450.")                      //
       ("fvk-auto-shift-bindings", "Apply fvk-*-shift to resources without an explicit register assignment.") //
       ("fvk-b-shift", po::value<uint32_t>(), "Specify Vulkan binding number shift for b-type register")      //
       ("fvk-bind-counter-heap",
@@ -214,6 +210,32 @@ int main(int argc, char* argv[])
     }
 
     auto options = cyclonite::tools::Options{};
+
+    if (vm.contains("target-platform")) {
+        auto s = vm["target-platform"].as<std::string>();
+        if (s == "nix") {
+            options.platform = cyclonite::tools::TargetPlatform::Nix;
+        } else if (s == "windows") {
+            options.platform = cyclonite::tools::TargetPlatform::Windows;
+        } else if (s == "all") {
+            options.platform = cyclonite::tools::TargetPlatform::All;
+        } else {
+            throw std::invalid_argument("Unknown platform: " + s);
+        }
+    }
+
+    if (vm.contains("target-gapi")) {
+        auto s = vm["target-gapi"].as<std::string>();
+        if (s == "vulkan") {
+            options.gapi = cyclonite::tools::TargetGAPI::Vulkan;
+        } else if (s == "d3d12") {
+            options.gapi = cyclonite::tools::TargetGAPI::D3D12;
+        } else if (s == "all") {
+            options.gapi = cyclonite::tools::TargetGAPI::All;
+        } else {
+            throw std::invalid_argument("Unknown gapi: " + s);
+        }
+    }
 
     options.noWarningOnUnusedDriverArgs = vm.contains("Qunused-arguments");
     options.allResourcesBound = vm.contains("all-resources-bound");
@@ -275,7 +297,11 @@ int main(int argc, char* argv[])
     options.enableLifetimeMarkers = vm.contains("enable-lifetime-markers");
     options.exportShadersOnly = vm.contains("export-shaders-only");
 
-    if (vm.contains("E")) {
+    if (vm.contains("fspv-entrypoint-name")) {
+        auto s = vm["fspv-entrypoint-name"].as<std::string>();
+        auto conv = std::wstring_convert<std::codecvt_utf8<wchar_t>>{};
+        options.entryPointName = conv.from_bytes(s.data(), s.data() + s.size());
+    } else if (vm.contains("E")) {
         auto s = vm["E"].as<std::string>();
         auto conv = std::wstring_convert<std::codecvt_utf8<wchar_t>>{};
         options.entryPointName = conv.from_bytes(s.data(), s.data() + s.size());
@@ -362,7 +388,258 @@ int main(int argc, char* argv[])
 
     if (vm.contains("I")) {
         auto incldirs = vm["I"].as<std::vector<std::string>>();
+        for (auto& i : incldirs) {
+            auto conv = std::wstring_convert<std::codecvt_utf8<wchar_t>>{};
+            options.includeDirs.emplace_back(conv.from_bytes(i.data(), i.data() + i.size()));
+        }
     }
+
+    options.addsInstructionNummbersToAssemblerListing = vm.contains("Ni");
+    options.noWarnings = vm.contains("no-warnings");
+
+    if (vm.contains("Od")) {
+        options.optimization = cyclonite::tools::Optimization::Disable;
+    } else if (vm.contains("O0")) {
+        options.optimization = cyclonite::tools::Optimization::Level0;
+    } else if (vm.contains("O1")) {
+        options.optimization = cyclonite::tools::Optimization::Level1;
+    } else if (vm.contains("O2")) {
+        options.optimization = cyclonite::tools::Optimization::Level2;
+    } else if (vm.contains("O3")) {
+        options.optimization = cyclonite::tools::Optimization::Level3;
+    }
+
+    options.packOptimized = vm.contains("pack-optimized");
+    options.packPrefixStable = vm.contains("pack-prefix-stable");
+    options.resMayAlias = vm.contains("res-may-alias");
+
+    if (vm.contains("rootsig-define")) {
+        auto conv = std::wstring_convert<std::codecvt_utf8<wchar_t>>{};
+        options.rootSigDefine = conv.from_bytes(vm["rootsig-define"].as<std::string>());
+    }
+
+    if (vm.contains("T")) {
+        auto profile = vm["T"].as<std::string>();
+        if (profile == "ps_6_0") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ps_6_0;
+        } else if (profile == "ps_6_1") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ps_6_1;
+        } else if (profile == "ps_6_2") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ps_6_2;
+        } else if (profile == "ps_6_3") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ps_6_3;
+        } else if (profile == "ps_6_4") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ps_6_4;
+        } else if (profile == "ps_6_5") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ps_6_5;
+        } else if (profile == "ps_6_6") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ps_6_6;
+        } else if (profile == "ps_6_7") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ps_6_7;
+        } else if (profile == "ps_6_8") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ps_6_8;
+        } else if (profile == "ps_6_9") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ps_6_9;
+        } else if (profile == "vs_6_0") {
+            options.targetProfile = cyclonite::tools::TargetProfile::vs_6_0;
+        } else if (profile == "vs_6_1") {
+            options.targetProfile = cyclonite::tools::TargetProfile::vs_6_1;
+        } else if (profile == "vs_6_2") {
+            options.targetProfile = cyclonite::tools::TargetProfile::vs_6_2;
+        } else if (profile == "vs_6_3") {
+            options.targetProfile = cyclonite::tools::TargetProfile::vs_6_3;
+        } else if (profile == "vs_6_4") {
+            options.targetProfile = cyclonite::tools::TargetProfile::vs_6_4;
+        } else if (profile == "vs_6_5") {
+            options.targetProfile = cyclonite::tools::TargetProfile::vs_6_5;
+        } else if (profile == "vs_6_6") {
+            options.targetProfile = cyclonite::tools::TargetProfile::vs_6_6;
+        } else if (profile == "vs_6_7") {
+            options.targetProfile = cyclonite::tools::TargetProfile::vs_6_7;
+        } else if (profile == "vs_6_8") {
+            options.targetProfile = cyclonite::tools::TargetProfile::vs_6_8;
+        } else if (profile == "vs_6_9") {
+            options.targetProfile = cyclonite::tools::TargetProfile::vs_6_9;
+        } else if (profile == "gs_6_0") {
+            options.targetProfile = cyclonite::tools::TargetProfile::gs_6_0;
+        } else if (profile == "gs_6_1") {
+            options.targetProfile = cyclonite::tools::TargetProfile::gs_6_1;
+        } else if (profile == "gs_6_2") {
+            options.targetProfile = cyclonite::tools::TargetProfile::gs_6_2;
+        } else if (profile == "gs_6_3") {
+            options.targetProfile = cyclonite::tools::TargetProfile::gs_6_3;
+        } else if (profile == "gs_6_4") {
+            options.targetProfile = cyclonite::tools::TargetProfile::gs_6_4;
+        } else if (profile == "gs_6_5") {
+            options.targetProfile = cyclonite::tools::TargetProfile::gs_6_5;
+        } else if (profile == "gs_6_6") {
+            options.targetProfile = cyclonite::tools::TargetProfile::gs_6_6;
+        } else if (profile == "gs_6_7") {
+            options.targetProfile = cyclonite::tools::TargetProfile::gs_6_7;
+        } else if (profile == "gs_6_8") {
+            options.targetProfile = cyclonite::tools::TargetProfile::gs_6_8;
+        } else if (profile == "gs_6_9") {
+            options.targetProfile = cyclonite::tools::TargetProfile::gs_6_9;
+        } else if (profile == "hs_6_0") {
+            options.targetProfile = cyclonite::tools::TargetProfile::hs_6_0;
+        } else if (profile == "hs_6_1") {
+            options.targetProfile = cyclonite::tools::TargetProfile::hs_6_1;
+        } else if (profile == "hs_6_2") {
+            options.targetProfile = cyclonite::tools::TargetProfile::hs_6_2;
+        } else if (profile == "hs_6_3") {
+            options.targetProfile = cyclonite::tools::TargetProfile::hs_6_3;
+        } else if (profile == "hs_6_4") {
+            options.targetProfile = cyclonite::tools::TargetProfile::hs_6_4;
+        } else if (profile == "hs_6_5") {
+            options.targetProfile = cyclonite::tools::TargetProfile::hs_6_5;
+        } else if (profile == "hs_6_6") {
+            options.targetProfile = cyclonite::tools::TargetProfile::hs_6_6;
+        } else if (profile == "hs_6_7") {
+            options.targetProfile = cyclonite::tools::TargetProfile::hs_6_7;
+        } else if (profile == "hs_6_8") {
+            options.targetProfile = cyclonite::tools::TargetProfile::hs_6_8;
+        } else if (profile == "hs_6_9") {
+            options.targetProfile = cyclonite::tools::TargetProfile::hs_6_9;
+        } else if (profile == "ds_6_0") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ds_6_0;
+        } else if (profile == "ds_6_1") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ds_6_1;
+        } else if (profile == "ds_6_2") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ds_6_2;
+        } else if (profile == "ds_6_3") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ds_6_3;
+        } else if (profile == "ds_6_4") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ds_6_4;
+        } else if (profile == "ds_6_5") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ds_6_5;
+        } else if (profile == "ds_6_6") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ds_6_6;
+        } else if (profile == "ds_6_7") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ds_6_7;
+        } else if (profile == "ds_6_8") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ds_6_8;
+        } else if (profile == "ds_6_9") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ds_6_9;
+        } else if (profile == "cs_6_0") {
+            options.targetProfile = cyclonite::tools::TargetProfile::cs_6_0;
+        } else if (profile == "cs_6_1") {
+            options.targetProfile = cyclonite::tools::TargetProfile::cs_6_1;
+        } else if (profile == "cs_6_2") {
+            options.targetProfile = cyclonite::tools::TargetProfile::cs_6_2;
+        } else if (profile == "cs_6_3") {
+            options.targetProfile = cyclonite::tools::TargetProfile::cs_6_3;
+        } else if (profile == "cs_6_4") {
+            options.targetProfile = cyclonite::tools::TargetProfile::cs_6_4;
+        } else if (profile == "cs_6_5") {
+            options.targetProfile = cyclonite::tools::TargetProfile::cs_6_5;
+        } else if (profile == "cs_6_6") {
+            options.targetProfile = cyclonite::tools::TargetProfile::cs_6_6;
+        } else if (profile == "cs_6_7") {
+            options.targetProfile = cyclonite::tools::TargetProfile::cs_6_7;
+        } else if (profile == "cs_6_8") {
+            options.targetProfile = cyclonite::tools::TargetProfile::cs_6_8;
+        } else if (profile == "cs_6_9") {
+            options.targetProfile = cyclonite::tools::TargetProfile::cs_6_9;
+        } else if (profile == "lib_6_1") {
+            options.targetProfile = cyclonite::tools::TargetProfile::lib_6_1;
+        } else if (profile == "lib_6_2") {
+            options.targetProfile = cyclonite::tools::TargetProfile::lib_6_2;
+        } else if (profile == "lib_6_3") {
+            options.targetProfile = cyclonite::tools::TargetProfile::lib_6_3;
+        } else if (profile == "lib_6_4") {
+            options.targetProfile = cyclonite::tools::TargetProfile::lib_6_4;
+        } else if (profile == "lib_6_5") {
+            options.targetProfile = cyclonite::tools::TargetProfile::lib_6_5;
+        } else if (profile == "lib_6_6") {
+            options.targetProfile = cyclonite::tools::TargetProfile::lib_6_6;
+        } else if (profile == "lib_6_7") {
+            options.targetProfile = cyclonite::tools::TargetProfile::lib_6_7;
+        } else if (profile == "lib_6_8") {
+            options.targetProfile = cyclonite::tools::TargetProfile::lib_6_8;
+        } else if (profile == "lib_6_9") {
+            options.targetProfile = cyclonite::tools::TargetProfile::lib_6_9;
+        } else if (profile == "ms_6_5") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ms_6_5;
+        } else if (profile == "ms_6_6") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ms_6_6;
+        } else if (profile == "ms_6_7") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ms_6_7;
+        } else if (profile == "ms_6_8") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ms_6_8;
+        } else if (profile == "ms_6_9") {
+            options.targetProfile = cyclonite::tools::TargetProfile::ms_6_9;
+        } else if (profile == "as_6_5") {
+            options.targetProfile = cyclonite::tools::TargetProfile::as_6_5;
+        } else if (profile == "as_6_6") {
+            options.targetProfile = cyclonite::tools::TargetProfile::as_6_6;
+        } else if (profile == "as_6_7") {
+            options.targetProfile = cyclonite::tools::TargetProfile::as_6_7;
+        } else if (profile == "as_6_8") {
+            options.targetProfile = cyclonite::tools::TargetProfile::as_6_8;
+        } else if (profile == "as_6_9") {
+            options.targetProfile = cyclonite::tools::TargetProfile::as_6_9;
+        }
+    }
+
+    options.disableValidation = vm.contains("Vd");
+    options.verify = vm.contains("verify");
+    options.disableIncludeProcessingDetails = vm.contains("Vi");
+    options.warningsAsErrors = vm.contains("Wx");
+    options.enableDebugInformation = vm.contains("Zi");
+    options.matrixColumnMajorLayout = vm.contains("Zpc");
+    options.matrixRowMajorLayout = vm.contains("Zpr");
+    options.shaderHashBasedOnBinary = vm.contains("Zsb");
+    options.shaderHashBasedOnSource = vm.contains("Zss");
+    options.generateSmallPDB = vm.contains("Zs");
+
+    if (vm.contains("ffinite-math-only") && !vm.contains("fno-finite-math-only")) {
+        options.finiteMathOnly = cyclonite::tools::OptionValue::Enable;
+    } else if (!vm.contains("ffinite-math-only") && vm.contains("fno-finite-math-only")) {
+        options.finiteMathOnly = cyclonite::tools::OptionValue::Disable;
+    }
+
+    options.declareGlobalCB = vm.contains("decl-global-cb");
+    options.extractEntryUniforms = vm.contains("extract-entry-uniforms");
+    options.globalExternByDefault = vm.contains("global-extern-by-default");
+    options.keepUserMacro = vm.contains("keep-user-macro");
+    options.removeUnusedFunctions = vm.contains("remove-unused-functions");
+    options.removeUnusedGlobals = vm.contains("remove-unused-globals");
+    options.skipFnBody = vm.contains("skip-fn-body");
+    options.skipStatic = vm.contains("skip-static");
+    options.unchanged = vm.contains("unchanged");
+
+    if (vm.contains("fspv-debug")) {
+        auto s = vm["fspv-debug"].as<std::string>();
+        if (s == "line") {
+            options.spvDebug = cyclonite::tools::SpvDebug::Line;
+        } else if (s == "source") {
+            options.spvDebug = cyclonite::tools::SpvDebug::Source;
+        } else if (s == "file") {
+            options.spvDebug = cyclonite::tools::SpvDebug::File;
+        } else if (s == "vulkan-with-source") {
+            options.spvDebug = cyclonite::tools::SpvDebug::VulkanWithSource;
+        } else {
+            throw std::invalid_argument("Unknown spv-debug option value");
+        }
+    }
+
+    options.spvEnableMaximalReconvergence = vm.contains("fspv-enable-maximal-reconvergence");
+
+    if (vm.contains("fspv-extension")) {
+        auto extensions = vm["fspv-extension"].as<std::vector<std::string>>();
+        auto conv = std::wstring_convert<std::codecvt_utf8<wchar_t>>{};
+
+        for (auto& ext : extensions) {
+            options.spvExtensions.emplace_back(conv.from_bytes(ext.data(), ext.data() + ext.size()));
+        }
+    }
+
+    options.spvFlattenResourceArrays = vm.contains("fspv-flatten-resource-arrays");
+    options.spvPreserveBindings = vm.contains("fspv-preserve-bindings");
+    options.spvPreserveInterface = vm.contains("fspv-preserve-interface");
+    options.spvReduceLoadSize = vm.contains("fspv-reduce-load-size");
+    options.spvReflect = vm.contains("fspv-reflect");
+    options.spvMaxId = vm["fspv-max-id"].as<uint32_t>();
 
     return 0;
 }

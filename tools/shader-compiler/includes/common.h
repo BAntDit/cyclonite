@@ -8,6 +8,20 @@
 #include <cstdint>
 
 namespace cyclonite::tools {
+enum class TargetPlatform : uint_fast8_t
+{
+    All = 0,
+    Nix = 1,
+    Windows = 2
+};
+
+enum class TargetGAPI : uint_fast8_t
+{
+    All = 0,
+    Vulkan = 1,
+    D3D12 = 2
+};
+
 enum class LinkageType : uint_fast8_t
 {
     Undefined = 0,
