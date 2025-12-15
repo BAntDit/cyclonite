@@ -677,5 +677,53 @@ int main(int argc, char* argv[])
         options.vkUShift = vm["fvk-u-shift"].as<uint32_t>();
     }
 
+    if (vm.contains("fvk-bind-counter-heap")) {
+        auto v = vm["fvk-bind-counter-heap"].as<std::vector<uint32_t>>();
+        for (auto i = size_t{ 0 }; (i < v.size() && i < options.vkBindCounterHeap.size()); i++) {
+            options.vkBindCounterHeap[i] = v[i];
+        }
+    }
+    if (vm.contains("fvk-bind-globals")) {
+        auto v = vm["fvk-bind-globals"].as<std::vector<uint32_t>>();
+        for (auto i = size_t{ 0 }; (i < v.size() && i < options.vkBindGlobals.size()); i++) {
+            options.vkBindGlobals[i] = v[i];
+        }
+    }
+    if (vm.contains("fvk-bind-register")) {
+        auto v = vm["fvk-bind-register"].as<std::vector<uint32_t>>();
+        for (auto i = size_t{ 0 }; (i < v.size() && i < options.vkBindRegister.size()); i++) {
+            options.vkBindRegister[i] = v[i];
+        }
+    }
+    if (vm.contains["fvk-bind-resource-heap"]) {
+        auto v = vm["fvk-bind-resource-heap"].as<std::vector<uint32_t>>();
+        for (auto i = size_t{ 0 }; (i < v.size() && i < options.vkBindResourceHeap.size()); i++) {
+            options.vkBindResourceHeap[i] = v[i];
+        }
+    }
+    if (vm.contains["fvk-bind-sampler-heap"]) {
+        auto v = vm["fvk-bind-sampler-heap"].as<std::vector<uint32_t>>();
+        for (auto i = size_t{ 0 }; (i < v.size() && i < options.vkBindSamplerHeap.size()); i++) {
+            options.vkBindSamplerHeap[i] = v[i];
+        }
+    }
+
+    options.vkInvertY = vm.contains("fvk-invert-y");
+
+    options.vkSupportNonzeroBaseInstance = vm.contains("fvk-support-nonzero-base-instance");
+    options.vkSupportNonzeroBaseVertex = vm.contains("fvk-support-nonzero-base-vertex");
+    options.useDXLayout = vm.contains("fvk-use-dx-layout"); 
+    options.useGLLayout = vm.contains("fvk-use-gl-layout"); 
+    options.vkUseDXPositionW = vm.contains("fvk-use-dx-position-w"); 
+    options.useScalarLayout = vm.contains("fvk-use-scalar-layout"); 
+    options.metal = vm.contains("metal"); 
+    options.spirv = vm.contains("spirv"); 
+    options.preprocessToFile = vm.contains("P"); 
+    options.embedDebug = vm.contains("Qembed_debug"); 
+    options.sourceInDebugModule = vm.contains("Qsource_in_debug_module");
+    options.stripDebug = vm.contains("Qstrip_debug");
+    options.stripRootSignature = vm.contains("Qstrip_rootsignature");
+    options.verifyRootSignature = vm.contains("verifyrootsignature");
+
     return 0;
 }
