@@ -61,7 +61,9 @@ struct Options
     uint64_t vkUseDXPositionW : 1;                          // -fvk-use-dx-position-w
     uint64_t useScalarLayout : 1;                           // -fvk-use-scalar-layout
     uint64_t spirv : 1;                                     // -spirv
+    uint64_t metal : 1;                                     // -metal
     uint64_t preprocessToFile : 1;                          // -P
+    uint64_t embedDebug : 1;                                // -Qembed_debug
     uint64_t sourceInDebugModule : 1;                       // -Qsource_in_debug_module
     uint64_t stripDebug : 1;                                // -Qstrip_debug
     uint64_t stripRootSignature : 1;                        // -Qstrip_rootsignature
