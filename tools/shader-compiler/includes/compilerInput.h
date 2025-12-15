@@ -30,15 +30,6 @@ struct Options
     uint64_t forceIEEEStrictness : 1;                       // -Gis
     uint64_t ignoreLineDirectives : 1;                      // -ignore-line-directives
     uint64_t addsInstructionNummbersToAssemblerListing : 1; // -Ni
-    uint64_t declareGlobalCB : 1;                           // -decl-global-cb
-    uint64_t extractEntryUniforms : 1;                      // -extract-entry-uniforms
-    uint64_t globalExternByDefault : 1;                     // -global-extern-by-default
-    uint64_t keepUserMacro : 1;                             // -keep-user-macro
-    uint64_t removeUnusedFunctions : 1;                     // -remove-unused-functions
-    uint64_t removeUnusedGlobals : 1;                       // -remove-unused-globals
-    uint64_t skipFnBody : 1;                                // -skip-fn-body
-    uint64_t skipStatic : 1;                                // -skip-static
-    uint64_t unchanged : 1;                                 // -unchanged
     uint64_t spvEnableMaximalReconvergence : 1;             // -fspv-enable-maximal-reconvergence
     uint64_t spvFlattenResourceArrays : 1;                  // -fspv-flatten-resource-arrays
     uint64_t spvPreserveBindings : 1;                       // -fspv-preserve-bindings

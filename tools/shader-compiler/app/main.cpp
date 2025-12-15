@@ -1,5 +1,6 @@
 
 #include "compilerInput.h"
+#include "compiler.h"
 #include <boost/program_options.hpp>
 #include <codecvt>
 #include <iostream>
@@ -16,6 +17,7 @@ int main(int argc, char* argv[])
     desc.add_options()                                                           // options:
       ("help", "Produce help message")                                           // --help
       ("version", "Display compiler version information")                        // --version
+      ("source", po::value<std::string>()->required(), "path to source file to compile")  // --source
       ("target-platform", po::value<std::string>(), "Specifies target platform") // --target-platform
       ("target-gapi", po::value<std::string>(), "Specifies target GAPI")         // --target-gapi
       ("Qunused-arguments", "Don’t emit warning for unused driver arguments")    // --Qunused-arguments
@@ -111,17 +113,6 @@ int main(int argc, char* argv[])
       ("O1", "Optimization Level 1")                    //
       ("O2", "Optimization Level 2")                    //
       ("O3", "Optimization Level 3")                    //
-      ("decl-global-cb",
-       "Collect all global constants outside cbuffer declarations into cbuffer "
-       "GlobalCB")                                                                           //
-      ("extract-entry-uniforms", "Move uniform parameters from entry point to global scope") //
-      ("global-extern-by-default", "Set extern on non-static globals")                       //
-      ("keep-user-macro", "Write out user defines after rewritten HLSL")                     //
-      ("remove-unused-functions", "Remove unused functions and types")                       //
-      ("remove-unused-globals", "Remove unused static globals and functions")                //
-      ("skip-fn-body", "Translate function definitions to declarations")                     //
-      ("skip-static", "Remove static functions and globals when used with -skip-fn-body")    //
-      ("unchanged", "Rewrite HLSL, without changes.")                                        //
       ("fspv-debug",
        po::value<std::string>(),
        "Specify whitelist of debug info category (file -> source -> line, tool, "
@@ -598,16 +589,6 @@ int main(int argc, char* argv[])
         options.finiteMathOnly = cyclonite::tools::OptionValue::Disable;
     }
 
-    options.declareGlobalCB = vm.contains("decl-global-cb");
-    options.extractEntryUniforms = vm.contains("extract-entry-uniforms");
-    options.globalExternByDefault = vm.contains("global-extern-by-default");
-    options.keepUserMacro = vm.contains("keep-user-macro");
-    options.removeUnusedFunctions = vm.contains("remove-unused-functions");
-    options.removeUnusedGlobals = vm.contains("remove-unused-globals");
-    options.skipFnBody = vm.contains("skip-fn-body");
-    options.skipStatic = vm.contains("skip-static");
-    options.unchanged = vm.contains("unchanged");
-
     if (vm.contains("fspv-debug")) {
         auto s = vm["fspv-debug"].as<std::string>();
         if (s == "line") {
@@ -676,6 +657,16 @@ int main(int argc, char* argv[])
     if (vm.contains("fvk-u-shift")) {
         options.vkUShift = vm["fvk-u-shift"].as<uint32_t>();
     }
+
+    auto src = std::wstring{};
+    {
+        auto conv = std::wstring_convert<std::codecvt_utf8<wchar_t>>{};
+        auto s = vm["source"].as<std::string>();
+        src = conv.from_bytes(s.data(), s.data() + s.size());
+    }
+
+    auto compiler = cyclonite::tools::Compiler{};
+
 
     return 0;
 }

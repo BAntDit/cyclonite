@@ -12,6 +12,8 @@
 #include <windows.h>
 #endif
 
+#include "compilerInput.h"
+
 namespace cyclonite::tools {
 class Compiler
 {
@@ -27,6 +29,8 @@ public:
     auto operator=(Compiler const&) -> Compiler& = delete;
 
     auto operator=(Compiler&& rhs) noexcept -> Compiler&;
+
+    void compile(std::wstring_view source, Options const& options);
 
 private:
     IDxcLibrary* dxcLibrary_;
