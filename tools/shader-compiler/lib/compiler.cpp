@@ -315,6 +315,66 @@ auto getDxcOptions(Options const& options) -> std::vector<const wchar_t*> {
     if (options.newInliningBehavior) {
         result.push_back(L"-fnew-inlining-behavior");
     }
+    if (options.backwardCompatibilityMode) {
+        result.push_back(L"-Gec");
+    }
+    if (options.enableStrictMode) {
+        result.push_back(L"-Ges");
+    }
+    if (options.forceIEEEStrictness) {
+        result.push_back(L"-Gis");
+    }
+    if (options.forceRootsigVersion) {
+        result.push_back(L"-force-rootsig-ver");
+    }
+    if (options.ignoreLineDirectives) {
+        result.push_back(L"-ignore-line-directives");
+    }
+    if (options.addsInstructionNummbersToAssemblerListing) {
+        result.push_back(L"-Ni");
+    }
+    if (options.spvEnableMaximalReconvergence) {
+        result.push_back(L"-fspv-enable-maximal-reconvergence");
+    }
+    if (options.spvFlattenResourceArrays) {
+        result.push_back(L"-fspv-flatten-resource-arrays");
+    }
+    if (options.spvPreserveBindings) {
+        result.push_back(L"-fspv-preserve-bindings");
+    }
+    if (options.spvPreserveInterface) {
+        result.push_back(L"-fspv-preserve-interface");
+    }
+    if (options.spvReduceLoadSize) {
+        result.push_back(L"-fspv-reduce-load-size");
+    }
+    if (options.spvReflect) {
+        result.push_back(L"-fspv-reflect");
+    }
+    if (options.spvUseLegacyBufferMatrixOrder) {
+        result.push_back(L"-fspv-use-legacy-buffer-matrix-order");
+    }
+    if (options.spvUseVulkanMemoryModel) {
+        result.push_back(L"-fspv-use-vulkan-memory-model");
+    }
+    if (options.vkAutoShiftBindings) {
+        result.push_back(L"-fvk-auto-shift-bindings");
+    }
+    if (options.noWarnings) {
+        result.push_back(L"-no-warnings");
+    }
+    if (options.packOptimized) {
+        result.push_back(L"-pack-optimized");
+    }
+
+    if (options.linkage != LinkageType::Undefined) {
+        if (options.linkage == LinkageType::External) {
+            result.push_back(L"-default-linkage=external");
+        } else if (options.linkage == LinkageType::Internal) {
+            result.push_back(L"-default-linkage=internal");
+        }
+    }
+
     return result;
 }
 }
@@ -377,7 +437,7 @@ void Compiler::compile(std::wstring_view source, Options const& options)
 {
     auto* compileResult = std::add_pointer_t<IDxcResult>{ nullptr };
     auto* sourceBlob = std::add_pointer_t<IDxcBlobEncoding>{ nullptr };
-    auto codePage = getCodePage(options.encoding);
+    auto codePage = getDxcCodePage(options.encoding);
 
     if (auto result = dxcUtils_->LoadFile(source.data(), &codePage, &sourceBlob); !SUCCEEDED(result)) {
         throw std::runtime_error("could not load source file");
