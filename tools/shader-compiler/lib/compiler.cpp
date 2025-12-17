@@ -9,12 +9,6 @@
 #include <stdexcept>
 #include <utility>
 
-// #define DXC_CP_UTF8 65001
-// #define DXC_CP_UTF16 1200
-// #define DXC_CP_UTF32 12000
-// Use DXC_CP_ACP for: Binary;  ANSI Text;  Autodetect UTF with BOM
-// #define DXC_CP_ACP 0
-
 namespace cyclonite::tools {
 namespace {
 auto getDxcCodePage(Encoding encoding)-> UINT32 {
@@ -292,7 +286,7 @@ auto getDxcOptions(Options const& options) -> std::vector<const wchar_t*> {
     auto result = std::vector<const wchar_t*>{};
 
     if (options.allResourcesBound) {
-        result.push_back(L"-all-resources-bound");
+        result.push_back(DXC_ARG_ALL_RESOURCES_BOUND);
     }
     if (options.autoBindingSpace) {
         result.push_back(L"-auto-binding-space");
@@ -316,13 +310,13 @@ auto getDxcOptions(Options const& options) -> std::vector<const wchar_t*> {
         result.push_back(L"-fnew-inlining-behavior");
     }
     if (options.backwardCompatibilityMode) {
-        result.push_back(L"-Gec");
+        result.push_back(DXC_ARG_ENABLE_BACKWARDS_COMPATIBILITY);
     }
     if (options.enableStrictMode) {
-        result.push_back(L"-Ges");
+        result.push_back(DXC_ARG_ENABLE_STRICTNESS);
     }
     if (options.forceIEEEStrictness) {
-        result.push_back(L"-Gis");
+        result.push_back(DXC_ARG_IEEE_STRICTNESS);
     }
     if (options.forceRootsigVersion) {
         result.push_back(L"-force-rootsig-ver");
