@@ -48,8 +48,6 @@ struct Options
     uint64_t warningsAsErrors : 1;                          // -Wx
     uint64_t disableIncludeProcessingDetails : 1;           // -Vi
     uint64_t enableDebugInformation : 1;                    // -Zi
-    uint64_t matrixColumnMajorLayout : 1;                   // -Zpc
-    uint64_t matrixRowMajorLayout : 1;                      // -Zpr
     uint64_t shaderHashBasedOnBinary : 1;                   // -Zsb
     uint64_t shaderHashBasedOnSource : 1;                   // -Zss
     uint64_t generateSmallPDB : 1;                          // -Zs
@@ -71,6 +69,8 @@ struct Options
 
     TargetPlatform platform;
     TargetGAPI gapi;
+
+    MatrixLayout matrixLayout = MatrixLayout::Undefined; // -Zpc / -Zpr
 
     OptionValue finiteMathOnly = OptionValue::Default; // ffinite-math-only / fno-finite-math-only
 

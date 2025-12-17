@@ -16,6 +16,7 @@ int main(int argc, char* argv[])
     desc.add_options()                                                           // options:
       ("help", "Produce help message")                                           // --help
       ("version", "Display compiler version information")                        // --version
+      ("source", po::value<std::string>(), "Source file to compile")            // --source
       ("target-platform", po::value<std::string>(), "Specifies target platform") // --target-platform
       ("target-gapi", po::value<std::string>(), "Specifies target GAPI")         // --target-gapi
       ("Qunused-arguments", "Don’t emit warning for unused driver arguments")    // --Qunused-arguments
@@ -586,8 +587,13 @@ int main(int argc, char* argv[])
     options.disableIncludeProcessingDetails = vm.contains("Vi");
     options.warningsAsErrors = vm.contains("Wx");
     options.enableDebugInformation = vm.contains("Zi");
-    options.matrixColumnMajorLayout = vm.contains("Zpc");
-    options.matrixRowMajorLayout = vm.contains("Zpr");
+
+    if (vm.contains("Zpc") && !vm.contains("Zpr")) {
+        options.matrixLayout = cyclonite::tools::MatrixLayout::ColumnMajor;
+    } else if (!vm.contains("Zpc") && vm.contains("Zpr")) {
+        options.matrixLayout = cyclonite::tools::MatrixLayout::RowMajor;
+    }
+
     options.shaderHashBasedOnBinary = vm.contains("Zsb");
     options.shaderHashBasedOnSource = vm.contains("Zss");
     options.generateSmallPDB = vm.contains("Zs");

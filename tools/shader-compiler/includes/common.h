@@ -174,6 +174,13 @@ enum class TargetProfile : uint_fast8_t
     as_6_8 = 107,
     as_6_9 = 108
 };
+
+enum class MatrixLayout: uint_fast8_t
+{
+    Undefined = 0,
+    ColumnMajor = 1,
+    RowMajor = 2
+};
 }
 
 #endif // TOOLS_SHADER_COMPILER_COMMON_H

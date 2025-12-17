@@ -360,12 +360,77 @@ auto getDxcOptions(Options const& options) -> std::vector<const wchar_t*> {
     if (options.packOptimized) {
         result.push_back(L"-pack-optimized");
     }
+    if (options.packPrefixStable) {
+        result.push_back(L"-pack-prefix-stable");
+    }
+    if (options.resMayAlias) {
+        result.push_back(DXC_ARG_RESOURCES_MAY_ALIAS);
+    }
+    if (options.disableValidation) {
+        result.push_back(DXC_ARG_SKIP_VALIDATION);
+    }
+    if (options.verify) {
+        result.push_back(L"-verify");
+    }
+    if (options.warningsAsErrors) {
+        result.push_back(DXC_ARG_WARNINGS_ARE_ERRORS);
+    }
+    if (options.disableIncludeProcessingDetails) {
+        result.push_back(L"-Vi");
+    }
+    if (options.vkInvertY) {
+        result.push_back(L"-fvk-invert-y");
+    }
+    if (options.vkSupportNonzeroBaseInstance) {
+        result.push_back(L"-fvk-support-nonzero-base-instance");
+    }
+    if (options.vkSupportNonzeroBaseVertex) {
+        result.push_back(L"-fvk-support-nonzero-base-vertex");
+    }
+
+    if (options.enableDebugInformation) {
+        result.push_back(DXC_ARG_DEBUG);
+    } else if (options.generateSmallPDB) {
+        result.push_back(L"-Zs");
+    }
+
+    if (options.shaderHashBasedOnBinary) {
+        result.push_back(DXC_ARG_DEBUG_NAME_FOR_BINARY);
+    } else if (options.shaderHashBasedOnSource) {
+        result.push_back(DXC_ARG_DEBUG_NAME_FOR_SOURCE);
+    }
+
+    if (options.matrixLayout == MatrixLayout::ColumnMajor) {
+        result.push_back(DXC_ARG_PACK_MATRIX_COLUMN_MAJOR);
+    } else if (options.matrixLayout == MatrixLayout::RowMajor) {
+        result.push_back(DXC_ARG_PACK_MATRIX_ROW_MAJOR);
+    }
 
     if (options.linkage != LinkageType::Undefined) {
         if (options.linkage == LinkageType::External) {
             result.push_back(L"-default-linkage=external");
         } else if (options.linkage == LinkageType::Internal) {
             result.push_back(L"-default-linkage=internal");
+        }
+    }
+
+    if (options.hv != HV::Undefined) {
+        result.push_back(L"-HV");
+        switch (options.hv) {
+            case HV::_2016:
+                result.push_back(L"2016");
+                break;
+            case HV::_2017:
+                result.push_back(L"2017");
+                break;
+            case HV::_2018:
+                result.push_back(L"2018");
+                break;
+            case HV::_2021:
+                result.push_back(L"2021");
+                break;
+            default:
+                assert(false);
         }
     }
 
