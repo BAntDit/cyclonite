@@ -8,6 +8,7 @@
 #endif
 #include <stdexcept>
 #include <utility>
+#include <format>
 
 namespace cyclonite::tools {
 namespace {
@@ -432,6 +433,124 @@ auto getDxcOptions(Options const& options) -> std::vector<const wchar_t*> {
             default:
                 assert(false);
         }
+    }
+
+    if (options.useDXLayout) {
+        result.push_back(L"-fvk-use-dx-layout");
+    } else if (options.useGLLayout) {
+        result.push_back(L"-fvk-use-gl-layout");
+    } else if (options.useScalarLayout) {
+        result.push_back(L"-fvk-use-scalar-layout");
+    }
+
+    if (options.spirv) {
+        result.push_back(L"-spirv");
+    } else if (options.metal) {
+        result.push_back(L"-metal");
+    }
+
+    if (options.embedDebug) {
+        result.push_back(L"-Qembed_debug");
+    }
+    if (options.sourceInDebugModule) {
+        result.push_back(L"-Qsource_in_debug_module");
+    }
+    if (options.stripDebug) {
+        result.push_back(L"-Qstrip_debug");
+    }
+    if (options.stripRootSignature) {
+        result.push_back(L"-Qstrip_rootsignature");
+    }
+    if (options.verifyRootSignature) {
+        result.push_back(L"-verifyrootsignature");
+    }
+
+    if (options.finiteMathOnly != OptionValue::Default) {
+        if (options.finiteMathOnly == OptionValue::Enable) {
+            result.push_back(L"-ffinite-math-only");
+        } else if (options.finiteMathOnly == OptionValue::Disable) {
+            result.push_back(L"-fno-finite-math-only");
+        }
+    }
+
+    if (options.showDiagnostics == OptionValue::Enable) {
+        result.push_back(L"-fdiagnostics-show-option");
+    } else if (options.showDiagnostics == OptionValue::Disable) {
+        result.push_back(L"-fno-diagnostics-show-option");
+    }
+
+    if (options.flowControl == OptionValue::Enable) {
+        result.push_back(DXC_ARG_PREFER_FLOW_CONTROL);
+    } else if (options.flowControl == OptionValue::Disable) {
+        result.push_back(DXC_ARG_AVOID_FLOW_CONTROL);
+    }
+
+    switch (options.optimization) {
+        case Optimization::Disable:
+            result.push_back(DXC_ARG_SKIP_OPTIMIZATIONS);
+            break;
+        case Optimization::Level0:
+            result.push_back(DXC_ARG_OPTIMIZATION_LEVEL0);
+            break;
+        case Optimization::Level1:
+            result.push_back(DXC_ARG_OPTIMIZATION_LEVEL1);
+            break;
+        case Optimization::Level2:
+            result.push_back(DXC_ARG_OPTIMIZATION_LEVEL2);
+            break;
+        case Optimization::Level3:
+            result.push_back(DXC_ARG_OPTIMIZATION_LEVEL3);
+            break;
+        default:
+            assert(false);
+    }
+
+    if (options.spvDebug != SpvDebug::Undefined) {
+        switch (options.spvDebug) {
+            case SpvDebug::Line:
+                result.push_back(L"-fspv-debug=line");
+                break;
+            case SpvDebug::Source:
+                result.push_back(L"-fspv-debug=source");
+                break;
+            case SpvDebug::File:
+                result.push_back(L"-fspv-debug=file");
+                break;
+            case SpvDebug::VulkanWithSource:
+                result.push_back(L"-fspv-debug=vulkan-with-source");
+                break;
+            default:
+                assert(false);
+        }
+    }
+
+    if (options.targetEnv != SpvTargetEnv::Default) {
+        switch (options.targetEnv) {
+            case SpvTargetEnv::Vulkan_1_0:
+                result.push_back(L"-fspv-target-env=vulkan1.0");
+                break;
+            case SpvTargetEnv::Vulkan_1_1:
+                result.push_back(L"-fspv-target-env=vulkan1.1");
+                break;
+            case SpvTargetEnv::Vulkan_1_2:
+                result.push_back(L"-fspv-target-env=vulkan1.2");
+                break;
+            case SpvTargetEnv::Vulkan_1_3:
+                result.push_back(L"-fspv-target-env=vulkan1.3");
+                break;
+            case SpvTargetEnv::Vulkan_1_1_Spirv_1_4:
+                result.push_back(L"-fspv-target-env=vulkan1.1spirv1.4");
+                break;
+            case SpvTargetEnv::Universal_1_5:
+                result.push_back(L"-fspv-target-env=universal1.5");
+                break;
+            default:
+                assert(false);
+        }
+    }
+
+    if (!options.rootSigDefine.empty()) {
+        result.push_back(std::format(L"-rootsig-define={}", options.rootSigDefine));
     }
 
     return result;

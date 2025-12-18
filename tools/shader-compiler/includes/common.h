@@ -86,10 +86,10 @@ enum class SpvTargetEnv : uint_fast8_t
     Default = 0,
     Vulkan_1_0 = 1,
     Vulkan_1_1 = 2,
-    Vulkan_1_1_Spirv_1_4 = 2,
-    Vulkan_1_2 = 3,
-    Vulkan_1_3 = 4,
-    Universal_1_5 = 5
+    Vulkan_1_1_Spirv_1_4 = 3,
+    Vulkan_1_2 = 4,
+    Vulkan_1_3 = 5,
+    Universal_1_5 = 6
 };
 
 enum class TargetProfile : uint_fast8_t
