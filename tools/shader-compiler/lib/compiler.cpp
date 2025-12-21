@@ -607,6 +607,9 @@ auto getDxcOptions(Options const& options) -> std::vector<const wchar_t*>
 
     return result;
 }
+
+auto getDxcDefines(Options const& options)
+{}
 }
 
 Compiler::Compiler()
@@ -678,6 +681,16 @@ void Compiler::compile(std::wstring_view source, Options const& options)
     sourceBuffer.Ptr = sourceBlob->GetBufferPointer();
     sourceBuffer.Size = sourceBlob->GetBufferSize();
 
+    auto dxcStage = getDxcStage(options.targetProfile);
+    auto dxcOptions = getDxcOptions(options);
+
     auto* dxcInputArguments = std::add_pointer_t<IDxcCompilerArgs>{ nullptr };
+    if (auto result = dxcUtils_->BuildArguments(
+        source.data(),
+        options.entryPointName.data(),
+        dxcStage.data(),
+        dxcOptions.data(), , &dxcInputArguments); !SUCCEEDED(result)) {
+        throw std::runtime_error("could not build arguments");
+    }
 }
 }
