@@ -6,13 +6,14 @@
 #if !defined(_WIN32) // _WIN32 / _WIN64 at once
 #include <dxc/WinAdapter.h>
 #endif
+#include <format>
 #include <stdexcept>
 #include <utility>
-#include <format>
 
 namespace cyclonite::tools {
 namespace {
-auto getDxcCodePage(Encoding encoding)-> UINT32 {
+auto getDxcCodePage(Encoding encoding) -> UINT32
+{
     auto result = UINT32{ DXC_CP_ACP };
     switch (encoding) {
         case Encoding::Utf8:
@@ -35,8 +36,9 @@ auto getDxcCodePage(Encoding encoding)-> UINT32 {
     return result;
 }
 
-auto getDxcStage(TargetProfile profile) -> std::wstring {
-    auto result = std::wstring{L""};
+auto getDxcStage(TargetProfile profile) -> std::wstring
+{
+    auto result = std::wstring{ L"" };
 
     switch (profile) {
         case TargetProfile::vs_6_0:
@@ -283,7 +285,8 @@ auto getDxcStage(TargetProfile profile) -> std::wstring {
     return result;
 }
 
-auto getDxcOptions(Options const& options) -> std::vector<const wchar_t*> {
+auto getDxcOptions(Options const& options) -> std::vector<const wchar_t*>
+{
     auto result = std::vector<const wchar_t*>{};
 
     if (options.allResourcesBound) {
@@ -550,7 +553,56 @@ auto getDxcOptions(Options const& options) -> std::vector<const wchar_t*> {
     }
 
     if (!options.rootSigDefine.empty()) {
-        result.push_back(std::format(L"-rootsig-define={}", options.rootSigDefine));
+        result.push_back(L"-rootsig-define");
+        result.push_back(options.rootSigDefine.data());
+    }
+
+    for (auto const& idir : options.includeDirs) {
+        result.push_back(L"-I");
+        result.push_back(idir.data());
+    }
+
+    for (auto const& ext : options.spvExtensions) {
+        result.push_back(L"-fspv-extension");
+        result.push_back(ext.data());
+    }
+
+    if (options.spvMaxId != 0x3FFFFF) {
+        result.push_back(L"-fspv-max-id");
+        result.push_back(options.spvMaxIdStr.data());
+    }
+
+    if (options.vkBShift != std::numeric_limits<uint32_t>::max()) {
+        result.push_back(L"-fvk-b-shift");
+        result.push_back(options.vkBShiftStr.data());
+    }
+    if (options.vkSShift != std::numeric_limits<uint32_t>::max()) {
+        result.push_back(L"-fvk-s-shift");
+        result.push_back(options.vkSShiftStr.data());
+    }
+    if (options.vkTShift != std::numeric_limits<uint32_t>::max()) {
+        result.push_back(L"-fvk-t-shift");
+        result.push_back(options.vkTShiftStr.data());
+    }
+    if (options.vkUShift != std::numeric_limits<uint32_t>::max()) {
+        result.push_back(L"-fvk-u-shift");
+        result.push_back(options.vkUShiftStr.data());
+    }
+
+    if (!options.vkBindCounterHeapStr.empty()) {
+        result.push_back(options.vkBindCounterHeapStr.data());
+    }
+
+    if (!options.vkBindGlobalsStr.empty()) {
+        result.push_back(options.vkBindGlobalsStr.data());
+    }
+
+    if (!options.vkBindRegisterStr.empty()) {
+        result.push_back(options.vkBindRegisterStr.data());
+    }
+
+    if (!options.vkBindResourceHeapStr.empty()) {
+        result.push_back(options.vkBindResourceHeapStr.data());
     }
 
     return result;
@@ -626,7 +678,6 @@ void Compiler::compile(std::wstring_view source, Options const& options)
     sourceBuffer.Ptr = sourceBlob->GetBufferPointer();
     sourceBuffer.Size = sourceBlob->GetBufferSize();
 
-    auto* dxcInputArguments = std::add_pointer_t<IDxcCompilerArgs>{nullptr};
-
+    auto* dxcInputArguments = std::add_pointer_t<IDxcCompilerArgs>{ nullptr };
 }
 }

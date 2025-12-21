@@ -7,10 +7,10 @@
 
 #include "common.h"
 #include <array>
+#include <limits>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <limits>
 
 namespace cyclonite::tools {
 struct Options
@@ -67,8 +67,8 @@ struct Options
     uint64_t stripRootSignature : 1;                        // -Qstrip_rootsignature
     uint64_t verifyRootSignature : 1;                       // -verifyrootsignature
 
-    TargetPlatform platform;
-    TargetGAPI gapi;
+    TargetPlatform platform = TargetPlatform::All;
+    TargetGAPI gapi = TargetGAPI::All;
 
     MatrixLayout matrixLayout = MatrixLayout::Undefined; // -Zpc / -Zpr
 
@@ -108,17 +108,29 @@ struct Options
     std::vector<std::wstring> includeDirs;                      // -I
     std::vector<std::wstring> spvExtensions;                    // -fspv-extension
 
-    uint32_t spvMaxId = 0x3FFFFF; // -fspv-max-id
+    uint32_t spvMaxId = 0x3FFFFF;                             // -fspv-max-id
     uint32_t vkBShift = std::numeric_limits<uint32_t>::max(); // -fvk-b-shift
     uint32_t vkSShift = std::numeric_limits<uint32_t>::max(); // -fvk-s-shift
     uint32_t vkTShift = std::numeric_limits<uint32_t>::max(); // -fvk-t-shift
     uint32_t vkUShift = std::numeric_limits<uint32_t>::max(); // -fvk-u-shift
+
+    std::wstring spvMaxIdStr;
+    std::wstring vkBShiftStr;
+    std::wstring vkSShiftStr;
+    std::wstring vkTShiftStr;
+    std::wstring vkUShiftStr;
 
     std::array<uint32_t, 2> vkBindCounterHeap;  // -fvk-bind-counter-heap
     std::array<uint32_t, 2> vkBindGlobals;      // -fvk-bind-globals
     std::array<uint32_t, 2> vkBindRegister;     // -fvk-bind-register
     std::array<uint32_t, 2> vkBindResourceHeap; // -fvk-bind-resource-heap
     std::array<uint32_t, 2> vkBindSamplerHeap;  // -fvk-bind-sampler-heap
+
+    std::wstring vkBindCounterHeapStr;
+    std::wstring vkBindGlobalsStr;
+    std::wstring vkBindRegisterStr;
+    std::wstring vkBindResourceHeapStr;
+    std::wstring vkBindSamplerHeapStr;
 
     TargetProfile targetProfile = TargetProfile::ps_6_0; // -T
 };

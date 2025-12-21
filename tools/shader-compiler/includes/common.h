@@ -175,7 +175,7 @@ enum class TargetProfile : uint_fast8_t
     as_6_9 = 108
 };
 
-enum class MatrixLayout: uint_fast8_t
+enum class MatrixLayout : uint_fast8_t
 {
     Undefined = 0,
     ColumnMajor = 1,

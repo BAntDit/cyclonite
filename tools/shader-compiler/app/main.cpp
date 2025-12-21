@@ -2,6 +2,7 @@
 #include "compilerInput.h"
 #include <boost/program_options.hpp>
 #include <codecvt>
+#include <format>
 #include <iostream>
 #include <ranges>
 #include <stdexcept>
@@ -16,7 +17,7 @@ int main(int argc, char* argv[])
     desc.add_options()                                                           // options:
       ("help", "Produce help message")                                           // --help
       ("version", "Display compiler version information")                        // --version
-      ("source", po::value<std::string>(), "Source file to compile")            // --source
+      ("source", po::value<std::string>(), "Source file to compile")             // --source
       ("target-platform", po::value<std::string>(), "Specifies target platform") // --target-platform
       ("target-gapi", po::value<std::string>(), "Specifies target GAPI")         // --target-gapi
       ("Qunused-arguments", "Don’t emit warning for unused driver arguments")    // --Qunused-arguments
@@ -636,6 +637,7 @@ int main(int argc, char* argv[])
     options.spvReduceLoadSize = vm.contains("fspv-reduce-load-size");
     options.spvReflect = vm.contains("fspv-reflect");
     options.spvMaxId = vm["fspv-max-id"].as<uint32_t>();
+    options.spvMaxIdStr = std::to_wstring(options.spvMaxId);
 
     if (vm.contains("fspv-target-env")) {
         auto s = vm["fspv-target-env"].as<std::string>();
@@ -671,6 +673,51 @@ int main(int argc, char* argv[])
     }
     if (vm.contains("fvk-u-shift")) {
         options.vkUShift = vm["fvk-u-shift"].as<uint32_t>();
+    }
+
+    if (vm.contains("fvk-bind-counter-heap")) {
+        auto v = vm["fvk-bind-counter-heap"].as<std::vector<uint32_t>>();
+        for (auto i = size_t{ 0 }; i < v.size() && i < options.vkBindCounterHeap.size(); i++) {
+            options.vkBindCounterHeap[i] = v[i];
+        }
+        options.vkBindCounterHeapStr =
+          std::format(L"-fvk-bind-counter-heap {0} {1}", options.vkBindCounterHeap[0], options.vkBindCounterHeap[1]);
+    }
+
+    if (vm.contains("fvk-bind-globals")) {
+        auto v = vm["fvk-bind-globals"].as<std::vector<uint32_t>>();
+        for (auto i = size_t{ 0 }; i < v.size() && i < options.vkBindGlobals.size(); i++) {
+            options.vkBindGlobals[i] = v[i];
+        }
+        options.vkBindGlobalsStr =
+          std::format(L"-fvk-bind-globals {0} {1}", options.vkBindGlobals[0], options.vkBindGlobals[1]);
+    }
+
+    if (vm.contains("fvk-bind-register")) {
+        auto v = vm["fvk-bind-register"].as<std::vector<uint32_t>>();
+        for (auto i = size_t{ 0 }; i < v.size() && i < options.vkBindRegister.size(); i++) {
+            options.vkBindRegister[i] = v[i];
+        }
+        options.vkBindRegisterStr =
+          std::format(L"-fvk-bind-register {0} {1}", options.vkBindRegister[0], options.vkBindRegister[1]);
+    }
+
+    if (vm.contains("fvk-bind-resource-heap")) {
+        auto v = vm["fvk-bind-resource-heap"].as<std::vector<uint32_t>>();
+        for (auto i = size_t{ 0 }; i < v.size() && i < options.vkBindResourceHeap.size(); i++) {
+            options.vkBindResourceHeap[i] = v[i];
+        }
+        options.vkBindResourceHeapStr =
+          std::format(L"-fvk-bind-resource-heap {0} {1}", options.vkBindResourceHeap[0], options.vkBindResourceHeap[1]);
+    }
+
+    if (vm.contains("fvk-bind-sampler-heap")) {
+        auto v = vm["fvk-bind-sampler-heap"].as<std::vector<uint32_t>>();
+        for (auto i = size_t{ 0 }; i < v.size() && i < options.vkBindSamplerHeap.size(); i++) {
+            options.vkBindSamplerHeap[i] = v[i];
+        }
+        options.vkBindSamplerHeapStr =
+          std::format(L"-fvk-bind-sampler-heap {0} {1}", options.vkBindSamplerHeap[0], options.vkBindSamplerHeap[1]);
     }
 
     return 0;
