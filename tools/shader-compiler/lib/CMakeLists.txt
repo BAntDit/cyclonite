@@ -1,6 +1,10 @@
+
 file(GLOB TOOLS_SHADER_COMPILER_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
-add_library("${PROJECT_NAME}-lib" ${TOOLS_SHADER_COMPILER_HEADERS} ${TOOLS_SHADER_COMPILER_SOURCES})
+add_library("${PROJECT_NAME}-lib"
+        ${ALL_SHARED_HEADERS}
+        ${TOOLS_SHADER_COMPILER_HEADERS}
+        ${TOOLS_SHADER_COMPILER_SOURCES})
 
 set_target_properties("${PROJECT_NAME}-lib" PROPERTIES
         VERSION ${PROJECT_VERSION}
@@ -25,9 +29,14 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     )
 endif()
 
+target_include_directories("${PROJECT_NAME}-lib" PRIVATE "${CMAKE_SOURCE_DIR}/../../shared/")
 target_include_directories("${PROJECT_NAME}-lib" PUBLIC "${TOOL_COMMON_INCLUDE_DIRS}")
 
 find_package(dxcompiler REQUIRED)
 target_link_libraries("${PROJECT_NAME}-lib" PRIVATE dxcompiler::dxcompiler)
+
+find_package(DirectX-Headers REQUIRED)
+target_link_libraries("${PROJECT_NAME}-lib" PRIVATE Microsoft::DirectX-Headers)
+
 
 

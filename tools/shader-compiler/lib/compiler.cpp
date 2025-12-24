@@ -3,10 +3,10 @@
 //
 
 #include "compiler.h"
-#if !defined(_WIN32) // _WIN32 / _WIN64 at once
-#include <dxc/WinAdapter.h>
-#endif
+#include "dxReflection.h"
+#include <cassert>
 #include <format>
+#include <iostream>
 #include <stdexcept>
 #include <utility>
 
@@ -608,8 +608,20 @@ auto getDxcOptions(Options const& options) -> std::vector<const wchar_t*>
     return result;
 }
 
-auto getDxcDefines(Options const& options)
-{}
+auto getDxcDefines(Options const& options) -> std::vector<DxcDefine>
+{
+    auto result = std::vector<DxcDefine>();
+
+    for (auto const& [define, value] : options.definitions) {
+        auto dxcDef = DxcDefine{};
+        dxcDef.Name = define.data();
+        dxcDef.Value = value.data();
+
+        result.push_back(dxcDef);
+    }
+
+    return result;
+}
 }
 
 Compiler::Compiler()
@@ -666,9 +678,8 @@ auto Compiler::operator=(Compiler&& rhs) noexcept -> Compiler&
     return *this;
 }
 
-void Compiler::compile(std::wstring_view source, Options const& options)
+void Compiler::compile(std::wstring_view source, Options const& options, IDxcResult*& compileResult)
 {
-    auto* compileResult = std::add_pointer_t<IDxcResult>{ nullptr };
     auto* sourceBlob = std::add_pointer_t<IDxcBlobEncoding>{ nullptr };
     auto codePage = getDxcCodePage(options.encoding);
 
@@ -683,14 +694,72 @@ void Compiler::compile(std::wstring_view source, Options const& options)
 
     auto dxcStage = getDxcStage(options.targetProfile);
     auto dxcOptions = getDxcOptions(options);
+    auto dxcDefines = getDxcDefines(options);
 
     auto* dxcInputArguments = std::add_pointer_t<IDxcCompilerArgs>{ nullptr };
-    if (auto result = dxcUtils_->BuildArguments(
-        source.data(),
-        options.entryPointName.data(),
-        dxcStage.data(),
-        dxcOptions.data(), , &dxcInputArguments); !SUCCEEDED(result)) {
+    if (auto result = dxcUtils_->BuildArguments(source.data(),
+                                                options.entryPointName.data(),
+                                                dxcStage.data(),
+                                                dxcOptions.data(),
+                                                static_cast<UINT32>(dxcOptions.size()),
+                                                dxcDefines.data(),
+                                                static_cast<UINT32>(dxcDefines.size()),
+                                                &dxcInputArguments);
+        !SUCCEEDED(result)) {
         throw std::runtime_error("could not build arguments");
     }
+
+    auto* includeHandler = std::add_pointer_t<IDxcIncludeHandler>{ nullptr };
+    dxcUtils_->CreateDefaultIncludeHandler(&includeHandler);
+
+    if (auto result = dxcCompiler_->Compile(&sourceBuffer,
+                                            dxcInputArguments->GetArguments(),
+                                            dxcInputArguments->GetCount(),
+                                            includeHandler,
+                                            IID_PPV_ARGS(&compileResult));
+        !SUCCEEDED(result)) {
+        throw std::runtime_error("could not compile source");
+    }
+
+    if (compileResult->HasOutput(DXC_OUT_ERRORS)) {
+        auto errors = std::add_pointer_t<IDxcBlobUtf8>{ nullptr };
+        if (auto result = compileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), nullptr);
+            !SUCCEEDED(result)) {
+            throw std::runtime_error("could not extract error block");
+        } else if (errors && errors->GetStringLength() > 0) {
+            const char* err = errors->GetStringPointer();
+            std::cout << "error on attempt to compile shader: " << err << std::endl;
+        }
+    }
+}
+
+void Compiler::collectReflection(std::wstring_view source, Options const& options)
+{
+    auto* dxcCompileResult = std::add_pointer_t<IDxcResult>{ nullptr };
+    compile(source, options, dxcCompileResult);
+
+    if (dxcCompileResult == nullptr || dxcCompileResult->HasOutput(DXC_OUT_REFLECTION)) {
+        throw std::runtime_error("could not extract reflection");
+    }
+
+    auto* dxcOutReflection = std::add_pointer_t<IDxcBlob>{ nullptr };
+    if (auto result = dxcCompileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&dxcOutReflection), nullptr);
+        !SUCCEEDED(result)) {
+        throw std::runtime_error("could not extract reflection");
+    }
+
+    auto dxcReflectionBuffer = DxcBuffer{};
+    dxcReflectionBuffer.Ptr = dxcOutReflection->GetBufferPointer();
+    dxcReflectionBuffer.Size = dxcOutReflection->GetBufferSize();
+    dxcReflectionBuffer.Encoding = DXC_CP_ACP;
+
+    auto* dxcShaderReflection = std::add_pointer_t<ID3D12ShaderReflection>{ nullptr };
+    if (auto result = dxcUtils_->CreateReflection(&dxcReflectionBuffer, IID_PPV_ARGS(&dxcShaderReflection));
+        !SUCCEEDED(result)) {
+        throw std::runtime_error("could not create reflection object");
+    }
+
+    auto dxReflection = DxReflection{};
+    dxReflection.getShaderDesc(dxcShaderReflection);
 }
 }

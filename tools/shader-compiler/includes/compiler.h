@@ -30,12 +30,15 @@ public:
 
     auto operator=(Compiler&& rhs) noexcept -> Compiler&;
 
-    void compile(std::wstring_view source, Options const& options);
+    void collectReflection(std::wstring_view source, Options const& options);
+
+private:
+    void compile(std::wstring_view source, Options const& options, IDxcResult*& compileResult);
 
 private:
     IDxcLibrary* dxcLibrary_;
     IDxcUtils* dxcUtils_;
-    IDxcCompiler* dxcCompiler_;
+    IDxcCompiler3* dxcCompiler_;
 };
 }
 
