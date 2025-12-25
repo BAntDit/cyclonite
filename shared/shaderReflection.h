@@ -22,7 +22,7 @@ enum class ShaderResourceType: uint8_t
     StructuredBuffer = 6,
     RwStructuredBuffer = 7,
     ByteAddress = 8,
-    UAVRwByteAddress = 9,
+    RwByteAddress = 9,
     AppendStructuredBuffer = 10,
     ConsumeStructuredBuffer = 11,
     RwStructuredWithCounter = 12,
@@ -74,12 +74,18 @@ struct BoundResource
     ResourceViewDimension dimension;
 };
 
+struct ConstantBufferReflection
+{
+    std::string name;
+};
+
 struct ShaderReflectionData
 {
     uint32_t version;
     std::string generatorName;
 
     std::vector<BoundResource> boundResources;
+    std::vector<ConstantBufferReflection> constantBuffers;
 };
 }
 
