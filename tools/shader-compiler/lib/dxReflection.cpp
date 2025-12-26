@@ -153,6 +153,29 @@ auto getResourceViewDimension(D3D_SRV_DIMENSION dimension) -> shared::ResourceVi
 
     return result;
 }
+
+auto getConstantBufferType(D3D_CBUFFER_TYPE cbType) -> shared::ConstantBufferType
+{
+    auto result = shared::ConstantBufferType::Undefined;
+
+    switch (cbType) {
+        case D3D_CT_CBUFFER:
+            result = shared::ConstantBufferType::CBuffer;
+            break;
+        case D3D_CT_TBUFFER:
+            result = shared::ConstantBufferType::TBuffer;
+            break;
+        case D3D_CT_INTERFACE_POINTERS:
+            result = shared::ConstantBufferType::InterfacePointer;
+            break;
+        case D3D_CT_RESOURCE_BIND_INFO:
+            result = shared::ConstantBufferType::ResourceBindInfo;
+            break;
+        assert(false);
+    }
+
+    return result;
+}
 }
 
 void DxReflection::getShaderDesc(ID3D12ShaderReflection* dxcShaderReflection)
@@ -166,7 +189,6 @@ void DxReflection::getShaderDesc(ID3D12ShaderReflection* dxcShaderReflection)
     reflectionData.generatorName = shaderDesc.Creator;
 
     reflectionData.boundResources.reserve(shaderDesc.BoundResources);
-
     for (auto idx = UINT{ 0 }, count = shaderDesc.BoundResources; idx < count; idx++) {
         auto bindingDesc = D3D12_SHADER_INPUT_BIND_DESC{};
         if (auto result = dxcShaderReflection->GetResourceBindingDesc(idx, &bindingDesc); !SUCCEEDED(result)) {
@@ -184,9 +206,26 @@ void DxReflection::getShaderDesc(ID3D12ShaderReflection* dxcShaderReflection)
         boundResource.dimension = getResourceViewDimension(bindingDesc.Dimension);
     }
 
-    auto bufferDesc = D3D12_SHADER_BUFFER_DESC{};
+    reflectionData.constantBuffers.reserve(shaderDesc.ConstantBuffers);
+    for (auto idx = UINT{ 0 }, count = shaderDesc.ConstantBuffers; idx < count; idx++) {
+        auto bufferDesc = D3D12_SHADER_BUFFER_DESC{};
+        auto* constantBufferReflection = dxcShaderReflection->GetConstantBufferByIndex(idx);
 
-    auto* constantBufferReflection = dxcShaderReflection->GetConstantBufferByIndex(0);
-    // constantBufferReflection->GetDesc()
+        if (auto result = constantBufferReflection->GetDesc(&bufferDesc); !SUCCEEDED(result)) {
+            throw std::runtime_error("could not extract constant buffer description");
+        }
+
+        auto& constantBuffer = reflectionData.constantBuffers.emplace_back();
+        constantBuffer.name = bufferDesc.Name;
+        constantBuffer.type = getConstantBufferType(bufferDesc.Type);
+        constantBuffer.size = bufferDesc.Size;
+
+        constantBuffer.variables.reserve(bufferDesc.Variables);
+        for (auto vidx = UINT{ 0 }, vcount = bufferDesc.Variables; vidx < vcount; vidx++) {
+            auto* cbVariableRefl = constantBufferReflection->GetVariableByIndex(vidx);
+
+            // cbVariableRefl->GetDesc();
+        }
+    }
 }
 }
