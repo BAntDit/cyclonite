@@ -1,5 +1,6 @@
 
-#include "compilerInput.h"
+#include "compiler.h"
+#include "compilerOutput.h"
 #include <boost/program_options.hpp>
 #include <codecvt>
 #include <format>
@@ -37,8 +38,8 @@ int main(int argc, char* argv[])
       ("encoding",
        po::value<std::string>(),
        "Set default encoding for source inputs and text outputs (utf8	utf16(win) utf32(*nix) wide) default=utf8") //
-      ("export-shaders-only", "Only export shaders when compiling a library.")                                      //
-      ("E", "Entry point name")                                                                                     //
+      ("export-shaders-only", "Only export shaders when compiling a library.") //
+      ("E", po::value<std::string>(), "Entry point name") //
       ("fdiagnostics-format",
        po::value<std::string>(),
        "Select diagnostic message format. Supported values: clang, msvc, mdvc-fallback, vi") //
@@ -719,6 +720,36 @@ int main(int argc, char* argv[])
         options.vkBindSamplerHeapStr =
           std::format(L"-fvk-bind-sampler-heap {0} {1}", options.vkBindSamplerHeap[0], options.vkBindSamplerHeap[1]);
     }
+
+    auto source = std::wstring{};
+    if (vm.contains("source")) {
+        auto s = vm["D"].as<std::string>();
+        auto conv = std::wstring_convert<std::codecvt_utf8<wchar_t>>{};
+        source = conv.from_bytes(s.data(), s.data() + s.size());
+    }
+
+    if (source.empty()) {
+        throw std::runtime_error("source file is not defined");
+    }
+
+    options.spirv = vm.contains("spirv");
+    options.metal = vm.contains("metal");
+
+    auto compilerOutput = cyclonite::tools::CompilerOutput{};
+    auto compiler = cyclonite::tools::Compiler{};
+
+    auto compileToSpv = static_cast<bool>(options.spirv);
+    auto compileToMetal = static_cast<bool>(options.metal);
+    options.spirv = false;
+    options.metal = false;
+
+    compiler.collectReflection(source, options, compilerOutput.reflectionData());
+    // TODO:: save reflection into separated file if necessary
+
+    options.spirv = compileToSpv;
+    options.metal = compileToMetal;
+
+    // compile
 
     return 0;
 }

@@ -5,21 +5,12 @@
 #ifndef TOOLS_SHADER_COMPILER_DXREFLECTION_H
 #define TOOLS_SHADER_COMPILER_DXREFLECTION_H
 #include "shaderReflection.h"
-#include <cstdint>
-#include <string>
-#include <vector>
 
 struct ID3D12ShaderReflection;
+struct ID3D12ShaderReflectionConstantBuffer;
 
 namespace cyclonite::tools {
-class DxReflection
-{
-public:
-    void getShaderDesc(ID3D12ShaderReflection* dxcShaderReflection);
-
-private:
-    shared::ShaderReflectionData reflectionData;
-};
+void collectReflection(ID3D12ShaderReflection* dxcShaderReflection, shared::ShaderReflectionData& reflectionData);
 }
 
 #endif // TOOLS_SHADER_COMPILER_DXREFLECTION_H

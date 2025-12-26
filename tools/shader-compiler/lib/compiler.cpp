@@ -733,7 +733,9 @@ void Compiler::compile(std::wstring_view source, Options const& options, IDxcRes
     }
 }
 
-void Compiler::collectReflection(std::wstring_view source, Options const& options)
+void Compiler::collectReflection(std::wstring_view source,
+                                 Options const& options,
+                                 shared::ShaderReflectionData& reflectionData)
 {
     auto* dxcCompileResult = std::add_pointer_t<IDxcResult>{ nullptr };
     compile(source, options, dxcCompileResult);
@@ -759,7 +761,6 @@ void Compiler::collectReflection(std::wstring_view source, Options const& option
         throw std::runtime_error("could not create reflection object");
     }
 
-    auto dxReflection = DxReflection{};
-    dxReflection.getShaderDesc(dxcShaderReflection);
+    tools::collectReflection(dxcShaderReflection, reflectionData);
 }
 }

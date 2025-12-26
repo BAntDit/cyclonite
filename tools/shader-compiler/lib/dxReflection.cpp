@@ -5,14 +5,14 @@
 #include "dxReflection.h"
 
 #if !defined(_WIN32) // _WIN32 / _WIN64 at once
-#include <directx/d3d12shader.h>
 #include <unknwn.h>
+#include <directx/d3d12shader.h>
 #else
 #include <d3d12shader.h>
 #endif
 
-#include <stdexcept>
 #include <cassert>
+#include <stdexcept>
 
 namespace cyclonite::tools {
 namespace {
@@ -171,14 +171,14 @@ auto getConstantBufferType(D3D_CBUFFER_TYPE cbType) -> shared::ConstantBufferTyp
         case D3D_CT_RESOURCE_BIND_INFO:
             result = shared::ConstantBufferType::ResourceBindInfo;
             break;
-        assert(false);
+            assert(false);
     }
 
     return result;
 }
 }
 
-void DxReflection::getShaderDesc(ID3D12ShaderReflection* dxcShaderReflection)
+void collectReflection(ID3D12ShaderReflection* dxcShaderReflection, shared::ShaderReflectionData& reflectionData)
 {
     auto shaderDesc = D3D12_SHADER_DESC{};
     if (auto result = dxcShaderReflection->GetDesc(&shaderDesc); !SUCCEEDED(result)) {
@@ -211,20 +211,17 @@ void DxReflection::getShaderDesc(ID3D12ShaderReflection* dxcShaderReflection)
         auto bufferDesc = D3D12_SHADER_BUFFER_DESC{};
         auto* constantBufferReflection = dxcShaderReflection->GetConstantBufferByIndex(idx);
 
-        if (auto result = constantBufferReflection->GetDesc(&bufferDesc); !SUCCEEDED(result)) {
+        if (constantBufferReflection != nullptr) {
+            if (auto result = constantBufferReflection->GetDesc(&bufferDesc); !SUCCEEDED(result)) {
+                throw std::runtime_error("could not extract constant buffer description");
+            }
+
+            auto& constantBuffer = reflectionData.constantBuffers.emplace_back();
+            constantBuffer.name = bufferDesc.Name;
+            constantBuffer.type = getConstantBufferType(bufferDesc.Type);
+            constantBuffer.size = bufferDesc.Size;
+        } else {
             throw std::runtime_error("could not extract constant buffer description");
-        }
-
-        auto& constantBuffer = reflectionData.constantBuffers.emplace_back();
-        constantBuffer.name = bufferDesc.Name;
-        constantBuffer.type = getConstantBufferType(bufferDesc.Type);
-        constantBuffer.size = bufferDesc.Size;
-
-        constantBuffer.variables.reserve(bufferDesc.Variables);
-        for (auto vidx = UINT{ 0 }, vcount = bufferDesc.Variables; vidx < vcount; vidx++) {
-            auto* cbVariableRefl = constantBufferReflection->GetVariableByIndex(vidx);
-
-            // cbVariableRefl->GetDesc();
         }
     }
 }

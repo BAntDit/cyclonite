@@ -4,6 +4,7 @@
 
 #ifndef CYCLONITE_TOOLS_COMPILER_H
 #define CYCLONITE_TOOLS_COMPILER_H
+#include <shaderReflection.h>
 
 #if !defined(_WIN32) // _WIN32 / _WIN64 at once
 #include <dxc/dxcapi.h>
@@ -30,7 +31,9 @@ public:
 
     auto operator=(Compiler&& rhs) noexcept -> Compiler&;
 
-    void collectReflection(std::wstring_view source, Options const& options);
+    void collectReflection(std::wstring_view source,
+                           Options const& options,
+                           shared::ShaderReflectionData& reflectionData);
 
 private:
     void compile(std::wstring_view source, Options const& options, IDxcResult*& compileResult);

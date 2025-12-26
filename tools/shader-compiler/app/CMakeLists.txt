@@ -26,6 +26,7 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     )
 endif()
 
+target_include_directories("${PROJECT_NAME}-app" PRIVATE "${CMAKE_SOURCE_DIR}/../../shared/")
 target_include_directories("${PROJECT_NAME}-app" PUBLIC "${TOOL_COMMON_INCLUDE_DIRS}")
 
 find_package(Boost COMPONENTS)

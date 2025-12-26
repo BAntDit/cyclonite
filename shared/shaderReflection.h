@@ -83,23 +83,11 @@ struct BoundResource
     ResourceViewDimension dimension;
 };
 
-struct ConstantBufferVariable
-{
-    std::string name;
-    size_t offset;
-    size_t size;
-    uint32_t startTextureIndex;
-    uint32_t textureCount;
-    uint32_t startSamplerIndex;
-    uint32_t samplerCount;
-};
-
 struct ConstantBufferReflection
 {
     std::string name;
     ConstantBufferType type;
     size_t size;
-    std::vector<ConstantBufferVariable> variables;
 };
 
 struct ShaderReflectionData
