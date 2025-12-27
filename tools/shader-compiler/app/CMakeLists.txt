@@ -29,5 +29,10 @@ endif()
 target_include_directories("${PROJECT_NAME}-app" PRIVATE "${CMAKE_SOURCE_DIR}/../../shared/")
 target_include_directories("${PROJECT_NAME}-app" PUBLIC "${TOOL_COMMON_INCLUDE_DIRS}")
 
+find_package(dxcompiler REQUIRED)
+target_link_libraries("${PROJECT_NAME}-app" dxcompiler::dxcompiler)
+
 find_package(Boost COMPONENTS)
 target_link_libraries("${PROJECT_NAME}-app" boost::boost)
+
+target_link_libraries("${PROJECT_NAME}-app" "${PROJECT_NAME}-lib")

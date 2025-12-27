@@ -788,7 +788,7 @@ void Compiler::compileToSpirv(std::wstring_view source, Options const& options, 
     }
 
     auto moduleSize = dxcOutput->GetBufferSize() / sizeof(uint32_t);
-    output.resize(moduleSize, uint32_t{0});
+    output.resize(moduleSize, uint32_t{ 0 });
 
     memcpy(output.data(), dxcOutput->GetBufferPointer(), sizeof(uint32_t) * moduleSize);
 }
