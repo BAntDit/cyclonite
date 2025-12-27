@@ -763,4 +763,33 @@ void Compiler::collectReflection(std::wstring_view source,
 
     tools::collectReflection(dxcShaderReflection, reflectionData);
 }
+
+void Compiler::compileToSpirv(std::wstring_view source, Options const& options, std::vector<uint32_t>& output)
+{
+    auto* dxcCompileResult = std::add_pointer_t<IDxcResult>{ nullptr };
+    compile(source, options, dxcCompileResult);
+
+    if (!dxcCompileResult->HasOutput(DXC_OUT_OBJECT)) {
+        throw std::runtime_error("could not compile shader");
+    }
+
+    auto dxcOutput = std::add_pointer_t<IDxcBlob>{};
+    if (auto result = dxcCompileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&dxcOutput), nullptr);
+        !SUCCEEDED(result)) {
+        throw std::runtime_error("could not extract compilation result");
+    }
+
+    if (dxcOutput->GetBufferSize() == 0) {
+        throw std::runtime_error("compilation result is empty");
+    }
+
+    if (dxcOutput->GetBufferSize() % sizeof(uint32_t) != 0) {
+        throw std::runtime_error("spirv module must be multiple of 4");
+    }
+
+    auto moduleSize = dxcOutput->GetBufferSize() / sizeof(uint32_t);
+    output.resize(moduleSize, uint32_t{0});
+
+    memcpy(output.data(), dxcOutput->GetBufferPointer(), sizeof(uint32_t) * moduleSize);
+}
 }

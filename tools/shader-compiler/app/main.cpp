@@ -38,8 +38,8 @@ int main(int argc, char* argv[])
       ("encoding",
        po::value<std::string>(),
        "Set default encoding for source inputs and text outputs (utf8	utf16(win) utf32(*nix) wide) default=utf8") //
-      ("export-shaders-only", "Only export shaders when compiling a library.") //
-      ("E", po::value<std::string>(), "Entry point name") //
+      ("export-shaders-only", "Only export shaders when compiling a library.")                                      //
+      ("E", po::value<std::string>(), "Entry point name")                                                           //
       ("fdiagnostics-format",
        po::value<std::string>(),
        "Select diagnostic message format. Supported values: clang, msvc, mdvc-fallback, vi") //
@@ -352,8 +352,9 @@ int main(int argc, char* argv[])
         options.outputFileName = vm["Fo"].as<std::string>();
     }
 
+    auto reflectionFileName = std::string{};
     if (vm.contains("Fre")) {
-        options.reflectionFileName = vm["Fre"].as<std::string>();
+        reflectionFileName = vm["Fre"].as<std::string>();
     }
 
     if (vm.contains("Frs")) {
@@ -744,12 +745,16 @@ int main(int argc, char* argv[])
     options.metal = false;
 
     compiler.collectReflection(source, options, compilerOutput.reflectionData());
-    // TODO:: save reflection into separated file if necessary
+    if (!reflectionFileName.empty()) {
+        throw std::runtime_error("not implemented");
+    }
 
     options.spirv = compileToSpv;
     options.metal = compileToMetal;
 
-    // compile
+    if (options.spirv) {
+        compiler.compileToSpirv(source, options, compilerOutput.spirvModule());
+    }
 
     return 0;
 }

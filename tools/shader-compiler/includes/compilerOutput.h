@@ -17,8 +17,13 @@ public:
 
     [[nodiscard]] auto reflectionData() -> shared::ShaderReflectionData& { return reflectionData_; }
 
+    [[nodiscard]] auto spirvModule() const -> std::vector<uint32_t> const& { return spirvModule_; }
+
+    [[nodiscard]] auto spirvModule() -> std::vector<uint32_t>& { return spirvModule_; }
+
 private:
     shared::ShaderReflectionData reflectionData_;
+    std::vector<uint32_t> spirvModule_;
 };
 }
 

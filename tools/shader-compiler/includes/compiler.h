@@ -35,6 +35,8 @@ public:
                            Options const& options,
                            shared::ShaderReflectionData& reflectionData);
 
+    void compileToSpirv(std::wstring_view source, Options const& options, std::vector<uint32_t>& output);
+
 private:
     void compile(std::wstring_view source, Options const& options, IDxcResult*& compileResult);
 

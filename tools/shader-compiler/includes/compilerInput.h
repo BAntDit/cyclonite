@@ -96,7 +96,6 @@ struct Options
     std::string warninAndErrorsFileName;  // -Fe
     std::string preprocessedCodeFileName; // -Fi
     std::string outputFileName;           // -Fo
-    std::string reflectionFileName;       // -Fre
     std::string rootsigFileName;          // -Frs
     std::string shaderHashFileName;       // -Fsh
 

@@ -5,8 +5,8 @@
 #include "dxReflection.h"
 
 #if !defined(_WIN32) // _WIN32 / _WIN64 at once
-#include <unknwn.h>
 #include <directx/d3d12shader.h>
+#include <unknwn.h>
 #else
 #include <d3d12shader.h>
 #endif
