@@ -9,9 +9,8 @@
 #include <string>
 #include <vector>
 
-namespace cyclonite::shared
-{
-enum class ShaderResourceType: uint8_t
+namespace cyclonite::shared {
+enum class ShaderResourceType : uint8_t
 {
     Undefined = 0,
     CBuffer = 1,
@@ -30,7 +29,7 @@ enum class ShaderResourceType: uint8_t
     FeedbackTexture = 14
 };
 
-enum class TextureResourceComponetType: uint8_t
+enum class TextureResourceComponetType : uint8_t
 {
     Undefined = 0,
     UNORM = 1,
@@ -43,7 +42,7 @@ enum class TextureResourceComponetType: uint8_t
     CONTINUED = 8
 };
 
-enum class ResourceViewDimension: uint8_t
+enum class ResourceViewDimension : uint8_t
 {
     Undefined = 0,
     Buffer = 1,
@@ -59,7 +58,7 @@ enum class ResourceViewDimension: uint8_t
     BufferEx = 11
 };
 
-enum class ConstantBufferType: uint8_t
+enum class ConstantBufferType : uint8_t
 {
     Undefined = 0,
     CBuffer = 1,
@@ -100,4 +99,4 @@ struct ShaderReflectionData
 };
 }
 
-#endif //CYCLONITE_SHADER_REFLECTION_H
+#endif // CYCLONITE_SHADER_REFLECTION_H

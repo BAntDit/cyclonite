@@ -1,6 +1,7 @@
 
 #include "compiler.h"
 #include "compilerOutput.h"
+#include "serialization.h"
 #include <boost/program_options.hpp>
 #include <codecvt>
 #include <format>
