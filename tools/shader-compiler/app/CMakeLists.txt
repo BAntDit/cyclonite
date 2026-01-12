@@ -36,3 +36,6 @@ find_package(Boost COMPONENTS)
 target_link_libraries("${PROJECT_NAME}-app" boost::boost)
 
 target_link_libraries("${PROJECT_NAME}-app" "${PROJECT_NAME}-lib")
+
+find_package(metrix REQUIRED)
+target_link_libraries("${PROJECT_NAME}-app" metrix::metrix)

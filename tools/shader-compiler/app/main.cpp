@@ -1,7 +1,9 @@
 
+#include "binaryDataWriter.h"
 #include "compiler.h"
 #include "compilerOutput.h"
 #include "serialization.h"
+#include "shaderModuleBinary.h"
 #include <boost/program_options.hpp>
 #include <codecvt>
 #include <format>
@@ -756,6 +758,33 @@ int main(int argc, char* argv[])
     if (options.spirv) {
         compiler.compileToSpirv(source, options, compilerOutput.spirvModule());
     }
+
+    auto path = std::filesystem::path(options.outputFileName);
+    auto dataWriter = cyclonite::shared::SerializationDataWriter(path);
+
+    auto shaderModuleBinary = cyclonite::shared::ShaderModuleBinary{};
+
+    auto shaderModuleBlockCount = size_t{ 2 }; // spir-v + reflection
+    shaderModuleBinary.blockHeaders.reserve(shaderModuleBlockCount);
+
+    auto baseOffset = sizeof(cyclonite::shared::ShaderModuleBlockHeader) * shaderModuleBlockCount +
+                      sizeof(cyclonite::shared::SHADER_MODULE_MAGIC_NUMBER);
+
+    // spir-v blocK:
+    auto& spirvBlockHeader = shaderModuleBinary.blockHeaders.emplace_back();
+    spirvBlockHeader.id = cyclonite::shared::SHADER_MODULE_SPIRV_BLOCK;
+    spirvBlockHeader.baseOffset = baseOffset;
+    spirvBlockHeader.blockOffset = 0;
+    spirvBlockHeader.size = compilerOutput.spirvModule().size() * sizeof(uint32_t);
+
+    // reflection block:
+    auto& reflectionBlockHeader = shaderModuleBinary.blockHeaders.emplace_back();
+    reflectionBlockHeader.id = cyclonite::shared::SHADER_MODULE_REFLECTION_BLOCK;
+    reflectionBlockHeader.baseOffset = baseOffset;
+    reflectionBlockHeader.blockOffset = spirvBlockHeader.size;
+    // reflectionBlockHeader.size // TODO:: compute size
+
+    dataWriter(cyclonite::shared::SHADER_MODULE_MAGIC_NUMBER);
 
     return 0;
 }

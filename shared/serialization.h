@@ -9,6 +9,7 @@
 #include <concepts>
 #include <tuple>
 #include <type_traits>
+#include <cstddef>
 
 // serialization based on https://github.com/mera-company/cpp-serialization-library/tree/master
 namespace cyclonite::shared {

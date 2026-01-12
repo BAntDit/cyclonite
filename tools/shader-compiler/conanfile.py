@@ -15,6 +15,7 @@ class ToolsShaderCompilerRecipe(ConanFile):
         self.requires("dxcompiler/1.8.2505@")
         self.requires("directx-headers/1.618.2")
         self.requires("boost/1.87.0")
+        self.requires("metrix/1.8.1.0")
 
     def configure(self):
         self.settings.compiler.cppstd = "20"
