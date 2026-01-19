@@ -13,6 +13,8 @@
 #include <string>
 #include <vector>
 
+#include "dxReflection.h"
+
 int main(int argc, char* argv[])
 {
     namespace po = boost::program_options;
@@ -782,7 +784,7 @@ int main(int argc, char* argv[])
     reflectionBlockHeader.id = cyclonite::shared::SHADER_MODULE_REFLECTION_BLOCK;
     reflectionBlockHeader.baseOffset = baseOffset;
     reflectionBlockHeader.blockOffset = spirvBlockHeader.size;
-    // reflectionBlockHeader.size // TODO:: compute size
+    reflectionBlockHeader.size = cyclonite::tools::getReflectionDataSize(compilerOutput.reflectionData());
 
     dataWriter(cyclonite::shared::SHADER_MODULE_MAGIC_NUMBER);
 

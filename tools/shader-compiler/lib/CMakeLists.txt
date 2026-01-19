@@ -38,5 +38,8 @@ target_link_libraries("${PROJECT_NAME}-lib" PRIVATE dxcompiler::dxcompiler)
 find_package(DirectX-Headers REQUIRED)
 target_link_libraries("${PROJECT_NAME}-lib" PRIVATE Microsoft::DirectX-Headers)
 
+find_package(metrix REQUIRED)
+target_link_libraries("${PROJECT_NAME}-lib" PRIVATE metrix::metrix)
+
 
 
