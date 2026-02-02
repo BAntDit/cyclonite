@@ -276,7 +276,8 @@ template<auto... Accessor>
 struct AccessChainInvokeForwarder
 {
     template<typename StreamWriter>
-    auto invoke() const {
+    auto invoke() const
+    {
         using object_type_t = typename metrix::type_list<decltype(Accessor)...>::template get_type<0>::type;
         return AccessChainInvoker<object_type_t, StreamWriter>{ value_list<Accessor...>{} };
     }
@@ -296,13 +297,29 @@ public:
     using data_access_chain_t = internal::AccessChainInvoker<AnyObject, StreamWriter>;
 
     template<typename... AccessChain>
-    constexpr Serializer(internal::stream_writer_type_wrap_t<StreamWriter>, AccessChain&&... accessChain); // TODO::
+    Serializer(internal::stream_writer_type_wrap_t<StreamWriter>, AccessChain&&... accessChain);
 
     void operator()(AnyObject& anyObject, StreamWriter& sw) const; // TODO:: ...
 
 private:
     std::array<data_access_chain_t, N> accessChains_;
 };
+
+template<typename AnyObject, size_t N, typename StreamWriter>
+template<typename... AccessChain>
+Serializer<AnyObject, N, StreamWriter>::Serializer(internal::stream_writer_type_wrap_t<StreamWriter>,
+                                                   AccessChain&&... accessChain)
+  : accessChains_{ accessChain.template invoke<StreamWriter>()... }
+{
+}
+
+template<typename AnyObject, size_t N, typename StreamWriter>
+void Serializer<AnyObject, N, StreamWriter>::operator()(AnyObject& anyObject, StreamWriter& sw) const
+{
+    for (auto const& ac : accessChains_) {
+        ac(anyObject, sw);
+    }
+}
 
 template<typename StreamWriter>
 constexpr inline auto useWriter() -> internal::stream_writer_type_wrap_t<StreamWriter>
