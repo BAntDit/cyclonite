@@ -6,6 +6,7 @@
 #define CYCLONITE_SHADER_REFLECTION_H
 
 #include <cstdint>
+#include <metrix/enum.h>
 #include <string>
 #include <vector>
 
@@ -69,6 +70,25 @@ enum class ConstantBufferType : uint8_t
 
 struct BoundResource
 {
+    void getResourceData(std::string_view& resourceName,
+                         uint8_t& resourceType,
+                         uint32_t& resourceSpace,
+                         uint32_t& resourceBindPoint,
+                         uint32_t& resourceCount,
+                         uint8_t& texComponent,
+                         uint32_t& resourceSampleCount,
+                         uint8_t& resourceViewDimension) const
+    {
+        resourceName = name;
+        resourceType = metrix::value_cast(type);
+        resourceSpace = space;
+        resourceBindPoint = bindPoint;
+        resourceCount = bindCount;
+        texComponent = metrix::value_cast(textureComponetType);
+        resourceSampleCount = sampleCount;
+        resourceViewDimension = metrix::value_cast(dimension);
+    }
+
     std::string name;
     ShaderResourceType type;
 
@@ -84,13 +104,25 @@ struct BoundResource
 
 struct ConstantBufferReflection
 {
+    void getBufferData(std::string_view& bufferName, uint8_t& bufferType, uint64_t& bufferSize) const
+    {
+        bufferName = name;
+        bufferType = metrix::value_cast(type);
+        bufferSize = size;
+    }
+
     std::string name;
     ConstantBufferType type;
-    size_t size;
+    uint64_t size;
 };
 
 struct ShaderReflectionData
 {
+    void getVersion(uint32_t& ver) const { ver = version; }
+    void getGeneratorName(std::string_view& name) const { name = generatorName; }
+    void getBoundResources(std::vector<BoundResource>& resources) const { resources = boundResources; }
+    void getConstantBuffers(std::vector<ConstantBufferReflection>& cbuffers) const { cbuffers = constantBuffers; }
+
     uint32_t version;
     std::string generatorName;
 

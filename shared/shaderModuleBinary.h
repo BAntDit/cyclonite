@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <vector>
+#include "shaderReflection.h"
 
 namespace cyclonite::shared
 {
@@ -15,24 +16,33 @@ inline constexpr uint32_t SHADER_MODULE_MAGIC_NUMBER = 0x43534D01;     // Cyclon
 inline constexpr uint32_t SHADER_MODULE_SPIRV_BLOCK = 0x43534D53;      // Cyclonite Shader Module Spir-V block
 inline constexpr uint32_t SHADER_MODULE_REFLECTION_BLOCK = 0x43534D52; // Cyclonite Shader Module reflection block
 
-#pragma pack(push, 1)
 struct ShaderModuleBlockHeader
 {
+    void getBlockHeaderData(uint32_t& blockId, uint64_t& offsetBlock, uint64_t& offsetBase, uint64_t& sizeBlock) const
+    {
+        blockId = id;
+        offsetBlock = blockOffset;
+        offsetBase = baseOffset;
+        sizeBlock = size;
+    }
+
     uint64_t baseOffset;
     uint64_t blockOffset;
     uint64_t size;
     uint32_t id;
 };
-#pragma pack(pop)
 
 struct ShaderModuleBinary
 {
     void getMagicNumber(uint32_t& magicNumber) const { magicNumber = SHADER_MODULE_MAGIC_NUMBER; }
     void getBlockCount(uint32_t& blockCount) const { blockCount = static_cast<uint32_t>(blockHeaders.size()); }
+    void getBlockHeaders(std::vector<ShaderModuleBlockHeader>& blocks) const { blocks = blockHeaders; }
+    void getSpirvCode(std::vector<uint32_t>& code) const { code = spirvCode; }
+    void getReflectionData(ShaderReflectionData& reflection) const { reflection = reflectionData; }
 
     std::vector<ShaderModuleBlockHeader> blockHeaders;
     std::vector<uint32_t> spirvCode;
-    std::vector<std::byte> reflectionBinary;
+    ShaderReflectionData reflectionData;
 };
 }
 

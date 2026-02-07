@@ -57,9 +57,9 @@ template<typename T>
 inline void BinaryStreamWriter::operator<<(T const& t)
 {
     auto size = std::size(t);
-    output_.write(static_cast<char const*>(&size), sizeof(size));
+    output_.write(reinterpret_cast<char const*>(&size), sizeof(size));
     for (auto const& e : t) {
-        output_.write(static_cast<char const*>(&e), sizeof(e));
+        (*this) << e;
     }
 }
 

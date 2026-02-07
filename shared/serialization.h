@@ -88,7 +88,7 @@ public:
     AccessChainItem(Accessor const& accessor, AnyObject& anyObject);
 
     template<typename NextAccessor>
-    auto operator<<(NextAccessor& nextAccessor) &&;
+    auto operator<<(NextAccessor const& nextAccessor) &&;
 
     auto getArguments()
     {
@@ -115,7 +115,7 @@ public:
     void addAccessChainItem(Accessor const& accessor, AnyObject& anyObject);
 
     template<typename NextAccessor>
-    auto operator<<(NextAccessor& nextAccessor) && -> AccessChainItemArray<NextAccessor>;
+    auto operator<<(NextAccessor const& nextAccessor) && -> AccessChainItemArray<NextAccessor>;
 
     auto getArguments()
     {
@@ -144,7 +144,8 @@ void AccessChainItemArray<Accessor>::addAccessChainItem(Accessor const& accessor
 
 template<typename Accessor>
 template<typename NextAccessor>
-auto AccessChainItemArray<Accessor>::operator<<(NextAccessor& nextAccessor) && -> AccessChainItemArray<NextAccessor>
+auto AccessChainItemArray<Accessor>::operator<<(
+  NextAccessor const& nextAccessor) && -> AccessChainItemArray<NextAccessor>
 {
     using invoking_class_t = typename metrix::member_function_class_type_t<NextAccessor>;
 
@@ -175,7 +176,7 @@ void AccessChainItem<Accessor>::invokeImpl(Accessor const& accessor, AnyObject& 
 
 template<typename Accessor>
 template<typename NextAccessor>
-auto AccessChainItem<Accessor>::operator<<(NextAccessor& nextAccessor) &&
+auto AccessChainItem<Accessor>::operator<<(NextAccessor const& nextAccessor) &&
 {
     using invoking_class_t = typename metrix::member_function_class_type_t<NextAccessor>;
 
@@ -189,6 +190,9 @@ auto AccessChainItem<Accessor>::operator<<(NextAccessor& nextAccessor) &&
         }
         return accessChainItemArray;
     } /*else if extends for other types here*/
+    else {
+        static_assert(false);
+    }
 }
 //
 
@@ -282,7 +286,7 @@ constexpr auto makeAccessChain()
 }
 
 template<typename AnyObject, size_t N, typename StreamWriter>
-class Serializer
+class Serializer // TODO:: rename to serialization schema
 {
 public:
     using data_access_chain_t = internal::AccessChainInvoker<AnyObject, StreamWriter>;
@@ -290,7 +294,7 @@ public:
     template<typename... AccessChain>
     Serializer(internal::stream_writer_type_wrap_t<StreamWriter>, AccessChain&&... accessChain);
 
-    void operator()(AnyObject& anyObject, StreamWriter& sw) const;
+    void operator()(AnyObject& anyObject, StreamWriter& sw) const; // TODO:: rename to method ::serialize
 
 private:
     std::array<data_access_chain_t, N> accessChains_;

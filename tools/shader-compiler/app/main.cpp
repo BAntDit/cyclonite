@@ -786,10 +786,26 @@ int main(int argc, char* argv[])
     reflectionBlockHeader.blockOffset = spirvBlockHeader.size;
     reflectionBlockHeader.size = cyclonite::tools::getReflectionDataSize(compilerOutput.reflectionData());
 
+    shaderModuleBinary.spirvCode = compilerOutput.spirvModule();
+    shaderModuleBinary.reflectionData = compilerOutput.reflectionData();
+
     auto serializer = cyclonite::shared::Serializer{
         cyclonite::shared::useWriter<cyclonite::shared::BinaryStreamWriter>(),
         cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getMagicNumber>(),
-        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getBlockCount>()
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getBlockCount>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getBlockHeaders,
+                                           &cyclonite::shared::ShaderModuleBlockHeader::getBlockHeaderData>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getSpirvCode>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getReflectionData,
+                                           &cyclonite::shared::ShaderReflectionData::getVersion>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getReflectionData,
+                                           &cyclonite::shared::ShaderReflectionData::getGeneratorName>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getReflectionData,
+                                           &cyclonite::shared::ShaderReflectionData::getBoundResources,
+                                           &cyclonite::shared::BoundResource::getResourceData>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getReflectionData,
+                                           &cyclonite::shared::ShaderReflectionData::getConstantBuffers,
+                                           &cyclonite::shared::ConstantBufferReflection::getBufferData>()
     };
 
     serializer(shaderModuleBinary, streamWriter);
