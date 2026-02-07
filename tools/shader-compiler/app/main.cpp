@@ -762,7 +762,7 @@ int main(int argc, char* argv[])
     }
 
     auto path = std::filesystem::path(options.outputFileName);
-    auto dataWriter = cyclonite::shared::SerializationDataWriter(path);
+    auto streamWriter = cyclonite::shared::BinaryStreamWriter{ path };
 
     auto shaderModuleBinary = cyclonite::shared::ShaderModuleBinary{};
 
@@ -786,7 +786,13 @@ int main(int argc, char* argv[])
     reflectionBlockHeader.blockOffset = spirvBlockHeader.size;
     reflectionBlockHeader.size = cyclonite::tools::getReflectionDataSize(compilerOutput.reflectionData());
 
-    dataWriter(cyclonite::shared::SHADER_MODULE_MAGIC_NUMBER);
+    auto serializer = cyclonite::shared::Serializer{
+        cyclonite::shared::useWriter<cyclonite::shared::BinaryStreamWriter>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getMagicNumber>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getBlockCount>()
+    };
+
+    serializer(shaderModuleBinary, streamWriter);
 
     return 0;
 }

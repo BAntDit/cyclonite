@@ -28,7 +28,7 @@ struct first_accessor_class_type;
 template<typename First, typename... Rest>
 struct first_accessor_class_type<First, Rest...>
 {
-    using type = typename metrix::member_function_class_type_t<First>;
+    using type = First;
 };
 
 template<typename... Accessors>
@@ -39,24 +39,12 @@ struct value_list
 {};
 
 template<typename ArgumentsList>
-struct args_tuple;
-
-template<typename... Args>
-struct args_tuple<metrix::type_list<Args...>>
-{
-    using type = std::tuple<std::remove_pointer_t<std::decay_t<Args>>...>;
-};
-
-template<typename ArgumentsList>
-using args_tuple_t = typename args_tuple<ArgumentsList>::type;
-
-template<typename ArgumentsList>
 struct decayed_args_tuple;
 
 template<typename... Args>
 struct decayed_args_tuple<metrix::type_list<Args...>>
 {
-    using type = std::tuple<Args...>;
+    using type = std::tuple<std::remove_pointer_t<std::decay_t<Args>>...>;
 };
 
 template<typename ArgumentsList>
@@ -89,10 +77,10 @@ class AccessChainItem
 {
 public:
     using class_t = metrix::member_function_class_type_t<Accessor>;
-    using args_tuple_t = args_tuple_t<metrix::member_function_argument_type_list_t<Accessor>>;
-    using decayed_args_tuple_t = decayed_args_tuple_t<metrix::member_function_argument_type_list_t<Accessor>>;
+    using args_list_t = metrix::member_function_argument_type_list_t<Accessor>;
+    using decayed_args_tuple_t = decayed_args_tuple_t<args_list_t>;
 
-    static constexpr size_t args_count_v = std::tuple_size_v<args_tuple_t>;
+    static constexpr size_t args_count_v = std::tuple_size_v<decayed_args_tuple_t>;
 
     decayed_args_tuple_t arguments;
 
@@ -174,14 +162,15 @@ template<typename AnyObject>
 AccessChainItem<Accessor>::AccessChainItem(Accessor const& accessor, AnyObject& anyObject)
   : arguments{}
 {
-    invokeImpl(accessor, anyObject, arguments, std::make_index_sequence<args_count_v>{});
+    invokeImpl(accessor, anyObject, std::make_index_sequence<args_count_v>{});
 }
 
 template<typename Accessor>
 template<typename AnyObject, size_t... Idx>
 void AccessChainItem<Accessor>::invokeImpl(Accessor const& accessor, AnyObject& anyObject, std::index_sequence<Idx...>)
 {
-    (anyObject.*accessor)(passArgument<std::tuple_element_t<Idx, args_tuple_t>>(std::get<Idx>(arguments))...);
+    (anyObject.*
+     accessor)(passArgument<typename args_list_t::template get_type<Idx>::type>(std::get<Idx>(arguments))...);
 }
 
 template<typename Accessor>
@@ -215,7 +204,7 @@ public:
     template<typename NextAccessor>
     auto operator<<(NextAccessor const& nextAccessor) -> AccessChainItem<NextAccessor>
     {
-        return AccessChainItem<NextAccessor>{ anyObject_, nextAccessor };
+        return AccessChainItem<NextAccessor>{ nextAccessor, anyObject_ };
     }
 
 private:
@@ -275,11 +264,13 @@ void AccessChainInvoker<AnyObject, StreamWriter>::operator()(AnyObject& anyObjec
 template<auto... Accessor>
 struct AccessChainInvokeForwarder
 {
+    using first_t = typename metrix::type_list<std::decay_t<decltype(Accessor)>...>::template get_type<0>::type;
+    using class_t = typename metrix::member_function_class_type_t<first_t>;
+
     template<typename StreamWriter>
     auto invoke() const
     {
-        using object_type_t = typename metrix::type_list<decltype(Accessor)...>::template get_type<0>::type;
-        return AccessChainInvoker<object_type_t, StreamWriter>{ value_list<Accessor...>{} };
+        return AccessChainInvoker<class_t, StreamWriter>{ value_list<Accessor...>{} };
     }
 };
 }
@@ -299,7 +290,7 @@ public:
     template<typename... AccessChain>
     Serializer(internal::stream_writer_type_wrap_t<StreamWriter>, AccessChain&&... accessChain);
 
-    void operator()(AnyObject& anyObject, StreamWriter& sw) const; // TODO:: ...
+    void operator()(AnyObject& anyObject, StreamWriter& sw) const;
 
 private:
     std::array<data_access_chain_t, N> accessChains_;
@@ -329,8 +320,10 @@ constexpr inline auto useWriter() -> internal::stream_writer_type_wrap_t<StreamW
 
 // deduction guide:
 template<typename StreamWriter, typename... AccessChain>
-Serializer(internal::stream_writer_type_wrap_t<StreamWriter>, AccessChain&&... accessChain)
-  -> Serializer<internal::first_accessor_class_type_t<AccessChain...>, sizeof...(AccessChain), StreamWriter>;
+Serializer(internal::stream_writer_type_wrap_t<StreamWriter>,
+           AccessChain...) -> Serializer<typename internal::first_accessor_class_type_t<AccessChain...>::class_t,
+                                         sizeof...(AccessChain),
+                                         StreamWriter>;
 }
 
 #endif // CYCLONITE_SHARED_SERIALIZATION_H

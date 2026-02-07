@@ -27,6 +27,9 @@ struct ShaderModuleBlockHeader
 
 struct ShaderModuleBinary
 {
+    void getMagicNumber(uint32_t& magicNumber) const { magicNumber = SHADER_MODULE_MAGIC_NUMBER; }
+    void getBlockCount(uint32_t& blockCount) const { blockCount = static_cast<uint32_t>(blockHeaders.size()); }
+
     std::vector<ShaderModuleBlockHeader> blockHeaders;
     std::vector<uint32_t> spirvCode;
     std::vector<std::byte> reflectionBinary;

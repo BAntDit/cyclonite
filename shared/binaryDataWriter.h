@@ -8,6 +8,7 @@
 #include <boost/iostreams/stream.hpp>
 #include <filesystem>
 #include <fstream>
+#include <metrix/containers.h>
 #include <tuple>
 
 namespace cyclonite::shared {
@@ -34,7 +35,9 @@ public:
         }
     }
 
-    // TODO:: make possible to write iterable containers - vector, arrays and etc
+    template<typename T>
+        requires metrix::is_iterable_v<std::decay_t<T>> && metrix::is_contiguous_v<std::decay_t<T>>
+    void operator<<(T const& t);
 
     template<typename... Args>
     void operator<<(std::tuple<Args...> const& tuple);
@@ -48,6 +51,17 @@ public:
 private:
     std::fstream output_;
 };
+
+template<typename T>
+    requires metrix::is_iterable_v<std::decay_t<T>> && metrix::is_contiguous_v<std::decay_t<T>>
+inline void BinaryStreamWriter::operator<<(T const& t)
+{
+    auto size = std::size(t);
+    output_.write(static_cast<char const*>(&size), sizeof(size));
+    for (auto const& e : t) {
+        output_.write(static_cast<char const*>(&e), sizeof(e));
+    }
+}
 
 template<typename... Args>
 inline void BinaryStreamWriter::operator<<(std::tuple<Args...> const& tuple)
