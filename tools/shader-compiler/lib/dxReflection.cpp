@@ -47,8 +47,6 @@ auto getTextureReturnComponentType(D3D_RESOURCE_RETURN_TYPE returnType) -> share
         case D3D_RETURN_TYPE_DOUBLE:
             result = shared::TextureResourceComponetType::DOUBLE;
             break;
-        default:
-            assert(false);
     }
 
     return result;

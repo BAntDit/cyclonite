@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
 {
     namespace po = boost::program_options;
 
-    auto desc = po::options_description{ "shader-compiler options" };
+    auto desc = po::options_description{ "shader-compiler options", 160 };
     desc.add_options()                                                           // options:
       ("help", "Produce help message")                                           // --help
       ("version", "Display compiler version information")                        // --version
@@ -729,7 +729,7 @@ int main(int argc, char* argv[])
 
     auto source = std::wstring{};
     if (vm.contains("source")) {
-        auto s = vm["D"].as<std::string>();
+        auto s = vm["source"].as<std::string>();
         auto conv = std::wstring_convert<std::codecvt_utf8<wchar_t>>{};
         source = conv.from_bytes(s.data(), s.data() + s.size());
     }
@@ -789,6 +789,7 @@ int main(int argc, char* argv[])
     shaderModuleBinary.spirvCode = compilerOutput.spirvModule();
     shaderModuleBinary.reflectionData = compilerOutput.reflectionData();
 
+    // TODO:: let the serializer provide size
     auto serializer = cyclonite::shared::Serializer{
         cyclonite::shared::useWriter<cyclonite::shared::BinaryStreamWriter>(),
         cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getMagicNumber>(),

@@ -740,7 +740,7 @@ void Compiler::collectReflection(std::wstring_view source,
     auto* dxcCompileResult = std::add_pointer_t<IDxcResult>{ nullptr };
     compile(source, options, dxcCompileResult);
 
-    if (dxcCompileResult == nullptr || dxcCompileResult->HasOutput(DXC_OUT_REFLECTION)) {
+    if (dxcCompileResult == nullptr || !dxcCompileResult->HasOutput(DXC_OUT_REFLECTION)) {
         throw std::runtime_error("could not extract reflection");
     }
 
