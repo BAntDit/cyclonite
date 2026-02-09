@@ -780,16 +780,25 @@ int main(int argc, char* argv[])
     spirvBlockHeader.size = compilerOutput.spirvModule().size() * sizeof(uint32_t);
 
     // reflection block:
+    auto reflectionSerializer = cyclonite::shared::Serializer{
+        cyclonite::shared::useWriter<cyclonite::shared::BinaryStreamWriter>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderReflectionData::getVersion>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderReflectionData::getGeneratorName>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderReflectionData::getBoundResources,
+                                           &cyclonite::shared::BoundResource::getResourceData>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderReflectionData::getConstantBuffers,
+                                           &cyclonite::shared::ConstantBufferReflection::getBufferData>()
+    };
+
     auto& reflectionBlockHeader = shaderModuleBinary.blockHeaders.emplace_back();
     reflectionBlockHeader.id = cyclonite::shared::SHADER_MODULE_REFLECTION_BLOCK;
     reflectionBlockHeader.baseOffset = baseOffset;
     reflectionBlockHeader.blockOffset = spirvBlockHeader.size;
-    reflectionBlockHeader.size = cyclonite::tools::getReflectionDataSize(compilerOutput.reflectionData());
+    reflectionBlockHeader.size = reflectionSerializer.expectedSize(compilerOutput.reflectionData());
 
     shaderModuleBinary.spirvCode = compilerOutput.spirvModule();
     shaderModuleBinary.reflectionData = compilerOutput.reflectionData();
 
-    // TODO:: let the serializer provide size
     auto serializer = cyclonite::shared::Serializer{
         cyclonite::shared::useWriter<cyclonite::shared::BinaryStreamWriter>(),
         cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getMagicNumber>(),
@@ -809,7 +818,7 @@ int main(int argc, char* argv[])
                                            &cyclonite::shared::ConstantBufferReflection::getBufferData>()
     };
 
-    serializer(shaderModuleBinary, streamWriter);
+    serializer.serialize(shaderModuleBinary, streamWriter);
 
     return 0;
 }

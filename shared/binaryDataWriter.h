@@ -56,7 +56,7 @@ template<typename T>
     requires metrix::is_iterable_v<std::decay_t<T>> && metrix::is_contiguous_v<std::decay_t<T>>
 inline void BinaryStreamWriter::operator<<(T const& t)
 {
-    auto size = std::size(t);
+    auto size = static_cast<uint32_t>(std::size(t));
     output_.write(reinterpret_cast<char const*>(&size), sizeof(size));
     for (auto const& e : t) {
         (*this) << e;

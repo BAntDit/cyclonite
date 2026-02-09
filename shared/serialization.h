@@ -100,6 +100,29 @@ public:
         return res;
     }
 
+    [[nodiscard]] auto getArgumentsSize() const -> size_t
+    {
+        auto getArgsSize = [this]<size_t... Idx>(std::index_sequence<Idx...>) -> size_t {
+            auto getArgSize = [](auto const& a) -> size_t {
+                auto s = size_t{ 0 };
+                if constexpr (metrix::is_iterable_v<std::decay_t<decltype(a)>>) {
+                    s += sizeof(uint32_t);
+                    for (auto const& arg : a) {
+                        s += sizeof(arg);
+                    }
+                } else {
+                    s += sizeof(a);
+                }
+
+                return s;
+            };
+
+            return (getArgSize(std::get<Idx>(arguments)) + ... + size_t{ 0 });
+        };
+
+        return getArgsSize(std::make_index_sequence<args_count_v>{});
+    }
+
 private:
     template<typename AnyObject, size_t... Idx>
     void invokeImpl(Accessor const& accessor, AnyObject& anyObject, std::index_sequence<Idx...>);
@@ -129,6 +152,15 @@ public:
         }
 
         return res;
+    }
+
+    [[nodiscard]] auto getArgumentsSize() const -> size_t
+    {
+        auto s = size_t{ 0 };
+        for (auto& accessChainItem : accessChainItems_) {
+            s += accessChainItem.getArgumentsSize();
+        }
+        return s;
     }
 
 private:
@@ -222,6 +254,13 @@ auto invokeAccessChain(AnyObject&& anyObject, Accessor&&... accessor)
       .getArguments();
 }
 
+template<typename AnyObject, typename... Accessor>
+auto computeAccessChainSize(AnyObject&& anyObject, Accessor&&... accessor) -> size_t
+{
+    return (AccessChainBeginner<std::decay_t<AnyObject>>{ anyObject } << ... << std::forward<Accessor>(accessor))
+      .getArgumentsSize();
+}
+
 template<typename AnyObject, typename StreamWriter>
 class AccessChainInvoker
 {
@@ -231,20 +270,28 @@ public:
 
     void operator()(AnyObject& anyObject, StreamWriter& streamWriter) const;
 
+    [[nodiscard]] auto expectedSize(AnyObject& anyObject) const -> size_t;
+
 private:
     template<auto... Accessor>
     static void accessChainInvoke(AnyObject& anyObject, StreamWriter& streamWriter);
 
+    template<auto... Accessor>
+    static auto accessChainExpectedSizeInvoke(AnyObject& anyObject) -> size_t;
+
 private:
     using access_chain_invoker_f = void (*)(AnyObject&, StreamWriter&);
+    using size_computation_f = size_t (*)(AnyObject&);
 
     access_chain_invoker_f invoke_;
+    size_computation_f sizeComputation_;
 };
 
 template<typename AnyObject, typename StreamWriter>
 template<auto... Accessor>
 /*explicit*/ AccessChainInvoker<AnyObject, StreamWriter>::AccessChainInvoker(value_list<Accessor...>)
   : invoke_{ &accessChainInvoke<Accessor...> }
+  , sizeComputation_{ &accessChainExpectedSizeInvoke<Accessor...> }
 {
 }
 
@@ -260,9 +307,23 @@ template<auto... Accessor>
 }
 
 template<typename AnyObject, typename StreamWriter>
+template<auto... Accessor>
+/*static*/ auto AccessChainInvoker<AnyObject, StreamWriter>::accessChainExpectedSizeInvoke(AnyObject& anyObject)
+  -> size_t
+{
+    return computeAccessChainSize(anyObject, Accessor...);
+}
+
+template<typename AnyObject, typename StreamWriter>
 void AccessChainInvoker<AnyObject, StreamWriter>::operator()(AnyObject& anyObject, StreamWriter& streamWriter) const
 {
     invoke_(anyObject, streamWriter);
+}
+
+template<typename AnyObject, typename StreamWriter>
+auto AccessChainInvoker<AnyObject, StreamWriter>::expectedSize(AnyObject& anyObject) const -> size_t
+{
+    return sizeComputation_(anyObject);
 }
 
 template<auto... Accessor>
@@ -286,7 +347,7 @@ constexpr auto makeAccessChain()
 }
 
 template<typename AnyObject, size_t N, typename StreamWriter>
-class Serializer // TODO:: rename to serialization schema
+class Serializer
 {
 public:
     using data_access_chain_t = internal::AccessChainInvoker<AnyObject, StreamWriter>;
@@ -294,7 +355,9 @@ public:
     template<typename... AccessChain>
     Serializer(internal::stream_writer_type_wrap_t<StreamWriter>, AccessChain&&... accessChain);
 
-    void operator()(AnyObject& anyObject, StreamWriter& sw) const; // TODO:: rename to method ::serialize
+    [[nodiscard]] auto expectedSize(AnyObject& anyObject) const -> size_t;
+
+    void serialize(AnyObject& anyObject, StreamWriter& sw) const;
 
 private:
     std::array<data_access_chain_t, N> accessChains_;
@@ -309,11 +372,22 @@ Serializer<AnyObject, N, StreamWriter>::Serializer(internal::stream_writer_type_
 }
 
 template<typename AnyObject, size_t N, typename StreamWriter>
-void Serializer<AnyObject, N, StreamWriter>::operator()(AnyObject& anyObject, StreamWriter& sw) const
+void Serializer<AnyObject, N, StreamWriter>::serialize(AnyObject& anyObject, StreamWriter& sw) const
 {
     for (auto const& ac : accessChains_) {
         ac(anyObject, sw);
     }
+}
+
+template<typename AnyObject, size_t N, typename StreamWriter>
+auto Serializer<AnyObject, N, StreamWriter>::expectedSize(AnyObject& anyObject) const -> size_t
+{
+    auto result = size_t{ 0 };
+    for (auto const& ac : accessChains_) {
+        result += ac.expectedSize(anyObject);
+    }
+
+    return result;
 }
 
 template<typename StreamWriter>
