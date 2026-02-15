@@ -26,8 +26,9 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     )
 endif()
 
-target_include_directories("${PROJECT_NAME}-app" PRIVATE "${CMAKE_SOURCE_DIR}/../../shared/")
-target_include_directories("${PROJECT_NAME}-app" PUBLIC "${TOOL_COMMON_INCLUDE_DIRS}")
+target_include_directories("${PROJECT_NAME}-app" PRIVATE $<BUILD_INTERFACE:${SHARED_HEADERS_DIR}>)
+target_include_directories("${PROJECT_NAME}-app" PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/shared/>)
+target_include_directories("${PROJECT_NAME}-app" PUBLIC $<BUILD_INTERFACE:${TOOL_COMMON_INCLUDE_DIRS}>)
 
 find_package(dxcompiler REQUIRED)
 target_link_libraries("${PROJECT_NAME}-app" dxcompiler::dxcompiler)
@@ -39,3 +40,8 @@ target_link_libraries("${PROJECT_NAME}-app" "${PROJECT_NAME}-lib")
 
 find_package(metrix REQUIRED)
 target_link_libraries("${PROJECT_NAME}-app" metrix::metrix)
+
+install(TARGETS
+        ${PROJECT_NAME}-app
+        EXPORT ${PROJECT_NAME}-targets
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

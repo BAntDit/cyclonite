@@ -1,5 +1,5 @@
 from conan import ConanFile
-from conan.tools.files import copy, save, download, unzip
+from conan.tools.files import copy, save, download, unzip, get
 from conan.tools.cmake import CMake, CMakeToolchain, CMakeDeps
 import os
 import platform
@@ -21,8 +21,9 @@ class DxCompilerConan(ConanFile):
 
     def source(self):
         if self._is_windows:
-            # For Windows, we'll download pre-built binaries in the package() method
-            pass
+            # For Windows, download pre-built binaries
+            self.output.info(f"Downloading pre-built DXC from: {self._prebuilt_url}")
+            get(self, self._prebuilt_url, destination=self.source_folder, strip_root=False)
         else:
             self.run("git clone --recursive https://github.com/microsoft/DirectXShaderCompiler.git .")
 
@@ -66,14 +67,14 @@ include(CMakeFindDependencyMacro)
 if(NOT TARGET dxcompiler::dxcompiler)
     add_library(dxcompiler::dxcompiler SHARED IMPORTED)
     set_target_properties(dxcompiler::dxcompiler PROPERTIES
-        INTERFACE_INCLUDE_DIRECTORIES "${PACKAGE_PREFIX_DIR}/include"
+        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include"
     )
     
     # Windows specific configuration
     if(WIN32)
         set_target_properties(dxcompiler::dxcompiler PROPERTIES
-            IMPORTED_LOCATION "${PACKAGE_PREFIX_DIR}/bin/dxcompiler.dll"
-            IMPORTED_IMPLIB "${PACKAGE_PREFIX_DIR}/lib/dxcompiler.lib"
+            IMPORTED_LOCATION "${CMAKE_CURRENT_LIST_DIR}/../../../bin/dxcompiler.dll"
+            IMPORTED_IMPLIB "${CMAKE_CURRENT_LIST_DIR}/../../../lib/dxcompiler.lib"
         )
     endif()
 endif()
@@ -97,48 +98,23 @@ endif()
 """
         save(self, os.path.join(config_dir, "dxcompilerConfig.cmake"), content)
 
-    def _download_windows_prebuilt(self):
-        """Download pre-built DXC binaries for Windows"""
-        download_url = self._prebuilt_url;
-        
-        self.output.info(f"Downloading pre-built DXC from: {download_url}")
-        
-        zip_path = os.path.join(self.build_folder, "dxc.zip")
-        download(self, download_url, zip_path)
-        
-        extract_folder = os.path.join(self.build_folder, "extracted")
-        unzip(self, zip_path, extract_folder)
-        
-        return extract_folder
-
     def package(self):
         if self._is_windows:
-            extract_folder = self._download_windows_prebuilt()
-            
-            copy(self, "*.h", 
-                 src=os.path.join(extract_folder, "inc"), 
+            # Copy headers
+            copy(self, "*.h",
+                 src=os.path.join(self.source_folder, "inc"),
                  dst=os.path.join(self.package_folder, "include"))
-            
-            lib_src_folder = extract_folder
-            if self.settings.arch == "x86_64":
-                lib_src_folder = os.path.join(extract_folder, "lib", "x64")
-            elif self.settings.arch == "x86":
-                lib_src_folder = os.path.join(extract_folder, "lib", "x86")
 
-            bin_src_folder = extract_folder
-            if self.settings.arch == "x86_64":
-                bin_src_folder = os.path.join(extract_folder, "bin", "x64")
-            elif self.settings.arch == "x86":
-                bin_src_folder = os.path.join(extract_folder, "bin", "x86")
-            
+            arch_folder = "x64" if self.settings.arch == "x86_64" else "x86"
+
             # Copy .lib files
-            copy(self, "*.lib", 
-                 src=lib_src_folder, 
+            copy(self, "*.lib",
+                 src=os.path.join(self.source_folder, "lib", arch_folder),
                  dst=os.path.join(self.package_folder, "lib"))
-            
+
             # Copy .dll files
-            copy(self, "*.dll", 
-                 src=bin_src_folder, 
+            copy(self, "*.dll",
+                 src=os.path.join(self.source_folder, "bin", arch_folder),
                  dst=os.path.join(self.package_folder, "bin"))
         else:
             build_dir = os.path.join(self.build_folder, "build")
