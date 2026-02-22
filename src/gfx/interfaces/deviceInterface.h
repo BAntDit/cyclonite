@@ -10,7 +10,7 @@
 #include <concepts>
 #include <metrix/type_list.h>
 
-#if defined (PLATFORM_LINUX_X11)
+#if defined(PLATFORM_LINUX_X11)
 #ifdef None
 #undef None
 #endif

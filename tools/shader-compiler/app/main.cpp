@@ -305,13 +305,16 @@ int main(int argc, char* argv[])
     options.enableLifetimeMarkers = vm.contains("enable-lifetime-markers");
     options.exportShadersOnly = vm.contains("export-shaders-only");
 
+    auto entryPointName = std::string();
     if (vm.contains("fspv-entrypoint-name")) {
         auto s = vm["fspv-entrypoint-name"].as<std::string>();
         auto conv = std::wstring_convert<std::codecvt_utf8<wchar_t>>{};
+        entryPointName = s;
         options.entryPointName = conv.from_bytes(s.data(), s.data() + s.size());
     } else if (vm.contains("E")) {
         auto s = vm["E"].as<std::string>();
         auto conv = std::wstring_convert<std::codecvt_utf8<wchar_t>>{};
+        entryPointName = s;
         options.entryPointName = conv.from_bytes(s.data(), s.data() + s.size());
     }
 
@@ -766,18 +769,38 @@ int main(int argc, char* argv[])
 
     auto shaderModuleBinary = cyclonite::shared::ShaderModuleBinary{};
 
-    auto shaderModuleBlockCount = size_t{ 2 }; // spir-v + reflection
+    shaderModuleBinary.infoBlock.entryPoint = entryPointName;
+    shaderModuleBinary.infoBlock.targetProfile = options.targetProfile;
+
+    auto shaderModuleBlockCount = size_t{ 3 }; // info block + spir-v + reflection
     shaderModuleBinary.blockHeaders.reserve(shaderModuleBlockCount);
 
     auto baseOffset = sizeof(cyclonite::shared::ShaderModuleBlockHeader) * shaderModuleBlockCount +
                       sizeof(cyclonite::shared::SHADER_MODULE_MAGIC_NUMBER);
 
+    auto blockOffset = uint64_t{ 0 };
+
+    // info block:
+    auto infoBlockSerializer = cyclonite::shared::Serializer{
+        cyclonite::shared::useWriter<cyclonite::shared::BinaryStreamWriter>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderInfoBlock::getEntryPoint>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderInfoBlock::getProfile>()
+    };
+
+    auto& infoBlockHeader = shaderModuleBinary.blockHeaders.emplace_back();
+    infoBlockHeader.id = cyclonite::shared::SHADER_MODULE_SPIRV_BLOCK;
+    infoBlockHeader.baseOffset = baseOffset;
+    infoBlockHeader.blockOffset = blockOffset;
+    infoBlockHeader.size = infoBlockSerializer.expectedSize(shaderModuleBinary.infoBlock);
+    blockOffset += infoBlockHeader.size;
+
     // spir-v blocK:
     auto& spirvBlockHeader = shaderModuleBinary.blockHeaders.emplace_back();
     spirvBlockHeader.id = cyclonite::shared::SHADER_MODULE_SPIRV_BLOCK;
     spirvBlockHeader.baseOffset = baseOffset;
-    spirvBlockHeader.blockOffset = 0;
-    spirvBlockHeader.size = compilerOutput.spirvModule().size() * sizeof(uint32_t);
+    spirvBlockHeader.blockOffset = blockOffset;
+    spirvBlockHeader.size = sizeof(uint32_t) + compilerOutput.spirvModule().size() * sizeof(uint32_t);
+    baseOffset += spirvBlockHeader.size;
 
     // reflection block:
     auto reflectionSerializer = cyclonite::shared::Serializer{
@@ -793,7 +816,7 @@ int main(int argc, char* argv[])
     auto& reflectionBlockHeader = shaderModuleBinary.blockHeaders.emplace_back();
     reflectionBlockHeader.id = cyclonite::shared::SHADER_MODULE_REFLECTION_BLOCK;
     reflectionBlockHeader.baseOffset = baseOffset;
-    reflectionBlockHeader.blockOffset = spirvBlockHeader.size;
+    reflectionBlockHeader.blockOffset = blockOffset;
     reflectionBlockHeader.size = reflectionSerializer.expectedSize(compilerOutput.reflectionData());
 
     shaderModuleBinary.spirvCode = compilerOutput.spirvModule();
@@ -805,14 +828,22 @@ int main(int argc, char* argv[])
         cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getBlockCount>(),
         cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getBlockHeaders,
                                            &cyclonite::shared::ShaderModuleBlockHeader::getBlockHeaderData>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getInfoBlock,
+                                           &cyclonite::shared::ShaderInfoBlock::getEntryPoint>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getInfoBlock,
+                                           &cyclonite::shared::ShaderInfoBlock::getProfile>(),
         cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getSpirvCode>(),
         cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getReflectionData,
                                            &cyclonite::shared::ShaderReflectionData::getVersion>(),
         cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getReflectionData,
                                            &cyclonite::shared::ShaderReflectionData::getGeneratorName>(),
         cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getReflectionData,
+                                           &cyclonite::shared::ShaderReflectionData::getBoundResourceCount>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getReflectionData,
                                            &cyclonite::shared::ShaderReflectionData::getBoundResources,
                                            &cyclonite::shared::BoundResource::getResourceData>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getReflectionData,
+                                           &cyclonite::shared::ShaderReflectionData::getConstantBufferCount>(),
         cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getReflectionData,
                                            &cyclonite::shared::ShaderReflectionData::getConstantBuffers,
                                            &cyclonite::shared::ConstantBufferReflection::getBufferData>()

@@ -82,7 +82,7 @@ inline void BinaryStreamWriter::operator<<(T t)
 
 inline void BinaryStreamWriter::operator<<(std::string const& string)
 {
-    auto size = string.size();
+    auto size = static_cast<uint32_t>(string.size());
     auto* ptr = reinterpret_cast<char const*>(&size);
     output_.write(ptr, sizeof(size));
     output_.write(string.data(), size);
