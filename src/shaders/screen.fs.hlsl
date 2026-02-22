@@ -26,7 +26,8 @@ PSOutput main(PSInput input)
     float3 norm2 = samplerNormal.Sample(g_sampler, uv2).rgb;
 
     // Calculate albedo based on dot product with absolute normal
-    albedo = float3(dot(albedo, abs(norm2))) * 0.33f;
+	float dotp = dot(albedo, abs(norm2));
+    albedo = float3(dotp, dotp, dotp) * 0.33f;
 
     // Mask based on horizontal position (split screen effects)
     norm = norm * step(input.uv.x, 0.498f);
