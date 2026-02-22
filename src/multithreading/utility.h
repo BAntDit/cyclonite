@@ -6,8 +6,14 @@
 #define CYCLONITE_MULTITHREADING_UTILITY_H
 
 #include "multithreading/common.h"
-#include "taskManager.h"
 #include <metrix/containers.h>
+
+#if defined(PLATFORM_LINUX_X11)
+#ifdef None
+#undef None
+#endif
+#endif
+
 #include <metrix/type_traits.h>
 #include <tuple>
 #include <variant>

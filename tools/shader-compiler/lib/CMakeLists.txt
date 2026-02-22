@@ -56,10 +56,3 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/includes/
         FILES_MATCHING PATTERN "*.h"
 )
 
-# Install the export set
-install(EXPORT ${PROJECT_NAME}-targets
-        FILE ${PROJECT_NAME}-targets.cmake
-        NAMESPACE ${PROJECT_NAME}::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-)
-

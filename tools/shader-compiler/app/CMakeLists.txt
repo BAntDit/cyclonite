@@ -11,6 +11,9 @@ set_target_properties("${PROJECT_NAME}-app" PROPERTIES
     CXX_EXTENSIONS OFF
 
     DEBUG_POSTFIX _d
+
+    INSTALL_RPATH "$ORIGIN/../lib"
+    BUILD_WITH_INSTALL_RPATH TRUE
 )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -41,7 +44,6 @@ target_link_libraries("${PROJECT_NAME}-app" "${PROJECT_NAME}-lib")
 find_package(metrix REQUIRED)
 target_link_libraries("${PROJECT_NAME}-app" metrix::metrix)
 
-install(TARGETS
-        ${PROJECT_NAME}-app
+install(TARGETS ${PROJECT_NAME}-app
         EXPORT ${PROJECT_NAME}-targets
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

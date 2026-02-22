@@ -59,6 +59,42 @@ class ToolsShaderCompilerRecipe(ConanFile):
         cmake = CMake(self)
         cmake.install()
 
+        # Find and copy the dxcompiler config files from build directory to package
+        # Look for dxcompiler config files in common locations
+        possible_config_dirs = [
+            os.path.join(self.build_folder, "dxcompiler-config"),
+            os.path.join(self.build_folder, "cmake", "dxcompiler"),
+            os.path.join(self.build_folder, "lib", "cmake", "dxcompiler"),
+            self.build_folder  # root directory
+        ]
+
+        config_copied = False
+        for config_dir in possible_config_dirs:
+            if os.path.exists(config_dir):
+                config_files = [
+                    "dxcompilerConfig.cmake",
+                    "dxcompiler-config.cmake"
+                ]
+                for config_file in config_files:
+                    src_path = os.path.join(config_dir, config_file)
+                    if os.path.exists(src_path):
+                        # Copy to a standard location in the package
+                        dst_dir = os.path.join(self.package_folder, "lib", "cmake", "dxcompiler")
+                        os.makedirs(dst_dir, exist_ok=True)
+                        copy(self,
+                             pattern=config_file,
+                             src=config_dir,
+                             dst=os.path.join("lib", "cmake", "dxcompiler"))
+                        config_copied = True
+                        self.output.info(f"Copied {config_file} to package")
+        if not config_copied:
+            self.output.warning("Could not find dxcompiler config files to copy")
+
+        dxcompiler_cpp_info = self.dependencies["dxcompiler"].cpp_info
+        for libdir in dxcompiler_cpp_info.libdirs:
+            copy(self, "libdxcompiler.so*", src=libdir,
+                 dst=os.path.join(self.package_folder, "lib"))
+
     def package_info(self):
         # Library component
         (self.cpp_info.components["shader-compiler-lib"]

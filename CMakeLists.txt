@@ -18,40 +18,52 @@ file(GLOB_RECURSE INL_FILES "src/*.inl")
 
 file(GLOB_RECURSE ALL_SHARED_HEADERS "shared/*.h")
 
-
-set(SHADER_SOURCES
-    src/shaders/default.vert
-    src/shaders/default.frag
-    src/shaders/screen.vert
-    src/shaders/screen.frag
-)
-
 add_library(${PROJECT_NAME} SHARED
     ${PUBLIC_HEADERS}
     ${PRIVATE_HEADERS}
     ${SOURCES}
 )
 
-find_program(GLSLANG_VALIDATOR glslangValidator)
-message(STATUS "Found glslangValidator: ${GLSLANG_VALIDATOR}")
+set(GAPI_SHADER_COMPILATION_ARGS)
+if (${GAPI_VULKAN})
+    set(GAPI_SHADER_COMPILATION_ARGS "--target-gapi vulkan --spirv --fvk-use-gl-layout --fspv-target-env vulkan1.3")
+elseif(${GAPI_D3D12})
+    set(GAPI_SHADER_COMPILATION_ARGS "--target-gapi d3d12")
+endif()
+
+set(COMMON_SHADER_COMPILATION_ARGS "--target-platform all --HV 2021 --O3 ${GAPI_SHADER_COMPILATION_ARGS}")
+
+set(SHADER_SOURCES
+    "src/shaders/default.fs.hlsl --E main --T ps_6_9 ${COMMON_SHADER_COMPILATION_ARGS}"
+    "src/shaders/default.vs.hlsl --E main --T vs_6_9 ${COMMON_SHADER_COMPILATION_ARGS}"
+    "src/shaders/screen.fs.hlsl --E main --T ps_6_9 ${COMMON_SHADER_COMPILATION_ARGS}"
+    "src/shaders/screen.vs.hlsl --E main --T vs_6_9 ${COMMON_SHADER_COMPILATION_ARGS}"
+)
+
+find_package(shader-compiler REQUIRED)
 
 foreach(source ${SHADER_SOURCES})
-    get_filename_component(dir "${source}" DIRECTORY)
-    get_filename_component(name "${source}" NAME_WE)
-    get_filename_component(ext "${source}" LAST_EXT)
+    string(REPLACE " " ";" COMPILER_ARGUMENTS ${source})
+    list(GET COMPILER_ARGUMENTS 0 FILE_PATH)
+    list(SUBLIST COMPILER_ARGUMENTS 1 -1 REST_ARGS)
+    get_filename_component(dir "${FILE_PATH}" DIRECTORY)
+    get_filename_component(name "${FILE_PATH}" NAME_WE)
+    get_filename_component(ext "${FILE_PATH}" EXT)
+    get_filename_component(first_ext "${ext}" NAME_WE)
     file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${dir}")
-    set(source "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
-    set(output "${CMAKE_CURRENT_BINARY_DIR}/${dir}/${name}${ext}.spv.cpp.txt")
+    set(source "${CMAKE_CURRENT_SOURCE_DIR}/${FILE_PATH}")
+    set(output "${CMAKE_CURRENT_BINARY_DIR}/${dir}/${name}${ext}.sm.bin")
+
+    message(STATUS "Adding custom command for: ${source} -> ${output}")
 
     add_custom_command(
         OUTPUT "${output}"
-        COMMAND "${GLSLANG_VALIDATOR}" -V ${source} -x -o "${output}"
+        COMMAND shader-compiler::shader-compiler-app --source ${source} ${REST_ARGS} --Fo "${output}"
         DEPENDS "${source}"
     )
 
     target_sources(${PROJECT_NAME} PRIVATE "${output}")
 endforeach()
-target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/src")
 
 target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"

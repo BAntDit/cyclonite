@@ -9,6 +9,13 @@
 #include "gfx/common.h"
 #include <concepts>
 #include <metrix/type_list.h>
+
+#if defined (PLATFORM_LINUX_X11)
+#ifdef None
+#undef None
+#endif
+#endif
+
 #include <metrix/type_traits.h>
 #include <string_view>
 

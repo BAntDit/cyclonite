@@ -3,20 +3,20 @@
 # Provide path variables
 set_and_check(shader-compiler_INCLUDE_DIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
 
-include(CMakeFindDependencyMacro)
-find_dependency(dxcompiler)
-find_dependency(directx-headers)
-find_dependency(Boost)
-find_dependency(metrix)
-
 # Include the targets file
 if(NOT TARGET shader-compiler::shader-compiler-lib)
     include("${CMAKE_CURRENT_LIST_DIR}/shader-compiler-targets.cmake")
 endif()
 
-# Define modern CMake targets
 if(NOT TARGET shader-compiler::shader-compiler-lib)
     add_library(shader-compiler::shader-compiler-lib ALIAS shader-compiler-lib)
+endif()
+
+if(TARGET shader-compiler::shader-compiler-app)
+    get_target_property(shader-compiler_APP_LOCATION
+        shader-compiler::shader-compiler-app LOCATION)
+    set(shader-compiler_APP "${shader-compiler_APP_LOCATION}"
+        CACHE FILEPATH "Path to shader-compiler-app executable")
 endif()
 
 check_required_components(shader-compiler)

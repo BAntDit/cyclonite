@@ -36,6 +36,11 @@ install(DIRECTORY ${SHARED_HEADERS_DIR}/
     FILES_MATCHING PATTERN "*.h"
 )
 
+install(EXPORT ${PROJECT_NAME}-targets
+        FILE ${PROJECT_NAME}-targets.cmake
+        NAMESPACE ${PROJECT_NAME}::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+)
 
 # Create package version file
 write_basic_package_version_file(

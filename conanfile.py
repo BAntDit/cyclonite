@@ -40,10 +40,11 @@ class CycloniteRecipe(ConanFile):
         if self.settings.compiler != "msvc":
             self.tool_requires("ninja/[>=1.11.0]")
 
+        self.tool_requires("shader-compiler/0.0.1.0")
+
     def requirements(self):
         self.requires("gtest/[~1.16]")
-        self.requires("metrix/[~1.7]")
-        self.requires("enttx/4.1.0.0")
+        self.requires("metrix/1.8.2.0")
         self.requires("glm/1.0.1")
         self.requires("sdl/3.2.6")
 
