@@ -5,159 +5,202 @@
 #ifndef CYCLONITE_EVENT_H
 #define CYCLONITE_EVENT_H
 
-#include "eventReceivable.h"
-#include <algorithm>
-#include <array>
-#include <boost/functional/hash.hpp>
-#include <cstddef>
-#include <functional>
-#include <unordered_map>
+#include <any>
+#include <cassert>
+#include <memory>
+#include <metrix/type_traits.h>
+#include <type_traits>
 #include <utility>
-#include <variant>
+#include <list>
 
 namespace cyclonite {
+class EventReceivable
+{
+public:
+    class EventReceiver
+    {
+        friend class EventReceivable;
+
+    public:
+        EventReceiver() = default;
+
+        explicit EventReceiver(EventReceivable* eventReceivable)
+          : instance_{ eventReceivable }
+        {
+        }
+
+        [[nodiscard]] auto instance() const -> EventReceivable* { return instance_; }
+
+    private:
+        void instance(EventReceivable* receivable) { instance_ = receivable; }
+
+        EventReceivable* instance_;
+    };
+
+    EventReceivable(EventReceivable const&);
+
+    EventReceivable(EventReceivable&& eventReceivable) noexcept;
+
+    auto operator=(EventReceivable const&) -> EventReceivable& { return *this; } // don't copy receiver
+
+    auto operator=(EventReceivable&& rhs) noexcept -> EventReceivable&;
+
+    [[nodiscard]] auto receiver() const -> std::shared_ptr<EventReceiver> { return receiver_; }
+
+protected:
+    EventReceivable();
+
+private:
+    std::shared_ptr<EventReceiver> receiver_;
+};
+
+template<typename T>
+concept EventReceivableConcept = std::derived_from<T, EventReceivable>;
+
+namespace internal {
+template<typename MemberFunctionPtr>
+struct deferred_invoke_t
+{
+    template<typename Instance, typename... Args>
+        requires std::is_same_v<metrix::member_function_argument_type_list_t<MemberFunctionPtr>,
+                                metrix::type_list<Args...>> &&
+                 std::is_same_v<metrix::member_function_class_type_t<MemberFunctionPtr>, Instance>
+    void operator()(Instance* instance, Args... args)
+    {
+        instance->*member_(args...);
+    }
+
+private:
+    MemberFunctionPtr member_;
+};
+
+template<typename... Args>
+struct invoker_t
+{
+    template<EventReceivableConcept Instance, typename DeferredInvoke>
+    invoker_t(Instance* instance, DeferredInvoke&& deferredInvoke)
+      : instance_{ instance->receiver() }
+      , deferred_{ std::forward<DeferredInvoke>(deferredInvoke) }
+      , f_{ &memberFunctionInvoke<Instance, std::decay_t<DeferredInvoke>> }
+      , isFreeFunction_{ false }
+    {
+    }
+
+    template<typename FreeFunctionPtr>
+    explicit invoker_t(FreeFunctionPtr freeFunctionPtr)
+      : instance_{}
+      , deferred_{ freeFunctionPtr }
+      , f_{ &freeFunctionInvoke<FreeFunctionPtr> }
+      , isFreeFunction_{ true }
+    {
+    }
+
+    invoker_t(invoker_t const&) = delete;
+
+    invoker_t(invoker_t&& other) noexcept
+      : instance_{ std::exchange(other.instance_, std::weak_ptr<EventReceivable::EventReceiver>{}) }
+      , deferred_{ std::exchange(other.deferred_, std::any{}) }
+      , f_{ other.f_ }
+      , isFreeFunction_{ other.isFreeFunction_ }
+    {
+    }
+
+    auto operator=(invoker_t const&) -> invoker_t& = delete;
+
+    auto operator=(invoker_t&& rhs) noexcept -> invoker_t&
+    {
+        instance_ = std::exchange(rhs.instance_, std::weak_ptr<EventReceivable::EventReceiver>{});
+        deferred_ = std::exchange(rhs.deferred_, std::any{});
+        f_ = rhs.f_;
+        isFreeFunction_ = rhs.isFreeFunction_;
+
+        return *this;
+    }
+
+    template<typename... Argument>
+        requires(std::is_convertible_v<Argument, Args> && ...)
+    auto operator()(Argument&&... args) -> bool
+    {
+        if (isFreeFunction()) {
+            f_(nullptr, deferred_, std::forward<Argument>(args)...);
+            return true;
+        }
+
+        if (auto receiver = instance_.lock()) {
+            f_(receiver->instance(), deferred_, std::forward<Argument>(args)...);
+            return true;
+        }
+
+        return false;
+    }
+
+    [[nodiscard]] auto isFreeFunction() const -> bool { return isFreeFunction_; }
+
+private:
+    template<typename FreeFunctionPtr>
+    static void freeFunctionInvoke(void*, std::any const& def, Args... args)
+    {
+        assert(def.has_value());
+        std::any_cast<FreeFunctionPtr>(def)(args...);
+    }
+
+    template<typename Instance, typename DeferredInvoke>
+    static void memberFunctionInvoke(void* instance, std::any const& def, Args... args)
+    {
+        assert(instance != nullptr);
+        assert(def.has_value());
+        std::any_cast<DeferredInvoke>(def)(static_cast<Instance*>(instance), args...);
+    }
+
+    using invoke_f = void (*)(void*, std::any const& def, Args... args);
+
+    std::weak_ptr<EventReceivable::EventReceiver> instance_;
+    std::any deferred_;
+
+    invoke_f f_;
+
+    bool isFreeFunction_;
+};
+};
+
+template <typename Handler>
+class EventHandler;
+
 template<typename... Args>
 class Event
 {
-private:
-    using event_handler_identifier_t = std::array<std::byte, sizeof(uint_fast64_t) + sizeof(uint64_t)>;
-
 public:
-    class EventHandler
-    {
-        friend Event;
+    Event() = default;
 
-    public:
-        template<class T, class M>
-        EventHandler(T* instance, void (M::*member)(Args...))
-          : identifier_{}
-          , handler_{}
-        {
-            auto id = instance->id();
-
-            std::fill(identifier_.begin(), identifier_.end(), std::byte{ 0 });
-
-            std::copy(reinterpret_cast<std::byte*>(&id),
-                      reinterpret_cast<std::byte*>(&id) + sizeof(uint_fast64_t),
-                      identifier_.begin());
-
-            std::copy(reinterpret_cast<std::byte*>(&member),
-                      reinterpret_cast<std::byte*>(&member) + sizeof(member),
-                      identifier_.begin() + sizeof(uint_fast64_t));
-
-            auto eventReceiver = std::weak_ptr<EventReceivable::EventReceiver>{ instance->eventReceiver() };
-
-            handler_ = [eventReceiver, member](auto&&... args) -> bool {
-                if (auto receiver = eventReceiver.lock()) {
-                    ((static_cast<T*>(receiver->instance()))->*member)(std::forward<decltype(args)>(args)...);
-                    return true;
-                }
-                return false;
-            };
-        }
-
-        explicit EventHandler(void (*handler)(Args...))
-          : identifier_{}
-          , handler_{}
-        {
-            std::fill(identifier_.begin(), identifier_.end(), std::byte{ 0 });
-
-            std::copy(reinterpret_cast<std::byte*>(handler),
-                      reinterpret_cast<std::byte*>(handler) + sizeof(handler),
-                      identifier_.begin() + sizeof(uint_fast64_t));
-
-            handler_ = [handler](auto&&... args) -> bool {
-                handler(std::forward<decltype(args)>(args)...);
-                return true;
-            };
-        }
-
-        EventHandler(EventHandler const&) = default;
-
-        EventHandler(EventHandler&&) = default;
-
-        ~EventHandler() = default;
-
-    public:
-        EventHandler& operator=(EventHandler const&) = default;
-
-        EventHandler& operator=(EventHandler&&) = default;
-
-        template<typename... EventArgs>
-        bool operator()(EventArgs&&... args)
-        {
-            return invoke(std::forward<EventArgs>(args)...);
-        }
-
-    public:
-        template<typename... EventArgs>
-        bool invoke(EventArgs&&... args)
-        {
-            return handler_(std::forward<EventArgs>(args)...);
-        }
-
-    public:
-        auto identifier() const -> event_handler_identifier_t const& { return identifier_; }
-
-    private:
-        event_handler_identifier_t identifier_;
-        std::function<bool(Args...)> handler_;
-    };
-
-public:
-    Event()
-      : eventHandlers_{}
-    {
-    }
-
-    Event(Event const&) = delete;
+    // do not copy handlers
+    Event(Event const&) : Event() {}
 
     Event(Event&&) = default;
 
-    ~Event() = default;
+    auto operator=(Event const&) -> Event& { return *this; };
 
-public:
-    Event& operator=(Event const&) = delete;
+    auto operator=(Event&&) -> Event& = default;
 
-    Event& operator=(Event&&) = default;
-
-    template<typename Handler>
-    auto operator+=(Handler const& rhs) -> EventHandler
-    {
-        static_assert(std::is_same_v<EventHandler, std::decay_t<Handler>> || std::is_invocable_v<Handler, Args...>);
-
-        if constexpr (std::is_same_v<EventHandler, std::decay_t<Handler>>) {
-            eventHandlers_.emplace(rhs.identifier(), rhs);
-            return rhs;
-        } else {
-            EventHandler eh{ rhs };
-            eventHandlers_.emplace(eh.identifier(), eh);
-            return eh;
-        }
-    }
-
-    void operator-=(EventHandler const& rhs) { eventHandlers_.erase(rhs.identifier()); }
-
-    template<typename... EventArgs>
-    void operator()(EventArgs&&... args)
-    {
-        auto it = eventHandlers_.begin();
-
-        while (it != eventHandlers_.end()) {
-            EventHandler& eventHandler = (*it).second;
-
-            if (eventHandler(std::forward<EventArgs>(args)...)) {
-                it++;
-            } else {
-                it = eventHandlers_.erase(it);
-            }
-        }
-    }
+    template<typename... Argument>
+    void operator()(Argument&&... argument);
 
 private:
-    std::unordered_map<event_handler_identifier_t, EventHandler, boost::hash<event_handler_identifier_t>>
-      eventHandlers_;
+    std::list<internal::invoker_t<Args...>> handlers_;
 };
+
+template<typename... Args>
+template<typename... Argument>
+void Event<Args...>::operator()(Argument&&... argument) {
+    auto it = std::begin(handlers_);
+    while (it != std::end(handlers_)) {
+        if ((*it)(std::forward<Argument>(argument)...)) {
+            it++;
+        } else {
+            it = handlers_.erase(it);
+        }
+    }
+}
+
 }
 
 #endif // CYCLONITE_EVENT_H
