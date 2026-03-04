@@ -5,14 +5,14 @@
 #include "input.h"
 
 namespace cyclonite {
-Input::Input()
-  : quit{}
-  , keyDown{}
+Input::Input():
+    quit{}
+  /*, keyDown{}
   , keyUp{}
   , mouseButtonDown{}
   , mouseButtonUp{}
   , mouseMotion{}
-  , mouseWheel{}
+  , mouseWheel{}*/
 {
 }
 

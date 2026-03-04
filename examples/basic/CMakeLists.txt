@@ -22,7 +22,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         -pedantic
         -Wall
         -Wextra
-        -Wfatal-errors
+        #-Wfatal-errors
     )
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${PROJECT_NAME} PRIVATE

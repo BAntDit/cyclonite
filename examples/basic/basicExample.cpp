@@ -78,8 +78,8 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
     renderPassRef_ = renderPassRef;
     windowRef_ = renderWindowRef;
 
-    root_.input().quit += cyclonite::Event<>::EventHandler(this, &BasicExample::onQuit);
-    root_.input().keyDown += cyclonite::Event<SDL_Keycode, uint16_t>::EventHandler(this, &BasicExample::onKeyDown);
+    root_.input().quit += cyclonite::EventHandler(this, &BasicExample::onQuit);
+    root_.input().keyDown += cyclonite::EventHandler(this, &BasicExample::onKeyDown);
 
     return *this;
 }
