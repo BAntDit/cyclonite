@@ -71,8 +71,8 @@ struct member_function_deferred_invoke_t
                                 metrix::type_list<std::decay_t<Args>...>>
     void operator()(EventReceivable* instance, Args&&... args)
     {
-        (static_cast<metrix::member_function_class_type_t<MemberFunctionPtr>*>(instance)->*member_)(std::forward<Args>(
-                                                                                            args)...);
+        (static_cast<metrix::member_function_class_type_t<MemberFunctionPtr>*>(instance)->*member_)(
+          std::forward<Args>(args)...);
     }
 
     static inline const std::byte id = std::byte{ 0 };
@@ -274,6 +274,29 @@ EventHandler(Instance* instance,
              MemberFunctionPtr memberFunctionPtr) -> EventHandler<metrix::type_pair<Instance, MemberFunctionPtr>>;
 
 template<typename... Args>
+class EventHandler<void (*)(Args...)> : public internal::invoker_t<metrix::type_list<Args...>>
+{
+public:
+    explicit EventHandler(void (*handler)(Args...))
+      : internal::invoker_t<metrix::type_list<Args...>>{ handler }
+      , freeFuncHandler_{ handler }
+    {
+    }
+
+    [[nodiscard]] auto getInvoker() -> internal::invoker_t<metrix::type_list<Args...>>& { return *this; }
+
+    template<typename... Arguments>
+    [[nodiscard]] auto isEqual(internal::invoker_t<metrix::type_list<Arguments...>> const& invoker) const -> bool
+    {
+        return invoker.isEqual(freeFuncHandler_);
+    }
+
+private:
+    using handler_f = void (*)(Args...);
+    handler_f freeFuncHandler_;
+};
+
+template<typename... Args>
 class Event
 {
 public:
@@ -292,7 +315,8 @@ public:
     auto operator=(Event&&) -> Event& = default;
 
     template<typename... Argument>
-    void operator()(Argument&&... argument) requires(std::is_convertible_v<Argument, Args> && ...);
+    void operator()(Argument&&... argument)
+        requires(std::is_convertible_v<Argument, Args> && ...);
 
     template<typename Handler>
     void operator+=(EventHandler<Handler>&& handler);
@@ -328,7 +352,8 @@ void Event<Args...>::operator-=(EventHandler<Handler>&& handler)
 
 template<typename... Args>
 template<typename... Argument>
-void Event<Args...>::operator()(Argument&&... argument) requires(std::is_convertible_v<Argument, Args> && ...)
+void Event<Args...>::operator()(Argument&&... argument)
+    requires(std::is_convertible_v<Argument, Args> && ...)
 {
     auto it = std::begin(handlers_);
     while (it != std::end(handlers_)) {
