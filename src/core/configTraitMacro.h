@@ -25,4 +25,15 @@
 
 #define DEFINE_CONFIG_TRAIT(name) static constexpr auto name##_v = internal::config_traits_declaration<Config>::name();
 
+#define DECLARE_CONFIG_TYPE_TRAIT(type_trait, default_type)                                                            \
+    template<typename C, typename Enable = void>                                                                       \
+    struct has_ #type_trait : std::false_type{};                                                                       \
+    template<typename C>                                                                                               \
+    struct has_ #type_trait<C, std::void_t<typename C::type_trait>> : std::true_type                                   \
+    {                                                                                                                  \
+    }                                                                                                                  \
+    using type_trait = std::conditional_t<has_ #type_trait<T>::value, typename T::type_trait, default_type>
+
+#define DEFINE_CONFIG_TYPE_TRAIT(name) using name##_t = typename internal::config_traits_declaration<Config>::name;
+
 #endif // CYCLONITE_CORE_CONFIG_TRAITS_H
