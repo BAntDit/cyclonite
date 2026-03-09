@@ -3,23 +3,27 @@
 //
 
 #include "resourceSharedRef.h"
+
+#include <utility>
+
 #include "resourceManager.h"
 #include "resourceUniqueRef.h"
 
 namespace cyclonite::core {
 ResourceSharedRef::ResourceSharedRef(ResourceBase* resource)
-  : id_{ resource->resourceId() }
-  , resource_{ resource }
+  : id_{}
+  , resource_{ nullptr }
 {
-    retain();
+    if (resource->retain() > 0) {
+        resource_ = resource;
+        id_ = resource->resourceId();
+    }
 }
 
 ResourceSharedRef::ResourceSharedRef(ResourceUniqueRef&& uniqueRef) noexcept
-  : id_{ uniqueRef.id_ }
-  , resource_{ uniqueRef.resource_ }
+  : id_{ std::exchange(uniqueRef.id_, core::ResourceId{}) }
+  , resource_{ std::exchange(uniqueRef.resource_, nullptr) }
 {
-    uniqueRef.id_ = ResourceId{};
-    uniqueRef.resource_ = nullptr;
 }
 
 ResourceSharedRef::ResourceSharedRef(ResourceId id, ResourceBase* resource)
@@ -36,11 +40,9 @@ ResourceSharedRef::ResourceSharedRef(ResourceSharedRef const& ref)
 }
 
 ResourceSharedRef::ResourceSharedRef(ResourceSharedRef&& ref) noexcept
-  : id_{ ref.id_ }
-  , resource_{ ref.resource_ }
+  : id_{ std::exchange(ref.id_, core::ResourceId{}) }
+  , resource_{ std::exchange(ref.resource_, nullptr) }
 {
-    ref.id_ = ResourceId{};
-    ref.resource_ = nullptr;
 }
 
 auto ResourceSharedRef::valid() const -> bool
@@ -69,22 +71,16 @@ auto ResourceSharedRef::operator=(ResourceSharedRef const& rhs) -> ResourceShare
 
 auto ResourceSharedRef::operator=(ResourceSharedRef&& rhs) noexcept -> ResourceSharedRef&
 {
-    id_ = rhs.id_;
-    resource_ = rhs.resource_;
-
-    rhs.id_ = ResourceId{};
-    rhs.resource_ = nullptr;
+    id_ = std::exchange(rhs.id_, core::ResourceId{});
+    resource_ = std::exchange(rhs.resource_, nullptr);
 
     return *this;
 }
 
 auto ResourceSharedRef::operator=(ResourceUniqueRef&& rhs) noexcept -> ResourceSharedRef&
 {
-    id_ = rhs.id_;
-    resource_ = rhs.resource_;
-
-    rhs.id_ = ResourceId{};
-    rhs.resource_ = nullptr;
+    id_ = std::exchange(rhs.id_, core::ResourceId{});
+    resource_ = std::exchange(rhs.resource_, nullptr);
 
     return *this;
 }

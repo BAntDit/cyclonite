@@ -23,4 +23,24 @@ ResourceWeakRef::ResourceWeakRef(ResourceBase* resource)
   , resource_{ resource }
 {
 }
+
+auto ResourceWeakRef::useCount() const -> uint64_t
+{
+    auto&& ref = ResourceSharedRef{ id_, resource_ };
+    auto count = ref.refCount();
+
+    ref.retain();
+
+    return count;
+}
+
+auto ResourceWeakRef::expired() const -> bool
+{
+    auto&& ref = ResourceSharedRef{ id_, resource_ };
+    auto valid = ref.valid();
+
+    ref.retain();
+
+    return valid;
+}
 }
