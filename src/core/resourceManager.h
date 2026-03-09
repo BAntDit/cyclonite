@@ -85,7 +85,7 @@ template<typename T>
 concept ResourceConcept = std::is_base_of_v<ResourceBase, T>;
 
 template<ResourceConcept... ResourceTypes>
-class ResourceManager final : public ResourceManagerBase
+class ResourceManager : public ResourceManagerBase
 {
     template<typename ResourceList>
     struct ResourceMeta;
@@ -204,7 +204,7 @@ public:
 
     void gc(bool clearAll = false);
 
-    [[nodiscard]] auto isResourceValid(ResourceId id) const -> bool override;
+    [[nodiscard]] auto isResourceValid(ResourceId id) const -> bool final;
 
 protected:
     void releaseResourceImmediate(ResourceId id) override;
