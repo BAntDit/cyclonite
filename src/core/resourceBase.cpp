@@ -17,15 +17,21 @@ ResourceBase::ResourceBase(ResourceManagerBase* resourceManager, ResourceId reso
 
 auto ResourceBase::retain() -> uint64_t
 {
-    assert(resourceManager_->isResourceValid(resourceId_));
-
     auto expected = refCount_.load(std::memory_order_relaxed);
     auto desired = expected + 1;
-    assert(expected != 0);
 
-    while (!refCount_.compare_exchange_weak(expected, desired, std::memory_order_release, std::memory_order_acquire)) {
-        assert(expected != 0);
-        desired = expected + 1;
+    if (expected > 0) {
+        while (
+          !refCount_.compare_exchange_weak(expected, desired, std::memory_order_acq_rel, std::memory_order_acquire)) {
+            if (expected == 0) {
+                desired = 0;
+                break;
+            }
+
+            desired = expected + 1;
+        }
+    } else {
+        desired = 0;
     }
 
     return desired;
