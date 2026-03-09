@@ -52,12 +52,12 @@ public:
         return static_cast<T const&>(*this);
     }
 
-protected:
-    [[nodiscard]] auto resourceBase() -> ResourceBase* { return this; }
-
     [[nodiscard]] auto resourceManager() -> ResourceManagerBase& { return *resourceManager_; }
 
     [[nodiscard]] auto resourceManager() const -> ResourceManagerBase const& { return *resourceManager_; }
+
+protected:
+    [[nodiscard]] auto resourceBase() -> ResourceBase* { return this; }
 
 private:
     std::atomic<uint64_t> refCount_;
