@@ -126,7 +126,7 @@ class ResourceManager : public ResourceManagerBase
           , version{ 1 }
           , chunk{ std::numeric_limits<uint16_t>::max() }
           , index{ std::numeric_limits<uint16_t>::max() }
-          , type{ std::numeric_limits<uint16_t>::max() }
+          , type{ std::numeric_limits<uint8_t>::max() }
         {
         }
 
@@ -134,7 +134,7 @@ class ResourceManager : public ResourceManagerBase
         uint32_t version;
         uint16_t chunk;
         uint16_t index;
-        uint16_t type;
+        uint8_t type;
     };
 
     struct resource_storage_chunk_t
@@ -163,24 +163,24 @@ class ResourceManager : public ResourceManagerBase
     {
         resource_allocation_info_t()
           : headerIndex{ std::numeric_limits<uint32_t>::max() }
-          , typeIndex{ std::numeric_limits<uint8_t>::max() }
           , chunkIndex{ std::numeric_limits<uint16_t>::max() }
           , blockIndex{ std::numeric_limits<uint16_t>::max() }
+          , typeIndex{ std::numeric_limits<uint8_t>::max() }
         {
         }
 
         resource_allocation_info_t(uint32_t header, uint8_t type, uint16_t chunk, uint16_t index)
           : headerIndex{ header }
-          , typeIndex{ type }
           , chunkIndex{ chunk }
           , blockIndex{ index }
+          , typeIndex{ type }
         {
         }
 
         uint32_t headerIndex;
-        uint8_t typeIndex;
         uint16_t chunkIndex;
         uint16_t blockIndex;
+        uint8_t typeIndex;
     };
 
 public:

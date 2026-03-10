@@ -1,0 +1,8 @@
+//
+// Created by anton on 2/23/26.
+//
+
+#ifndef CYCLONITE_DESERIALIZATION_H
+#define CYCLONITE_DESERIALIZATION_H
+
+#endif // CYCLONITE_DESERIALIZATION_H
