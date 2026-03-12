@@ -35,12 +35,19 @@ public:
 
     [[nodiscard]] auto expired() const -> bool;
 
+    friend auto makeResourceWeakRefUnsafe(ResourceBase* resource) -> ResourceWeakRef;
+
 private:
     explicit ResourceWeakRef(ResourceBase* resource);
 
     ResourceId id_;
     ResourceBase* resource_;
 };
+
+inline auto makeResourceWeakRefUnsafe(ResourceBase* resource) -> ResourceWeakRef
+{
+    return ResourceWeakRef{ resource };
+}
 }
 
 #endif // CYCLONITE_RESOURCE_WEAK_REF_H

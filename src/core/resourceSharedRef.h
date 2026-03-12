@@ -57,6 +57,8 @@ public:
         return resource_->as<R>();
     }
 
+    friend auto makeResourceSharedRefUnsafe(ResourceBase* resource) -> ResourceSharedRef;
+
 private:
     explicit ResourceSharedRef(ResourceBase* resource);
 
@@ -69,6 +71,11 @@ private:
     ResourceId id_;
     ResourceBase* resource_;
 };
+
+inline auto makeResourceSharedRefUnsafe(ResourceBase* resource) -> ResourceSharedRef
+{
+    return ResourceSharedRef{ resource };
+}
 }
 
 #endif // GFX_RESOURCE_SHARED_REF_H

@@ -7,8 +7,10 @@
 
 #include "core/configTraitMacro.h"
 #include "core/spinLock.h"
+#include "resourceSharedRef.h"
 #include "resourceUniqueRef.h"
 #include <array>
+#include <bitset>
 #include <cassert>
 #include <chrono>
 #include <deque>
@@ -222,6 +224,84 @@ protected:
     std::vector<uint32_t> emptyHeaders_;
     resource_storage_t storage_;
     std::deque<std::pair<std::chrono::time_point<std::chrono::high_resolution_clock>, uint32_t>> garbage_;
+
+public:
+    template<bool isConst, typename... Res>
+    class ResourceList
+    {
+        friend class ResourceManager;
+
+    public:
+        class Iterator
+        {
+            friend class ResourceList;
+
+        public:
+            using iterator_category = std::input_iterator_tag;
+            using value_type = std::pair<ResourceSharedRef, uint8_t>;
+            using difference_type = size_t;
+            using pointer = value_type*;
+            using reference = value_type&;
+
+            auto operator++() -> Iterator&;
+
+            auto operator*() const -> std::pair<ResourceSharedRef, uint8_t>;
+
+            auto operator==(Iterator const& rhs) const -> bool { return list_ == rhs.list_ && cursor_ == rhs.cursor_; }
+            auto operator!=(Iterator const& rhs) const -> bool { return list_ != rhs.list_ || cursor_ != rhs.cursor_; }
+
+        private:
+            using resource_list_t = std::conditional_t<isConst, ResourceList const*, ResourceList*>;
+
+            Iterator(resource_list_t resList, size_t cursor)
+              : cursor_{ cursor }
+              , list_{ resList }
+            {
+            }
+
+            void next();
+
+            size_t cursor_;
+            resource_list_t list_;
+        };
+
+        auto begin() const -> Iterator
+        {
+            auto it = Iterator{ this, 0 };
+            it.next();
+
+            return it;
+        }
+
+        auto end() const -> Iterator
+        {
+            auto& size = manager_->headers_.size();
+            return Iterator{ this, size };
+        }
+
+    private:
+        using manager_ref_t = std::conditional_t<isConst, ResourceManager const&, ResourceManager&>;
+        using manager_ptr_t = std::conditional_t<isConst, ResourceManager const*, ResourceManager*>;
+
+        explicit ResourceList(manager_ref_t& manager)
+          : manager_{ &manager }
+        {
+        }
+
+        manager_ptr_t* manager_;
+    };
+
+    template<typename... Res>
+    [[nodiscard]] auto resourceList() -> ResourceList<false, Res...>
+    {
+        return ResourceList<false, Res...>{ *this };
+    }
+
+    template<typename... Res>
+    [[nodiscard]] auto resourceList() const -> ResourceList<true, Res...>
+    {
+        return ResourceList<true, Res...>{ *this };
+    }
 };
 
 template<ResourceConcept... ResourceTypes>
@@ -382,6 +462,64 @@ void ResourceManager<ResourceTypes...>::gc(bool clearAll)
             break;
         }
     } while (true);
+}
+
+// ResourceList::Iterator::
+
+template<ResourceConcept... ResourceTypes>
+template<bool isConst, typename... Res>
+void ResourceManager<ResourceTypes...>::ResourceList<isConst, Res...>::Iterator::next()
+{
+    auto const& headers = list_->manager_->headers_;
+    auto const size = headers.size();
+
+    while (cursor_ < size) {
+        auto const& header = headers[cursor_];
+        auto [_0, _1, chunk, index, type] = header;
+
+        if (type != std::numeric_limits<uint8_t>::max() && chunk != std::numeric_limits<uint16_t>::max() &&
+            index != std::numeric_limits<uint16_t>::max()) { // any valid element
+            if constexpr (sizeof...(Res) > 0) {
+                if (((resource_meta_t::template type_index_v<Res> == static_cast<size_t>(type)) ||
+                     ...)) { // valid element (filtered)
+                    break;
+                }
+            } else { // any valid element (no filters)
+                break;
+            }
+        }
+
+        cursor_++;
+    } // all headers
+}
+
+template<ResourceConcept... ResourceTypes>
+template<bool isConst, typename... Res>
+auto ResourceManager<ResourceTypes...>::ResourceList<isConst, Res...>::Iterator::operator*() const
+  -> std::pair<ResourceSharedRef, uint8_t>
+{
+    auto const& headers = list_->manager_->headers_;
+    auto const& storage = list_->manager_->storage_;
+
+    auto [_0, _1, chunk, index, type] = headers[cursor_];
+
+    auto const& chunks = storage.chunks[type];
+
+    assert(chunks.contains(chunk));
+
+    auto res = const_cast<ResourceBase*>(
+      reinterpret_cast<ResourceBase const*>(std::launder(chunks[chunk].resources[index].bytes)));
+
+    return std::pair{ makeResourceSharedRefUnsafe(res), type };
+}
+
+template<ResourceConcept... ResourceTypes>
+template<bool isConst, typename... Res>
+auto ResourceManager<ResourceTypes...>::ResourceList<isConst, Res...>::Iterator::operator++() -> Iterator&
+{
+    cursor_++;
+    next();
+    return *this;
 }
 }
 
