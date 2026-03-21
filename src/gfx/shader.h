@@ -2,8 +2,8 @@
 // Created by anton on 11/2/25.
 //
 
-#ifndef CYCLONITE_SHADER_H
-#define CYCLONITE_SHADER_H
+#ifndef CYCLONITE_GFX_SHADER_H
+#define CYCLONITE_GFX_SHADER_H
 
 #include "interfaces/shaderInterface.h"
 #if defined(GFX_DRIVER_VULKAN)
@@ -24,4 +24,4 @@ using Shader = interfaces::ShaderInterface<vulkan::Shader>;
 #endif
 }
 
-#endif // CYCLONITE_SHADER_H
+#endif // CYCLONITE_GFX_SHADER_H

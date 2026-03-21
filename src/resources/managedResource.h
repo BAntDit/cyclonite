@@ -6,8 +6,8 @@
 #define CYCLONITE_RESOURCES_MANAGED_RESOURCE_H
 
 #include "core/resourceBase.h"
+#include "managedResourceState.h"
 #include "multithreading/taskManager.h"
-#include "resourceLoadingState.h"
 #include <atomic>
 #include <concepts>
 #include <future>
@@ -18,19 +18,20 @@
 namespace cyclonite::resources {
 template<typename T>
 concept is_loadable = requires(T t) {
-    { t.load() } -> std::same_as<std::future<bool>>;
+    { t.loadImpl() } -> std::same_as<std::future<void>>;
 };
 
+/*
 template<typename T>
 concept is_initializeable = requires(T t) {
-    requires std::is_member_function_pointer_v<decltype(&T::initialize)> &&
-               std::is_same_v<bool, metrix::member_function_return_type_t<decltype(&T::initialize)>>;
+requires std::is_member_function_pointer_v<decltype(&T::initialize)> &&
+           std::is_same_v<bool, metrix::member_function_return_type_t<decltype(&T::initialize)>>;
 };
 
 template<typename T>
 concept is_resetable = requires(T t) {
-    { t.reset() } -> std::same_as<void>;
-};
+{ t.reset() } -> std::same_as<void>;
+};*/
 
 template<typename T>
 concept ManagedResourceConcept = std::is_base_of_v<core::ResourceBase, T>;
@@ -39,21 +40,60 @@ template<typename Resource>
 class ManagedResource
 {
 public:
-    template<typename... Args>
-    auto initialize(Args&&... args) -> bool;
+    ManagedResource()
+      : state_{ ManagedResourceState::Initial }
+      , loadingResult_{}
+    {
+    }
 
-    auto load() -> std::future<bool>;
+    auto load() -> std::shared_future<void>;
 
-    void reset();
+    // void reset();
 
-    [[nodiscard]] auto state() const -> LoadingState { return loadingState_.load(std::memory_order_acquire); }
+    [[nodiscard]] auto state() const -> ManagedResourceState { return state_.load(std::memory_order_acquire); }
 
 private:
-    void setState(LoadingState state);
+    void setState(ManagedResourceState state);
 
-    std::atomic<LoadingState> loadingState_ = LoadingState::Undefined;
+    std::atomic<ManagedResourceState> state_;
+    std::shared_future<void> loadingResult_;
 };
 
+template<typename Resource>
+auto ManagedResource<Resource>::load() -> std::shared_future<void>
+{
+    auto expectedState = ManagedResourceState::Initial;
+    if (state_.compare_exchange_weak(
+          expectedState, ManagedResourceState::Loading, std::memory_order_release, std::memory_order_relaxed)) {
+        if constexpr (is_loadable<Resource>) {
+            // TODO::
+        } else {
+            auto promise = std::promise<void>();
+            auto future = promise.get_future();
+            promise.set_value();
+            setState(ManagedResourceState::Loaded);
+            loadingResult_ = std::move(future);
+        }
+    }
+
+    return loadingResult_;
+}
+
+template<typename Resource>
+void ManagedResource<Resource>::setState(ManagedResourceState state)
+{
+    if (state == ManagedResourceState::Loaded) {
+        auto expectedState = ManagedResourceState::Loading;
+        if (!state_.compare_exchange_weak(
+              expectedState, ManagedResourceState::Loaded, std::memory_order_release, std::memory_order_relaxed)) {
+            throw std::logic_error("load state can be set from loading state only");
+        }
+    } else {
+        throw std::logic_error("attempt to set wrong resource state");
+    }
+}
+
+/*
 template<typename Resource>
 void ManagedResource<Resource>::reset()
 {
@@ -71,33 +111,6 @@ void ManagedResource<Resource>::reset()
     }
 
     setState(LoadingState::Initial);
-}
-
-template<typename Resource>
-template<typename... Args>
-auto ManagedResource<Resource>::initialize(Args&&... args) -> bool
-{
-    auto result = false;
-    auto expectedState = LoadingState::Undefined;
-
-    if (loadingState_.compare_exchange_weak(
-          expectedState, LoadingState::Initializing, std::memory_order_release, std::memory_order_relaxed)) {
-        if constexpr (is_initializeable<Resource>) {
-            result = static_cast<Resource*>(this)->initialize(std::forward<Args>(args)...);
-        } else {
-            result = true;
-        }
-    } else {
-        throw std::logic_error("resource is already initialized");
-    }
-
-    if (!result) {
-        loadingState_.store(LoadingState::Corrupted, std::memory_order_release);
-    } else {
-        loadingState_.store(LoadingState::Initial, std::memory_order_release);
-    }
-
-    return result;
 }
 
 template<typename Resource>
@@ -170,7 +183,7 @@ void ManagedResource<Resource>::setState(LoadingState state)
     }
 
     // TODO:: other states
-}
+}*/
 }
 
 #endif // CYCLONITE_RESOURCES_MANAGED_RESOURCE_H

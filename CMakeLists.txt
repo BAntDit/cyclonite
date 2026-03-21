@@ -194,6 +194,13 @@ target_link_libraries(${PROJECT_NAME} boost::boost)
 find_package(vulkan-memory-allocator REQUIRED CONFIG)
 target_link_libraries(${PROJECT_NAME} vulkan-memory-allocator::vulkan-memory-allocator)
 
+if(NOT DEFINED SHARED_HEADERS_DIR)
+    set(SHARED_HEADERS_DIR "${CMAKE_SOURCE_DIR}/../../shared")
+endif()
+
+target_include_directories("${PROJECT_NAME}" PRIVATE $<BUILD_INTERFACE:${SHARED_HEADERS_DIR}>)
+target_include_directories("${PROJECT_NAME}" PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/shared/>)
+
 include(GNUInstallDirs)
 
 # Install the library
