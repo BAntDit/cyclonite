@@ -67,18 +67,21 @@ template<typename ResourceGroup>
             auto file = std::ifstream{};
 
             file.exceptions(std::ios::failbit);
-            file.open(entry.path().string());
+            file.open(entry.path().string(), std::ios::binary | std::ios::in);
             file.exceptions(std::ios::badbit);
 
             auto magicNumber = uint32_t{ 0 };
             file.read(reinterpret_cast<char*>(&magicNumber), sizeof(uint32_t));
 
+            file.close();
+
             switch (magicNumber) {
                 case shared::SHADER_MODULE_MAGIC_NUMBER:
                     if constexpr (ResourceGroup::template is_group_resource_type<cyclonite::Shader>) {
                         auto ref = core::ResourceSharedRef{ resourceGroup->template addResource<cyclonite::Shader>() };
+                        auto future = ref.as<cyclonite::Shader>().load(entry.path(), std::ios::binary | std::ios::in);
 
-                        // TODO:: call load save result
+                        // TODO:: store future
                     }
                     break;
             }

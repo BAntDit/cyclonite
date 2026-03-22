@@ -6,28 +6,27 @@
 #define CYCLONITE_RESOURCES_MANAGED_RESOURCE_H
 
 #include "core/resourceBase.h"
+#include "core/resourceWeakRef.h"
 #include "managedResourceState.h"
 #include "multithreading/taskManager.h"
 #include <atomic>
+#include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/stream.hpp>
 #include <concepts>
+#include <filesystem>
+#include <fstream>
 #include <future>
-#include <metrix/type_traits.h>
 #include <stdexcept>
 #include <type_traits>
+#include <variant>
 
 namespace cyclonite::resources {
 template<typename T>
-concept is_loadable = requires(T t) {
-    { t.loadImpl() } -> std::same_as<std::future<void>>;
+concept is_loadable = requires(T t, std::istream& stream) {
+    { t.loadImpl(stream) } -> std::same_as<std::future<void>>;
 };
 
 /*
-template<typename T>
-concept is_initializeable = requires(T t) {
-requires std::is_member_function_pointer_v<decltype(&T::initialize)> &&
-           std::is_same_v<bool, metrix::member_function_return_type_t<decltype(&T::initialize)>>;
-};
-
 template<typename T>
 concept is_resetable = requires(T t) {
 { t.reset() } -> std::same_as<void>;
@@ -39,6 +38,34 @@ concept ManagedResourceConcept = std::is_base_of_v<core::ResourceBase, T>;
 template<typename Resource>
 class ManagedResource
 {
+    struct loading_context_t
+    {
+        loading_context_t(std::filesystem::path const& path, std::ios_base::openmode mode);
+
+        loading_context_t(std::byte const* data, size_t size);
+
+        explicit loading_context_t(std::istream& stream);
+
+        loading_context_t(loading_context_t&&) = default;
+
+        loading_context_t(loading_context_t const&) = delete;
+
+        ~loading_context_t();
+
+        auto operator=(loading_context_t&&) -> loading_context_t& = default;
+
+        auto operator=(loading_context_t const&) -> loading_context_t& = delete;
+
+        [[nodiscard]] auto stream() -> std::istream&;
+
+    private:
+        std::variant<std::monostate,
+                     std::unique_ptr<std::ifstream>,
+                     std::unique_ptr<boost::iostreams::stream<boost::iostreams::array_source>>,
+                     std::istream*>
+          source_;
+    };
+
 public:
     ManagedResource()
       : state_{ ManagedResourceState::Initial }
@@ -46,13 +73,19 @@ public:
     {
     }
 
-    auto load() -> std::shared_future<void>;
+    auto load(std::filesystem::path path, std::ios_base::openmode mode) -> std::shared_future<void>;
+
+    auto load(std::istream& stream) -> std::shared_future<void>;
+
+    auto load(std::byte const* data, size_t size) -> std::shared_future<void>;
 
     // void reset();
 
     [[nodiscard]] auto state() const -> ManagedResourceState { return state_.load(std::memory_order_acquire); }
 
 private:
+    auto loadInternal(loading_context_t&& loadingContext) -> std::shared_future<void>;
+
     void setState(ManagedResourceState state);
 
     std::atomic<ManagedResourceState> state_;
@@ -60,13 +93,91 @@ private:
 };
 
 template<typename Resource>
-auto ManagedResource<Resource>::load() -> std::shared_future<void>
+ManagedResource<Resource>::loading_context_t::loading_context_t(std::istream& stream)
+  : source_{ &stream }
+{
+}
+
+template<typename Resource>
+ManagedResource<Resource>::loading_context_t::loading_context_t(std::byte const* data, size_t size)
+  : source_{ std::make_unique<boost::iostreams::stream<boost::iostreams::array_source>>(
+      reinterpret_cast<char const*>(data),
+      size) }
+{
+}
+
+template<typename Resource>
+ManagedResource<Resource>::loading_context_t::loading_context_t(std::filesystem::path const& path,
+                                                                std::ios_base::openmode mode)
+  : source_{}
+{
+    auto file = std::make_unique<std::ifstream>();
+
+    file->exceptions(std::ios::failbit);
+    file->open(path.string(), mode);
+    file->exceptions(std::ios::badbit);
+
+    source_ = std::move(file);
+}
+
+template<typename Resource>
+ManagedResource<Resource>::loading_context_t::~loading_context_t()
+{
+    if (source_.index() == 1) {
+        auto& stream = std::get<std::unique_ptr<std::ifstream>>(source_);
+        stream->close();
+    }
+}
+
+template<typename Resource>
+[[nodiscard]] auto ManagedResource<Resource>::loading_context_t::stream() -> std::istream&
+{
+    return std::visit(
+      [](auto&& s) -> std::fstream& {
+          if constexpr (!std::is_same_v<std::decay_t<decltype(s)>, std::monostate>) {
+              return *s;
+          }
+          throw std::runtime_error("invalid loading context");
+      },
+      source_);
+}
+
+template<typename Resource>
+auto ManagedResource<Resource>::load(std::filesystem::path path, std::ios_base::openmode mode) -> std::shared_future<void>
+{
+    return loadInternal(loading_context_t{ path, mode });
+}
+
+template<typename Resource>
+auto ManagedResource<Resource>::load(std::istream& stream) -> std::shared_future<void>
+{
+    return loadInternal(loading_context_t{ stream });
+}
+
+template<typename Resource>
+auto ManagedResource<Resource>::load(std::byte const* data, size_t size) -> std::shared_future<void>
+{
+    return loadInternal(loading_context_t{ data, size });
+}
+
+template<typename Resource>
+auto ManagedResource<Resource>::loadInternal(loading_context_t&& loadingContext) -> std::shared_future<void>
 {
     auto expectedState = ManagedResourceState::Initial;
     if (state_.compare_exchange_weak(
           expectedState, ManagedResourceState::Loading, std::memory_order_release, std::memory_order_relaxed)) {
         if constexpr (is_loadable<Resource>) {
-            // TODO::
+            auto* res = static_cast<Resource*>(this);
+            auto weakRef = core::ResourceWeakRef{ core::makeResourceSharedRefUnsafe(res) };
+
+            loadingResult_ = multithreading::Executor::threadExecutor().taskManager().submitTask(
+              [weakRef, loadingContext = std::move(loadingContext)]() mutable -> void {
+                  if (auto sharedRef = weakRef.lock(); sharedRef.valid()) {
+                      auto& r = sharedRef.as<Resource>();
+                      r.loadImpl(loadingContext.stream()).get();
+                      r.setState(ManagedResourceState::Loaded);
+                  }
+              });
         } else {
             auto promise = std::promise<void>();
             auto future = promise.get_future();
@@ -111,78 +222,6 @@ void ManagedResource<Resource>::reset()
     }
 
     setState(LoadingState::Initial);
-}
-
-template<typename Resource>
-auto ManagedResource<Resource>::load() -> std::future<bool>
-{
-    auto result = false;
-    auto expectedState = LoadingState::Initial;
-    if (loadingState_.compare_exchange_weak(
-          expectedState, LoadingState::Loading, std::memory_order_release, std::memory_order_relaxed)) {
-        if constexpr (is_loadable<Resource>) {
-            auto* res = static_cast<Resource*>(this);
-            auto resId = res->resourceId();
-            auto& managerBase = res->resourceBase()->resourceManager();
-
-            return multithreading::Executor::threadExecutor().taskManager().submitTask(
-              [f = static_cast<Resource*>(this)->load(), resource = this, resId, &managerBase]() -> bool {
-                  if (auto r = f.get(); r) {
-                      if (managerBase.isResourceValid(resId)) {
-                          resource->setState(LoadingState::Loaded);
-                          return true;
-                      }
-                  }
-
-                  if (managerBase.isResourceValid(resId)) {
-                      resource->setState(LoadingState::Corrupted);
-                      return true;
-                  }
-
-                  return false;
-              });
-        } else {
-            setState(LoadingState::Loaded);
-            result = true;
-        }
-    } else {
-        throw std::logic_error("loading can be start from initial state only");
-    }
-
-    auto promise = std::promise<bool>();
-    auto future = promise.get_future();
-
-    promise.set_value(result);
-
-    return future;
-}
-
-template<typename Resource>
-void ManagedResource<Resource>::setState(LoadingState state)
-{
-    if (state == LoadingState::Undefined) {
-        throw std::logic_error("attempt to set wrong resource state");
-    }
-
-    if (state == LoadingState::Loaded) {
-        auto expectedState = LoadingState::Loading;
-        if (!loadingState_.compare_exchange_weak(
-              expectedState, LoadingState::Loaded, std::memory_order_release, std::memory_order_relaxed)) {
-            throw std::logic_error("attempt to set wrong resource state");
-        }
-    } else if (state == LoadingState::Initial) {
-        auto expectedState = LoadingState::Undefined;
-        while (!loadingState_.compare_exchange_weak(
-          expectedState, LoadingState::Initial, std::memory_order_acq_rel, std::memory_order_acquire)) {
-            if (expectedState != LoadingState::Undefined && expectedState != LoadingState::Reseting) {
-                throw std::logic_error("attempt to set wrong resource state");
-            }
-        }
-    } else {
-        throw std::logic_error("attempt to set wrong resource state");
-    }
-
-    // TODO:: other states
 }*/
 }
 
