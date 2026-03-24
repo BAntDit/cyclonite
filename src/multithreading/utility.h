@@ -92,20 +92,28 @@ template<typename F>
 concept FutureConcept =
   metrix::is_specialization_of_v<F, std::future> || metrix::is_specialization_of_v<F, std::shared_future>;
 
+template<FutureConcept F>
+using future_type_t = typename internal::get_future_type<F>::type_t;
+
 template<typename C>
 concept FutureContainerConcept =
   metrix::is_iterable_v<C> &&
   (metrix::is_specialization_of_v<typename std::decay_t<C>::value_type, std::future> ||
-   metrix::is_specialization_of_v<typename std::decay_t<C>::value_type, std::shared_future>);
+   metrix::is_specialization_of_v<typename std::decay_t<C>::value_type, std::shared_future>) &&
+  (!std::is_same_v<future_type_t<typename std::decay_t<C>::value_type>, void_future_result_t>);
+
+template<typename C>
+concept VoidFutureContainerConcept =
+  metrix::is_iterable_v<C> &&
+  (metrix::is_specialization_of_v<typename std::decay_t<C>::value_type, std::future> ||
+   metrix::is_specialization_of_v<typename std::decay_t<C>::value_type, std::shared_future>) &&
+  (std::is_same_v<future_type_t<typename std::decay_t<C>::value_type>, void_future_result_t>);
 
 template<typename I>
 concept FutureInteratorConcept =
   std::input_iterator<I> &&
   (metrix::is_specialization_of_v<typename std::iterator_traits<I>::value_type, std::future> ||
    metrix::is_specialization_of_v<typename std::iterator_traits<I>::value_type, std::shared_future>);
-
-template<FutureConcept F>
-using future_type_t = typename internal::get_future_type<F>::type_t;
 
 template<FutureConcept... F>
 auto when_all(F&&... f) -> std::future<std::tuple<future_type_t<F>...>>
@@ -118,6 +126,22 @@ auto when_all(F&&... f) -> std::future<std::tuple<future_type_t<F>...>>
         []<size_t... I>(std::index_sequence<I...>, auto&& futures, auto&& promise) -> void {
             promise.set_value(std::make_tuple(internal::get_one_future_result(std::move(std::get<I>(futures)))...));
         }(std::make_index_sequence<std::tuple_size_v<decltype(fs)>>{}, std::move(fs), std::move(p));
+    });
+
+    return future;
+}
+
+template<VoidFutureContainerConcept C>
+auto when_all(C&& container) -> std::future<void>
+{
+    auto promise = std::promise<void>{};
+    auto future = promise.get_future();
+
+    Executor::threadExecutor().submitTask([container = std::move(container), p = std::move(promise)]() mutable -> void {
+        for (auto&& f : container) {
+            f.get();
+        }
+        p.set_value();
     });
 
     return future;
