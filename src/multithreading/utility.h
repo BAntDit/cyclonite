@@ -6,6 +6,7 @@
 #define CYCLONITE_MULTITHREADING_UTILITY_H
 
 #include "multithreading/common.h"
+#include "multithreading/executor.h"
 #include <metrix/containers.h>
 
 #if defined(PLATFORM_LINUX_X11)
@@ -18,6 +19,7 @@
 #include <tuple>
 #include <variant>
 #include <vector>
+#include <optional>
 
 namespace cyclonite::multithreading {
 struct void_future_result_t
