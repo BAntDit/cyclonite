@@ -35,9 +35,9 @@ struct ShaderModuleBlockHeader
 struct ShaderInfoBlock
 {
     void getEntryPoint(std::string& ep) const { ep = entryPoint; }
-    void getProfile(uint32_t& tp) { tp = static_cast<uint32_t>(metrix::value_cast(targetProfile)); }
+    void getProfile(uint32_t& tp) { tp = targetProfile; }
 
-    tools::TargetProfile targetProfile;
+    uint32_t targetProfile;
     std::string entryPoint;
 };
 

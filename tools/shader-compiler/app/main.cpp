@@ -770,7 +770,7 @@ int main(int argc, char* argv[])
     auto shaderModuleBinary = cyclonite::shared::ShaderModuleBinary{};
 
     shaderModuleBinary.infoBlock.entryPoint = entryPointName;
-    shaderModuleBinary.infoBlock.targetProfile = options.targetProfile;
+    shaderModuleBinary.infoBlock.targetProfile = static_cast<uint32_t>(metrix::value_cast(options.targetProfile));
 
     auto shaderModuleBlockCount = size_t{ 3 }; // info block + spir-v + reflection
     shaderModuleBinary.blockHeaders.reserve(shaderModuleBlockCount);
