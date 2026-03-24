@@ -6,6 +6,7 @@
 #define CYCLONITE_RESOURCES_DEFAULT_RESOURCELOADER_H
 
 #include "core/resourceSharedRef.h"
+#include "multithreading/utility.h"
 #include "shader.h"
 #include "shaderModuleBinary.h"
 #include <cassert>
@@ -59,6 +60,12 @@ template<typename ResourceGroup>
         throw std::runtime_error("location does not exists");
     }
 
+    auto entryCount = std::distance(std::filesystem::recursive_directory_iterator(context->location_),
+                                    std::filesystem::recursive_directory_iterator{});
+
+    auto futures = std::vector<std::shared_future<void>>{};
+    futures.reserve(entryCount);
+
     for (auto const& entry : std::filesystem::recursive_directory_iterator(context->location_)) {
         if (entry.path().has_extension())
             continue;
@@ -80,14 +87,14 @@ template<typename ResourceGroup>
                     if constexpr (ResourceGroup::template is_group_resource_type<cyclonite::Shader>) {
                         auto ref = core::ResourceSharedRef{ resourceGroup->template addResource<cyclonite::Shader>() };
                         auto future = ref.as<cyclonite::Shader>().load(entry.path(), std::ios::binary | std::ios::in);
-
-                        // TODO:: store future
+                        futures.push_back(std::move(future));
                     }
                     break;
             }
         }
     }
-    // TODO::
+
+    return multithreading::when_all(futures);
 }
 }
 

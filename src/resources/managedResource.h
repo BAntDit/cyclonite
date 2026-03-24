@@ -143,7 +143,8 @@ template<typename Resource>
 }
 
 template<typename Resource>
-auto ManagedResource<Resource>::load(std::filesystem::path path, std::ios_base::openmode mode) -> std::shared_future<void>
+auto ManagedResource<Resource>::load(std::filesystem::path path,
+                                     std::ios_base::openmode mode) -> std::shared_future<void>
 {
     return loadInternal(loading_context_t{ path, mode });
 }
@@ -177,6 +178,8 @@ auto ManagedResource<Resource>::loadInternal(loading_context_t&& loadingContext)
                       r.loadImpl(loadingContext.stream()).get();
                       r.setState(ManagedResourceState::Loaded);
                   }
+
+                  // TODO:: add events
               });
         } else {
             auto promise = std::promise<void>();
