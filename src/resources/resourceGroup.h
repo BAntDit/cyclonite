@@ -6,51 +6,25 @@
 #define CYCLONITE_RESOURCES_RESOURCE_GROUP_H
 
 #include "core/resourceManager.h"
-#include <concepts>
-#include <future>
 #include <metrix/type_list.h>
-#include <metrix/type_traits.h>
-#include <string>
-#include <type_traits>
+
+#include "defaultResourceLoader.h"
+#include "resourceGroupBase.h"
 
 namespace cyclonite::resources {
-class ResourceGroupBase
-{
-public:
-    virtual ~ResourceGroupBase() = default;
-
-    virtual auto load() -> std::future<void> = 0;
-};
-
-template<typename T>
-concept ManagedResourceConcept =
-  requires(T t) { requires std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>; };
-
-template<typename T>
-concept CustomSourceConcept = requires(T t) {
-    requires std::is_member_function_pointer_v<decltype(&T::setResourceGroup)> &&
-               std::is_base_of_v<ResourceGroupBase,
-                                 typename metrix::member_function_argument_type_list_t<
-                                   decltype(&T::setResourceGroup)>::template get_type<0>::type>;
-
-    { t.load() } -> std::same_as<std::future<void>>;
-};
-
 template<ManagedResourceConcept... Resources>
-class ResourceGroup : public ResourceGroupBase
+class ResourceGroup final : public ResourceGroupBase
 {
 public:
     template<typename R>
     constexpr static bool is_group_resource_type = metrix::type_list<Resources...>::template has_type<R>::value;
 
+    explicit ResourceGroup(uint32_t id);
+
     template<CustomSourceConcept CustomSource>
-    ResourceGroup(uint32_t id, CustomSource&& customSource);
+    auto load(CustomSource&& customSource) -> std::future<void>;
 
-    ResourceGroup(uint32_t id, std::wstring_view sourceLocation);
-
-    ~ResourceGroup() override = default;
-
-    auto load() -> std::future<void> override;
+    auto load(std::wstring_view location) -> std::future<void>;
 
     template<typename R, typename... Args>
     auto addResource(Args&&... args) -> core::ResourceUniqueRef
@@ -68,37 +42,25 @@ private:
 
 private:
     template<CustomSourceConcept CustomSource>
-    static auto readSource(void* customSourcePtr) -> std::future<void>;
-
-    using load_f = std::future<void> (*)(void*);
+    static auto readSource(CustomSource* customSourcePtr) -> std::future<void>;
 
     uint32_t id_;
-    std::pair<void*, load_f> source_;
     core::ResourceManager<Resources...> resourcesLifetimeManager_;
 };
 
 template<ManagedResourceConcept... Resources>
 template<CustomSourceConcept CustomSource>
-/*static*/ auto ResourceGroup<Resources...>::readSource(void* customSourcePtr) -> std::future<void>
+/*static*/ auto ResourceGroup<Resources...>::readSource(CustomSource* customSourcePtr) -> std::future<void>
 {
     assert(customSourcePtr != nullptr);
-    return std::launder(reinterpret_cast<CustomSource*>(customSourcePtr))->load();
+    return customSourcePtr->load();
 }
 
 template<ManagedResourceConcept... Resources>
-template<CustomSourceConcept CustomSource>
-ResourceGroup<Resources...>::ResourceGroup(uint32_t id, CustomSource&& customSource)
+ResourceGroup<Resources...>::ResourceGroup(uint32_t id)
   : ResourceGroupBase{}
   , id_{ id }
-  , source_{ &customSource, &ResourceGroup<Resources...>::readSource }
   , resourcesLifetimeManager_{}
-{
-}
-
-template<ManagedResourceConcept... Resources>
-ResourceGroup<Resources...>::ResourceGroup(uint32_t id, std::wstring_view sourceLocation)
-  : ResourceGroupBase{}
-  , id_{ id } //, source - create default source reader
 {
 }
 
@@ -114,13 +76,20 @@ auto ResourceGroup<Resources...>::addResource(Args&&... args) -> core::ResourceU
 }
 
 template<ManagedResourceConcept... Resources>
-auto ResourceGroup<Resources...>::load() -> std::future<void>
+template<CustomSourceConcept CustomSource>
+auto ResourceGroup<Resources...>::load(CustomSource&& customSource) -> std::future<void>
 {
-    auto [loader, invoker] = source_;
-    assert(loader != nullptr);
-    assert(invoker != nullptr);
+    static_assert(std::is_rvalue_reference_v<CustomSource>);
 
-    return invoker(loader);
+    auto source = std::make_unique<CustomSource>(std::move(customSource));
+    source->setResourceGroup(this);
+    return ResourceGroup<Resources...>::readSource<CustomSource>(&customSource);
+}
+
+template<ManagedResourceConcept... Resources>
+auto ResourceGroup<Resources...>::load(std::wstring_view location) -> std::future<void>
+{
+    return load(DefaultResourceLoader{ location });
 }
 
 template<ManagedResourceConcept... Resources>

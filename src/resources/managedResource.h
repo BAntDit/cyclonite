@@ -5,7 +5,6 @@
 #ifndef CYCLONITE_RESOURCES_MANAGED_RESOURCE_H
 #define CYCLONITE_RESOURCES_MANAGED_RESOURCE_H
 
-#include "core/resourceBase.h"
 #include "core/resourceWeakRef.h"
 #include "managedResourceState.h"
 #include "multithreading/taskManager.h"
@@ -31,9 +30,6 @@ template<typename T>
 concept is_resetable = requires(T t) {
 { t.reset() } -> std::same_as<void>;
 };*/
-
-template<typename T>
-concept ManagedResourceConcept = std::is_base_of_v<core::ResourceBase, T>;
 
 template<typename Resource>
 class ManagedResource

@@ -16,10 +16,10 @@
 #endif
 
 #include <metrix/type_traits.h>
+#include <optional>
 #include <tuple>
 #include <variant>
 #include <vector>
-#include <optional>
 
 namespace cyclonite::multithreading {
 struct void_future_result_t

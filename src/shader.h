@@ -11,7 +11,7 @@
 namespace cyclonite {
 class Shader
   : public core::ResourceBase
-  , public resources::ManagedResource<Shader>
+  , public resources::ManagedResource<cyclonite::Shader>
 {
 public:
 private:
