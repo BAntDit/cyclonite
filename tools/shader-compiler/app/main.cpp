@@ -5,6 +5,12 @@
 #include "serialization.h"
 #include "shaderModuleBinary.h"
 #include <boost/program_options.hpp>
+#ifdef uuid
+#undef uuid
+#endif
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <codecvt>
 #include <format>
 #include <iostream>
@@ -771,6 +777,12 @@ int main(int argc, char* argv[])
 
     shaderModuleBinary.infoBlock.entryPoint = entryPointName;
     shaderModuleBinary.infoBlock.targetProfile = static_cast<uint32_t>(metrix::value_cast(options.targetProfile));
+    shaderModuleBinary.infoBlock.name = path.filename().string();
+
+    auto gen = boost::uuids::random_generator_mt19937{};
+    auto uuid = boost::uuids::uuid{ gen() };
+
+    shaderModuleBinary.infoBlock.uuid = boost::uuids::to_string(uuid);
 
     auto shaderModuleBlockCount = size_t{ 3 }; // info block + spir-v + reflection
     shaderModuleBinary.blockHeaders.reserve(shaderModuleBlockCount);
@@ -784,7 +796,9 @@ int main(int argc, char* argv[])
     auto infoBlockSerializer = cyclonite::shared::Serializer{
         cyclonite::shared::useWriter<cyclonite::shared::BinaryStreamWriter>(),
         cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderInfoBlock::getEntryPoint>(),
-        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderInfoBlock::getProfile>()
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderInfoBlock::getProfile>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderInfoBlock::getName>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderInfoBlock::getUUID>()
     };
 
     auto& infoBlockHeader = shaderModuleBinary.blockHeaders.emplace_back();
@@ -832,6 +846,10 @@ int main(int argc, char* argv[])
                                            &cyclonite::shared::ShaderInfoBlock::getEntryPoint>(),
         cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getInfoBlock,
                                            &cyclonite::shared::ShaderInfoBlock::getProfile>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getInfoBlock,
+                                           &cyclonite::shared::ShaderInfoBlock::getName>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getInfoBlock,
+                                           &cyclonite::shared::ShaderInfoBlock::getUUID>(),
         cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getSpirvCode>(),
         cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBinary::getReflectionData,
                                            &cyclonite::shared::ShaderReflectionData::getVersion>(),

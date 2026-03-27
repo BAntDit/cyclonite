@@ -36,9 +36,13 @@ struct ShaderInfoBlock
 {
     void getEntryPoint(std::string& ep) const { ep = entryPoint; }
     void getProfile(uint32_t& tp) { tp = targetProfile; }
+    void getName(std::string& n) { n = name; }
+    void getUUID(std::string& u) { u = uuid; }
 
     uint32_t targetProfile;
     std::string entryPoint;
+    std::string name;
+    std::string uuid;
 };
 
 struct ShaderModuleBinary

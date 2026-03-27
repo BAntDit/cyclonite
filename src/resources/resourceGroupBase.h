@@ -6,10 +6,10 @@
 #define CYCLONITE_RESOURCES_RESOURCE_GROUP_BASE_H
 
 #include "managedResource.h"
-#include <future>
 #include <concepts>
-#include <type_traits>
+#include <future>
 #include <metrix/type_traits.h>
+#include <type_traits>
 
 namespace cyclonite::resources {
 class ResourceGroupBase

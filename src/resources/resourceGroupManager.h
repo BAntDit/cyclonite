@@ -16,11 +16,16 @@ template<ManagedResourceConcept... Resources>
 class ResourceGroupManager
 {
 public:
+    ResourceGroupManager() = default;
+
     [[nodiscard]] auto addResourceGroup() -> uint32_t;
 
     auto load(uint32_t groupId, std::wstring_view location) -> std::future<void>;
 
-    // TODO::
+    template<CustomSourceConcept CustomSource>
+    auto load(uint32_t groupId, CustomSource&& customSource) -> std::future<void>
+        requires std::is_rvalue_reference_v<CustomSource>;
+
     // unload
 
     // prepare
@@ -56,6 +61,20 @@ auto ResourceGroupManager<Resources...>::load(uint32_t groupId, std::wstring_vie
 
     auto& [_, group] = *it;
     return group.load(location);
+}
+
+template<ManagedResourceConcept... Resources>
+template<CustomSourceConcept CustomSource>
+auto ResourceGroupManager<Resources...>::load(uint32_t groupId, CustomSource&& customSource) -> std::future<void>
+    requires std::is_rvalue_reference_v<CustomSource>
+{
+    auto it = resourceGroups_.find(groupId);
+    if (it == resourceGroups_.end()) {
+        throw std::runtime_error("Resource group does not exist");
+    }
+
+    auto& [_, group] = *it;
+    return group.load(std::move(customSource));
 }
 }
 
