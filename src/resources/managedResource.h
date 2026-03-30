@@ -63,9 +63,11 @@ class ManagedResource
     };
 
 public:
-    ManagedResource()
+    ManagedResource(std::string_view name, boost::uuids::uuid uuid)
       : state_{ ManagedResourceState::Initial }
       , loadingResult_{}
+      , name_(name)
+      , uuid_(uuid)
     {
     }
 
@@ -79,6 +81,10 @@ public:
 
     [[nodiscard]] auto state() const -> ManagedResourceState { return state_.load(std::memory_order_acquire); }
 
+    [[nodiscard]] auto uuid() const -> boost::uuids::uuid const& { return uuid_; }
+
+    [[nodiscard]] auto name() const -> std::string_view { return name_; }
+
 private:
     auto loadInternal(loading_context_t&& loadingContext) -> std::shared_future<void>;
 
@@ -86,6 +92,8 @@ private:
 
     std::atomic<ManagedResourceState> state_;
     std::shared_future<void> loadingResult_;
+    std::string name_;
+    boost::uuids::uuid uuid_;
 };
 
 template<typename Resource>
