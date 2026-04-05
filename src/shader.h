@@ -19,9 +19,12 @@ public:
     Shader(core::ResourceManagerBase* resourceManager,
            core::ResourceId resourceId,
            std::string_view name,
-           boost::uuids::uuid uuid);
+           boost::uuids::uuid const& uuid);
+
+    void loadImpl(std::istream& stream);
 
 private:
+    core::ResourceSharedRef hwShader_;
 };
 }
 
