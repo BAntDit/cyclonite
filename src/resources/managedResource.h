@@ -22,7 +22,7 @@
 namespace cyclonite::resources {
 template<typename T>
 concept is_loadable = requires(T t, std::istream& stream) {
-    { t.loadImpl(stream) } -> std::same_as<std::future<void>>;
+    { t.loadImpl(stream) } -> std::same_as<void>;
 };
 
 /*
@@ -63,7 +63,7 @@ class ManagedResource
     };
 
 public:
-    ManagedResource(std::string_view name, boost::uuids::uuid uuid)
+    ManagedResource(std::string_view name, boost::uuids::uuid const& uuid)
       : state_{ ManagedResourceState::Initial }
       , loadingResult_{}
       , name_(name)
@@ -179,7 +179,7 @@ auto ManagedResource<Resource>::loadInternal(loading_context_t&& loadingContext)
               [weakRef, loadingContext = std::move(loadingContext)]() mutable -> void {
                   if (auto sharedRef = weakRef.lock(); sharedRef.valid()) {
                       auto& r = sharedRef.as<Resource>();
-                      r.loadImpl(loadingContext.stream()).get();
+                      r.loadImpl(loadingContext.stream());
                       r.setState(ManagedResourceState::Loaded);
                   }
 

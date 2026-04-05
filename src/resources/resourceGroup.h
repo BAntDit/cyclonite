@@ -6,6 +6,7 @@
 #define CYCLONITE_RESOURCES_RESOURCE_GROUP_H
 
 #include "core/resourceManager.h"
+#include <boost/uuid/uuid.hpp>
 #include <metrix/type_list.h>
 
 #include "defaultResourceLoader.h"
@@ -34,7 +35,10 @@ public:
 
     // void unload
 
-    // void getResource
+    [[nodiscard]] auto isExists(boost::uuids::uuid const& uuid) const -> bool;
+
+    [[nodiscard]] auto getResource(boost::uuids::uuid const& uuid) const -> core::ResourceUniqueRef;
+
 private:
     static void makeOwn(core::ResourceBase* res);
 
@@ -82,7 +86,7 @@ auto ResourceGroup<Resources...>::load(CustomSource&& customSource) -> std::futu
     static_assert(std::is_rvalue_reference_v<CustomSource>);
 
     auto source = std::make_unique<CustomSource>(std::move(customSource));
-    source->setResourceGroup(this);
+    source->setResourceGroup(*this);
     return ResourceGroup<Resources...>::readSource<CustomSource>(&customSource);
 }
 
@@ -104,6 +108,58 @@ template<ManagedResourceConcept... Resources>
 {
     assert(res != nullptr);
     res->release();
+}
+
+template<ManagedResourceConcept... Resources>
+auto ResourceGroup<Resources...>::isExists(boost::uuids::uuid const& uuid) const -> bool
+{
+    auto testRes = []<typename ResType, size_t index>(
+                     size_t typeId, core::ResourceSharedRef const& ref, boost::uuids::uuid const& uuid) -> bool {
+        if (index == typeId) {
+            auto const& r = ref.as<ResType>();
+            return r.uuid() == uuid;
+        }
+        return false;
+    };
+
+    auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
+    for (auto&& [ref, typeId] : resList) {
+        auto result = ((testRes<Resources, metrix::type_list<Resources...>::template get_type_index<Resources>::value>(
+                         typeId, ref, uuid)) ||
+                       ...);
+        if (result) {
+            return true;
+        }
+    }
+    return false;
+}
+
+template<ManagedResourceConcept... Resources>
+auto ResourceGroup<Resources...>::getResource(boost::uuids::uuid const& uuid) const -> core::ResourceUniqueRef
+{
+    auto res = core::ResourceUniqueRef{};
+
+    auto testRes = []<typename ResType, size_t index>(
+                     size_t typeId, core::ResourceSharedRef const& ref, boost::uuids::uuid const& uuid) -> bool {
+        if (index == typeId) {
+            auto const& r = ref.as<ResType>();
+            return r.uuid() == uuid;
+        }
+        return false;
+    };
+
+    auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
+    for (auto&& [ref, typeId] : resList) {
+        auto result = ((testRes<Resources, metrix::type_list<Resources...>::template get_type_index<Resources>::value>(
+                         typeId, ref, uuid)) ||
+                       ...);
+        if (result) {
+            res = ref;
+            break;
+        }
+    }
+
+    return res;
 }
 }
 
