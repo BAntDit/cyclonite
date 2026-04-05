@@ -8,13 +8,17 @@
 #include "gfx/instance.h"
 #include "input.h"
 #include "multithreading/taskManager.h"
+#include "resources/resourceGroupManager.h"
 
-#include <iostream>
 #include <memory>
 #include <string_view>
 
+#include "rootConfigTraits.h"
+
+// TODO:: add root config
+
 namespace cyclonite {
-class Root
+class RootBase
 {
 public:
     struct Capabilities
@@ -23,17 +27,15 @@ public:
     };
 
 public:
-    Root();
+    RootBase(RootBase const&) = delete;
 
-    Root(Root const&) = delete;
+    RootBase(RootBase&&) = delete;
 
-    Root(Root&&) = delete;
+    ~RootBase() = default;
 
-    ~Root() = default;
+    auto operator=(RootBase const&) -> RootBase& = delete;
 
-    auto operator=(Root const&) -> Root& = delete;
-
-    auto operator=(Root&&) -> Root& = delete;
+    auto operator=(RootBase&&) -> RootBase& = delete;
 
     void init(std::string_view appName);
 
@@ -57,11 +59,44 @@ public:
 
     void reset();
 
-private:
+protected:
+    RootBase();
+
     Capabilities capabilities_;
     std::unique_ptr<multithreading::TaskManager> taskManager_;
     std::unique_ptr<gfx::Instance> gfxInstance_;
     Input input_;
+};
+
+namespace internal {
+struct DefaultConfig
+{};
+};
+
+template<typename Config = ConfigTraits<internal::DefaultConfig>>
+class Root : public RootBase
+{
+public:
+    using config_t = Config;
+    using resource_type_list_t = metrix::distinct<
+      metrix::concat<typename config_t::custom_resource_type_list_t, metrix::type_list<Shader>>>::type;
+
+    Root() = default;
+
+private:
+    template<typename... TypeList>
+    struct resource_manager_wrap_t;
+
+    template<typename... Resources>
+    struct resource_manager_wrap_t<metrix::type_list<Resources...>> {
+        resources::ResourceGroupManager<Resources...> manager_;
+    };
+
+    resource_manager_wrap_t<resource_type_list_t> resourceManager_;
+
+public:
+    [[nodiscard]] auto resourceManager() const -> decltype(auto) { return (resourceManager_.manager_); }
+    [[nodiscard]] auto resourceManager() -> decltype(auto) { return (resourceManager_.manager_); }
 };
 }
 #endif // CYCLONITE_ROOT_H

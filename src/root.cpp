@@ -7,7 +7,7 @@
 #include <SDL3/SDL_video.h>
 
 namespace cyclonite {
-Root::Root()
+RootBase::RootBase()
   : capabilities_{}
   , taskManager_{ nullptr }
   , gfxInstance_{ nullptr }
@@ -15,7 +15,7 @@ Root::Root()
 {
 }
 
-void Root::init(std::string_view appName)
+void RootBase::init(std::string_view appName)
 {
     // SDL initialization:
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -51,9 +51,9 @@ void Root::init(std::string_view appName)
     }
 }
 
-void Root::initTaskManager(bool dedicatedTransferRequired,
-                           bool dedicatedComputeRequired,
-                           size_t threadPoolSize /* = std::max(std::thread::hardware_concurrency(), 1u)*/)
+void RootBase::initTaskManager(bool dedicatedTransferRequired,
+                               bool dedicatedComputeRequired,
+                               size_t threadPoolSize /* = std::max(std::thread::hardware_concurrency(), 1u)*/)
 {
     if (taskManager_ = std::make_unique<multithreading::TaskManager>(
           dedicatedTransferRequired, dedicatedComputeRequired, threadPoolSize);
@@ -67,7 +67,7 @@ void Root::initTaskManager(bool dedicatedTransferRequired,
     }
 }
 
-void Root::reset()
+void RootBase::reset()
 {
     if (taskManager_) {
         taskManager_->stop();
