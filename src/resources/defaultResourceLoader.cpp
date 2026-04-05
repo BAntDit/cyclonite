@@ -11,5 +11,4 @@ DefaultResourceLoader::DefaultResourceLoader(std::filesystem::path const& locati
   , location_{ location }
 {
 }
-
 }

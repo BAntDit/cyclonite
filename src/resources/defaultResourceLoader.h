@@ -6,59 +6,21 @@
 #define CYCLONITE_RESOURCES_DEFAULT_RESOURCELOADER_H
 
 #include "core/resourceSharedRef.h"
+#include "deserialization.h"
 #include "multithreading/utility.h"
 #include "shader.h"
 #include "shaderModuleBinary.h"
+#include <boost/uuid/string_generator.hpp>
+#include <boost/uuid/uuid.hpp>
 #include <cassert>
 #include <filesystem>
 #include <fstream>
-#include <future>
-#include <metrix/containers.h>
 
 namespace cyclonite::resources {
 class ResourceGroupBase;
 
 class DefaultResourceLoader
 {
-    // TODO:: move to metrix
-    template<typename T, typename = void>
-    struct is_resizeable : std::false_type
-    {};
-
-    template<typename T>
-    struct is_resizeable<T, std::void_t<decltype(std::declval<T>().resize(int{}))>> : std::true_type
-    {};
-
-    template<typename T, typename std::enable_if_t<std::is_integral_v<std::decay_t<T>>, int> = 0>
-    static void readStream(T& dst, std::istream& stream)
-    {
-        stream.read(reinterpret_cast<char*>(&dst), sizeof(T));
-    }
-
-    template<typename T,
-             typename std::enable_if_t<std::is_same_v<std::decay_t<T>, shared::ShaderModuleBlockHeader>, int> = 0>
-    static void readStream(T& dst, std::istream& stream);
-
-    template<typename T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, shared::ShaderInfoBlock>, int> = 0>
-    static void readStream(T& dst, std::istream& stream);
-
-    template<typename T, typename std::enable_if_t<metrix::is_iterable_v<std::decay_t<T>>, int> = 0>
-    static void readStream(T& dst, std::istream& stream)
-    {
-        auto count = uint32_t{ 0 };
-        readStream(count, stream);
-
-        if constexpr (is_resizeable<std::decay_t<T>>::value) {
-            dst.resize(count);
-        } else {
-            assert(std::size(dst) == count);
-        }
-
-        for (auto& item : dst) {
-            readStream(item, stream);
-        }
-    }
-
 public:
     explicit DefaultResourceLoader(std::filesystem::path const& location);
 
@@ -124,7 +86,7 @@ template<typename ResourceGroup>
                 case shared::SHADER_MODULE_MAGIC_NUMBER:
                     if constexpr (ResourceGroup::template is_group_resource_type<cyclonite::Shader>) {
                         auto smBlockHeaders = std::vector<shared::ShaderModuleBlockHeader>{};
-                        readStream(smBlockHeaders, file);
+                        shared::readStream(smBlockHeaders, file);
 
                         auto infoBlockIt =
                           std::find_if(smBlockHeaders.begin(), smBlockHeaders.end(), [](auto&& h) -> bool {
@@ -136,14 +98,18 @@ template<typename ResourceGroup>
                             file.seekg(baseOffset + blockOffset, std::ios::beg);
 
                             auto moduleInfo = shared::ShaderInfoBlock{};
-                            readStream(moduleInfo, file);
+                            shared::readStream(moduleInfo, file);
 
-                            // TODO:: test if resource exists
+                            auto generator = boost::uuids::string_generator{};
+                            auto uuid = generator(moduleInfo.uuid);
 
-                            auto ref = core::ResourceSharedRef{ resourceGroup->template addResource<cyclonite::Shader>(
-                              moduleInfo.name, moduleInfo.uuid) };
+                            auto ref = resourceGroup->getResource(uuid);
+                            if (!ref.valid()) {
+                                ref = core::ResourceSharedRef{ resourceGroup->template addResource<cyclonite::Shader>(
+                                  moduleInfo.name, uuid) };
+                            }
                             auto future =
-                              ref.as<cyclonite::Shader>().load(entry.path(), std::ios::binary | std::ios::in);
+                              ref.template as<cyclonite::Shader>().load(entry.path(), std::ios::binary | std::ios::in);
                             futures.push_back(std::move(future));
                         }
                     }
@@ -155,32 +121,6 @@ template<typename ResourceGroup>
     }
 
     return multithreading::when_all(futures);
-}
-
-template<typename T,
-         typename std::enable_if_t<std::is_same_v<std::decay_t<T>, shared::ShaderModuleBlockHeader>, int> /* =0*/>
-/*static */ void DefaultResourceLoader::readStream(T& dst, std::istream& stream)
-{
-    auto blockId = uint32_t{ 0 };
-    auto blockOffset = uint64_t{ 0 };
-    auto baseOffset = uint64_t{ 0 };
-    auto blockSize = uint64_t{ 0 };
-
-    readStream(blockId, stream);
-    readStream(blockOffset, stream);
-    readStream(baseOffset, stream);
-    readStream(blockSize, stream);
-
-    dst.id = blockId;
-    dst.blockOffset = blockOffset;
-    dst.size = blockSize;
-    dst.baseOffset = baseOffset;
-}
-
-template<typename T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, shared::ShaderInfoBlock>, int> /* = 0*/>
-/*static */ void DefaultResourceLoader::readStream(T& dst, std::istream& stream)
-{
-    // TODO::
 }
 }
 
