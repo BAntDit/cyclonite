@@ -110,23 +110,32 @@ template<ManagedResourceConcept... Resources>
     res->release();
 }
 
+namespace internal {
+template<typename ResType, size_t index>
+auto test_if_necessary_resource(size_t typeId,
+                                core::ResourceSharedRef const& ref,
+                                boost::uuids::uuid const& uuid) -> bool
+{
+    if (index == typeId) {
+        auto const& r = ref.as<ResType>();
+        return r.uuid() == uuid;
+    }
+    return false;
+}
+}
+
 template<ManagedResourceConcept... Resources>
 auto ResourceGroup<Resources...>::isExists(boost::uuids::uuid const& uuid) const -> bool
 {
-    auto testRes = []<typename ResType, size_t index>(
-                     size_t typeId, core::ResourceSharedRef const& ref, boost::uuids::uuid const& uuid) -> bool {
-        if (index == typeId) {
-            auto const& r = ref.as<ResType>();
-            return r.uuid() == uuid;
-        }
-        return false;
-    };
+    using res_type_list_t = metrix::type_list<Resources...>;
 
     auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
     for (auto&& [ref, typeId] : resList) {
-        auto result = ((testRes<Resources, metrix::type_list<Resources...>::template get_type_index<Resources>::value>(
-                         typeId, ref, uuid)) ||
-                       ...);
+        auto result =
+          ((test_if_necessary_resource<Resources, res_type_list_t::template get_type_index<Resources>::value>(
+             typeId, ref, uuid)) ||
+           ...);
+
         if (result) {
             return true;
         }
@@ -137,22 +146,17 @@ auto ResourceGroup<Resources...>::isExists(boost::uuids::uuid const& uuid) const
 template<ManagedResourceConcept... Resources>
 auto ResourceGroup<Resources...>::getResource(boost::uuids::uuid const& uuid) const -> core::ResourceUniqueRef
 {
-    auto res = core::ResourceUniqueRef{};
+    using res_type_list_t = metrix::type_list<Resources...>;
 
-    auto testRes = []<typename ResType, size_t index>(
-                     size_t typeId, core::ResourceSharedRef const& ref, boost::uuids::uuid const& uuid) -> bool {
-        if (index == typeId) {
-            auto const& r = ref.as<ResType>();
-            return r.uuid() == uuid;
-        }
-        return false;
-    };
+    auto res = core::ResourceUniqueRef{};
 
     auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
     for (auto&& [ref, typeId] : resList) {
-        auto result = ((testRes<Resources, metrix::type_list<Resources...>::template get_type_index<Resources>::value>(
-                         typeId, ref, uuid)) ||
-                       ...);
+        auto result =
+          ((test_if_necessary_resource<Resources, res_type_list_t::template get_type_index<Resources>::value>(
+             typeId, ref, uuid)) ||
+           ...);
+
         if (result) {
             res = ref;
             break;

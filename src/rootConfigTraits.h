@@ -5,13 +5,11 @@
 #ifndef CYCLONITE_ROOT_CONFIG_TRAITS_H
 #define CYCLONITE_ROOT_CONFIG_TRAITS_H
 
-#include <metrix/type_list.h>
-#include "shader.h"
 #include "core/configTraitMacro.h"
+#include "shader.h"
+#include <metrix/type_list.h>
 
-
-namespace cyclonite
-{
+namespace cyclonite {
 namespace internal {
 template<typename T>
 struct config_traits_declaration
@@ -30,4 +28,4 @@ struct ConfigTraits
 };
 }
 
-#endif //CYCLONITE_ROOT_CONFIG_TRAITS_H
+#endif // CYCLONITE_ROOT_CONFIG_TRAITS_H

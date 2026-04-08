@@ -2,8 +2,8 @@
 // Created by anton on 2/23/26.
 //
 
-#ifndef CYCLONITE_DESERIALIZATION_H
-#define CYCLONITE_DESERIALIZATION_H
+#ifndef CYCLONITE_SHARED_DESERIALIZATION_H
+#define CYCLONITE_SHARED_DESERIALIZATION_H
 
 #include "shaderModuleBinary.h"
 #include <fstream>
@@ -283,4 +283,4 @@ static void readStream(T& dst, std::istream& stream)
 }
 }
 
-#endif // CYCLONITE_DESERIALIZATION_H
+#endif // CYCLONITE_SHARED_DESERIALIZATION_H

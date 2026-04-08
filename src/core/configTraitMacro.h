@@ -32,7 +32,17 @@
     template<typename C>                                                                                               \
     struct has_##type_trait<C, std::void_t<typename C::type_trait>> : std::true_type                                   \
     {};                                                                                                                \
-    using type_trait = std::conditional_t<has_##type_trait<T>::value, typename T::type_trait, default_type>;
+    template<typename C, bool = has_##type_trait<C>::value>                                                            \
+    struct resolve_##type_trait                                                                                        \
+    {                                                                                                                  \
+        using type = default_type;                                                                                     \
+    };                                                                                                                 \
+    template<typename C>                                                                                               \
+    struct resolve_##type_trait<C, true>                                                                               \
+    {                                                                                                                  \
+        using type = typename C::type_trait;                                                                           \
+    };                                                                                                                 \
+    using type_trait = typename resolve_##type_trait<T>::type;
 
 #define DEFINE_CONFIG_TYPE_TRAIT(name) using name##_t = typename internal::config_traits_declaration<Config>::name;
 

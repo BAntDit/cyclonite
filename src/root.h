@@ -10,12 +10,9 @@
 #include "multithreading/taskManager.h"
 #include "resources/resourceGroupManager.h"
 
+#include "rootConfigTraits.h"
 #include <memory>
 #include <string_view>
-
-#include "rootConfigTraits.h"
-
-// TODO:: add root config
 
 namespace cyclonite {
 class RootBase
@@ -73,13 +70,13 @@ struct DefaultConfig
 {};
 };
 
-template<typename Config = ConfigTraits<internal::DefaultConfig>>
+template<typename Config = internal::DefaultConfig>
 class Root : public RootBase
 {
 public:
-    using config_t = Config;
-    using resource_type_list_t = metrix::distinct<
-      metrix::concat<typename config_t::custom_resource_type_list_t, metrix::type_list<Shader>>>::type;
+    using config_t = cyclonite::ConfigTraits<Config>;
+    using resource_type_list_t =
+      metrix::distinct<typename metrix::concat<typename config_t::custom_resource_type_list_t, metrix::type_list<Shader>>::type>::type;
 
     Root() = default;
 
@@ -88,7 +85,8 @@ private:
     struct resource_manager_wrap_t;
 
     template<typename... Resources>
-    struct resource_manager_wrap_t<metrix::type_list<Resources...>> {
+    struct resource_manager_wrap_t<metrix::type_list<Resources...>>
+    {
         resources::ResourceGroupManager<Resources...> manager_;
     };
 

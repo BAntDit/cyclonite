@@ -8,6 +8,7 @@
 #include "app.h"
 #include "commandLine.h"
 #include "event.h"
+#include "gfx/queueSubmissionManager.h"
 #include "gfx/renderPassBuilder.h"
 #include "gfx/renderWindowBuilder.h"
 #include "root.h"

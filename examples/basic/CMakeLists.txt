@@ -22,7 +22,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         -pedantic
         -Wall
         -Wextra
-        #-Wfatal-errors
+        -Wfatal-errors
     )
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${PROJECT_NAME} PRIVATE
@@ -31,6 +31,7 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../../src/")
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../../../shared/")
 
 target_link_libraries(${PROJECT_NAME} cyclonite)
 

@@ -20,8 +20,6 @@ public:
 
 template<typename T>
 concept ManagedResourceConcept = requires(T t) {
-    requires std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>;
-
     requires std::is_base_of_v<ManagedResource<T>, T>;
 };
 

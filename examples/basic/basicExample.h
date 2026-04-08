@@ -1,8 +1,6 @@
 
 #include <cyclonite.h>
 
-#include "gfx/queueSubmissionManager.h"
-
 namespace examples {
 class BasicExample : public cyclonite::EventReceivable
 {
@@ -20,7 +18,7 @@ public:
     void onKeyDown(SDL_Keycode keyCode, uint16_t mod);
 
 private:
-    cyclonite::Root root_;
+    cyclonite::Root<> root_;
     cyclonite::core::ResourceSharedRef deviceRef_;
     cyclonite::core::ResourceSharedRef renderPassRef_;
     cyclonite::core::ResourceSharedRef windowRef_;
