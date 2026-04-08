@@ -15,11 +15,13 @@ Shader::Shader(core::ResourceManagerBase* resourceManager,
   , resources::ManagedResource<cyclonite::Shader>{ name, uuid }
   , rawData_{}
   , hwShader_{}
+  , bindings_{}
 {
 }
 
 namespace {
-auto getShaderStage(uint32_t profileCode) -> gfx::ShaderStageFlags {
+auto getShaderStage(uint32_t profileCode) -> gfx::ShaderStageFlags
+{
     gfx::ShaderStageFlags stage = gfx::ShaderStageFlags::STAGE_COUNT;
 
     if (profileCode <= 9) {
@@ -82,6 +84,6 @@ void Shader::loadImpl(std::istream& stream)
 
     // std::swap(code_, code);
 
-    // TODO::
+    // TODO:: fill bindings
 }
 }

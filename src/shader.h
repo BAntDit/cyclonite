@@ -8,8 +8,9 @@
 #include <boost/uuid/uuid.hpp>
 
 #include "core/resourceBase.h"
-#include "resources/managedResource.h"
+#include "gfx/binding.h"
 #include "gfx/common.h"
+#include "resources/managedResource.h"
 
 namespace cyclonite {
 class Shader
@@ -25,7 +26,8 @@ public:
     void loadImpl(std::istream& stream);
 
 private:
-    struct raw_data_t {
+    struct raw_data_t
+    {
         std::vector<uint32_t> code;
         gfx::ShaderStageFlags stage;
         std::string entryName;
@@ -33,6 +35,7 @@ private:
 
     std::unique_ptr<raw_data_t> rawData_;
     core::ResourceSharedRef hwShader_;
+    std::vector<gfx::Binding> bindings_;
 };
 }
 
