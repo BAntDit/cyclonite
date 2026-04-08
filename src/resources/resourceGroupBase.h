@@ -19,9 +19,7 @@ public:
 };
 
 template<typename T>
-concept ManagedResourceConcept = requires(T t) {
-    requires std::is_base_of_v<ManagedResource<T>, T>;
-};
+concept ManagedResourceConcept = requires(T t) { requires std::is_base_of_v<ManagedResource<T>, T>; };
 
 template<typename T>
 concept CustomSourceConcept = requires(T t) {

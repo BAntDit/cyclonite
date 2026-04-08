@@ -75,8 +75,8 @@ class Root : public RootBase
 {
 public:
     using config_t = cyclonite::ConfigTraits<Config>;
-    using resource_type_list_t =
-      metrix::distinct<typename metrix::concat<typename config_t::custom_resource_type_list_t, metrix::type_list<Shader>>::type>::type;
+    using resource_type_list_t = metrix::distinct<
+      typename metrix::concat<typename config_t::custom_resource_type_list_t, metrix::type_list<Shader>>::type>::type;
 
     Root() = default;
 

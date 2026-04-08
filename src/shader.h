@@ -9,6 +9,7 @@
 
 #include "core/resourceBase.h"
 #include "resources/managedResource.h"
+#include "gfx/common.h"
 
 namespace cyclonite {
 class Shader
@@ -24,6 +25,13 @@ public:
     void loadImpl(std::istream& stream);
 
 private:
+    struct raw_data_t {
+        std::vector<uint32_t> code;
+        gfx::ShaderStageFlags stage;
+        std::string entryName;
+    };
+
+    std::unique_ptr<raw_data_t> rawData_;
     core::ResourceSharedRef hwShader_;
 };
 }
