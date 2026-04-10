@@ -43,6 +43,51 @@ auto getShaderStage(uint32_t profileCode) -> gfx::ShaderStageFlags
     assert(stage != gfx::ShaderStageFlags::STAGE_COUNT);
     return stage;
 }
+
+auto getDescriptorType(shared::ShaderResourceType resType,
+                       shared::ResourceViewDimension dimension,
+                       bool isDynamic) -> gfx::DescriptorType
+{
+    auto descType = gfx::DescriptorType::DESCRIPTOR_TYPE_COUNT;
+
+    if (resType == shared::ShaderResourceType::Sampler) {
+        descType = gfx::DescriptorType::SAMPLER;
+    } else if (resType == shared::ShaderResourceType::Texture) {
+        if (dimension == shared::ResourceViewDimension::Texture1D ||
+            dimension == shared::ResourceViewDimension::Texture1DArray ||
+            dimension == shared::ResourceViewDimension::Texture2D ||
+            dimension == shared::ResourceViewDimension::Texture2DArray ||
+            dimension == shared::ResourceViewDimension::Texture2DMS ||
+            dimension == shared::ResourceViewDimension::Texture2DMSArray ||
+            dimension == shared::ResourceViewDimension::TextureCube ||
+            dimension == shared::ResourceViewDimension::TextureCubeArray ||
+            dimension == shared::ResourceViewDimension::Texture3D) {
+            descType = gfx::DescriptorType::SAMPLED_IMAGE; // TODO:: test if shader has sampler
+        } else if (dimension == shared::ResourceViewDimension::Buffer) {
+            descType = gfx::DescriptorType::UNIFORM_TEXEL_BUFFER;
+        }
+    } else if (resType == shared::ShaderResourceType::RwTyped) {
+        if (dimension == shared::ResourceViewDimension::Buffer) {
+            descType = gfx::DescriptorType::STORAGE_TEXEL_BUFFER;
+        } else {
+            descType = gfx::DescriptorType::SAMPLED_IMAGE;
+        }
+    } else if (resType == shared::ShaderResourceType::CBuffer && dimension == shared::ResourceViewDimension::Buffer) {
+        descType = isDynamic ? gfx::DescriptorType::UNIFORM_BUFFER_DYNAMIC : gfx::DescriptorType::UNIFORM_BUFFER;
+    } else if (resType == shared::ShaderResourceType::StructuredBuffer &&
+               dimension == shared::ResourceViewDimension::Buffer) {
+        descType = gfx::DescriptorType::STORAGE_BUFFER;
+    } else if (resType == shared::ShaderResourceType::RwStructuredBuffer &&
+               dimension == shared::ResourceViewDimension::Buffer) {
+        descType = gfx::DescriptorType::STORAGE_BUFFER;
+    } else if (resType == shared::ShaderResourceType::AppendStructuredBuffer ||
+               resType == shared::ShaderResourceType::ConsumeStructuredBuffer ||
+               resType == shared::ShaderResourceType::RwStructuredWithCounter) {
+        descType = gfx::DescriptorType::STORAGE_BUFFER;
+    }
+
+    return descType;
+}
 }
 
 void Shader::loadImpl(std::istream& stream)
@@ -82,8 +127,23 @@ void Shader::loadImpl(std::istream& stream)
     rawData_->stage = getShaderStage(moduleInfo.targetProfile);
     std::swap(rawData_->code, code);
 
-    // std::swap(code_, code);
+    bindings_.reserve(reflectionData.boundResources.size());
+    for (auto&& [name, type, space, point, count, texComponentCount, sampleCount, dimension] :
+         reflectionData.boundResources) {
 
-    // TODO:: fill bindings
+        auto descriptorType =
+          getDescriptorType(type, dimension, space == metrix::value_cast(gfx::DescriptorSpace::PER_BATCH_DYNAMIC));
+        auto stageFlags = gfx::ShaderStageFlagBits{ rawData_->stage };
+        auto descriptorSetLayoutFlags = gfx::DescriptorSetLayoutFlagBits{};
+        auto bindingFlags = gfx::BindingFlagBits{};
+
+        if (space == metrix::value_cast(gfx::DescriptorSpace::BINDLESS_TEXTURES) ||
+            space == metrix::value_cast(gfx::DescriptorSpace::BINDLESS_BUFFERS)) {
+            descriptorSetLayoutFlags.set(gfx::DescriptorSetLayoutFlags::UPDATE_AFTER_BIND);
+            bindingFlags.set(gfx::BindingFlags::UPDATE_AFTER_BIND);
+        }
+
+        bindings_.emplace_back(space, point, descriptorType, count, stageFlags, descriptorSetLayoutFlags, bindingFlags);
+    }
 }
 }

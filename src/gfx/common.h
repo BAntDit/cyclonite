@@ -301,7 +301,18 @@ enum class DescriptorType : uint_fast8_t
     UNIFORM_BUFFER_DYNAMIC = 8,
     STORAGE_BUFFER_DYNAMIC = 9,
     INPUT_ATTACHMENT = 10,
-    INLINE_UNIFORM_BLOCK = 11
+    INLINE_UNIFORM_BLOCK = 11,
+    DESCRIPTOR_TYPE_COUNT = 12
+};
+
+enum class DescriptorSpace : uint_fast8_t
+{
+    SAMPLERS = 0,
+    PER_FRAME = 1,
+    PER_BATCH_STATIC = 2,
+    PER_BATCH_DYNAMIC = 3,
+    BINDLESS_TEXTURES = 4,
+    BINDLESS_BUFFERS = 5
 };
 
 enum class DescriptorSetLayoutFlags : uint32_t
