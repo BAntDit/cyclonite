@@ -8,9 +8,11 @@
 #include "core/resourceWeakRef.h"
 #include "managedResourceState.h"
 #include "multithreading/taskManager.h"
+#include "resourceGroupBase.h"
 #include <atomic>
 #include <boost/iostreams/device/array.hpp>
 #include <boost/iostreams/stream.hpp>
+#include <boost/uuid/uuid.hpp>
 #include <concepts>
 #include <filesystem>
 #include <fstream>
@@ -24,12 +26,6 @@ template<typename T>
 concept is_loadable = requires(T t, std::istream& stream) {
     { t.loadImpl(stream) } -> std::same_as<void>;
 };
-
-/*
-template<typename T>
-concept is_resetable = requires(T t) {
-{ t.reset() } -> std::same_as<void>;
-};*/
 
 template<typename Resource>
 class ManagedResource
@@ -63,8 +59,9 @@ class ManagedResource
     };
 
 public:
-    ManagedResource(std::string_view name, boost::uuids::uuid const& uuid)
-      : state_{ ManagedResourceState::Initial }
+    ManagedResource(ResourceGroupBase* ownerGroup, std::string_view name, boost::uuids::uuid const& uuid)
+      : ownerGroup_{ ownerGroup }
+      , state_{ ManagedResourceState::Initial }
       , loadingResult_{}
       , name_(name)
       , uuid_(uuid)
@@ -85,11 +82,16 @@ public:
 
     [[nodiscard]] auto name() const -> std::string_view { return name_; }
 
+    [[nodiscard]] auto managedResource() const -> ManagedResource<Resource> const& { return *this; }
+
+    [[nodiscard]] auto managedResource() -> ManagedResource<Resource>& { return *this; }
+
 private:
     auto loadInternal(loading_context_t&& loadingContext) -> std::shared_future<void>;
 
     void setState(ManagedResourceState state);
 
+    ResourceGroupBase* ownerGroup_;
     std::atomic<ManagedResourceState> state_;
     std::shared_future<void> loadingResult_;
     std::string name_;
@@ -182,8 +184,6 @@ auto ManagedResource<Resource>::loadInternal(loading_context_t&& loadingContext)
                       r.loadImpl(loadingContext.stream());
                       r.setState(ManagedResourceState::Loaded);
                   }
-
-                  // TODO:: add events
               });
         } else {
             auto promise = std::promise<void>();
@@ -206,6 +206,7 @@ void ManagedResource<Resource>::setState(ManagedResourceState state)
               expectedState, ManagedResourceState::Loaded, std::memory_order_release, std::memory_order_relaxed)) {
             throw std::logic_error("load state can be set from loading state only");
         }
+        ownerGroup_->notifyResourceStateChange(ManagedResourceState::Loaded, name_);
     } else {
         throw std::logic_error("attempt to set wrong resource state");
     }

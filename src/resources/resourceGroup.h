@@ -10,7 +10,7 @@
 #include <metrix/type_list.h>
 
 #include "defaultResourceLoader.h"
-#include "resourceGroupBase.h"
+#include "resourceConcepts.h"
 
 namespace cyclonite::resources {
 template<ManagedResourceConcept... Resources>
@@ -48,7 +48,6 @@ private:
     template<CustomSourceConcept CustomSource>
     static auto readSource(CustomSource* customSourcePtr) -> std::future<void>;
 
-    uint32_t id_;
     core::ResourceManager<Resources...> resourcesLifetimeManager_;
 };
 
@@ -62,8 +61,7 @@ template<CustomSourceConcept CustomSource>
 
 template<ManagedResourceConcept... Resources>
 ResourceGroup<Resources...>::ResourceGroup(uint32_t id)
-  : ResourceGroupBase{}
-  , id_{ id }
+  : ResourceGroupBase{ id }
   , resourcesLifetimeManager_{}
 {
 }
@@ -73,7 +71,7 @@ template<typename R, typename... Args>
 auto ResourceGroup<Resources...>::addResource(Args&&... args) -> core::ResourceUniqueRef
     requires(metrix::type_list<Resources...>::template has_type<R>::value)
 {
-    auto uniqueRes = resourcesLifetimeManager_.template allocResource<R>(std::forward<Args>(args)...);
+    auto uniqueRes = resourcesLifetimeManager_.template allocResource<R>(this, std::forward<Args>(args)...);
     makeOwn(uniqueRes.resourceBase());
 
     return uniqueRes;

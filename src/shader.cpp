@@ -9,10 +9,11 @@
 namespace cyclonite {
 Shader::Shader(core::ResourceManagerBase* resourceManager,
                core::ResourceId resourceId,
+               resources::ResourceGroupBase* resourceGroup,
                std::string_view name,
                boost::uuids::uuid const& uuid)
   : core::ResourceBase{ resourceManager, resourceId, false }
-  , resources::ManagedResource<cyclonite::Shader>{ name, uuid }
+  , resources::ManagedResource<cyclonite::Shader>{ resourceGroup, name, uuid }
   , rawData_{}
   , hwShader_{}
   , bindings_{}

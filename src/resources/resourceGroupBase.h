@@ -5,32 +5,26 @@
 #ifndef CYCLONITE_RESOURCES_RESOURCE_GROUP_BASE_H
 #define CYCLONITE_RESOURCES_RESOURCE_GROUP_BASE_H
 
-#include "managedResource.h"
-#include <concepts>
-#include <future>
-#include <metrix/type_traits.h>
-#include <type_traits>
+#include <string>
+#include "managedResourceState.h"
 
 namespace cyclonite::resources {
 class ResourceGroupBase
 {
 public:
+    explicit ResourceGroupBase(uint32_t id)
+      : id_{ id }
+    {
+    }
+
     virtual ~ResourceGroupBase() = default;
-};
 
-template<typename T>
-concept ManagedResourceConcept = requires(T t) { requires std::is_base_of_v<ManagedResource<T>, T>; };
+    [[nodiscard]] uint32_t id() const { return id_; }
 
-template<typename T>
-concept CustomSourceConcept = requires(T t) {
-    requires std::is_member_function_pointer_v<decltype(&T::setResourceGroup)> &&
-               std::is_base_of_v<ResourceGroupBase,
-                                 typename metrix::member_function_argument_type_list_t<
-                                   decltype(&T::setResourceGroup)>::template get_type<0>::type>;
+    void notifyResourceStateChange(ManagedResourceState newState,  std::string_view resourceName);
 
-    { t.load() } -> std::same_as<std::future<void>>;
-
-    requires std::is_move_constructible_v<T>;
+private:
+    uint32_t id_;
 };
 }
 

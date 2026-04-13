@@ -17,15 +17,18 @@ class Shader
   : public core::ResourceBase
   , public resources::ManagedResource<cyclonite::Shader>
 {
+    friend class resources::ManagedResource<cyclonite::Shader>;
+
 public:
     Shader(core::ResourceManagerBase* resourceManager,
            core::ResourceId resourceId,
+           resources::ResourceGroupBase* resourceGroup,
            std::string_view name,
            boost::uuids::uuid const& uuid);
 
+private:
     void loadImpl(std::istream& stream);
 
-private:
     struct raw_data_t
     {
         std::vector<uint32_t> code;
