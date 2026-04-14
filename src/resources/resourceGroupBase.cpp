@@ -4,10 +4,23 @@
 
 #include "resourceGroupBase.h"
 
-namespace cyclonite::resources
+namespace cyclonite::resources {
+void ResourceGroupBase::notifyResourceStateChange(ManagedResourceState newState, std::string_view resourceName)
 {
-void ResourceGroupBase::notifyResourceStateChange(ManagedResourceState newState,  std::string_view resourceName)
+    switch (newState) {
+        case ManagedResourceState::Loading:
+            groupManager_->resourceLoadingStart(id_, resourceName);
+            break;
+        case ManagedResourceState::Loaded:
+            groupManager_->resourceLoaded(id_, resourceName);
+            break;
+        default:
+            assert(false); // unexpected state
+    }
+}
+
+void ResourceGroupBase::notifyResourceAdded(std::string_view resourceName)
 {
-    // TODO::
+    groupManager_->resourceAdded(id_, resourceName);
 }
 }

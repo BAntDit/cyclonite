@@ -66,6 +66,8 @@ public:
       , name_(name)
       , uuid_(uuid)
     {
+        assert(ownerGroup_ != nullptr);
+        ownerGroup_->notifyResourceAdded(name);
     }
 
     auto load(std::filesystem::path path, std::ios_base::openmode mode) -> std::shared_future<void>;
@@ -173,6 +175,8 @@ auto ManagedResource<Resource>::loadInternal(loading_context_t&& loadingContext)
     auto expectedState = ManagedResourceState::Initial;
     if (state_.compare_exchange_weak(
           expectedState, ManagedResourceState::Loading, std::memory_order_release, std::memory_order_relaxed)) {
+        ownerGroup_->notifyResourceStateChange(ManagedResourceState::Loading, name_);
+
         if constexpr (is_loadable<Resource>) {
             auto* res = static_cast<Resource*>(this);
             auto weakRef = core::ResourceWeakRef{ core::makeResourceSharedRefUnsafe(res) };

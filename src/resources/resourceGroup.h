@@ -20,7 +20,7 @@ public:
     template<typename R>
     constexpr static bool is_group_resource_type = metrix::type_list<Resources...>::template has_type<R>::value;
 
-    explicit ResourceGroup(uint32_t id);
+    ResourceGroup(ResourceGroupManagerBase* groupManager, uint32_t id);
 
     template<CustomSourceConcept CustomSource>
     auto load(CustomSource&& customSource) -> std::future<void>;
@@ -60,8 +60,8 @@ template<CustomSourceConcept CustomSource>
 }
 
 template<ManagedResourceConcept... Resources>
-ResourceGroup<Resources...>::ResourceGroup(uint32_t id)
-  : ResourceGroupBase{ id }
+ResourceGroup<Resources...>::ResourceGroup(ResourceGroupManagerBase* groupManager, uint32_t id)
+  : ResourceGroupBase{ groupManager, id }
   , resourcesLifetimeManager_{}
 {
 }

@@ -13,7 +13,7 @@
 
 namespace cyclonite::resources {
 template<ManagedResourceConcept... Resources>
-class ResourceGroupManager
+class ResourceGroupManager : public ResourceGroupManagerBase
 {
 public:
     ResourceGroupManager() = default;
@@ -26,6 +26,7 @@ public:
     auto load(uint32_t groupId, CustomSource&& customSource) -> std::future<void>
         requires std::is_rvalue_reference_v<CustomSource>;
 
+    // TODO:: remove resource
     // unload
 
     // prepare
@@ -33,8 +34,6 @@ public:
     // add
 
     // get
-
-    // events
 
 private:
     static std::atomic<uint32_t> nextResourceGroupId;
@@ -47,7 +46,7 @@ auto ResourceGroupManager<Resources...>::addResourceGroup() -> uint32_t
 {
     auto id = nextResourceGroupId.fetch_add(1, std::memory_order_acq_rel);
 
-    resourceGroups_.emplace(id, ResourceGroup<Resources...>{ id });
+    resourceGroups_.emplace(id, ResourceGroup<Resources...>{ this, id });
     return id;
 }
 
