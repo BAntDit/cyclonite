@@ -35,9 +35,13 @@ public:
 
     // void unload
 
+    void releaseResource(boost::uuids::uuid const& uuid);
+
     [[nodiscard]] auto isExists(boost::uuids::uuid const& uuid) const -> bool;
 
-    [[nodiscard]] auto getResource(boost::uuids::uuid const& uuid) const -> core::ResourceUniqueRef;
+    [[nodiscard]] auto getResource(boost::uuids::uuid const& uuid) const -> core::ResourceSharedRef;
+
+    [[nodiscard]] auto getResource(std::string_view name) const -> core::ResourceSharedRef;
 
 private:
     static void makeOwn(core::ResourceBase* res);
@@ -110,9 +114,9 @@ template<ManagedResourceConcept... Resources>
 
 namespace internal {
 template<typename ResType, size_t index>
-auto test_if_necessary_resource(size_t typeId,
-                                core::ResourceSharedRef const& ref,
-                                boost::uuids::uuid const& uuid) -> bool
+auto test_if_resource_type_match(size_t typeId,
+                                 core::ResourceSharedRef const& ref,
+                                 boost::uuids::uuid const& uuid) -> bool
 {
     if (index == typeId) {
         auto const& r = ref.as<ResType>();
@@ -120,6 +124,52 @@ auto test_if_necessary_resource(size_t typeId,
     }
     return false;
 }
+
+template<typename ResType, size_t index>
+auto test_if_resource_type_match(size_t typeId, core::ResourceSharedRef const& ref, std::string_view name) -> bool
+{
+    if (index == typeId) {
+        auto const& r = ref.as<ResType>();
+        return r.name() == name;
+    }
+    return false;
+}
+
+template<typename ResType, size_t index>
+auto mark_to_remove_if_resource_type_match(size_t typeId,
+                                           core::ResourceSharedRef const& ref,
+                                           boost::uuids::uuid const& uuid) -> bool
+{
+    if (index == typeId) {
+        auto const& r = ref.as<ResType>();
+        if (r.uuid() == uuid) {
+            r.setState(ManagedResourceState::GoingToBeRemoved);
+            return true;
+        }
+    }
+    return false;
+}
+}
+
+template<ManagedResourceConcept... Resources>
+void ResourceGroup<Resources...>::releaseResource(boost::uuids::uuid const& uuid)
+{
+    using res_type_list_t = metrix::type_list<Resources...>;
+
+    auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
+    for (auto&& [ref, typeId] : resList) {
+        auto result =
+          ((mark_to_remove_if_resource_type_match<Resources,
+                                                  res_type_list_t::template get_type_index<Resources>::value>(
+             typeId, ref, uuid)) ||
+           ...);
+
+        if (result) {
+            auto& baseRes = ref.template as<core::ResourceBase>();
+            releaseOwnership(&baseRes);
+            break;
+        }
+    }
 }
 
 template<ManagedResourceConcept... Resources>
@@ -130,7 +180,7 @@ auto ResourceGroup<Resources...>::isExists(boost::uuids::uuid const& uuid) const
     auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
     for (auto&& [ref, typeId] : resList) {
         auto result =
-          ((test_if_necessary_resource<Resources, res_type_list_t::template get_type_index<Resources>::value>(
+          ((test_if_resource_type_match<Resources, res_type_list_t::template get_type_index<Resources>::value>(
              typeId, ref, uuid)) ||
            ...);
 
@@ -142,16 +192,39 @@ auto ResourceGroup<Resources...>::isExists(boost::uuids::uuid const& uuid) const
 }
 
 template<ManagedResourceConcept... Resources>
-auto ResourceGroup<Resources...>::getResource(boost::uuids::uuid const& uuid) const -> core::ResourceUniqueRef
+auto ResourceGroup<Resources...>::getResource(std::string_view name) const -> core::ResourceSharedRef
 {
     using res_type_list_t = metrix::type_list<Resources...>;
 
-    auto res = core::ResourceUniqueRef{};
+    auto res = core::ResourceSharedRef{};
 
     auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
     for (auto&& [ref, typeId] : resList) {
         auto result =
-          ((test_if_necessary_resource<Resources, res_type_list_t::template get_type_index<Resources>::value>(
+          ((test_if_resource_type_match<Resources, res_type_list_t::template get_type_index<Resources>::value>(
+             typeId, ref, name)) ||
+           ...);
+
+        if (result) {
+            res = ref;
+            break;
+        }
+    }
+
+    return res;
+}
+
+template<ManagedResourceConcept... Resources>
+auto ResourceGroup<Resources...>::getResource(boost::uuids::uuid const& uuid) const -> core::ResourceSharedRef
+{
+    using res_type_list_t = metrix::type_list<Resources...>;
+
+    auto res = core::ResourceSharedRef{};
+
+    auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
+    for (auto&& [ref, typeId] : resList) {
+        auto result =
+          ((test_if_resource_type_match<Resources, res_type_list_t::template get_type_index<Resources>::value>(
              typeId, ref, uuid)) ||
            ...);
 

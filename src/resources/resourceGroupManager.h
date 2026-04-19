@@ -26,8 +26,7 @@ public:
     auto load(uint32_t groupId, CustomSource&& customSource) -> std::future<void>
         requires std::is_rvalue_reference_v<CustomSource>;
 
-    // TODO:: remove resource
-    // unload
+    void releaseResource(uint32_t groupId, boost::uuids::uuid const& uuid);
 
     // prepare
 
@@ -60,6 +59,18 @@ auto ResourceGroupManager<Resources...>::load(uint32_t groupId, std::wstring_vie
 
     auto& [_, group] = *it;
     return group.load(location);
+}
+
+template<ManagedResourceConcept... Resources>
+void ResourceGroupManager<Resources...>::releaseResource(uint32_t groupId, boost::uuids::uuid const& uuid)
+{
+    auto it = resourceGroups_.find(groupId);
+    if (it == resourceGroups_.end()) {
+        throw std::runtime_error("Resource group does not exist");
+    }
+
+    auto& [_, group] = *it;
+    group.releaseResource(uuid);
 }
 
 template<ManagedResourceConcept... Resources>

@@ -211,6 +211,9 @@ void ManagedResource<Resource>::setState(ManagedResourceState state)
             throw std::logic_error("load state can be set from loading state only");
         }
         ownerGroup_->notifyResourceStateChange(ManagedResourceState::Loaded, name_);
+    } else if (state == ManagedResourceState::GoingToBeRemoved) {
+        state_.store(ManagedResourceState::GoingToBeRemoved, std::memory_order_release);
+        ownerGroup_->notifyResourceStateChange(ManagedResourceState::GoingToBeRemoved, name_);
     } else {
         throw std::logic_error("attempt to set wrong resource state");
     }

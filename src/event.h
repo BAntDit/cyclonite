@@ -9,6 +9,9 @@
 #include <cassert>
 #include <list>
 #include <memory>
+#ifdef None
+#undef None
+#endif
 #include <metrix/type_traits.h>
 #include <type_traits>
 #include <utility>
