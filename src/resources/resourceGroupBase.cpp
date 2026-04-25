@@ -14,8 +14,11 @@ void ResourceGroupBase::notifyResourceStateChange(ManagedResourceState newState,
         case ManagedResourceState::Loaded:
             groupManager_->resourceLoaded(id_, resourceName);
             break;
+        case ManagedResourceState::Preparing:
+            groupManager_->resourcePreparingStart(id_, resourceName);
+            break;
         case ManagedResourceState::GoingToBeRemoved:
-            // TODO::
+            groupManager_->resourceGoingToBeDeleted(id_, resourceName);
             break;
         default:
             assert(false); // unexpected state

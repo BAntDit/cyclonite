@@ -13,7 +13,9 @@ enum class ManagedResourceState : uint_fast8_t
     Initial = 1,
     Loading = 2,
     Loaded = 3,
-    GoingToBeRemoved = 4
+    Preparing = 4,
+    Ready = 5,
+    GoingToBeRemoved = 6
 };
 }
 

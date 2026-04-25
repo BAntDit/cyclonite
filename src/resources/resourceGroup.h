@@ -20,7 +20,7 @@ public:
     template<typename R>
     constexpr static bool is_group_resource_type = metrix::type_list<Resources...>::template has_type<R>::value;
 
-    ResourceGroup(ResourceGroupManagerBase* groupManager, uint32_t id);
+    ResourceGroup(ResourceGroupManagerBase* groupManager, uint32_t id, core::ResourceSharedRef const& deviceRef);
 
     template<CustomSourceConcept CustomSource>
     auto load(CustomSource&& customSource) -> std::future<void>;
@@ -31,9 +31,9 @@ public:
     auto addResource(Args&&... args) -> core::ResourceUniqueRef
         requires(metrix::type_list<Resources...>::template has_type<R>::value);
 
-    // void prepare
+    void releaseAll();
 
-    // void unload
+    // void prepare
 
     void releaseResource(boost::uuids::uuid const& uuid);
 
@@ -64,8 +64,10 @@ template<CustomSourceConcept CustomSource>
 }
 
 template<ManagedResourceConcept... Resources>
-ResourceGroup<Resources...>::ResourceGroup(ResourceGroupManagerBase* groupManager, uint32_t id)
-  : ResourceGroupBase{ groupManager, id }
+ResourceGroup<Resources...>::ResourceGroup(ResourceGroupManagerBase* groupManager,
+                                           uint32_t id,
+                                           core::ResourceSharedRef const& deviceRef)
+  : ResourceGroupBase{ groupManager, id, deviceRef }
   , resourcesLifetimeManager_{}
 {
 }
@@ -149,6 +151,37 @@ auto mark_to_remove_if_resource_type_match(size_t typeId,
     }
     return false;
 }
+
+template<typename ResType, size_t index>
+auto mark_to_remove_if_resource_type_match(size_t typeId, core::ResourceSharedRef const& ref) -> bool
+{
+    if (index == typeId) {
+        auto const& r = ref.as<ResType>();
+        r.setState(ManagedResourceState::GoingToBeRemoved);
+        return true;
+    }
+    return false;
+}
+}
+
+template<ManagedResourceConcept... Resources>
+void ResourceGroup<Resources...>::releaseAll()
+{
+    using res_type_list_t = metrix::type_list<Resources...>;
+    auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
+
+    for (auto&& [ref, typeId] : resList) {
+        auto result =
+          ((mark_to_remove_if_resource_type_match<Resources,
+                                                  res_type_list_t::template get_type_index<Resources>::value>(typeId,
+                                                                                                              ref)) ||
+           ...);
+
+        if (result) {
+            auto& baseRes = ref.template as<core::ResourceBase>();
+            releaseOwnership(&baseRes);
+        }
+    }
 }
 
 template<ManagedResourceConcept... Resources>

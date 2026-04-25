@@ -5,6 +5,7 @@
 #ifndef CYCLONITE_RESOURCES_MANAGED_RESOURCE_H
 #define CYCLONITE_RESOURCES_MANAGED_RESOURCE_H
 
+#include "core/resourceSharedRef.h"
 #include "core/resourceWeakRef.h"
 #include "managedResourceState.h"
 #include "multithreading/taskManager.h"
@@ -25,6 +26,11 @@ namespace cyclonite::resources {
 template<typename T>
 concept is_loadable = requires(T t, std::istream& stream) {
     { t.loadImpl(stream) } -> std::same_as<void>;
+};
+
+template<typename T>
+concept is_prepareable = requires(T t) {
+    { t.prepareImpl() } -> std::same_as<void>;
 };
 
 template<typename Resource>
@@ -76,6 +82,8 @@ public:
 
     auto load(std::byte const* data, size_t size) -> std::shared_future<void>;
 
+    auto prepare() -> std::shared_future<void>;
+
     // void reset();
 
     [[nodiscard]] auto state() const -> ManagedResourceState { return state_.load(std::memory_order_acquire); }
@@ -88,6 +96,10 @@ public:
 
     [[nodiscard]] auto managedResource() -> ManagedResource<Resource>& { return *this; }
 
+    [[nodiscard]] auto group() const -> ResourceGroupBase const& { return *ownerGroup_; }
+
+    [[nodiscard]] auto group() -> ResourceGroupBase& { return *ownerGroup_; }
+
 private:
     auto loadInternal(loading_context_t&& loadingContext) -> std::shared_future<void>;
 
@@ -96,6 +108,7 @@ private:
     ResourceGroupBase* ownerGroup_;
     std::atomic<ManagedResourceState> state_;
     std::shared_future<void> loadingResult_;
+    std::shared_future<void> preparationResult_;
     std::string name_;
     boost::uuids::uuid uuid_;
 };
@@ -202,6 +215,38 @@ auto ManagedResource<Resource>::loadInternal(loading_context_t&& loadingContext)
 }
 
 template<typename Resource>
+auto ManagedResource<Resource>::prepare() -> std::shared_future<void>
+{
+    auto expectedState = ManagedResourceState::Loaded;
+    if (state_.compare_exchange_weak(
+          expectedState, ManagedResourceState::Preparing, std::memory_order_release, std::memory_order_relaxed)) {
+        ownerGroup_->notifyResourceStateChange(ManagedResourceState::Preparing, name_);
+
+        if constexpr (is_prepareable<Resource>) {
+            auto* res = static_cast<Resource*>(this);
+            auto weakRef = core::ResourceWeakRef{ core::makeResourceSharedRefUnsafe(res) };
+
+            preparationResult_ =
+              multithreading::Executor::threadExecutor().taskManager().submitTask([weakRef]() mutable -> void {
+                  if (auto sharedRef = weakRef.lock(); sharedRef.valid()) {
+                      auto& r = sharedRef.as<Resource>();
+                      r.prepareImpl();
+                      r.setState(ManagedResourceState::Ready);
+                  }
+              });
+        } else {
+            auto promise = std::promise<void>();
+            auto future = promise.get_future();
+            promise.set_value();
+            setState(ManagedResourceState::Ready);
+            preparationResult_ = std::move(future);
+        }
+    }
+
+    return preparationResult_;
+}
+
+template<typename Resource>
 void ManagedResource<Resource>::setState(ManagedResourceState state)
 {
     if (state == ManagedResourceState::Loaded) {
@@ -214,30 +259,17 @@ void ManagedResource<Resource>::setState(ManagedResourceState state)
     } else if (state == ManagedResourceState::GoingToBeRemoved) {
         state_.store(ManagedResourceState::GoingToBeRemoved, std::memory_order_release);
         ownerGroup_->notifyResourceStateChange(ManagedResourceState::GoingToBeRemoved, name_);
+    } else if (state == ManagedResourceState::Ready) {
+        auto expectedState = ManagedResourceState::Preparing;
+        if (!state_.compare_exchange_weak(
+              expectedState, ManagedResourceState::Loaded, std::memory_order_release, std::memory_order_relaxed)) {
+            throw std::logic_error("load state can be set from loading state only");
+        }
+        ownerGroup_->notifyResourceStateChange(ManagedResourceState::Ready, name_);
     } else {
         throw std::logic_error("attempt to set wrong resource state");
     }
 }
-
-/*
-template<typename Resource>
-void ManagedResource<Resource>::reset()
-{
-    auto expectedState = LoadingState::Ready;
-    while (!loadingState_.compare_exchange_weak(
-      expectedState, LoadingState::Reseting, std::memory_order_acq_rel, std::memory_order_acquire)) {
-        if (expectedState != LoadingState::Ready && expectedState != LoadingState::Loaded &&
-            expectedState != LoadingState::RawPartUnloadedReady && expectedState != LoadingState::Unloaded) {
-            throw std::logic_error("could not reset resource from intermediate state");
-        }
-    }
-
-    if constexpr (is_resetable<Resource>) {
-        static_cast<Resource*>(this)->reset();
-    }
-
-    setState(LoadingState::Initial);
-}*/
 }
 
 #endif // CYCLONITE_RESOURCES_MANAGED_RESOURCE_H

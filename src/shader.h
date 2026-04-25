@@ -29,6 +29,8 @@ public:
 private:
     void loadImpl(std::istream& stream);
 
+    void prepareImpl();
+
     struct raw_data_t
     {
         std::vector<uint32_t> code;

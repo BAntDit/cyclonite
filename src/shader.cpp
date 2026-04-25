@@ -5,6 +5,7 @@
 #include "shader.h"
 #include "deserialization.h"
 #include "shaderModuleBinary.h"
+#include "gfx/device.h"
 
 namespace cyclonite {
 Shader::Shader(core::ResourceManagerBase* resourceManager,
@@ -146,5 +147,21 @@ void Shader::loadImpl(std::istream& stream)
 
         bindings_.emplace_back(space, point, descriptorType, count, stageFlags, descriptorSetLayoutFlags, bindingFlags);
     }
+}
+
+void Shader::prepareImpl()
+{
+    auto& g = group();
+    auto ref = g.deviceRef();
+    auto& device = ref.as<gfx::Device>();
+
+    auto& binaryCode = rawData_->code;
+    auto creationFlags = gfx::ShaderStageCreationFlagBits{};
+    auto stage = rawData_->stage;
+    auto ep = std::string_view{ rawData_->entryName };
+
+    hwShader_ = device.createShader(binaryCode.size(), binaryCode.data(),  creationFlags, stage, ep);
+
+    rawData_.reset();
 }
 }

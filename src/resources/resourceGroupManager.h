@@ -16,7 +16,11 @@ template<ManagedResourceConcept... Resources>
 class ResourceGroupManager : public ResourceGroupManagerBase
 {
 public:
-    ResourceGroupManager() = default;
+    explicit ResourceGroupManager(core::ResourceSharedRef const& deviceRef)
+      : deviceRef_{ deviceRef }
+      , resourceGroups_{}
+    {
+    }
 
     [[nodiscard]] auto addResourceGroup() -> uint32_t;
 
@@ -28,6 +32,8 @@ public:
 
     void releaseResource(uint32_t groupId, boost::uuids::uuid const& uuid);
 
+    void releaseGroup(uint32_t groupId);
+
     // prepare
 
     // add
@@ -37,6 +43,7 @@ public:
 private:
     static std::atomic<uint32_t> nextResourceGroupId;
 
+    core::ResourceSharedRef deviceRef_;
     std::unordered_map<uint32_t, ResourceGroup<Resources...>> resourceGroups_;
 };
 
@@ -71,6 +78,18 @@ void ResourceGroupManager<Resources...>::releaseResource(uint32_t groupId, boost
 
     auto& [_, group] = *it;
     group.releaseResource(uuid);
+}
+
+template<ManagedResourceConcept... Resources>
+void ResourceGroupManager<Resources...>::releaseGroup(uint32_t groupId)
+{
+    auto it = resourceGroups_.find(groupId);
+    if (it == resourceGroups_.end()) {
+        throw std::runtime_error("Resource group does not exist");
+    }
+
+    auto& [_, group] = *it;
+    group.releaseAll();
 }
 
 template<ManagedResourceConcept... Resources>
