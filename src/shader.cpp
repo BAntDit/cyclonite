@@ -4,8 +4,8 @@
 
 #include "shader.h"
 #include "deserialization.h"
-#include "shaderModuleBinary.h"
 #include "gfx/device.h"
+#include "shaderModuleBinary.h"
 
 namespace cyclonite {
 Shader::Shader(core::ResourceManagerBase* resourceManager,
@@ -160,7 +160,7 @@ void Shader::prepareImpl()
     auto stage = rawData_->stage;
     auto ep = std::string_view{ rawData_->entryName };
 
-    hwShader_ = device.createShader(binaryCode.size(), binaryCode.data(),  creationFlags, stage, ep);
+    hwShader_ = device.createShader(binaryCode.size(), binaryCode.data(), creationFlags, stage, ep);
 
     rawData_.reset();
 }

@@ -27,13 +27,13 @@ public:
 
     auto load(std::wstring_view location) -> std::future<void>;
 
+    auto prepare() -> std::future<void>;
+
     template<typename R, typename... Args>
     auto addResource(Args&&... args) -> core::ResourceUniqueRef
         requires(metrix::type_list<Resources...>::template has_type<R>::value);
 
     void releaseAll();
-
-    // void prepare
 
     void releaseResource(boost::uuids::uuid const& uuid);
 
@@ -98,6 +98,12 @@ template<ManagedResourceConcept... Resources>
 auto ResourceGroup<Resources...>::load(std::wstring_view location) -> std::future<void>
 {
     return load(DefaultResourceLoader{ location });
+}
+
+template<ManagedResourceConcept... Resources>
+auto ResourceGroup<Resources...>::prepare() -> std::future<void>
+{
+    // TODO::
 }
 
 template<ManagedResourceConcept... Resources>
