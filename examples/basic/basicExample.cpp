@@ -55,6 +55,8 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
     auto& limits = device.limits();
     root_.initTaskManager(limits.dedicatedTransferQueue, limits.dedicatedComputeQueue);
 
+    root_.initResourceManager(deviceRef);
+
     auto renderWindowBuilder = cyclonite::gfx::RenderWindowBuilder{};
     auto renderWindowRef =
       cyclonite::core::ResourceSharedRef{ renderWindowBuilder.setDevice(deviceRef)

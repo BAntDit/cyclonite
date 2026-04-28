@@ -10,6 +10,7 @@
 #include "multithreading/taskManager.h"
 #include "resources/resourceGroupManager.h"
 
+#include "material.h"
 #include "rootConfigTraits.h"
 #include <memory>
 #include <string_view>
@@ -57,7 +58,6 @@ public:
     void reset();
 
 protected:
-
     RootBase();
 
     Capabilities capabilities_;
@@ -76,8 +76,9 @@ class Root : public RootBase
 {
 public:
     using config_t = cyclonite::ConfigTraits<Config>;
-    using resource_type_list_t = metrix::distinct<
-      typename metrix::concat<typename config_t::custom_resource_type_list_t, metrix::type_list<Shader>>::type>::type;
+    using resource_type_list_t =
+      metrix::distinct<typename metrix::concat<typename config_t::custom_resource_type_list_t,
+                                               metrix::type_list<Shader, Material>>::type>::type;
 
     Root() = default;
 
@@ -90,7 +91,10 @@ private:
     template<typename... Resources>
     struct resource_manager_wrap_t<metrix::type_list<Resources...>>
     {
-        explicit resource_manager_wrap_t(core::ResourceSharedRef const& deviceRef) : manager_{deviceRef} {}
+        explicit resource_manager_wrap_t(core::ResourceSharedRef const& deviceRef)
+          : manager_{ deviceRef }
+        {
+        }
 
         resources::ResourceGroupManager<Resources...> manager_;
     };
@@ -105,7 +109,7 @@ public:
 template<typename Config>
 void Root<Config>::initResourceManager(core::ResourceSharedRef const& deviceRef)
 {
-    resourceManager_ = std::make_unique<resource_manager_wrap_t<Config>>(deviceRef);
+    resourceManager_ = std::make_unique<resource_manager_wrap_t<resource_type_list_t>>(deviceRef);
 }
 }
 #endif // CYCLONITE_ROOT_H
