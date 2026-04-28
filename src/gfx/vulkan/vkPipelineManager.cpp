@@ -88,7 +88,7 @@ PipelineManager::PipelineManager(Device* device)
 {
 }
 
-auto PipelineManager::getOrCreatePipelineBindingSchema(std::span<Binding const> bindings,
+auto PipelineManager::getOrCreatePipelineBindingSchema(std::span<gfx::Binding const> bindings,
                                                        std::span<PushConstantRange const> pushConstantRanges)
   -> core::ResourceSharedRef
 {
@@ -104,7 +104,7 @@ auto PipelineManager::getOrCreatePipelineBindingSchema(std::span<Binding const> 
 
     for (auto set : sets) {
         auto sb = bindings | std::views::filter([=](auto const& binding) -> uint32_t { return binding.set() == set; });
-        descrSets.emplace_back(getOrCreateDescriptorSetLayout(std::vector<Binding>(sb.begin(), sb.end())));
+        descrSets.emplace_back(getOrCreateDescriptorSetLayout(std::vector<gfx::Binding>(sb.begin(), sb.end())));
     }
 
     for (auto i = uint32_t{ 0 }; i < pipelineLayoutCount_; i++) {
@@ -163,7 +163,7 @@ auto PipelineManager::getOrCreatePipelineBindingSchema(std::span<Binding const> 
     return bindingSchemaRef;
 }
 
-auto PipelineManager::getOrCreateDescriptorSetLayout(std::span<Binding const> bindings) -> core::ResourceSharedRef
+auto PipelineManager::getOrCreateDescriptorSetLayout(std::span<gfx::Binding const> bindings) -> core::ResourceSharedRef
 {
     auto descriptorSetLayoutRef = core::ResourceSharedRef();
 
@@ -188,7 +188,7 @@ auto PipelineManager::getOrCreateDescriptorSetLayout(std::span<Binding const> bi
 
         auto& [vb, p] = descriptorSetLayouts_[descriptorSetLayoutCount_];
         auto& [r, tp] = p;
-        vb = std::vector<Binding>(bindings.begin(), bindings.end());
+        vb = std::vector<gfx::Binding>(bindings.begin(), bindings.end());
         tp = std::chrono::high_resolution_clock::now();
         r = device_->createDescriptorSetLayout(bindings);
 
@@ -506,7 +506,7 @@ void PipelineManager::freeDescriptorSetLayouts(uint32_t count)
         auto& [vb, p] = descriptorSetLayouts_[i];
         auto& [r, tp] = p;
 
-        vb = std::vector<Binding>{};
+        vb = std::vector<gfx::Binding>{};
         r = core::ResourceSharedRef();
 
         descriptorSetLayoutCount_--;

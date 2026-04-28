@@ -619,7 +619,7 @@ auto Device::createQueueSubmission(QueueSubmissionManager* queueSubmissionManage
     return result;
 }
 
-auto Device::createDescriptorSetLayout(std::span<Binding const> bindings) -> core::ResourceUniqueRef
+auto Device::createDescriptorSetLayout(std::span<gfx::Binding const> bindings) -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
 
@@ -678,7 +678,7 @@ auto Device::createPipelineBindingSchema(std::span<core::ResourceSharedRef const
     return result;
 }
 
-auto Device::getOrCreatePipelineBindingSchema(std::span<Binding const> bindings,
+auto Device::getOrCreatePipelineBindingSchema(std::span<gfx::Binding const> bindings,
                                               std::span<PushConstantRange const> pushConstantRanges)
   -> core::ResourceSharedRef
 {
@@ -730,7 +730,7 @@ auto Device::createComputePipeline(PipelineCreationFlagBits creationFlags,
 }
 
 auto Device::getOrCreatePrimitiveRasterizationPipeline(PipelineCreationFlagBits creationFlags,
-                                                       std::span<Binding const> bindings,
+                                                       std::span<gfx::Binding const> bindings,
                                                        std::span<PushConstantRange const> pushConstantRanges,
                                                        PrimitiveTopology primitiveTopology,
                                                        bool primitiveRestartEnable,
@@ -752,7 +752,7 @@ auto Device::getOrCreatePrimitiveRasterizationPipeline(PipelineCreationFlagBits 
 }
 
 auto Device::getOrCreateComputePipeline(PipelineCreationFlagBits creationFlags,
-                                        std::span<Binding const> bindings,
+                                        std::span<gfx::Binding const> bindings,
                                         std::span<PushConstantRange const> pushConstantRanges,
                                         core::ResourceSharedRef const& shaderRef) -> core::ResourceSharedRef
 {

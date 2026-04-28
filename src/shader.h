@@ -26,6 +26,8 @@ public:
            std::string_view name,
            boost::uuids::uuid const& uuid);
 
+    [[nodiscard]] auto bindings() const -> std::vector<gfx::Binding> const& { return bindings_; }
+
 private:
     void loadImpl(std::istream& stream);
 

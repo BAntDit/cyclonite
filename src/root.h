@@ -34,8 +34,6 @@ public:
 
     auto operator=(RootBase&&) -> RootBase& = delete;
 
-    void init(std::string_view appName);
-
     void initTaskManager(bool dedicatedTransferRequired,
                          bool dedicatedComputeRequired,
                          size_t threadPoolSize = std::max(std::thread::hardware_concurrency(), 1u));
@@ -54,9 +52,12 @@ public:
 
     [[nodiscard]] auto taskManager() -> multithreading::TaskManager& { return *taskManager_; }
 
+    void init(std::string_view appName);
+
     void reset();
 
 protected:
+
     RootBase();
 
     Capabilities capabilities_;
@@ -80,6 +81,8 @@ public:
 
     Root() = default;
 
+    void initResourceManager(core::ResourceSharedRef const& deviceRef);
+
 private:
     template<typename... TypeList>
     struct resource_manager_wrap_t;
@@ -87,14 +90,22 @@ private:
     template<typename... Resources>
     struct resource_manager_wrap_t<metrix::type_list<Resources...>>
     {
+        explicit resource_manager_wrap_t(core::ResourceSharedRef const& deviceRef) : manager_{deviceRef} {}
+
         resources::ResourceGroupManager<Resources...> manager_;
     };
 
-    resource_manager_wrap_t<resource_type_list_t> resourceManager_;
+    std::unique_ptr<resource_manager_wrap_t<resource_type_list_t>> resourceManager_;
 
 public:
     [[nodiscard]] auto resourceManager() const -> decltype(auto) { return (resourceManager_.manager_); }
     [[nodiscard]] auto resourceManager() -> decltype(auto) { return (resourceManager_.manager_); }
 };
+
+template<typename Config>
+void Root<Config>::initResourceManager(core::ResourceSharedRef const& deviceRef)
+{
+    resourceManager_ = std::make_unique<resource_manager_wrap_t<Config>>(deviceRef);
+}
 }
 #endif // CYCLONITE_ROOT_H

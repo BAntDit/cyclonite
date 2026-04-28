@@ -10,6 +10,7 @@
 #include "core/hashTable.h"
 #include "core/resourceBase.h"
 #include "gfx/common.h"
+#include "gfx/renderStates.h"
 #include "resources/managedResource.h"
 
 namespace cyclonite {
@@ -28,7 +29,11 @@ public:
              std::string_view name,
              boost::uuids::uuid const& uuid);
 
-    void manualSetup(shader_set_t const& shaderSet);
+    auto manualSetup(core::ResourceSharedRef passRef,
+                     shader_set_t const& shaderSet,
+                     gfx::RasterizationState const& rasterizationState,
+                     gfx::PrimitiveTopology primitiveTopology = gfx::PrimitiveTopology::TRIANGLE_LIST,
+                     bool primitiveRestart = false) -> std::shared_future<void>;
 
 private:
     void prepareImpl();
@@ -36,6 +41,10 @@ private:
     struct raw_data_t
     {
         shader_set_t shaderSet;
+        core::ResourceSharedRef passRef;
+        gfx::PrimitiveTopology primitiveTopology;
+        bool primitiveRestart;
+        gfx::RasterizationState rasterizationState;
     };
 
     std::unique_ptr<raw_data_t> rawData_;

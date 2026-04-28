@@ -22,7 +22,7 @@ class PipelineManager
 public:
     explicit PipelineManager(Device* device);
 
-    [[nodiscard]] auto getOrCreatePipelineBindingSchema(std::span<Binding const> bindings,
+    [[nodiscard]] auto getOrCreatePipelineBindingSchema(std::span<gfx::Binding const> bindings,
                                                         std::span<PushConstantRange const> pushConstantRanges)
       -> core::ResourceSharedRef;
 
@@ -44,7 +44,8 @@ public:
                                                      bool resetable) -> core::ResourceUniqueRef;
 
 private:
-    [[nodiscard]] auto getOrCreateDescriptorSetLayout(std::span<Binding const> bindings) -> core::ResourceSharedRef;
+    [[nodiscard]] auto getOrCreateDescriptorSetLayout(std::span<gfx::Binding const> bindings)
+      -> core::ResourceSharedRef;
 
     void freeDescriptorSetLayouts(uint32_t count);
 
@@ -70,7 +71,7 @@ private:
       pipelineLayouts_;
     uint32_t pipelineLayoutCount_;
 
-    std::array<std::tuple<std::vector<Binding>,
+    std::array<std::tuple<std::vector<gfx::Binding>,
                           std::pair<core::ResourceSharedRef, std::chrono::high_resolution_clock::time_point>>,
                max_descriptor_set_layout_count_v>
       descriptorSetLayouts_;

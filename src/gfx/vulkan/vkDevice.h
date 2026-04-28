@@ -136,13 +136,13 @@ public:
                                              uint32_t queueFamilyIndex,
                                              CommandPoolFlagBits commandPoolFlags) -> core::ResourceUniqueRef;
 
-    [[nodiscard]] auto createDescriptorSetLayout(std::span<Binding const> bindings) -> core::ResourceUniqueRef;
+    [[nodiscard]] auto createDescriptorSetLayout(std::span<gfx::Binding const> bindings) -> core::ResourceUniqueRef;
 
     [[nodiscard]] auto createPipelineBindingSchema(std::span<core::ResourceSharedRef const> setLayouts,
                                                    std::span<PushConstantRange const> pushConstantRanges)
       -> core::ResourceUniqueRef;
 
-    [[nodiscard]] auto getOrCreatePipelineBindingSchema(std::span<Binding const> bindings,
+    [[nodiscard]] auto getOrCreatePipelineBindingSchema(std::span<gfx::Binding const> bindings,
                                                         std::span<PushConstantRange const> pushConstantRanges)
       -> core::ResourceSharedRef;
 
@@ -160,7 +160,7 @@ public:
                                              core::ResourceSharedRef shaderRef) -> core::ResourceUniqueRef;
 
     [[nodiscard]] auto getOrCreatePrimitiveRasterizationPipeline(PipelineCreationFlagBits creationFlags,
-                                                                 std::span<Binding const> bindings,
+                                                                 std::span<gfx::Binding const> bindings,
                                                                  std::span<PushConstantRange const> pushConstantRanges,
                                                                  PrimitiveTopology primitiveTopology,
                                                                  bool primitiveRestartEnable,
@@ -170,7 +170,7 @@ public:
       -> core::ResourceSharedRef;
 
     [[nodiscard]] auto getOrCreateComputePipeline(PipelineCreationFlagBits creationFlags,
-                                                  std::span<Binding const> bindings,
+                                                  std::span<gfx::Binding const> bindings,
                                                   std::span<PushConstantRange const> pushConstantRanges,
                                                   core::ResourceSharedRef const& shaderRef) -> core::ResourceSharedRef;
 

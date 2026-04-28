@@ -155,6 +155,7 @@ void Shader::prepareImpl()
     auto ref = g.deviceRef();
     auto& device = ref.as<gfx::Device>();
 
+    assert(rawData_);
     auto& binaryCode = rawData_->code;
     auto creationFlags = gfx::ShaderStageCreationFlagBits{};
     auto stage = rawData_->stage;
