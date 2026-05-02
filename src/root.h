@@ -102,8 +102,8 @@ private:
     std::unique_ptr<resource_manager_wrap_t<resource_type_list_t>> resourceManager_;
 
 public:
-    [[nodiscard]] auto resourceManager() const -> decltype(auto) { return (resourceManager_.manager_); }
-    [[nodiscard]] auto resourceManager() -> decltype(auto) { return (resourceManager_.manager_); }
+    [[nodiscard]] auto resourceManager() const -> decltype(auto) { return (resourceManager_->manager_); }
+    [[nodiscard]] auto resourceManager() -> decltype(auto) { return (resourceManager_->manager_); }
 };
 
 template<typename Config>

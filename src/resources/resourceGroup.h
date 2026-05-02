@@ -87,8 +87,6 @@ template<ManagedResourceConcept... Resources>
 template<CustomSourceConcept CustomSource>
 auto ResourceGroup<Resources...>::load(CustomSource&& customSource) -> std::future<void>
 {
-    static_assert(std::is_rvalue_reference_v<CustomSource>);
-
     auto source = std::make_unique<CustomSource>(std::move(customSource));
     source->setResourceGroup(*this);
     return ResourceGroup<Resources...>::readSource<CustomSource>(&customSource);
@@ -178,9 +176,9 @@ void ResourceGroup<Resources...>::releaseAll()
 
     for (auto&& [ref, typeId] : resList) {
         auto result =
-          ((mark_to_remove_if_resource_type_match<Resources,
-                                                  res_type_list_t::template get_type_index<Resources>::value>(typeId,
-                                                                                                              ref)) ||
+          ((internal::mark_to_remove_if_resource_type_match<Resources,
+                                                            res_type_list_t::template get_type_index<Resources>::value>(
+             typeId, ref)) ||
            ...);
 
         if (result) {
@@ -198,8 +196,8 @@ void ResourceGroup<Resources...>::releaseResource(boost::uuids::uuid const& uuid
     auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
     for (auto&& [ref, typeId] : resList) {
         auto result =
-          ((mark_to_remove_if_resource_type_match<Resources,
-                                                  res_type_list_t::template get_type_index<Resources>::value>(
+          ((internal::mark_to_remove_if_resource_type_match<Resources,
+                                                            res_type_list_t::template get_type_index<Resources>::value>(
              typeId, ref, uuid)) ||
            ...);
 
@@ -219,7 +217,8 @@ auto ResourceGroup<Resources...>::isExists(boost::uuids::uuid const& uuid) const
     auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
     for (auto&& [ref, typeId] : resList) {
         auto result =
-          ((test_if_resource_type_match<Resources, res_type_list_t::template get_type_index<Resources>::value>(
+          ((internal::test_if_resource_type_match<Resources,
+                                                  res_type_list_t::template get_type_index<Resources>::value>(
              typeId, ref, uuid)) ||
            ...);
 
@@ -240,7 +239,8 @@ auto ResourceGroup<Resources...>::getResource(std::string_view name) const -> co
     auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
     for (auto&& [ref, typeId] : resList) {
         auto result =
-          ((test_if_resource_type_match<Resources, res_type_list_t::template get_type_index<Resources>::value>(
+          ((internal::test_if_resource_type_match<Resources,
+                                                  res_type_list_t::template get_type_index<Resources>::value>(
              typeId, ref, name)) ||
            ...);
 
@@ -260,10 +260,11 @@ auto ResourceGroup<Resources...>::getResource(boost::uuids::uuid const& uuid) co
 
     auto res = core::ResourceSharedRef{};
 
-    auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
+    auto&& resList = resourcesLifetimeManager_.template resourceList<Resources...>();
     for (auto&& [ref, typeId] : resList) {
         auto result =
-          ((test_if_resource_type_match<Resources, res_type_list_t::template get_type_index<Resources>::value>(
+          ((internal::test_if_resource_type_match<Resources,
+                                                  res_type_list_t::template get_type_index<Resources>::value>(
              typeId, ref, uuid)) ||
            ...);
 

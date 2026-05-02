@@ -44,15 +44,19 @@ private:
     static std::atomic<uint32_t> nextResourceGroupId;
 
     core::ResourceSharedRef deviceRef_;
-    std::unordered_map<uint32_t, ResourceGroup<Resources...>> resourceGroups_;
+    std::unordered_map<uint32_t, std::shared_ptr<ResourceGroup<Resources...>>> resourceGroups_;
 };
+
+template<ManagedResourceConcept... Resources>
+/*static */ std::atomic<uint32_t> ResourceGroupManager<Resources...>::nextResourceGroupId = 0;
 
 template<ManagedResourceConcept... Resources>
 auto ResourceGroupManager<Resources...>::addResourceGroup() -> uint32_t
 {
     auto id = nextResourceGroupId.fetch_add(1, std::memory_order_acq_rel);
+    auto resourceGroupNew = std::make_shared<ResourceGroup<Resources...>>(this, id, deviceRef_);
+    resourceGroups_.emplace(id, std::move(resourceGroupNew));
 
-    resourceGroups_.emplace(id, ResourceGroup<Resources...>{ this, id });
     return id;
 }
 
@@ -65,7 +69,7 @@ auto ResourceGroupManager<Resources...>::load(uint32_t groupId, std::wstring_vie
     }
 
     auto& [_, group] = *it;
-    return group.load(location);
+    return group->load(location);
 }
 
 template<ManagedResourceConcept... Resources>
@@ -77,7 +81,7 @@ void ResourceGroupManager<Resources...>::releaseResource(uint32_t groupId, boost
     }
 
     auto& [_, group] = *it;
-    group.releaseResource(uuid);
+    group->releaseResource(uuid);
 }
 
 template<ManagedResourceConcept... Resources>
@@ -89,7 +93,7 @@ void ResourceGroupManager<Resources...>::releaseGroup(uint32_t groupId)
     }
 
     auto& [_, group] = *it;
-    group.releaseAll();
+    group->releaseAll();
 }
 
 template<ManagedResourceConcept... Resources>
@@ -103,7 +107,7 @@ auto ResourceGroupManager<Resources...>::load(uint32_t groupId, CustomSource&& c
     }
 
     auto& [_, group] = *it;
-    return group.load(std::move(customSource));
+    return group->load(std::move(customSource));
 }
 }
 

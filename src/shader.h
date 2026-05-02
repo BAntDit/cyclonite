@@ -28,6 +28,8 @@ public:
 
     [[nodiscard]] auto bindings() const -> std::vector<gfx::Binding> const& { return bindings_; }
 
+    using core::ResourceBase::resourceBase;
+
 private:
     void loadImpl(std::istream& stream);
 

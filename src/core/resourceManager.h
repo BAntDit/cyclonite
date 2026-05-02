@@ -275,7 +275,7 @@ public:
 
         auto end() const -> Iterator
         {
-            auto& size = manager_->headers_.size();
+            auto size = manager_->headers_.size();
             return Iterator{ this, size };
         }
 
@@ -288,7 +288,7 @@ public:
         {
         }
 
-        manager_ptr_t* manager_;
+        manager_ptr_t manager_;
     };
 
     template<typename... Res>
@@ -480,7 +480,7 @@ void ResourceManager<ResourceTypes...>::ResourceList<isConst, Res...>::Iterator:
         if (type != std::numeric_limits<uint8_t>::max() && chunk != std::numeric_limits<uint16_t>::max() &&
             index != std::numeric_limits<uint16_t>::max()) { // any valid element
             if constexpr (sizeof...(Res) > 0) {
-                if (((resource_meta_t::template type_index_v<Res> == static_cast<size_t>(type)) ||
+                if (((resource_meta_t::template type_index_v<Res>() == static_cast<size_t>(type)) ||
                      ...)) { // valid element (filtered)
                     break;
                 }
@@ -508,7 +508,7 @@ auto ResourceManager<ResourceTypes...>::ResourceList<isConst, Res...>::Iterator:
     assert(chunks.contains(chunk));
 
     auto res = const_cast<ResourceBase*>(
-      reinterpret_cast<ResourceBase const*>(std::launder(chunks[chunk].resources[index].bytes)));
+       reinterpret_cast<ResourceBase const*>(std::launder(chunks.at(chunk).resources[index].bytes)));
 
     return std::pair{ makeResourceSharedRefUnsafe(res), type };
 }

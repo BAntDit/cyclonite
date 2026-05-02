@@ -38,6 +38,8 @@ set(SHADER_SOURCES
     "src/shaders/default.vs.hlsl --E main --T vs_6_9 ${COMMON_SHADER_COMPILATION_ARGS}"
     "src/shaders/screen.fs.hlsl --E main --T ps_6_9 ${COMMON_SHADER_COMPILATION_ARGS}"
     "src/shaders/screen.vs.hlsl --E main --T vs_6_9 ${COMMON_SHADER_COMPILATION_ARGS}"
+    "src/shaders/testTriangle.vs.hlsl --E main --T vs_6_9 ${COMMON_SHADER_COMPILATION_ARGS}"
+    "src/shaders/testTriangle.fs.hlsl --E main --T ps_6_9 ${COMMON_SHADER_COMPILATION_ARGS}"
 )
 
 find_package(shader-compiler REQUIRED)

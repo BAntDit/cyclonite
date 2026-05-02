@@ -35,6 +35,8 @@ public:
                      gfx::PrimitiveTopology primitiveTopology = gfx::PrimitiveTopology::TRIANGLE_LIST,
                      bool primitiveRestart = false) -> std::shared_future<void>;
 
+    using core::ResourceBase::resourceBase;
+
 private:
     void prepareImpl();
 
