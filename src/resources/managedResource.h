@@ -154,7 +154,7 @@ template<typename Resource>
 [[nodiscard]] auto ManagedResource<Resource>::loading_context_t::stream() -> std::istream&
 {
     return std::visit(
-      [](auto&& s) -> std::fstream& {
+      [](auto&& s) -> std::istream& {
           if constexpr (!std::is_same_v<std::decay_t<decltype(s)>, std::monostate>) {
               return *s;
           }
