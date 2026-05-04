@@ -508,7 +508,7 @@ auto ResourceManager<ResourceTypes...>::ResourceList<isConst, Res...>::Iterator:
     assert(chunks.contains(chunk));
 
     auto res = const_cast<ResourceBase*>(
-       reinterpret_cast<ResourceBase const*>(std::launder(chunks.at(chunk).resources[index].bytes)));
+      reinterpret_cast<ResourceBase const*>(std::launder(chunks.at(chunk).resources[index].bytes)));
 
     return std::pair{ makeResourceSharedRefUnsafe(res), type };
 }

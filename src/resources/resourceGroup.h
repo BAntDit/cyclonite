@@ -89,7 +89,7 @@ auto ResourceGroup<Resources...>::load(CustomSource&& customSource) -> std::futu
 {
     auto source = std::make_unique<CustomSource>(std::move(customSource));
     source->setResourceGroup(*this);
-    return ResourceGroup<Resources...>::readSource<CustomSource>(&customSource);
+    return ResourceGroup<Resources...>::readSource<CustomSource>(source.get());
 }
 
 template<ManagedResourceConcept... Resources>

@@ -15,6 +15,7 @@
 #include <cassert>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 
 namespace cyclonite::resources {
 class ResourceGroupBase;
@@ -69,7 +70,8 @@ template<typename ResourceGroup>
     futures.reserve(entryCount);
 
     for (auto const& entry : std::filesystem::recursive_directory_iterator(context->location_)) {
-        if (entry.path().has_extension())
+        std::cout << entry.path().string() << std::endl;
+        if (!entry.path().has_extension())
             continue;
 
         if (entry.path().extension().string() == ".bin") {

@@ -58,7 +58,7 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
     root_.initResourceManager(deviceRef);
 
     auto resGroupId = root_.resourceManager().addResourceGroup();
-    root_.resourceManager().load(resGroupId, L"./src/shaders/").get();
+    root_.resourceManager().load(resGroupId, L"./../../src/shaders/").get();
 
     auto renderWindowBuilder = cyclonite::gfx::RenderWindowBuilder{};
     auto renderWindowRef =

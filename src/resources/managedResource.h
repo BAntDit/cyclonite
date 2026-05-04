@@ -145,8 +145,9 @@ template<typename Resource>
 ManagedResource<Resource>::loading_context_t::~loading_context_t()
 {
     if (source_.index() == 1) {
-        auto& stream = std::get<std::unique_ptr<std::ifstream>>(source_);
-        stream->close();
+        if (auto& stream = std::get<std::unique_ptr<std::ifstream>>(source_); stream) {
+            stream->close();
+        }
     }
 }
 

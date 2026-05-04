@@ -78,6 +78,7 @@ inline void BinaryStreamWriter::operator<<(T t)
 {
     auto* ptr = reinterpret_cast<char const*>(&t);
     output_.write(ptr, sizeof(t));
+    output_.flush();
 }
 
 inline void BinaryStreamWriter::operator<<(std::string const& string)
@@ -86,6 +87,7 @@ inline void BinaryStreamWriter::operator<<(std::string const& string)
     auto* ptr = reinterpret_cast<char const*>(&size);
     output_.write(ptr, sizeof(size));
     output_.write(string.data(), size);
+    output_.flush();
 }
 }
 
