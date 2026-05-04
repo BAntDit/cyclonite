@@ -1,6 +1,6 @@
 
 cmake_minimum_required(VERSION 3.17.2)
-project(shader-compiler VERSION 0.1.1.0)
+project(shader-compiler VERSION 0.1.2.0)
 
 file(GLOB TOOLS_SHADER_COMPILER_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/includes/*.h")
 

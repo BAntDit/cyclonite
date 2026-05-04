@@ -802,7 +802,7 @@ int main(int argc, char* argv[])
     };
 
     auto& infoBlockHeader = shaderModuleBinary.blockHeaders.emplace_back();
-    infoBlockHeader.id = cyclonite::shared::SHADER_MODULE_SPIRV_BLOCK;
+    infoBlockHeader.id = cyclonite::shared::SHADER_MODULE_INFO_BLOCK;
     infoBlockHeader.baseOffset = baseOffset;
     infoBlockHeader.blockOffset = blockOffset;
     infoBlockHeader.size = infoBlockSerializer.expectedSize(shaderModuleBinary.infoBlock);
