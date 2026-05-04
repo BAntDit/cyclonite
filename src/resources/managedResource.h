@@ -84,7 +84,7 @@ public:
 
     auto prepare() -> std::shared_future<void>;
 
-    // void reset();
+    void markToRemove();
 
     [[nodiscard]] auto state() const -> ManagedResourceState { return state_.load(std::memory_order_acquire); }
 
@@ -246,6 +246,12 @@ auto ManagedResource<Resource>::prepare() -> std::shared_future<void>
     }
 
     return preparationResult_;
+}
+
+template<typename Resource>
+void ManagedResource<Resource>::markToRemove()
+{
+    setState(ManagedResourceState::GoingToBeRemoved);
 }
 
 template<typename Resource>

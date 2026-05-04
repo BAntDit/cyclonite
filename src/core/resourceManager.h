@@ -273,7 +273,21 @@ public:
             return it;
         }
 
+        auto begin() -> Iterator
+        {
+            auto it = Iterator{ this, 0 };
+            it.next();
+
+            return it;
+        }
+
         auto end() const -> Iterator
+        {
+            auto size = manager_->headers_.size();
+            return Iterator{ this, size };
+        }
+
+        auto end() -> Iterator
         {
             auto size = manager_->headers_.size();
             return Iterator{ this, size };

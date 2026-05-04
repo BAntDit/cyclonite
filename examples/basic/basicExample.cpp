@@ -18,6 +18,7 @@ BasicExample::BasicExample()
   , renderPassRef_{}
   , windowRef_{}
   , submissionManager_{}
+  , defaultResourceGroup_{ std::numeric_limits<uint32_t>::max() }
   , shutdown_{ false }
 {
 }
@@ -57,8 +58,8 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
 
     root_.initResourceManager(deviceRef);
 
-    auto resGroupId = root_.resourceManager().addResourceGroup();
-    root_.resourceManager().load(resGroupId, L"./../../src/shaders/").get();
+    defaultResourceGroup_ = root_.resourceManager().addResourceGroup();
+    root_.resourceManager().load(defaultResourceGroup_, L"./../../src/shaders/").get();
 
     auto renderWindowBuilder = cyclonite::gfx::RenderWindowBuilder{};
     auto renderWindowRef =
@@ -163,6 +164,8 @@ auto BasicExample::run() -> BasicExample&
 void BasicExample::done()
 {
     std::cout << "app is done!" << std::endl;
+
+    root_.resourceManager().releaseGroup(defaultResourceGroup_);
 
     windowRef_ = cyclonite::core::ResourceSharedRef{};
     renderPassRef_ = cyclonite::core::ResourceSharedRef{};

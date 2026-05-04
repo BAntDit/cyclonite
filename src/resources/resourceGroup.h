@@ -143,13 +143,13 @@ auto test_if_resource_type_match(size_t typeId, core::ResourceSharedRef const& r
 
 template<typename ResType, size_t index>
 auto mark_to_remove_if_resource_type_match(size_t typeId,
-                                           core::ResourceSharedRef const& ref,
+                                           core::ResourceSharedRef& ref,
                                            boost::uuids::uuid const& uuid) -> bool
 {
     if (index == typeId) {
-        auto const& r = ref.as<ResType>();
+        auto& r = ref.as<ResType>();
         if (r.uuid() == uuid) {
-            r.setState(ManagedResourceState::GoingToBeRemoved);
+            r.markToRemove();
             return true;
         }
     }
@@ -157,11 +157,11 @@ auto mark_to_remove_if_resource_type_match(size_t typeId,
 }
 
 template<typename ResType, size_t index>
-auto mark_to_remove_if_resource_type_match(size_t typeId, core::ResourceSharedRef const& ref) -> bool
+auto mark_to_remove_if_resource_type_match(size_t typeId, core::ResourceSharedRef& ref) -> bool
 {
     if (index == typeId) {
-        auto const& r = ref.as<ResType>();
-        r.setState(ManagedResourceState::GoingToBeRemoved);
+        auto& r = ref.as<ResType>();
+        r.markToRemove();
         return true;
     }
     return false;
@@ -172,7 +172,7 @@ template<ManagedResourceConcept... Resources>
 void ResourceGroup<Resources...>::releaseAll()
 {
     using res_type_list_t = metrix::type_list<Resources...>;
-    auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
+    auto&& resList = resourcesLifetimeManager_.template resourceList<Resources...>();
 
     for (auto&& [ref, typeId] : resList) {
         auto result =
@@ -193,7 +193,7 @@ void ResourceGroup<Resources...>::releaseResource(boost::uuids::uuid const& uuid
 {
     using res_type_list_t = metrix::type_list<Resources...>;
 
-    auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
+    auto&& resList = resourcesLifetimeManager_.template resourceList<Resources...>();
     for (auto&& [ref, typeId] : resList) {
         auto result =
           ((internal::mark_to_remove_if_resource_type_match<Resources,
@@ -214,7 +214,7 @@ auto ResourceGroup<Resources...>::isExists(boost::uuids::uuid const& uuid) const
 {
     using res_type_list_t = metrix::type_list<Resources...>;
 
-    auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
+    auto&& resList = resourcesLifetimeManager_.template resourceList<Resources...>();
     for (auto&& [ref, typeId] : resList) {
         auto result =
           ((internal::test_if_resource_type_match<Resources,
@@ -236,7 +236,7 @@ auto ResourceGroup<Resources...>::getResource(std::string_view name) const -> co
 
     auto res = core::ResourceSharedRef{};
 
-    auto&& resList = resourcesLifetimeManager_->template resourceList<Resources...>();
+    auto&& resList = resourcesLifetimeManager_.template resourceList<Resources...>();
     for (auto&& [ref, typeId] : resList) {
         auto result =
           ((internal::test_if_resource_type_match<Resources,
