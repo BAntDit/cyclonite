@@ -46,6 +46,7 @@ class ToolsShaderCompilerRecipe(ConanFile):
         else:
             tc.generator = "Ninja"
 
+        #tc.cache_variables["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,-rpath,'$ORIGIN'"
         tc.variables["SHARED_HEADERS_DIR"] = os.path.join(self.recipe_folder, "..", "..", "shared")
         tc.variables["REQUIRED_CXX_STANDARD"] = "20"
         tc.generate()
@@ -58,6 +59,10 @@ class ToolsShaderCompilerRecipe(ConanFile):
     def package(self):
         cmake = CMake(self)
         cmake.install()
+
+        dx = self.dependencies["dxcompiler"]
+        self.output.info(f"dxcompiler package_folder: {dx.package_folder}")
+        self.output.info(f"dxcompiler cpp_info.libdirs: {dx.cpp_info.libdirs}")
 
         # Find and copy the dxcompiler config files from build directory to package
         # Look for dxcompiler config files in common locations
@@ -142,3 +147,8 @@ class ToolsShaderCompilerRecipe(ConanFile):
 
         # Add the bin directory to PATH for consumers
         self.env_info.PATH.append(os.path.join(self.package_folder, "bin"))
+
+    def deploy(self):
+        copy(self, "libdxcompiler.so*",
+             src=self.dependencies["dxcompiler"].cpp_info.libdirs[0],
+             dst=".")

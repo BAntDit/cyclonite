@@ -784,11 +784,17 @@ int main(int argc, char* argv[])
 
     shaderModuleBinary.infoBlock.uuid = boost::uuids::to_string(uuid);
 
-    auto shaderModuleBlockCount = size_t{ 3 }; // info block + spir-v + reflection
+    auto shaderModuleBlockCount = uint32_t{ 3 }; // info block + spir-v + reflection
     shaderModuleBinary.blockHeaders.reserve(shaderModuleBlockCount);
 
-    auto baseOffset = sizeof(cyclonite::shared::ShaderModuleBlockHeader) * shaderModuleBlockCount +
-                      sizeof(cyclonite::shared::SHADER_MODULE_MAGIC_NUMBER);
+    auto headerSerializer =  cyclonite::shared::Serializer{
+        cyclonite::shared::useWriter<cyclonite::shared::BinaryStreamWriter>(),
+        cyclonite::shared::makeAccessChain<&cyclonite::shared::ShaderModuleBlockHeader::getBlockHeaderData>()
+    };
+
+    auto emptyHeader = cyclonite::shared::ShaderModuleBlockHeader{}; // to define size (all headers has the same size)
+    auto baseOffset = headerSerializer.expectedSize(emptyHeader) * shaderModuleBlockCount
+        + sizeof(shaderModuleBlockCount) + sizeof(cyclonite::shared::SHADER_MODULE_MAGIC_NUMBER);
 
     auto blockOffset = uint64_t{ 0 };
 
