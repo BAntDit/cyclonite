@@ -322,14 +322,6 @@ Device::Device(core::ResourceManagerBase* resourceManager,
         limits_.supportCompute = ((graphicsQueueFlags & VK_QUEUE_COMPUTE_BIT) != 0);
     }
 
-    auto features = VkPhysicalDeviceFeatures{};
-
-    // turn off unused features (for now)
-    features.robustBufferAccess = VK_FALSE;
-    features.shaderFloat64 = VK_FALSE;
-    features.shaderInt64 = VK_FALSE;
-    features.inheritedQueries = VK_FALSE;
-
     // ext features
     auto indexingFeatures = VkPhysicalDeviceDescriptorIndexingFeatures{};
     indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
@@ -339,6 +331,11 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     timelineSemaphoreFeatures.pNext = &indexingFeatures;
 
     auto features2 = VkPhysicalDeviceFeatures2{};
+    // turn off unused features (for now)
+    features2.features.robustBufferAccess = VK_FALSE;
+    features2.features.shaderFloat64 = VK_FALSE;
+    features2.features.shaderInt64 = VK_FALSE;
+    features2.features.inheritedQueries = VK_FALSE;
     features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
     features2.pNext = &timelineSemaphoreFeatures;
 
@@ -372,7 +369,6 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     deviceInfo.pQueueCreateInfos = deviceQueueCreateInfoArray.data();
     deviceInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensions.size());
     deviceInfo.ppEnabledExtensionNames = requiredExtensions.data();
-    deviceInfo.pEnabledFeatures = &features;
 
     if (auto vkResult = vkCreateDevice(vkPhysicalDevice_, &deviceInfo, nullptr, &vkDevice_); vkResult != VK_SUCCESS) {
         throw Exception{ vkResult, "vkCreateDevice" };
