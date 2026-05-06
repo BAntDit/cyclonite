@@ -60,6 +60,8 @@ protected:
     [[nodiscard]] auto resourceBase() -> ResourceBase* { return this; }
 
 private:
+    void releaseAtOnce();
+
     std::atomic<uint64_t> refCount_;
     ResourceManagerBase* resourceManager_;
     ResourceId resourceId_;

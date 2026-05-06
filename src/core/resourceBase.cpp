@@ -56,4 +56,24 @@ auto ResourceBase::release() -> uint64_t
     assert(count > 0);
     return count - 1;
 }
+
+void ResourceBase::releaseAtOnce()
+{
+    auto expected = refCount_.load(std::memory_order_relaxed);
+    auto desired = uint64_t{ 0 };
+
+    while (expected > 0 &&
+           !refCount_.compare_exchange_weak(expected, desired, std::memory_order_acq_rel, std::memory_order_acquire)) {
+    }
+
+    if (expected > 0) {
+        if (deferredRelease_) {
+            resourceManager_->releaseResourceDeferred(resourceId_);
+        } else {
+            resourceManager_->releaseResourceImmediate(resourceId_);
+        }
+        resourceManager_ = nullptr;
+        resourceId_ = ResourceId{};
+    }
+}
 }

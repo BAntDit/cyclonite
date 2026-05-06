@@ -23,7 +23,7 @@ ResourceUniqueRef::ResourceUniqueRef(ResourceUniqueRef&& uniqueRef) noexcept
 ResourceUniqueRef::~ResourceUniqueRef()
 {
     if (valid()) {
-        resource_->release();
+        resource_->releaseAtOnce();
     }
 }
 
