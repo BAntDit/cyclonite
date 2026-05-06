@@ -32,7 +32,7 @@ struct ResourceId
     bool operator!=(ResourceId rhs) const { return id_ != rhs.id_; }
     bool operator<(ResourceId rhs) const { return id_ < rhs.id_; }
 
-    [[nodiscard]] auto index() const -> uint32_t { return static_cast<uint32_t>(id_ & 0xffffff00UL); }
+    [[nodiscard]] auto index() const -> uint32_t { return static_cast<uint32_t>(id_ & 0xffffffffUL); }
 
     [[nodiscard]] auto version() const -> uint32_t { return static_cast<uint8_t>((id_ >> 32UL) & 0xffffffffUL); }
 
