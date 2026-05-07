@@ -34,9 +34,11 @@ public:
 
     void releaseGroup(uint32_t groupId);
 
-    // prepare
+    // prepare // TODO::
 
-    // add
+    template<typename R, typename... Args>
+    auto addResource(uint32_t groupId, Args&&... args) -> core::ResourceSharedRef
+        requires(metrix::type_list<Resources...>::template has_type<R>::value);
 
     [[nodiscard]] auto getResource(uint32_t groupId, std::string_view name) const -> core::ResourceSharedRef;
 
@@ -120,6 +122,20 @@ auto ResourceGroupManager<Resources...>::getResource(uint32_t groupId, std::stri
 
     auto& [_, group] = *it;
     return group->getResource(name);
+}
+
+template<ManagedResourceConcept... Resources>
+template<typename R, typename... Args>
+auto ResourceGroupManager<Resources...>::addResource(uint32_t groupId, Args&&... args) -> core::ResourceSharedRef
+        requires(metrix::type_list<Resources...>::template has_type<R>::value)
+{
+    auto it = resourceGroups_.find(groupId);
+    if (it == resourceGroups_.end()) {
+        throw std::runtime_error("Resource group does not exist");
+    }
+
+    auto& [_, group] = *it;
+    return core::ResourceSharedRef{ group->template addResource<R>(std::forward<Args>(args)...) };
 }
 }
 
