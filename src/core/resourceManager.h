@@ -6,7 +6,6 @@
 #define GFX_RESOURCE_MANAGER_H
 
 #include "core/configTraitMacro.h"
-#include "core/spinLock.h"
 #include "resourceSharedRef.h"
 #include "resourceUniqueRef.h"
 #include <array>
@@ -15,7 +14,7 @@
 #include <chrono>
 #include <deque>
 #include <metrix/type_list.h>
-#include <mutex>
+#include <shared_mutex>
 #include <numeric>
 #include <type_traits>
 #include <unordered_map>
@@ -218,7 +217,7 @@ protected:
 
     void free(uint32_t headerIndex);
 
-    mutable core::SpinLock headersGuard_;
+    mutable std::shared_mutex headersGuard_;
 
     std::vector<resource_block_header_t> headers_;
     std::vector<uint32_t> emptyHeaders_;
@@ -283,12 +282,14 @@ public:
 
         auto end() const -> Iterator
         {
+            auto lock = std::std::shared_lock{ manager_->headersGuard_ };
             auto size = manager_->headers_.size();
             return Iterator{ this, size };
         }
 
         auto end() -> Iterator
         {
+            auto lock = std::std::shared_lock{ manager_->headersGuard_ };
             auto size = manager_->headers_.size();
             return Iterator{ this, size };
         }
@@ -433,7 +434,7 @@ void ResourceManager<ResourceTypes...>::free(uint32_t headerIndex)
 template<ResourceConcept... ResourceTypes>
 auto ResourceManager<ResourceTypes...>::isResourceValid(ResourceId id) const -> bool
 {
-    auto lock = std::unique_lock{ headersGuard_ };
+    auto lock = std::std::shared_lock{ headersGuard_ };
 
     assert(id.index() < headers_.size());
     auto const& header = headers_[id.index()];
@@ -484,6 +485,8 @@ template<ResourceConcept... ResourceTypes>
 template<bool isConst, typename... Res>
 void ResourceManager<ResourceTypes...>::ResourceList<isConst, Res...>::Iterator::next()
 {
+    auto lock = std::std::shared_lock{ list_->manager_->headersGuard_ };
+
     auto const& headers = list_->manager_->headers_;
     auto const size = headers.size();
 
@@ -512,6 +515,8 @@ template<bool isConst, typename... Res>
 auto ResourceManager<ResourceTypes...>::ResourceList<isConst, Res...>::Iterator::operator*() const
   -> std::pair<ResourceSharedRef, uint8_t>
 {
+    auto lock = std::std::shared_lock{ list_->manager_->headersGuard_ };
+
     auto const& headers = list_->manager_->headers_;
     auto const& storage = list_->manager_->storage_;
 
