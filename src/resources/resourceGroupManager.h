@@ -38,7 +38,7 @@ public:
 
     // add
 
-    // get
+    [[nodiscard]] auto getResource(uint32_t groupId, std::string_view name) const -> core::ResourceSharedRef;
 
 private:
     static std::atomic<uint32_t> nextResourceGroupId;
@@ -108,6 +108,18 @@ auto ResourceGroupManager<Resources...>::load(uint32_t groupId, CustomSource&& c
 
     auto& [_, group] = *it;
     return group->load(std::move(customSource));
+}
+
+template<ManagedResourceConcept... Resources>
+auto ResourceGroupManager<Resources...>::getResource(uint32_t groupId, std::string_view name) const -> core::ResourceSharedRef
+{
+    auto it = resourceGroups_.find(groupId);
+    if (it == resourceGroups_.end()) {
+        throw std::runtime_error("Resource group does not exist");
+    }
+
+    auto& [_, group] = *it;
+    return group->getResource(name);
 }
 }
 

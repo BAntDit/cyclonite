@@ -61,6 +61,12 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
     defaultResourceGroup_ = root_.resourceManager().addResourceGroup();
     root_.resourceManager().load(defaultResourceGroup_, L"./../../src/shaders/").get();
 
+    auto vertexShaderId = root_.resourceManager().getResource(defaultResourceGroup_, "testTriangle.vs.hlsl.sm.bin");
+    assert(vertexShaderId.valid());
+
+    auto fragmentShaderId = root_.resourceManager().getResource(defaultResourceGroup_, "testTriangle.fs.hlsl.sm.bin");
+    assert(fragmentShaderId.valid());
+
     auto renderWindowBuilder = cyclonite::gfx::RenderWindowBuilder{};
     auto renderWindowRef =
       cyclonite::core::ResourceSharedRef{ renderWindowBuilder.setDevice(deviceRef)
