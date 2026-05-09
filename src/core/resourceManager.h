@@ -14,9 +14,9 @@
 #include <chrono>
 #include <deque>
 #include <metrix/type_list.h>
-#include <shared_mutex>
 #include <mutex>
 #include <numeric>
+#include <shared_mutex>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
@@ -207,6 +207,9 @@ public:
     void gc(bool clearAll = false);
 
     [[nodiscard]] auto isResourceValid(ResourceId id) const -> bool final;
+
+    template<typename... Res>
+    [[nodiscard]] auto resourceCount() const -> uint32_t;
 
 protected:
     void releaseResourceImmediate(ResourceId id) override;
@@ -540,6 +543,26 @@ auto ResourceManager<ResourceTypes...>::ResourceList<isConst, Res...>::Iterator:
     cursor_++;
     next();
     return *this;
+}
+
+template<ResourceConcept... ResourceTypes>
+template<typename... Res>
+auto ResourceManager<ResourceTypes...>::resourceCount() const -> uint32_t
+{
+    auto count = uint32_t{ 0 };
+
+    for (auto& [_0, _1, _2, index, type] : headers_) {
+        if (type == std::numeric_limits<uint8_t>::max())
+            continue;
+
+        if constexpr (sizeof...(Res) == 0) {
+            count++;
+        } else if (((resource_meta_t::template type_index_v<Res>() == static_cast<size_t>(type)) || ...)) {
+            count++;
+        }
+    }
+
+    return count;
 }
 }
 
