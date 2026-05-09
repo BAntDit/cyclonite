@@ -70,7 +70,6 @@ template<typename ResourceGroup>
     futures.reserve(entryCount);
 
     for (auto const& entry : std::filesystem::recursive_directory_iterator(context->location_)) {
-        std::cout << entry.path().string() << std::endl;
         if (!entry.path().has_extension())
             continue;
 

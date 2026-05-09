@@ -28,7 +28,7 @@ Shader::Shader(core::ResourceManagerBase* resourceManager,
 {
     auto shaderModuleCreateInfo = VkShaderModuleCreateInfo{};
     shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    shaderModuleCreateInfo.codeSize = codeWordCount;
+    shaderModuleCreateInfo.codeSize = codeWordCount * sizeof(uint32_t);
     shaderModuleCreateInfo.pCode = codeWords;
 
     if (auto vkResult =
