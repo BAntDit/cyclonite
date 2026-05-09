@@ -17,6 +17,7 @@ public:
     Event<uint32_t, std::string_view> resourceGoingToBeDeleted;
     Event<uint32_t, std::string_view> resourceLoadingStart;
     Event<uint32_t, std::string_view> resourcePreparingStart;
+    Event<uint32_t, std::string_view> resourcePrepared;
     Event<uint32_t, std::string_view> resourceLoaded;
 };
 }

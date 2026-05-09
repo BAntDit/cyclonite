@@ -20,6 +20,9 @@ void ResourceGroupBase::notifyResourceStateChange(ManagedResourceState newState,
         case ManagedResourceState::GoingToBeRemoved:
             groupManager_->resourceGoingToBeDeleted(id_, resourceName);
             break;
+        case ManagedResourceState::Ready:
+            groupManager_->resourcePrepared(id_, resourceName);
+            break;
         default:
             assert(false); // unexpected state
     }
