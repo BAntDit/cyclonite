@@ -26,6 +26,8 @@ public:
 
     auto load(uint32_t groupId, std::wstring_view location) -> std::future<void>;
 
+    auto prepare(uint32_t groupId) -> std::future<void>;
+
     template<CustomSourceConcept CustomSource>
     auto load(uint32_t groupId, CustomSource&& customSource) -> std::future<void>
         requires std::is_rvalue_reference_v<CustomSource>;
@@ -33,8 +35,6 @@ public:
     void releaseResource(uint32_t groupId, boost::uuids::uuid const& uuid);
 
     void releaseGroup(uint32_t groupId);
-
-    // prepare // TODO::
 
     template<typename R, typename... Args>
     auto addResource(uint32_t groupId, Args&&... args) -> core::ResourceSharedRef
@@ -113,7 +113,8 @@ auto ResourceGroupManager<Resources...>::load(uint32_t groupId, CustomSource&& c
 }
 
 template<ManagedResourceConcept... Resources>
-auto ResourceGroupManager<Resources...>::getResource(uint32_t groupId, std::string_view name) const -> core::ResourceSharedRef
+auto ResourceGroupManager<Resources...>::getResource(uint32_t groupId,
+                                                     std::string_view name) const -> core::ResourceSharedRef
 {
     auto it = resourceGroups_.find(groupId);
     if (it == resourceGroups_.end()) {
@@ -127,7 +128,7 @@ auto ResourceGroupManager<Resources...>::getResource(uint32_t groupId, std::stri
 template<ManagedResourceConcept... Resources>
 template<typename R, typename... Args>
 auto ResourceGroupManager<Resources...>::addResource(uint32_t groupId, Args&&... args) -> core::ResourceSharedRef
-        requires(metrix::type_list<Resources...>::template has_type<R>::value)
+    requires(metrix::type_list<Resources...>::template has_type<R>::value)
 {
     auto it = resourceGroups_.find(groupId);
     if (it == resourceGroups_.end()) {
@@ -136,6 +137,18 @@ auto ResourceGroupManager<Resources...>::addResource(uint32_t groupId, Args&&...
 
     auto& [_, group] = *it;
     return core::ResourceSharedRef{ group->template addResource<R>(std::forward<Args>(args)...) };
+}
+
+template<ManagedResourceConcept... Resources>
+auto ResourceGroupManager<Resources...>::prepare(uint32_t groupId) -> std::future<void>
+{
+    auto it = resourceGroups_.find(groupId);
+    if (it == resourceGroups_.end()) {
+        throw std::runtime_error("Resource group does not exist");
+    }
+
+    auto& [_, group] = *it;
+    return group->prepare();
 }
 }
 

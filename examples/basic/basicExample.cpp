@@ -61,6 +61,8 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
     defaultResourceGroup_ = root_.resourceManager().addResourceGroup();
     root_.resourceManager().load(defaultResourceGroup_, L"./../../src/shaders/").get();
 
+    root_.resourceManager().prepare(defaultResourceGroup_).get();
+
     auto vertexShaderId = root_.resourceManager().getResource(defaultResourceGroup_, "testTriangle.vs.hlsl.sm.bin");
     assert(vertexShaderId.valid());
 

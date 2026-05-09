@@ -99,12 +99,6 @@ auto ResourceGroup<Resources...>::load(std::wstring_view location) -> std::futur
 }
 
 template<ManagedResourceConcept... Resources>
-auto ResourceGroup<Resources...>::prepare() -> std::future<void>
-{
-    // TODO::
-}
-
-template<ManagedResourceConcept... Resources>
 /*static */ void ResourceGroup<Resources...>::makeOwn(core::ResourceBase* res)
 {
     assert(res != nullptr);
@@ -162,6 +156,17 @@ auto mark_to_remove_if_resource_type_match(size_t typeId, core::ResourceSharedRe
     if (index == typeId) {
         auto& r = ref.as<ResType>();
         r.markToRemove();
+        return true;
+    }
+    return false;
+}
+
+template<typename ResType, size_t index>
+auto prepare_if_resource_type_match(size_t typeId, core::ResourceSharedRef& ref, std::shared_future<void>& f) -> bool
+{
+    if (index == typeId) {
+        auto& r = ref.as<ResType>();
+        f = r.prepare();
         return true;
     }
     return false;
@@ -275,6 +280,33 @@ auto ResourceGroup<Resources...>::getResource(boost::uuids::uuid const& uuid) co
     }
 
     return res;
+}
+
+template<ManagedResourceConcept... Resources>
+auto ResourceGroup<Resources...>::prepare() -> std::future<void>
+{
+    using res_type_list_t = metrix::type_list<Resources...>;
+
+    auto resCount = resourcesLifetimeManager_.template resourceCount<Resources...>();
+    auto&& resList = resourcesLifetimeManager_.template resourceList<Resources...>();
+
+    auto futures = std::vector<std::shared_future<void>>{};
+    futures.reserve(resCount);
+
+    for (auto&& [ref, typeId] : resList) {
+        auto f = std::shared_future<void>{};
+        auto result =
+          ((internal::prepare_if_resource_type_match<Resources,
+                                                     res_type_list_t::template get_type_index<Resources>::value>(
+             typeId, ref, f)) ||
+           ...);
+
+        if (result) {
+            futures.push_back(std::move(f));
+        }
+    }
+
+    return multithreading::when_all(futures);
 }
 }
 
