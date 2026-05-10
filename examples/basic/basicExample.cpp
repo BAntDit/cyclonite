@@ -2,6 +2,7 @@
 #include "basicExample.h"
 #include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
+#include <boost/uuid/random_generator.hpp>
 #include <cassert>
 
 #include "gfx/queueSubmissionRecorder.h"
@@ -63,11 +64,15 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
 
     root_.resourceManager().prepare(defaultResourceGroup_).get();
 
-    auto vertexShaderId = root_.resourceManager().getResource(defaultResourceGroup_, "testTriangle.vs.hlsl.sm.bin");
-    assert(vertexShaderId.valid());
+    auto vertexShaderRef = root_.resourceManager().getResource(defaultResourceGroup_, "testTriangle.vs.hlsl.sm.bin");
+    assert(vertexShaderRef.valid());
 
-    auto fragmentShaderId = root_.resourceManager().getResource(defaultResourceGroup_, "testTriangle.fs.hlsl.sm.bin");
-    assert(fragmentShaderId.valid());
+    auto fragmentShaderRef = root_.resourceManager().getResource(defaultResourceGroup_, "testTriangle.fs.hlsl.sm.bin");
+    assert(fragmentShaderRef.valid());
+
+    auto materialUuid = boost::uuids::random_generator()();
+    auto testMaterialRef = root_.resourceManager().template addResource<cyclonite::Material>(
+      defaultResourceGroup_, "testMaterial", materialUuid);
 
     auto renderWindowBuilder = cyclonite::gfx::RenderWindowBuilder{};
     auto renderWindowRef =
@@ -85,6 +90,16 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
                                             .setRenderWindow(renderWindowRef,
                                                              cyclonite::gfx::Color{ 0.f, 1.f, 0.f, 1.f })
                                             .build() };
+
+    auto& testMaterial = testMaterialRef.as<cyclonite::Material>();
+    auto shaderSet = cyclonite::Material::shader_set_t{};
+    shaderSet.add(vertexShaderRef, cyclonite::gfx::ShaderStageFlags::VERTEX);
+    shaderSet.add(fragmentShaderRef, cyclonite::gfx::ShaderStageFlags::FRAGMENT);
+
+    auto rasterizationState = cyclonite::gfx::RasterizationState{};
+    testMaterial.manualSetup(renderPassRef, shaderSet,  rasterizationState);
+
+    // TODO:: make render task render
 
     submissionManager_ = std::make_unique<cyclonite::gfx::QueueSubmissionManager>(deviceRef);
 

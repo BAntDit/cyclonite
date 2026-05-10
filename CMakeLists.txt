@@ -26,7 +26,7 @@ add_library(${PROJECT_NAME} SHARED
 
 set(GAPI_SHADER_COMPILATION_ARGS)
 if (${GAPI_VULKAN})
-    set(GAPI_SHADER_COMPILATION_ARGS "--target-gapi vulkan --spirv --fvk-use-gl-layout --fspv-target-env vulkan1.3")
+    set(GAPI_SHADER_COMPILATION_ARGS "--target-gapi vulkan --spirv --fvk-use-gl-layout --fspv-target-env vulkan1.2")
 elseif(${GAPI_D3D12})
     set(GAPI_SHADER_COMPILATION_ARGS "--target-gapi d3d12")
 endif()
