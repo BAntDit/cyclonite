@@ -162,6 +162,7 @@ void Shader::prepareImpl()
     auto ep = std::string_view{ rawData_->entryName };
 
     hwShader_ = device.createShader(binaryCode.size(), binaryCode.data(), creationFlags, stage, ep);
+    assert(hwShader_.valid());
 
     rawData_.reset();
 }

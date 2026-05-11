@@ -28,6 +28,8 @@ public:
 
     [[nodiscard]] auto bindings() const -> std::vector<gfx::Binding> const& { return bindings_; }
 
+    [[nodiscard]] auto gfxShader() const -> core::ResourceSharedRef { return hwShader_; }
+
     using core::ResourceBase::resourceBase;
 
 private:
