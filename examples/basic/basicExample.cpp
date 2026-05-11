@@ -97,6 +97,8 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
     shaderSet.add(fragmentShaderRef, cyclonite::gfx::ShaderStageFlags::FRAGMENT);
 
     auto rasterizationState = cyclonite::gfx::RasterizationState{};
+    rasterizationState.flags.reset(cyclonite::gfx::RasterizationStateFlags::RASTERIZER_DISCARD_ENABLE);
+
     testMaterial.manualSetup(renderPassRef, shaderSet, rasterizationState).get();
 
     materialRef_ = std::move(testMaterialRef);
