@@ -198,6 +198,8 @@ void BasicExample::done()
 {
     std::cout << "app is done!" << std::endl;
 
+    materialRef_ = cyclonite::core::ResourceSharedRef{};
+
     root_.resourceManager().releaseGroup(defaultResourceGroup_);
 
     windowRef_ = cyclonite::core::ResourceSharedRef{};
