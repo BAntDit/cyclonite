@@ -35,9 +35,9 @@ void Material::prepareImpl()
 
     auto& shaderSet = rawData_->shaderSet;
     for (auto const& [_, shaderRef] : shaderSet) {
-        auto const& shader = shaderRef.as<Shader>();
+        auto const& shader = shaderRef.as<cyclonite::Shader>();
         bindingCount += shader.bindings().size();
-        actualShaders[shaderCount++] = shaderRef;
+        actualShaders[shaderCount++] = shader.gfxShader();
     }
 
     bindings.reserve(bindingCount);
