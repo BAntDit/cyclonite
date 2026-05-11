@@ -230,6 +230,9 @@ auto PipelineManager::getOrCreatePrimitiveRasterizationPipeline(PipelineCreation
     auto fragmentShaderRef = core::ResourceSharedRef();
 
     for (auto& shaderRef : shaders) {
+        if (!shaderRef.valid())
+            continue;
+
         auto& shader = shaderRef.as<gfx::Shader>();
 
         switch (shader.stage()) {
