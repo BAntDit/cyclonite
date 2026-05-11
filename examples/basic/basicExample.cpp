@@ -97,9 +97,9 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
     shaderSet.add(fragmentShaderRef, cyclonite::gfx::ShaderStageFlags::FRAGMENT);
 
     auto rasterizationState = cyclonite::gfx::RasterizationState{};
-    testMaterial.manualSetup(renderPassRef, shaderSet,  rasterizationState);
+    testMaterial.manualSetup(renderPassRef, shaderSet, rasterizationState).get();
 
-    // TODO:: make render task render
+    materialRef_ = std::move(testMaterialRef);
 
     submissionManager_ = std::make_unique<cyclonite::gfx::QueueSubmissionManager>(deviceRef);
 
@@ -117,9 +117,11 @@ struct RenderTask
 {
     explicit RenderTask(cyclonite::gfx::QueueSubmissionManager* submissionManager,
                         cyclonite::core::ResourceSharedRef renderPassRef,
+                        cyclonite::core::ResourceSharedRef materialRef,
                         cyclonite::core::ResourceSharedRef windowRef)
       : renderPassRef_{ std::move(renderPassRef) }
       , windowRef_{ std::move(windowRef) }
+      , materialRef_{ std::move(materialRef) }
       , submissionManager_{ submissionManager }
     {
     }
@@ -141,6 +143,12 @@ struct RenderTask
 
         assert(renderPassRef_.valid());
         commandListRecorder.beginRenderPass(renderPassRef_);
+
+        auto& material = materialRef_.as<cyclonite::Material>();
+        commandListRecorder.bindPipeline(material.pipeline());
+
+        commandListRecorder.draw(3, 1, 0, 0);
+
         commandListRecorder.endRenderPass();
 
         commandListRecorder.end();
@@ -159,6 +167,7 @@ struct RenderTask
 
     cyclonite::core::ResourceSharedRef renderPassRef_;
     cyclonite::core::ResourceSharedRef windowRef_;
+    cyclonite::core::ResourceSharedRef materialRef_;
     cyclonite::gfx::QueueSubmissionManager* submissionManager_;
 };
 
@@ -171,8 +180,9 @@ auto BasicExample::run() -> BasicExample&
 
         std::cout << "frame start: " << framIndex << std::endl;
 
-        auto&& future = taskManager.submitTask(RenderTask{ submissionManager_.get(), renderPassRef_, windowRef_ },
-                                               cyclonite::multithreading::Purpose::Render);
+        auto&& future =
+          taskManager.submitTask(RenderTask{ submissionManager_.get(), renderPassRef_, materialRef_, windowRef_ },
+                                 cyclonite::multithreading::Purpose::Render);
 
         future.get();
 

@@ -22,6 +22,7 @@ private:
     cyclonite::core::ResourceSharedRef deviceRef_;
     cyclonite::core::ResourceSharedRef renderPassRef_;
     cyclonite::core::ResourceSharedRef windowRef_;
+    cyclonite::core::ResourceSharedRef materialRef_;
     std::unique_ptr<cyclonite::gfx::QueueSubmissionManager> submissionManager_;
     uint32_t defaultResourceGroup_;
     bool shutdown_;
