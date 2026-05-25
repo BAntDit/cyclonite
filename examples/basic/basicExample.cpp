@@ -103,6 +103,7 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
 
     materialRef_ = std::move(testMaterialRef);
 
+    // TODO:: move to device
     submissionManager_ = std::make_unique<cyclonite::gfx::QueueSubmissionManager>(deviceRef);
 
     deviceRef_ = deviceRef;
@@ -115,6 +116,7 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
     return *this;
 }
 
+// TODO:: move to render system
 struct RenderTask
 {
     explicit RenderTask(cyclonite::gfx::QueueSubmissionManager* submissionManager,
