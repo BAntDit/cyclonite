@@ -106,6 +106,10 @@ concept DeviceConcept = requires(T t,
     requires std::is_member_function_pointer_v<decltype(&T::allocateDescriptorSetBySchema)> &&
                std::is_same_v<core::ResourceUniqueRef,
                               metrix::member_function_return_type_t<decltype(&T::allocateDescriptorSetBySchema)>>;
+
+    requires std::is_member_function_pointer_v<decltype(&T::getOrCreatePipelineBindingSchema)> &&
+               std::is_same_v<core::ResourceSharedRef,
+                              metrix::member_function_return_type_t<decltype(&T::getOrCreatePipelineBindingSchema)>>;
 };
 
 template<DeviceConcept PlatformImplementation>
@@ -123,6 +127,7 @@ public:
     using PlatformImplementation::createSignal;
     using PlatformImplementation::createTexture;
     using PlatformImplementation::getOrCreateComputePipeline;
+    using PlatformImplementation::getOrCreatePipelineBindingSchema;
     using PlatformImplementation::getOrCreatePrimitiveRasterizationPipeline;
     using PlatformImplementation::limits;
     using PlatformImplementation::name;
