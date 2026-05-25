@@ -4,8 +4,10 @@
 #include "queueSubmissionRecorder.h"
 
 namespace cyclonite::gfx {
-SubmissionBatchRecorder::SubmissionBatchRecorder(QueueSubmissionRecorder* queueSubmissionRecorder)
+SubmissionBatchRecorder::SubmissionBatchRecorder(QueueSubmissionRecorder* queueSubmissionRecorder,
+                                                 FrameRecordingContext* frameRecordingContext)
   : queueSubmissionRecorder_{ queueSubmissionRecorder }
+  , frameRecordingContext_{ frameRecordingContext }
 {
 }
 
@@ -20,24 +22,26 @@ SubmissionBatchRecorder::~SubmissionBatchRecorder()
 void SubmissionBatchRecorder::finish(bool noexceptions)
 {
     try {
-        auto purpose = queueSubmissionRecorder_->submission_->purpose();
+        auto& submission = queueSubmissionRecorder_->submissionRef_.as<gfx::QueueSubmission>();
+        auto purpose = submission.purpose();
 
-        auto task = [recorder = queueSubmissionRecorder_]() -> void {
-            if (!recorder->submission_->isInBatchRecordingState()) {
+        auto task = [submissionRef = queueSubmissionRecorder_->submissionRef_]() mutable -> void {
+            auto& submission = submissionRef.as<gfx::QueueSubmission>();
+            if (!submission.isInBatchRecordingState()) {
                 throw std::runtime_error("batch recording is already finished");
             }
-
-            recorder->submission_->endBatchRecording();
+            submission.endBatchRecording();
         };
 
-        queueSubmissionRecorder_->futures_.emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+        frameRecordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 
         if (auto ex = multithreading::Executor::threadExecutor().taskManager().getLastException(); ex) {
             std::rethrow_exception(ex);
         }
     } catch (...) {
         if (noexceptions) {
-            queueSubmissionRecorder_->submission_->reset();
+            auto& submission = queueSubmissionRecorder_->submissionRef_.as<gfx::QueueSubmission>();
+            submission.reset();
             return;
         } else {
             auto ex = std::current_exception();
@@ -46,89 +50,89 @@ void SubmissionBatchRecorder::finish(bool noexceptions)
         }
     }
     queueSubmissionRecorder_ = nullptr;
+    frameRecordingContext_ = nullptr;
 }
 
 void SubmissionBatchRecorder::addBatchDependency(size_t dependencyIndex, PipelineStageFlagBits stageMask)
 {
-    auto purpose = queueSubmissionRecorder_->submission_->purpose();
+    auto& submission = queueSubmissionRecorder_->submissionRef_.as<gfx::QueueSubmission>();
+    auto purpose = submission.purpose();
 
-    auto task = [recorder = queueSubmissionRecorder_, dependencyIndex, stageMask]() -> void {
-        if (!recorder->submission_->isInBatchRecordingState()) {
+    auto task =
+      [submissionRef = queueSubmissionRecorder_->submissionRef_, dependencyIndex, stageMask]() mutable -> void {
+        auto& submission = submissionRef.as<gfx::QueueSubmission>();
+        if (!submission.isInBatchRecordingState()) {
             throw std::runtime_error("batch recording is already finished");
         }
 
-        recorder->submission_->addBatchDependency(dependencyIndex, stageMask);
+        submission.addBatchDependency(dependencyIndex, stageMask);
     };
 
-    queueSubmissionRecorder_->futures_.emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+    frameRecordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void SubmissionBatchRecorder::addPresentationSignal(core::ResourceSharedRef const& signal)
 {
-    [[maybe_unused]] auto submissionPurpose = queueSubmissionRecorder_->submission_->purpose();
-    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
+    auto& submission = queueSubmissionRecorder_->submissionRef_.as<gfx::QueueSubmission>();
+    [[maybe_unused]] auto purpose = submission.purpose();
+    assert(multithreading::Executor::threadExecutor().matchesPurpose(purpose));
 
-    queueSubmissionRecorder_->submission_->addPresentationSignal(signal);
+    submission.addPresentationSignal(signal);
 }
 
 void SubmissionBatchRecorder::addBatchDependency(gfx::SubmissionBatchDependency const& externalDependency)
 {
-    auto purpose = queueSubmissionRecorder_->submission_->purpose();
+    auto& submission = queueSubmissionRecorder_->submissionRef_.as<gfx::QueueSubmission>();
+    auto purpose = submission.purpose();
 
-    auto task = [recorder = queueSubmissionRecorder_, dep = externalDependency]() -> void {
-        if (!recorder->submission_->isInBatchRecordingState()) {
+    auto task = [submissionRef = queueSubmissionRecorder_->submissionRef_, dep = externalDependency]() mutable -> void {
+        auto& submission = submissionRef.as<gfx::QueueSubmission>();
+        if (!submission.isInBatchRecordingState()) {
             throw std::runtime_error("batch recording is already finished");
         }
-
-        recorder->submission_->addBatchDependency(dep);
+        submission.addBatchDependency(dep);
     };
 
-    queueSubmissionRecorder_->futures_.emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+    frameRecordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 auto SubmissionBatchRecorder::submission() -> gfx::QueueSubmission&
 {
-    return *queueSubmissionRecorder_->submission_;
+    auto& submission = queueSubmissionRecorder_->submissionRef_.as<gfx::QueueSubmission>();
+    return submission;
 }
 
 auto SubmissionBatchRecorder::submission() const -> gfx::QueueSubmission const&
 {
-    return *queueSubmissionRecorder_->submission_;
-}
-
-auto SubmissionBatchRecorder::futures() -> std::vector<std::future<void>>&
-{
-    return queueSubmissionRecorder_->futures_;
-}
-
-auto SubmissionBatchRecorder::SubmissionBatchRecorder::futures() const -> std::vector<std::future<void>> const&
-{
-    return queueSubmissionRecorder_->futures_;
+    auto const& submission = queueSubmissionRecorder_->submissionRef_.as<gfx::QueueSubmission>();
+    return submission;
 }
 
 auto SubmissionBatchRecorder::addCommandList() -> CommandListRecorder
 {
-    auto purpose = queueSubmissionRecorder_->submission_->purpose();
+    auto& submission = queueSubmissionRecorder_->submissionRef_.as<gfx::QueueSubmission>();
+    auto purpose = submission.purpose();
 
     auto commandListRecorder = CommandListRecorder{ this };
 
-    auto task = [recorder = queueSubmissionRecorder_]() -> void {
-        if (!recorder->submission_->isInRecordingState()) {
+    auto task = [submissionRef = queueSubmissionRecorder_->submissionRef_]() mutable -> void {
+        auto& submission = submissionRef.as<gfx::QueueSubmission>();
+        if (!submission.isInRecordingState()) {
             throw std::runtime_error("submission must be in recording state to record new batch");
         }
 
-        if (!recorder->submission_->isInBatchRecordingState()) {
+        if (!submission.isInBatchRecordingState()) {
             throw std::runtime_error("batch recording is not started yet");
         }
 
-        if (recorder->submission_->isInCommandListRecordingState()) {
+        if (submission.isInCommandListRecordingState()) {
             throw std::runtime_error("command list recording must be over before start new one");
         }
 
-        recorder->submission_->beginCommandListRecording();
+        submission.beginCommandListRecording();
     };
 
-    queueSubmissionRecorder_->futures_.emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+    frameRecordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 
     return commandListRecorder;
 }

@@ -4,14 +4,17 @@
 
 #include "commandListRecorder.h"
 
+#include "frameRecordingContext.h"
 #include "gfx/renderPass.h"
 #include "multithreading/taskManager.h"
 #include "queueSubmissionRecorder.h"
 #include "submissionBatchRecorder.h"
 
 namespace cyclonite::gfx {
-CommandListRecorder::CommandListRecorder(SubmissionBatchRecorder* batchRecorder)
+CommandListRecorder::CommandListRecorder(SubmissionBatchRecorder* batchRecorder,
+                                         FrameRecordingContext* recordingContext)
   : batchRecorder_{ batchRecorder }
+  , recordingContext_{ recordingContext }
 {
 }
 
@@ -34,7 +37,7 @@ void CommandListRecorder::begin(CommandListUsageFlagBits usage)
         recorder->submission().commandListToRecord().begin(usage);
     };
 
-    batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::beginRenderPass(core::ResourceSharedRef renderPassRef)
@@ -42,13 +45,14 @@ void CommandListRecorder::beginRenderPass(core::ResourceSharedRef renderPassRef)
     auto purpose = batchRecorder_->submission().purpose();
 
     auto task = [recorder = batchRecorder_, renderPassRef = std::move(renderPassRef)]() mutable -> void {
-        if (!recorder->submission().isInCommandListRecordingState()) {
+        auto& submission = recorder->submission();
+        if (!submission.isInCommandListRecordingState()) {
             throw std::runtime_error("command list recording is already finished");
         }
 
         auto& renderPass = renderPassRef.as<gfx::RenderPass>();
         if (renderPass.isPresentationPass()) {
-            auto const& swapchainSignal = renderPass.acquireSwapchainSignal(recorder->submission().currentFrameIndex());
+            auto const& swapchainSignal = renderPass.acquireSwapchainSignal(submission.currentFrameIndex());
 
             recorder->addBatchDependency(gfx::SubmissionBatchDependency{
               swapchainSignal, PipelineStageFlagBits{ PipelineStageFlags::FRAGMENT_SHADER_BIT } });
@@ -56,10 +60,10 @@ void CommandListRecorder::beginRenderPass(core::ResourceSharedRef renderPassRef)
             recorder->addPresentationSignal(renderPass.presentationSignal());
         }
 
-        recorder->submission().commandListToRecord().beginRenderPass(renderPassRef);
+        submission.commandListToRecord().beginRenderPass(renderPassRef);
     };
 
-    batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::bindDescriptorSet(PipelineBindPoint bindPoint,
@@ -74,15 +78,16 @@ void CommandListRecorder::bindDescriptorSet(PipelineBindPoint bindPoint,
                  bindingSchemaRef = std::move(bindingSchemaRef),
                  descriptorSetRef = std::move(descriptorSetRef),
                  dynamicOffsets]() mutable -> void {
-        if (!recorder->submission().isInCommandListRecordingState()) {
+        auto& submission = recorder->submission();
+        if (!submission.isInCommandListRecordingState()) {
             throw std::runtime_error("command list recording is already finished");
         }
 
-        recorder->submission().commandListToRecord().bindDescriptorSet(
+        submission.commandListToRecord().bindDescriptorSet(
           bindPoint, bindingSchemaRef, descriptorSetRef, dynamicOffsets);
     };
 
-    batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::bindIndexBuffer(core::ResourceSharedRef bufferRef, size_t offset, IndexType indexType)
@@ -90,14 +95,15 @@ void CommandListRecorder::bindIndexBuffer(core::ResourceSharedRef bufferRef, siz
     auto purpose = batchRecorder_->submission().purpose();
 
     auto task = [recorder = batchRecorder_, bufferRef = std::move(bufferRef), offset, indexType]() mutable -> void {
-        if (!recorder->submission().isInCommandListRecordingState()) {
+        auto& submission = recorder->submission();
+        if (!submission.isInCommandListRecordingState()) {
             throw std::runtime_error("command list recording is already finished");
         }
 
-        recorder->submission().commandListToRecord().bindIndexBuffer(bufferRef, offset, indexType);
+        submission.commandListToRecord().bindIndexBuffer(bufferRef, offset, indexType);
     };
 
-    batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::endRenderPass()
@@ -105,13 +111,14 @@ void CommandListRecorder::endRenderPass()
     auto purpose = batchRecorder_->submission().purpose();
 
     auto task = [recorder = batchRecorder_]() -> void {
-        if (!recorder->submission().isInCommandListRecordingState()) {
+        auto& submission = recorder->submission();
+        if (!submission.isInCommandListRecordingState()) {
             throw std::runtime_error("command list recording is already finished");
         }
-        recorder->submission().commandListToRecord().endRenderPass();
+        submission.commandListToRecord().endRenderPass();
     };
 
-    batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::end()
@@ -119,13 +126,14 @@ void CommandListRecorder::end()
     auto purpose = batchRecorder_->submission().purpose();
 
     auto task = [recorder = batchRecorder_]() -> void {
-        if (!recorder->submission().isInCommandListRecordingState()) {
+        auto& submission = recorder->submission();
+        if (!submission.isInCommandListRecordingState()) {
             throw std::runtime_error("command list recording is already finished");
         }
-        recorder->submission().commandListToRecord().end();
+        submission.commandListToRecord().end();
     };
 
-    batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::bindPipeline(core::ResourceSharedRef pipeline)
@@ -133,13 +141,14 @@ void CommandListRecorder::bindPipeline(core::ResourceSharedRef pipeline)
     auto purpose = batchRecorder_->submission().purpose();
 
     auto task = [recorder = batchRecorder_, pipeline = std::move(pipeline)]() mutable -> void {
-        if (!recorder->submission().isInCommandListRecordingState()) {
+        auto& submission = recorder->submission();
+        if (!submission.isInCommandListRecordingState()) {
             throw std::runtime_error("command list recording is already finished");
         }
-        recorder->submission().commandListToRecord().bindPipeline(pipeline);
+        submission.commandListToRecord().bindPipeline(pipeline);
     };
 
-    batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::draw(uint32_t vertexCount,
@@ -150,13 +159,14 @@ void CommandListRecorder::draw(uint32_t vertexCount,
     auto purpose = batchRecorder_->submission().purpose();
 
     auto task = [recorder = batchRecorder_, vertexCount, instanceCount, firstVertex, firstInstance]() -> void {
-        if (!recorder->submission().isInCommandListRecordingState()) {
+        auto& submission = recorder->submission();
+        if (!submission.isInCommandListRecordingState()) {
             throw std::runtime_error("command list recording is already finished");
         }
-        recorder->submission().commandListToRecord().draw(vertexCount, instanceCount, firstVertex, firstInstance);
+        submission.commandListToRecord().draw(vertexCount, instanceCount, firstVertex, firstInstance);
     };
 
-    batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::drawIndexed(uint32_t indexCount,
@@ -169,14 +179,15 @@ void CommandListRecorder::drawIndexed(uint32_t indexCount,
 
     auto task =
       [recorder = batchRecorder_, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance]() -> void {
-        if (!recorder->submission().isInCommandListRecordingState()) {
+        auto& submission = recorder->submission();
+        if (!submission.isInCommandListRecordingState()) {
             throw std::runtime_error("command list recording is already finished");
         }
-        recorder->submission().commandListToRecord().drawIndexed(
+        submission.commandListToRecord().drawIndexed(
           indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
     };
 
-    batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::drawIndirect(core::ResourceSharedRef bufferRef, size_t offset, uint32_t count)
@@ -184,13 +195,14 @@ void CommandListRecorder::drawIndirect(core::ResourceSharedRef bufferRef, size_t
     auto purpose = batchRecorder_->submission().purpose();
 
     auto task = [recorder = batchRecorder_, bufferRef = std::move(bufferRef), offset, count]() mutable -> void {
-        if (!recorder->submission().isInCommandListRecordingState()) {
+        auto& submission = recorder->submission();
+        if (!submission.isInCommandListRecordingState()) {
             throw std::runtime_error("command list recording is already finished");
         }
-        recorder->submission().commandListToRecord().drawIndirect(bufferRef, offset, count);
+        submission.commandListToRecord().drawIndirect(bufferRef, offset, count);
     };
 
-    batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::drawIndexedIndirect(core::ResourceSharedRef bufferRef, size_t offset, uint32_t count)
@@ -198,13 +210,14 @@ void CommandListRecorder::drawIndexedIndirect(core::ResourceSharedRef bufferRef,
     auto purpose = batchRecorder_->submission().purpose();
 
     auto task = [recorder = batchRecorder_, bufferRef = std::move(bufferRef), offset, count]() mutable -> void {
-        if (!recorder->submission().isInCommandListRecordingState()) {
+        auto& submission = recorder->submission();
+        if (!submission.isInCommandListRecordingState()) {
             throw std::runtime_error("command list recording is already finished");
         }
-        recorder->submission().commandListToRecord().drawIndexedIndirect(bufferRef, offset, count);
+        submission.commandListToRecord().drawIndexedIndirect(bufferRef, offset, count);
     };
 
-    batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::finish(bool noexceptions)
@@ -213,14 +226,15 @@ void CommandListRecorder::finish(bool noexceptions)
         auto purpose = batchRecorder_->submission().purpose();
 
         auto task = [recorder = batchRecorder_]() -> void {
-            if (!recorder->submission().isInCommandListRecordingState()) {
+            auto& submission = recorder->submission();
+            if (!submission.isInCommandListRecordingState()) {
                 throw std::runtime_error("command list recording is already finished");
             }
 
-            recorder->submission().endCommandListRecording();
+            submission.endCommandListRecording();
         };
 
-        batchRecorder_->futures().emplace_back(multithreading::TaskManager::submitTask(task, purpose));
+        recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 
         if (auto ex = multithreading::Executor::threadExecutor().taskManager().getLastException(); ex) {
             std::rethrow_exception(ex);

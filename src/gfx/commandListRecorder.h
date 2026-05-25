@@ -9,13 +9,16 @@
 #include "gfx/common.h"
 #include <span>
 
+#include "frameRecordingContext.h"
+
 namespace cyclonite::gfx {
 class SubmissionBatchRecorder;
+class FrameRecordingContext;
 
 class CommandListRecorder
 {
 public:
-    explicit CommandListRecorder(SubmissionBatchRecorder* batchRecorder);
+    explicit CommandListRecorder(SubmissionBatchRecorder* batchRecorder, FrameRecordingContext* recordingContext);
 
     ~CommandListRecorder();
 
@@ -54,6 +57,7 @@ private:
     void finish(bool noexceptions);
 
     SubmissionBatchRecorder* batchRecorder_;
+    FrameRecordingContext* recordingContext_;
 };
 }
 

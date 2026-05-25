@@ -6,10 +6,9 @@
 #define CYCLONITE_QUEUE_SUBMISSION_RECORDER_H
 
 #include "core/resourceSharedRef.h"
+#include "frameRecordingContext.h"
 #include "queueSubmission.h"
 #include "submissionBatchRecorder.h"
-#include <future>
-#include <vector>
 
 namespace cyclonite::gfx {
 class QueueSubmissionRecorder
@@ -17,22 +16,19 @@ class QueueSubmissionRecorder
     friend class SubmissionBatchRecorder;
 
 public:
-    QueueSubmissionRecorder();
+    QueueSubmissionRecorder(core::ResourceSharedRef const& submissionRef, FrameRecordingContext& frameRecordingContext);
 
-    ~QueueSubmissionRecorder();
-
-    void setQueueSubmission(core::ResourceSharedRef submissionRef);
+    ~QueueSubmissionRecorder() = default;
 
     [[nodiscard]] auto addBatch() -> SubmissionBatchRecorder;
 
-    void finish() { finish(false); }
+    void start();
+
+    void finish(bool releaseSubmissionOnly = false);
 
 private:
-    void finish(bool noexceptions);
-
     core::ResourceSharedRef submissionRef_;
-    QueueSubmission* submission_;
-    std::vector<std::future<void>> futures_;
+    FrameRecordingContext* recordingContext_;
 };
 }
 

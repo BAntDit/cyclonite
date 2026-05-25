@@ -3,6 +3,7 @@
 #define CYCLONITE_GFX_SUBMISSION_BATCH_RECORDER_H
 
 #include "commandListRecorder.h"
+#include "frameRecordingContext.h"
 #include "gfx/common.h"
 #include "gfx/queueSubmission.h"
 
@@ -15,8 +16,6 @@ class SubmissionBatchRecorder
     friend class CommandListRecorder;
 
 public:
-    explicit SubmissionBatchRecorder(QueueSubmissionRecorder* queueSubmissionRecorder);
-
     ~SubmissionBatchRecorder();
 
     void finish() { finish(false); }
@@ -31,17 +30,17 @@ public:
 
     [[nodiscard]] auto submission() const -> gfx::QueueSubmission const&;
 
-    [[nodiscard]] auto futures() -> std::vector<std::future<void>>&;
-
-    [[nodiscard]] auto futures() const -> std::vector<std::future<void>> const&;
-
 private:
+    SubmissionBatchRecorder(QueueSubmissionRecorder* queueSubmissionRecorder,
+                            FrameRecordingContext* frameRecordingContext);
+
     void addPresentationSignal(core::ResourceSharedRef const& signal);
 
 private:
     void finish(bool noexceptions);
 
     QueueSubmissionRecorder* queueSubmissionRecorder_;
+    FrameRecordingContext* frameRecordingContext_;
 };
 }
 
