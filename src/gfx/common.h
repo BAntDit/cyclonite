@@ -311,8 +311,7 @@ enum class DescriptorSpace : uint_fast8_t
     PER_FRAME = 1,
     PER_BATCH_STATIC = 2,
     PER_BATCH_DYNAMIC = 3,
-    BINDLESS_TEXTURES = 4,
-    BINDLESS_BUFFERS = 5
+    GLOBAL_BINDLESS = 4
 };
 
 enum class DescriptorSetLayoutFlags : uint32_t
