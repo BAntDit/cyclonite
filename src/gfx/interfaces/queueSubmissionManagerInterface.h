@@ -28,6 +28,7 @@ public:
     using PlatformImplementation::currentFrameIndex;
     using PlatformImplementation::flush;
     using PlatformImplementation::PlatformImplementation;
+    using PlatformImplementation::platformQueueSubmissionManager;
 };
 };
 

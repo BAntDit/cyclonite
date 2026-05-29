@@ -403,6 +403,9 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     limits_.maxColorAttachmentCount = static_cast<uint8_t>(physicalDeviceProperties.limits.maxColorAttachments);
 
     pipelineManager_ = std::make_unique<PipelineManager>(this);
+
+    auto* queueSubmissionManager = new gfx::QueueSubmissionManager{ this };
+    queueSubmissionManager_ = std::unique_ptr<gfx::QueueSubmissionManager>{ queueSubmissionManager };
 }
 
 auto Device::createSignal(SignalType signalType, uint64_t initialValue /* = 0*/) -> core::ResourceUniqueRef
@@ -599,8 +602,7 @@ auto Device::createCommandPool(uint32_t queueFamilyIndex, CommandPoolFlagBits fl
     return result;
 }
 
-auto Device::createQueueSubmission(QueueSubmissionManager* queueSubmissionManager,
-                                   uint32_t queueFamilyIndex,
+auto Device::createQueueSubmission(uint32_t queueFamilyIndex,
                                    CommandPoolFlagBits commandPoolFlags) -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
@@ -609,6 +611,7 @@ auto Device::createQueueSubmission(QueueSubmissionManager* queueSubmissionManage
 
     auto deviceRef = getSharedFromThis(this);
 
+    auto* queueSubmissionManager = queueSubmissionManager_->platformQueueSubmissionManager();
     result = resManager.allocResource<gfx::QueueSubmission>(
       deviceRef, queueSubmissionManager, queueFamilyIndex, commandPoolFlags);
 

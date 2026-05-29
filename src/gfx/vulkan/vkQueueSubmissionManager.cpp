@@ -9,8 +9,8 @@
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
-QueueSubmissionManager::QueueSubmissionManager(core::ResourceSharedRef deviceRef)
-  : deviceRef_{ std::move(deviceRef) }
+QueueSubmissionManager::QueueSubmissionManager(Device* device)
+  : device_{ device }
   , signalPool_{}
   , queueSubmissionRingMap_{}
   , completedFrames_{}
@@ -33,8 +33,8 @@ auto QueueSubmissionManager::acquireSignal(uint64_t signalInitialValue) -> core:
         result = signalPool_.back();
         signalPool_.pop_back();
     } else {
-        auto& device = deviceRef_.as<gfx::Device>();
-        result = device.createSignal(gfx::SignalType::TIMELINE, signalInitialValue);
+        assert(device_ != nullptr);
+        result = device_->createSignal(gfx::SignalType::TIMELINE, signalInitialValue);
     }
 
     return result;
@@ -49,22 +49,20 @@ auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purp
                                                     CommandPoolFlagBits flags) -> core::ResourceSharedRef
 {
     auto acquireQueueSubmissionTask = [purpose, flags, this]() -> core::ResourceSharedRef {
-        assert(deviceRef_.valid());
+        assert(device_ != nullptr);
 
         assert(purpose != multithreading::Purpose::General);
         auto queueFamilyIndex = uint32_t{ 0 };
 
-        auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();
-
         switch (purpose) {
             case multithreading::Purpose::Render:
-                queueFamilyIndex = device.graphicsQueueFamilyIndex();
+                queueFamilyIndex = device_->graphicsQueueFamilyIndex();
                 break;
             case multithreading::Purpose::Compute:
-                queueFamilyIndex = device.computeQueueFamilyIndex();
+                queueFamilyIndex = device_->computeQueueFamilyIndex();
                 break;
             case multithreading::Purpose::Transfer:
-                queueFamilyIndex = device.transferQueueFamilyIndex();
+                queueFamilyIndex = device_->transferQueueFamilyIndex();
                 break;
             default:
                 assert(false);
@@ -107,7 +105,7 @@ auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purp
                 }
             } // if pending
         } else { // new submission
-            submissionRef = device.createQueueSubmission(this, queueFamilyIndex, flags);
+            submissionRef = device_->createQueueSubmission(queueFamilyIndex, flags);
         }
 
         {

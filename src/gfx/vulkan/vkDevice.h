@@ -14,6 +14,7 @@
 #include "gfx/color.h"
 #include "gfx/common.h"
 #include "gfx/config.h"
+#include "gfx/queueSubmissionManager.h"
 #include "handle.h"
 #include "vmaUsage.h"
 #include <array>
@@ -26,14 +27,14 @@ struct RasterizationState;
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
-class QueueSubmissionManager;
-
 class PipelineManager;
 
 class Device
   : public core::ResourceBase
   , public core::EnableRefFromThis
 {
+    friend class vulkan::QueueSubmissionManager;
+
 public:
     Device(core::ResourceManagerBase* resourceManager,
            core::ResourceId resourceId,
@@ -132,10 +133,6 @@ public:
     [[nodiscard]] auto createCommandPool(uint32_t queueFamilyIndex,
                                          CommandPoolFlagBits flags) -> core::ResourceUniqueRef;
 
-    [[nodiscard]] auto createQueueSubmission(QueueSubmissionManager* queueSubmissionManager,
-                                             uint32_t queueFamilyIndex,
-                                             CommandPoolFlagBits commandPoolFlags) -> core::ResourceUniqueRef;
-
     [[nodiscard]] auto createDescriptorSetLayout(std::span<gfx::Binding const> bindings) -> core::ResourceUniqueRef;
 
     [[nodiscard]] auto createPipelineBindingSchema(std::span<core::ResourceSharedRef const> setLayouts,
@@ -190,9 +187,19 @@ public:
         return static_cast<VkPipelineCache>(vkPipelineCache_);
     }
 
+    [[nodiscard]] auto queueSubmissionManager() -> gfx::QueueSubmissionManager& { return *queueSubmissionManager_; }
+
+    [[nodiscard]] auto queueSubmissionManager() const -> gfx::QueueSubmissionManager const&
+    {
+        return *queueSubmissionManager_;
+    }
+
     using core::ResourceBase::resourceBase;
 
 private:
+    [[nodiscard]] auto createQueueSubmission(uint32_t queueFamilyIndex,
+                                             CommandPoolFlagBits commandPoolFlags) -> core::ResourceUniqueRef;
+
     VkInstance vkInstance_;
     VkPhysicalDevice vkPhysicalDevice_;
     std::string name_;
@@ -209,6 +216,7 @@ private:
     VmaAllocator vmaAllocator_;
     std::unique_ptr<core::ResourceManagerBase> internalResourceManager_;
     std::unique_ptr<PipelineManager> pipelineManager_;
+    std::unique_ptr<gfx::QueueSubmissionManager> queueSubmissionManager_;
 };
 }
 

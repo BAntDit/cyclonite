@@ -12,13 +12,17 @@
 #include "multithreading/common.h"
 #include <array>
 
+#include "vkQueueSubmission.h"
+
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
+class Device;
+
 class QueueSubmissionManager
 {
-public:
-    explicit QueueSubmissionManager(core::ResourceSharedRef deviceRef);
+    friend class Device;
 
+public:
     QueueSubmissionManager(QueueSubmissionManager const&) = delete;
 
     QueueSubmissionManager(QueueSubmissionManager&&) = default;
@@ -41,6 +45,12 @@ public:
     void returnSignal(core::ResourceSharedRef const& signal);
 
 private:
+    explicit QueueSubmissionManager(Device* device);
+
+    [[nodiscard]] auto platformQueueSubmissionManager() -> vulkan::QueueSubmissionManager* { return this; };
+
+    [[nodiscard]] auto platformQueueSubmissionManager() const -> vulkan::QueueSubmissionManager const* { return this; };
+
     using queue_submission_ring_t = std::array<core::ResourceSharedRef, config_t::queue_submission_ring_size_v>;
 
     using queue_submission_map_t = core::StaticHashTable<queue_submission_ring_t,
@@ -55,7 +65,7 @@ private:
                                                    uint32_t,
                                                    std::underlying_type_t<gfx::CommandPoolFlags>>;
 
-    core::ResourceSharedRef deviceRef_;
+    Device* device_;
 
     std::vector<core::ResourceSharedRef> signalPool_;
 
