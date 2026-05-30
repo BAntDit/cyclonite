@@ -4,11 +4,15 @@
 
 #include "bindlessResourceManager.h"
 #include "gfx/device.h"
+#include <bit>
+
+#include "descriptorSet.h"
 
 namespace cyclonite::gfx {
 BindlessResourceManager::BindlessResourceManager(size_t swapChainLength, core::ResourceSharedRef deviceRef)
   : frameIndex_{ 0 }
   , updateStack_{}
+  , globalDescriptorCount_{ swapChainLength + 1 }
   , globalDescriptorSetRef_{}
   , freeResourceIndices_{}
 {
@@ -50,8 +54,8 @@ BindlessResourceManager::BindlessResourceManager(size_t swapChainLength, core::R
 
     auto bindingSchema = device.getOrCreatePipelineBindingSchema(bindings, std::span<gfx::PushConstantRange>{});
 
-    assert(swapChainLength < max_global_descriptor_set_count_v);
-    for (auto i = size_t{ 0 }; i <= swapChainLength; i++) {
+    assert(globalDescriptorCount_ <= max_global_descriptor_set_count_v);
+    for (auto i = size_t{ 0 }; i < globalDescriptorCount_; i++) {
         globalDescriptorSetRef_[i] = device.allocateDescriptorSetBySchema(
           bindingSchema, metrix::value_cast(gfx::DescriptorSpace::GLOBAL_BINDLESS), false);
     }
@@ -64,7 +68,12 @@ void BindlessResourceManager::startFrame(uint64_t frameIndex)
         auto& [data, mask] = *(it);
 
         if (mask.test(frameIndex)) {
-            // TODO::
+            auto srcIndex = static_cast<size_t>(std::countr_zero(~mask.to_ullong())); // TODO:: test
+            assert(srcIndex < globalDescriptorCount_);
+
+            auto& dst = globalDescriptorSetRef_[frameIndex];
+            auto const& src = globalDescriptorSetRef_[srcIndex];
+            dst.as<gfx::DescriptorSet>().copy(src, data);
 
             mask.reset(frameIndex);
         }

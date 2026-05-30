@@ -32,6 +32,8 @@ public:
         return globalDescriptorSetRef_[frameIndex_];
     }
 
+    // emplace descriptors methods
+
 private:
     static constexpr size_t max_global_descriptor_set_count_v = config_t::max_swapchain_length_v + 1;
 
@@ -42,7 +44,10 @@ private:
     uint64_t frameIndex_;
 
     update_stack_t updateStack_;
+
+    size_t globalDescriptorCount_;
     std::array<core::ResourceSharedRef, max_global_descriptor_set_count_v> globalDescriptorSetRef_;
+
     std::map<gfx::DescriptorType, std::vector<size_t>> freeResourceIndices_;
 };
 }
