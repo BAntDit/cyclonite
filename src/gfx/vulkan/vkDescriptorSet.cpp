@@ -29,6 +29,34 @@ DescriptorSet::DescriptorSet(core::ResourceManagerBase* resourceManager,
     vkDescriptorSet_ = pool.allocateDescriptorSet();
 }
 
+void DescriptorSet::copy(core::ResourceSharedRef const& copyFrom, std::span<DescriptorCopyData const> copyData)
+{
+    auto const& srcSet = copyFrom.as<vulkan::DescriptorSet>();
+
+    auto vkCopyData = std::vector<VkCopyDescriptorSet>{};
+    vkCopyData.reserve(copyData.size());
+
+    for (auto const& copyDesc : copyData) {
+        auto& vkCopyDesc = vkCopyData.emplace_back();
+        auto [srcBinding, srcElement, dstBinding, dstElement] = copyDesc;
+
+        vkCopyDesc.sType = VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET;
+        vkCopyDesc.srcSet = srcSet.handle();
+        vkCopyDesc.srcBinding = srcBinding;
+        vkCopyDesc.srcArrayElement = srcElement;
+        vkCopyDesc.dstSet = vkDescriptorSet_;
+        vkCopyDesc.dstBinding = dstBinding;
+        vkCopyDesc.dstArrayElement = dstElement;
+        vkCopyDesc.descriptorCount = 1;
+    }
+
+    auto& pool = descriptorPool_.as<DescriptorPool>();
+    auto deviceRef = pool.device();
+    auto& device = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>();
+
+    vkUpdateDescriptorSets(device.handle(), 0, nullptr, vkCopyData.size(), vkCopyData.data());
+}
+
 void DescriptorSet::update(std::span<DescriptorWriteData const> updateData)
 {
     auto writeData = std::vector<VkWriteDescriptorSet>{};
@@ -49,9 +77,7 @@ void DescriptorSet::update(std::span<DescriptorWriteData const> updateData)
         writeDesc.descriptorType = descType;
 
         assert(resource.valid());
-        if (descType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || descType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
-            descType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
-            descType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC) {
+        if (descType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || descType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
             auto bufferInfo = VkDescriptorBufferInfo{};
 
             auto const& bufferDesc = std::get<BufferResourceDescription>(desc);
@@ -79,13 +105,16 @@ void DescriptorSet::update(std::span<DescriptorWriteData const> updateData)
             imageInfo.imageLayout = internal::getImageLayout(imageDesc.state);
 
             writeDesc.pImageInfo = &imageInfo;
-        } else if (descType == VK_DESCRIPTOR_TYPE_SAMPLER) {
+        } else if (descType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) {
             auto imageInfo = VkDescriptorImageInfo{};
-            auto& sampler = resource.as<type_traits::platform_implementation_t<gfx::Sampler>>();
+            auto& texture = resource.as<type_traits::platform_implementation_t<gfx::Texture>>();
+            auto srvRef = texture.getSRV();
 
-            imageInfo.imageView = VK_NULL_HANDLE;
-            imageInfo.sampler = sampler.handle();
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            auto& srv = srvRef.as<type_traits::platform_implementation_t<gfx::ShaderResourceView>>();
+            auto const& imageDesc = std::get<TextureResourceDescription>(desc);
+
+            imageInfo.imageView = srv.handle();
+            imageInfo.imageLayout = internal::getImageLayout(imageDesc.state);
 
             writeDesc.pImageInfo = &imageInfo;
         }

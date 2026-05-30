@@ -28,6 +28,8 @@ public:
 
     void update(std::span<DescriptorWriteData const> updateData);
 
+    void copy(core::ResourceSharedRef const& copyFrom, std::span<DescriptorCopyData const> copyData);
+
 private:
     core::ResourceSharedRef descriptorPool_;
     VkDescriptorSet vkDescriptorSet_;

@@ -12,10 +12,15 @@
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept DescriptorSetConcept = requires(T t, std::span<DescriptorWriteData const> data) {
+concept DescriptorSetConcept = requires(T t,
+                                        core::ResourceSharedRef r,
+                                        std::span<DescriptorWriteData const> writeData,
+                                        std::span<DescriptorCopyData const> copyData) {
     { t.index() } -> std::same_as<uint32_t>;
 
-    { t.update(data) } -> std::same_as<void>;
+    { t.update(writeData) } -> std::same_as<void>;
+
+    { t.copy(r, copyData) } -> std::same_as<void>;
 };
 
 template<DescriptorSetConcept PlatformImplementation>
@@ -24,6 +29,7 @@ class DescriptorSetInterface : private PlatformImplementation
 public:
     friend class core::ResourceBase;
 
+    using PlatformImplementation::copy;
     using PlatformImplementation::index;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::resourceBase;
