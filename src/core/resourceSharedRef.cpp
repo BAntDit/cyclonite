@@ -50,6 +50,12 @@ auto ResourceSharedRef::valid() const -> bool
     return resource_ != nullptr && resource_->resourceManager_->isResourceValid(id_);
 }
 
+auto ResourceSharedRef::typeIndex() const -> uint8_t
+{
+    return (resource_ == nullptr) ? std::numeric_limits<uint8_t>::max()
+                                  : resource_->resourceManager_->resourceTypeIndex(id_);
+}
+
 ResourceSharedRef::~ResourceSharedRef()
 {
     if (valid()) {

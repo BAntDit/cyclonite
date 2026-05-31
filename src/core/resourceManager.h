@@ -31,6 +31,8 @@ public:
 
     [[nodiscard]] virtual auto isResourceValid(ResourceId id) const -> bool = 0;
 
+    [[nodiscard]] virtual auto resourceTypeIndex(ResourceId id) const -> uint8_t = 0;
+
     virtual ~ResourceManagerBase() = default;
 
 protected:
@@ -207,6 +209,8 @@ public:
     void gc(bool clearAll = false);
 
     [[nodiscard]] auto isResourceValid(ResourceId id) const -> bool final;
+
+    [[nodiscard]] auto resourceTypeIndex(ResourceId id) const -> uint8_t final;
 
     template<typename... Res>
     [[nodiscard]] auto resourceCount() const -> uint32_t;
@@ -444,6 +448,17 @@ auto ResourceManager<ResourceTypes...>::isResourceValid(ResourceId id) const -> 
     auto const& header = headers_[id.index()];
 
     return id.version() == header.version;
+}
+
+template<ResourceConcept... ResourceTypes>
+auto ResourceManager<ResourceTypes...>::resourceTypeIndex(ResourceId id) const -> uint8_t
+{
+    auto lock = std::shared_lock{ headersGuard_ };
+
+    assert(id.index() < headers_.size());
+    auto const& header = headers_[id.index()];
+
+    return header.type;
 }
 
 template<ResourceConcept... ResourceTypes>

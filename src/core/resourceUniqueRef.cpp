@@ -32,6 +32,12 @@ auto ResourceUniqueRef::valid() const -> bool
     return resource_ != nullptr && resource_->resourceManager_->isResourceValid(id_);
 }
 
+auto ResourceUniqueRef::typeIndex() const -> uint8_t
+{
+    return (resource_ == nullptr) ? std::numeric_limits<uint8_t>::max()
+                                  : resource_->resourceManager_->resourceTypeIndex(id_);
+}
+
 auto ResourceUniqueRef::operator=(ResourceUniqueRef&& rhs) noexcept -> ResourceUniqueRef&
 {
     id_ = rhs.id_;

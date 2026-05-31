@@ -41,6 +41,8 @@ public:
 
     [[nodiscard]] auto valid() const -> bool;
 
+    [[nodiscard]] auto typeIndex() const -> uint8_t;
+
     [[nodiscard]] auto refCount() const -> uint64_t { return resource_->refCount(); }
 
     [[nodiscard]] auto resourceBase() const -> ResourceBase* { return resource_; }
