@@ -46,6 +46,7 @@ public:
     using PlatformImplementation::mipCount;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::resourceBase;
+    using PlatformImplementation::sampler;
     using PlatformImplementation::type;
     using PlatformImplementation::width;
 };
