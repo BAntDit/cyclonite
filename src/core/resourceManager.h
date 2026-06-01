@@ -112,10 +112,12 @@ class ResourceManager : public ResourceManagerBase
         static constexpr size_t invalid_resource_v = std::numeric_limits<size_t>::max();
     };
 
+public:
     using resource_type_list_t = metrix::type_list<ResourceTypes...>;
 
     using resource_meta_t = ResourceMeta<resource_type_list_t>;
 
+private:
     struct resource_block_t
     {
         alignas(resource_meta_t::uniform_align_v) std::byte bytes[resource_meta_t::uniform_size_v] = {};
