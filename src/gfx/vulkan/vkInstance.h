@@ -5,6 +5,7 @@
 #ifndef GFX_VK_INSTANCE_H
 #define GFX_VK_INSTANCE_H
 
+#include "gfx/bindlessResourceManager.h"
 #include "gfx/resourceManager.h"
 #include "handle.h"
 #include <string_view>
@@ -33,6 +34,13 @@ public:
     [[nodiscard]] auto createDevice(uint32_t deviceId = std::numeric_limits<uint32_t>::max())
       -> core::ResourceUniqueRef;
 
+    [[nodiscard]] auto bindlessResourceManager() const -> BindlessResourceManager const&
+    {
+        return *bindlessResourceManager_;
+    }
+
+    [[nodiscard]] auto bindlessResourceManager() -> BindlessResourceManager& { return *bindlessResourceManager_; }
+
 private:
     [[nodiscard]] auto chooseBestPhysicalDevice() const -> uint32_t;
 
@@ -40,6 +48,7 @@ private:
     std::vector<VkPhysicalDevice> physicalDeviceList_;
     Handle<VkInstance> vkInstance_;
     std::unique_ptr<resource_manager_t> resourceManager_;
+    std::unique_ptr<BindlessResourceManager> bindlessResourceManager_;
 };
 }
 

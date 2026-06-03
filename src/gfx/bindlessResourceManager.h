@@ -20,7 +20,9 @@ namespace cyclonite::gfx {
 class BindlessResourceManager
 {
 public:
-    BindlessResourceManager(size_t swapChainLength, core::ResourceSharedRef deviceRef);
+    BindlessResourceManager();
+
+    void init(size_t swapChainLength, core::ResourceSharedRef deviceRef);
 
     void startFrame(uint64_t frameIndex);
 

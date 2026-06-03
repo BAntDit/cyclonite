@@ -20,15 +20,21 @@ enum class BindingPoint : uint32_t
     COMBINED_IMAGE_SAMPLER = 3
 };
 }
-BindlessResourceManager::BindlessResourceManager(size_t swapChainLength, core::ResourceSharedRef deviceRef)
+BindlessResourceManager::BindlessResourceManager()
   : frameIndex_{ 0 }
   , lastResourceIndex_{ 0 }
   , updateStack_{}
-  , globalDescriptorCount_{ swapChainLength + 1 }
+  , globalDescriptorCount_{ 0 }
   , globalDescriptorSetRef_{}
   , emplacedResources_{}
   , freeResourceIndices_{}
 {
+}
+
+void BindlessResourceManager::init(size_t swapChainLength, core::ResourceSharedRef deviceRef)
+{
+    globalDescriptorCount_ = swapChainLength + 1;
+
     auto& device = deviceRef.as<gfx::Device>();
 
     auto allShaderStages = gfx::ShaderStageFlagBits{ gfx::ShaderStageFlags::ALL };
@@ -277,7 +283,7 @@ void BindlessResourceManager::emplaceResource(core::ResourceSharedRef const& res
 
     updateStack_.push_back(std::pair{ copyVec, mask });
 
-    emplacedResources_.emplace(elementIndex, std::pair{descriptorType, resourceRef });
+    emplacedResources_.emplace(elementIndex, std::pair{ descriptorType, resourceRef });
 }
 
 auto BindlessResourceManager::getElementIndex(gfx::DescriptorType descriptorType) -> uint32_t

@@ -131,6 +131,7 @@ Instance::Instance(std::string_view applicationName)
   : physicalDeviceList_{}
   , vkInstance_{ vkDestroyInstance }
   , resourceManager_{ std::make_unique<resource_manager_t>() }
+  , bindlessResourceManager_{ std::make_unique<gfx::BindlessResourceManager>() }
 {
 #if !defined(NDEBUG)
     auto reqLayers = std::array<char const*, 1>{ "VK_LAYER_KHRONOS_validation" };

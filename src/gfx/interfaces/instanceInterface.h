@@ -15,6 +15,8 @@ template<typename T>
 concept InstanceConcept = requires(T t) {
     { t.physicalDeviceCount() } -> std::same_as<uint32_t>;
 
+    requires std::is_member_function_pointer_v<decltype(&T::bindlessResourceManager)>;
+
     requires std::is_member_function_pointer_v<decltype(&T::createDevice)>;
 
     requires std::is_same_v<core::ResourceUniqueRef, metrix::member_function_return_type_t<decltype(&T::createDevice)>>;
