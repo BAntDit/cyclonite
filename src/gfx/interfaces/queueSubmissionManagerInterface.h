@@ -15,6 +15,10 @@ template<typename T>
 concept QueueSubmissionManagerConcept = requires(T t, multithreading::Purpose p, CommandPoolFlagBits f) {
     { t.currentFrameIndex() } -> std::same_as<uint64_t>;
 
+    { t.currentSubmissionIndex() } -> std::same_as<uint64_t>;
+
+    { t.getCompletedFrameIndex() } -> std::same_as<uint64_t>;
+
     { t.acquireQueueSubmission(p, f) } -> std::same_as<core::ResourceSharedRef>;
 
     { t.flush() } -> std::same_as<void>;
@@ -26,7 +30,9 @@ class QueueSubmissionManagerInterface : private PlatformImplementation
 public:
     using PlatformImplementation::acquireQueueSubmission;
     using PlatformImplementation::currentFrameIndex;
+    using PlatformImplementation::currentSubmissionIndex;
     using PlatformImplementation::flush;
+    using PlatformImplementation::getCompletedFrameIndex;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::platformQueueSubmissionManager;
 };

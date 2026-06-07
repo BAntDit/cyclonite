@@ -35,8 +35,16 @@ public:
 
     [[nodiscard]] auto currentFrameIndex() const -> uint64_t { return currentFrameIndex_; }
 
+    [[nodiscard]] auto currentSubmissionIndex() const -> uint64_t
+    {
+        return currentFrameIndex_ % config_t::queue_submission_ring_size_v;
+    }
+
     [[nodiscard]] auto acquireQueueSubmission(multithreading::Purpose purpose,
                                               CommandPoolFlagBits flags) -> core::ResourceSharedRef;
+
+    [[nodiscard]] auto getCompletedFrameIndex(multithreading::Purpose purpose,
+                                              CommandPoolFlagBits flags) const -> uint64_t;
 
     void flush();
 

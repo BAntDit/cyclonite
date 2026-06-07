@@ -127,6 +127,34 @@ auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purp
     return queueSubmissionRef;
 }
 
+auto QueueSubmissionManager::getCompletedFrameIndex(multithreading::Purpose purpose,
+                                                    CommandPoolFlagBits flags) const -> uint64_t
+{
+    assert(device_ != nullptr);
+
+    auto queueFamilyIndex = uint32_t{ 0 };
+
+    switch (purpose) {
+        case multithreading::Purpose::Render:
+            queueFamilyIndex = device_->graphicsQueueFamilyIndex();
+            break;
+        case multithreading::Purpose::Compute:
+            queueFamilyIndex = device_->computeQueueFamilyIndex();
+            break;
+        case multithreading::Purpose::Transfer:
+            queueFamilyIndex = device_->transferQueueFamilyIndex();
+            break;
+        default:
+            assert(false);
+    }
+
+    auto purposeBits = getPurposeBits(purpose);
+
+    auto* completedFramePtr = completedFrames_.at(purposeBits.value, queueFamilyIndex, flags.value);
+
+    return (completedFramePtr == nullptr) ? int64_t{ 0 } : *completedFramePtr;
+}
+
 void QueueSubmissionManager::flush()
 {
     for (auto&& [_, submissions] : queueSubmissionRingMap_) {
