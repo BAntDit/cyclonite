@@ -401,6 +401,7 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     }
 
     limits_.maxColorAttachmentCount = static_cast<uint8_t>(physicalDeviceProperties.limits.maxColorAttachments);
+    limits_.minUniformBufferOffsetAlignment = physicalDeviceProperties.limits.minUniformBufferOffsetAlignment;
 
     pipelineManager_ = std::make_unique<PipelineManager>(this);
 

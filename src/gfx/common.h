@@ -32,6 +32,7 @@ struct DeviceLimits
     bool dedicatedTransferQueue;
     bool dedicatedComputeQueue;
     uint8_t maxColorAttachmentCount;
+    size_t minUniformBufferOffsetAlignment;
 };
 
 enum class PipelineType : uint_fast8_t
