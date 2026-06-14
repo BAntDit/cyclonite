@@ -3,18 +3,14 @@
 //
 
 #include "commandListRecorder.h"
-
-#include "frameRecordingContext.h"
 #include "gfx/renderPass.h"
 #include "multithreading/taskManager.h"
 #include "queueSubmissionRecorder.h"
 #include "submissionBatchRecorder.h"
 
 namespace cyclonite::gfx {
-CommandListRecorder::CommandListRecorder(SubmissionBatchRecorder* batchRecorder,
-                                         FrameRecordingContext* recordingContext)
+CommandListRecorder::CommandListRecorder(SubmissionBatchRecorder* batchRecorder)
   : batchRecorder_{ batchRecorder }
-  , recordingContext_{ recordingContext }
 {
 }
 
@@ -37,7 +33,7 @@ void CommandListRecorder::begin(CommandListUsageFlagBits usage)
         recorder->submission().commandListToRecord().begin(usage);
     };
 
-    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+    batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::beginRenderPass(core::ResourceSharedRef renderPassRef)
@@ -63,7 +59,7 @@ void CommandListRecorder::beginRenderPass(core::ResourceSharedRef renderPassRef)
         submission.commandListToRecord().beginRenderPass(renderPassRef);
     };
 
-    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+    batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::bindDescriptorSet(PipelineBindPoint bindPoint,
@@ -87,7 +83,7 @@ void CommandListRecorder::bindDescriptorSet(PipelineBindPoint bindPoint,
           bindPoint, bindingSchemaRef, descriptorSetRef, dynamicOffsets);
     };
 
-    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+    batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::bindIndexBuffer(core::ResourceSharedRef bufferRef, size_t offset, IndexType indexType)
@@ -103,7 +99,7 @@ void CommandListRecorder::bindIndexBuffer(core::ResourceSharedRef bufferRef, siz
         submission.commandListToRecord().bindIndexBuffer(bufferRef, offset, indexType);
     };
 
-    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+    batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::endRenderPass()
@@ -118,7 +114,47 @@ void CommandListRecorder::endRenderPass()
         submission.commandListToRecord().endRenderPass();
     };
 
-    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+    batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
+}
+
+void CommandListRecorder::bufferMemoryBarrier(PipelineStageFlagBits srcStageMask,
+                                              PipelineStageFlagBits dstStageMask,
+                                              AccessFlagBits srcAccessMask,
+                                              AccessFlagBits dstAccessMask,
+                                              uint32_t srcQueueFamilyIndex,
+                                              uint32_t dstQueueFamilyIndex,
+                                              core::ResourceSharedRef const& bufferRef,
+                                              size_t offset /* = 0*/,
+                                              size_t size /* = std::numeric_limits<size_t>::max()*/)
+{
+    auto purpose = batchRecorder_->submission().purpose();
+
+    auto task = [recorder = batchRecorder_,
+                 srcStageMask,
+                 dstStageMask,
+                 srcAccessMask,
+                 dstAccessMask,
+                 srcQueueFamilyIndex,
+                 dstQueueFamilyIndex,
+                 bufferRef = bufferRef,
+                 offset,
+                 size]() -> void {
+        auto& submission = recorder->submission();
+        if (!submission.isInCommandListRecordingState()) {
+            throw std::runtime_error("command list recording is already finished");
+        }
+        submission.commandListToRecord().bufferMemoryBarrier(srcStageMask,
+                                                             dstStageMask,
+                                                             srcAccessMask,
+                                                             dstAccessMask,
+                                                             srcQueueFamilyIndex,
+                                                             dstQueueFamilyIndex,
+                                                             bufferRef,
+                                                             offset,
+                                                             size);
+    };
+
+    batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::end()
@@ -133,7 +169,7 @@ void CommandListRecorder::end()
         submission.commandListToRecord().end();
     };
 
-    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+    batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::bindPipeline(core::ResourceSharedRef pipeline)
@@ -148,7 +184,7 @@ void CommandListRecorder::bindPipeline(core::ResourceSharedRef pipeline)
         submission.commandListToRecord().bindPipeline(pipeline);
     };
 
-    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+    batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::draw(uint32_t vertexCount,
@@ -166,7 +202,7 @@ void CommandListRecorder::draw(uint32_t vertexCount,
         submission.commandListToRecord().draw(vertexCount, instanceCount, firstVertex, firstInstance);
     };
 
-    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+    batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::drawIndexed(uint32_t indexCount,
@@ -187,7 +223,7 @@ void CommandListRecorder::drawIndexed(uint32_t indexCount,
           indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
     };
 
-    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+    batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::drawIndirect(core::ResourceSharedRef bufferRef, size_t offset, uint32_t count)
@@ -202,7 +238,7 @@ void CommandListRecorder::drawIndirect(core::ResourceSharedRef bufferRef, size_t
         submission.commandListToRecord().drawIndirect(bufferRef, offset, count);
     };
 
-    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+    batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::drawIndexedIndirect(core::ResourceSharedRef bufferRef, size_t offset, uint32_t count)
@@ -217,7 +253,7 @@ void CommandListRecorder::drawIndexedIndirect(core::ResourceSharedRef bufferRef,
         submission.commandListToRecord().drawIndexedIndirect(bufferRef, offset, count);
     };
 
-    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+    batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void CommandListRecorder::finish(bool noexceptions)
@@ -234,7 +270,7 @@ void CommandListRecorder::finish(bool noexceptions)
             submission.endCommandListRecording();
         };
 
-        recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+        batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
 
         if (auto ex = multithreading::Executor::threadExecutor().taskManager().getLastException(); ex) {
             std::rethrow_exception(ex);

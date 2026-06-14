@@ -18,7 +18,7 @@ class FrameRecordingContext;
 class CommandListRecorder
 {
 public:
-    explicit CommandListRecorder(SubmissionBatchRecorder* batchRecorder, FrameRecordingContext* recordingContext);
+    explicit CommandListRecorder(SubmissionBatchRecorder* batchRecorder);
 
     ~CommandListRecorder();
 
@@ -49,6 +49,16 @@ public:
 
     void drawIndexedIndirect(core::ResourceSharedRef bufferRef, size_t offset, uint32_t count);
 
+    void bufferMemoryBarrier(PipelineStageFlagBits srcStageMask,
+                             PipelineStageFlagBits dstStageMask,
+                             AccessFlagBits srcAccessMask,
+                             AccessFlagBits dstAccessMask,
+                             uint32_t srcQueueFamilyIndex,
+                             uint32_t dstQueueFamilyIndex,
+                             core::ResourceSharedRef const& bufferRef,
+                             size_t offset = 0,
+                             size_t size = std::numeric_limits<size_t>::max());
+
     void end();
 
     void finish() { finish(false); }
@@ -57,7 +67,6 @@ private:
     void finish(bool noexceptions);
 
     SubmissionBatchRecorder* batchRecorder_;
-    FrameRecordingContext* recordingContext_;
 };
 }
 
