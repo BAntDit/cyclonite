@@ -1045,6 +1045,16 @@ inline constexpr auto getFormat(Format format) -> VkFormat
 
     return vkFormat;
 }
+
+inline constexpr auto getAccessMask(AccessFlagBits accessMask) -> VkAccessFlags
+{
+    return static_cast<VkAccessFlags>(accessMask.value);
+}
+
+inline constexpr auto getPipelineStageFlags(PipelineStageFlagBits pipelineStage) -> VkPipelineStageFlags
+{
+    return static_cast<VkPipelineStageFlags>(pipelineStage.value);
+}
 }
 
 #endif
