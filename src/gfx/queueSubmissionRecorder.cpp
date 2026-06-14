@@ -9,10 +9,9 @@
 #include "multithreading/utility.h"
 
 namespace cyclonite::gfx {
-QueueSubmissionRecorder::QueueSubmissionRecorder(core::ResourceSharedRef const& submissionRef,
-                                                 FrameRecordingContext& frameRecordingContext)
+QueueSubmissionRecorder::QueueSubmissionRecorder(core::ResourceSharedRef const& submissionRef)
   : submissionRef_{ submissionRef }
-  , recordingContext_{ &frameRecordingContext }
+  , taskFutures_{}
 {
 }
 
@@ -34,17 +33,17 @@ void QueueSubmissionRecorder::start()
         }
     };
 
-    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+    addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
-auto QueueSubmissionRecorder::addBatch() -> SubmissionBatchRecorder
+auto QueueSubmissionRecorder::addBatch(std::string_view batchName) -> SubmissionBatchRecorder
 {
-    auto batchRecorder = SubmissionBatchRecorder{ this, recordingContext_ };
+    auto batchRecorder = SubmissionBatchRecorder{ this };
 
     auto& submission = submissionRef_.as<gfx::QueueSubmission>();
     auto purpose = submission.purpose();
 
-    auto task = [submissionRef = submissionRef_]() mutable -> void {
+    auto task = [submissionRef = submissionRef_, batchName = std::string{ batchName }]() mutable -> void {
         auto& submission = submissionRef.as<gfx::QueueSubmission>();
         if (!submission.isInRecordingState()) {
             throw std::runtime_error("submission must be in recording state to record new batch");
@@ -52,41 +51,40 @@ auto QueueSubmissionRecorder::addBatch() -> SubmissionBatchRecorder
         if (submission.isInBatchRecordingState()) {
             throw std::runtime_error("batch recording must be over, before start new one");
         }
-        submission.beginBatchRecording();
+        submission.beginBatchRecording(batchName);
     };
-    recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+    addTask(multithreading::TaskManager::submitTask(task, purpose));
 
     return batchRecorder;
 }
 
-void QueueSubmissionRecorder::finish(bool releaseSubmissionOnly /* = false*/)
+auto QueueSubmissionRecorder::finish() -> std::future<void>
 {
-    if (!releaseSubmissionOnly) {
-        auto& submission = submissionRef_.as<gfx::QueueSubmission>();
-        auto purpose = submission.purpose();
 
-        auto task = [submissionRef = submissionRef_]() mutable -> void {
-            auto& submission = submissionRef.as<gfx::QueueSubmission>();
-            if (submission.isInBatchRecordingState()) {
-                throw std::runtime_error("all batch recording must be finished before.");
-            }
-            if (!submission.isInRecordingState()) {
-                throw std::runtime_error("submission recording is not started");
-            }
-            submission.endRecording();
-        };
+    auto& submission = submissionRef_.as<gfx::QueueSubmission>();
+    auto purpose = submission.purpose();
 
-        recordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
-
-        auto tasks = std::move(recordingContext_->recordingTasks());
-        multithreading::when_all(tasks).get();
-
-        if (auto ex = multithreading::Executor::threadExecutor().taskManager().getLastException(); ex) {
-            std::rethrow_exception(ex);
+    auto task = [submissionRef = submissionRef_]() mutable -> void {
+        auto& submission = submissionRef.as<gfx::QueueSubmission>();
+        if (submission.isInBatchRecordingState()) {
+            throw std::runtime_error("all batch recording must be finished before.");
         }
-    }
+        if (!submission.isInRecordingState()) {
+            throw std::runtime_error("submission recording is not started");
+        }
+        submission.endRecording();
+    };
 
-    submissionRef_ = core::ResourceSharedRef{};
-    recordingContext_ = nullptr;
+    addTask(multithreading::TaskManager::submitTask(task, purpose));
+
+    return flush();
+}
+
+auto QueueSubmissionRecorder::flush() -> std::future<void>
+{
+    auto tasks = std::vector{ std::move(taskFutures_) };
+    taskFutures_.clear();
+
+    return multithreading::when_all(tasks);
 }
 }

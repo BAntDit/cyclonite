@@ -6,6 +6,7 @@
 #include "gfx/device.h"
 #include "gfx/queueSubmission.h"
 #include "multithreading/taskManager.h"
+#include <algorithm>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
@@ -46,9 +47,10 @@ void QueueSubmissionManager::returnSignal(core::ResourceSharedRef const& signal)
 }
 
 auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purpose,
-                                                    CommandPoolFlagBits flags) -> core::ResourceSharedRef
+                                                    CommandPoolFlagBits flags,
+                                                    uint16_t priorityGroup) -> core::ResourceSharedRef
 {
-    auto acquireQueueSubmissionTask = [purpose, flags, this]() -> core::ResourceSharedRef {
+    auto acquireQueueSubmissionTask = [purpose, flags, priorityGroup, this]() -> core::ResourceSharedRef {
         assert(device_ != nullptr);
 
         assert(purpose != multithreading::Purpose::General);
@@ -70,10 +72,10 @@ auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purp
 
         auto purposeBits = getPurposeBits(purpose);
 
-        auto it = queueSubmissionRingMap_.find(purposeBits.value, queueFamilyIndex, flags.value);
+        auto it = queueSubmissionRingMap_.find(purposeBits.value, queueFamilyIndex, priorityGroup, flags.value);
         if (it == queueSubmissionRingMap_.end()) {
-            auto [newIt, success] =
-              queueSubmissionRingMap_.add(queue_submission_ring_t{}, purposeBits.value, queueFamilyIndex, flags.value);
+            auto [newIt, success] = queueSubmissionRingMap_.add(
+              queue_submission_ring_t{}, purposeBits.value, queueFamilyIndex, priorityGroup, flags.value);
 
             if (!success) {
                 throw std::runtime_error("failed to emplace new queue submission ring");
@@ -83,7 +85,7 @@ auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purp
         }
 
         auto&& [_, submissions] = *it;
-        auto& submissionRef = submissions[currentFrameIndex_ % config_t::queue_submission_ring_size_v];
+        auto& submissionRef = submissions[currentFrameNumber_ % config_t::queue_submission_ring_size_v];
 
         if (submissionRef.valid()) {
             auto& submission = submissionRef.as<gfx::QueueSubmission>();
@@ -94,13 +96,14 @@ auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purp
                     submission.reset();
                 }
 
-                if (auto completionIt = completedFrames_.find(purposeBits.value, queueFamilyIndex, flags.value);
+                if (auto completionIt =
+                      completedFrames_.find(purposeBits.value, queueFamilyIndex, priorityGroup, flags.value);
                     completionIt != completedFrames_.end()) {
                     auto& [k, completedFrame] = *completionIt;
                     completedFrame = submissionFrame;
                 } else {
-                    [[maybe_unused]] auto [newIt, success] =
-                      completedFrames_.add(submissionFrame, purposeBits.value, queueFamilyIndex, flags.value);
+                    [[maybe_unused]] auto [newIt, success] = completedFrames_.add(
+                      submissionFrame, purposeBits.value, queueFamilyIndex, priorityGroup, flags.value);
                     assert(success);
                 }
             } // if pending
@@ -109,9 +112,9 @@ auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purp
         }
 
         {
-            auto* completedFrame = completedFrames_.at(purposeBits.value, queueFamilyIndex, flags.value);
+            auto* completedFrame = completedFrames_.at(purposeBits.value, queueFamilyIndex, priorityGroup, flags.value);
             auto& submission = submissionRef.as<type_traits::platform_implementation_t<gfx::QueueSubmission>>();
-            submission.setFrameIndices(currentFrameIndex_, completedFrame == nullptr ? 0 : *completedFrame);
+            submission.setFrameIndices(currentFrameNumber_, completedFrame == nullptr ? 0 : *completedFrame);
         }
 
         return submissionRef;
@@ -127,37 +130,60 @@ auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purp
     return queueSubmissionRef;
 }
 
-auto QueueSubmissionManager::getCompletedFrameIndex(multithreading::Purpose purpose,
-                                                    CommandPoolFlagBits flags) const -> uint64_t
+auto QueueSubmissionManager::completedFrameNumber(multithreading::Purpose purpose,
+                                                  CommandPoolFlagBits flags,
+                                                  uint16_t priorityGroup) const -> uint64_t
 {
-    assert(device_ != nullptr);
+    auto getCompletedFrameIndexTask = [purpose, flags, priorityGroup, this]() -> uint64_t {
+        assert(purpose != multithreading::Purpose::General);
 
-    auto queueFamilyIndex = uint32_t{ 0 };
+        assert(device_ != nullptr);
 
-    switch (purpose) {
-        case multithreading::Purpose::Render:
-            queueFamilyIndex = device_->graphicsQueueFamilyIndex();
-            break;
-        case multithreading::Purpose::Compute:
-            queueFamilyIndex = device_->computeQueueFamilyIndex();
-            break;
-        case multithreading::Purpose::Transfer:
-            queueFamilyIndex = device_->transferQueueFamilyIndex();
-            break;
-        default:
-            assert(false);
+        auto queueFamilyIndex = uint32_t{ 0 };
+
+        switch (purpose) {
+            case multithreading::Purpose::Render:
+                queueFamilyIndex = device_->graphicsQueueFamilyIndex();
+                break;
+            case multithreading::Purpose::Compute:
+                queueFamilyIndex = device_->computeQueueFamilyIndex();
+                break;
+            case multithreading::Purpose::Transfer:
+                queueFamilyIndex = device_->transferQueueFamilyIndex();
+                break;
+            default:
+                assert(false);
+        }
+
+        auto purposeBits = getPurposeBits(purpose);
+
+        auto* completedFramePtr = completedFrames_.at(purposeBits.value, queueFamilyIndex, priorityGroup, flags.value);
+
+        return (completedFramePtr == nullptr) ? int64_t{ 0 } : *completedFramePtr;
+    };
+
+    auto completedFrame = std::numeric_limits<uint64_t>::max();
+    if (multithreading::Executor::threadExecutor().matchesPurpose(purpose)) {
+        completedFrame = getCompletedFrameIndexTask();
+    } else {
+        completedFrame = multithreading::TaskManager::submitTask(getCompletedFrameIndexTask, purpose).get();
     }
 
-    auto purposeBits = getPurposeBits(purpose);
-
-    auto* completedFramePtr = completedFrames_.at(purposeBits.value, queueFamilyIndex, flags.value);
-
-    return (completedFramePtr == nullptr) ? int64_t{ 0 } : *completedFramePtr;
+    return completedFrame;
 }
 
 void QueueSubmissionManager::flush()
 {
-    for (auto&& [_, submissions] : queueSubmissionRingMap_) {
+    auto actualSubmissions =
+      std::array<std::pair<core::ResourceSharedRef, uint16_t>, config_t::max_queue_submission_ring_count_v>{};
+    auto actualSubmissionCount = size_t{ 0 };
+
+    std::ranges::fill(actualSubmissions.begin(),
+                      actualSubmissions.end(),
+                      std::pair{ core::ResourceSharedRef{}, std::numeric_limits<uint16_t>::max() });
+
+    for (auto&& [keys, submissions] : queueSubmissionRingMap_) {
+        auto&& [_0, _1, priority, flags] = keys;
         auto& submissionRef = submissions[currentFrameIndex_ % config_t::queue_submission_ring_size_v];
 
         if (!submissionRef.valid()) {
@@ -165,10 +191,36 @@ void QueueSubmissionManager::flush()
         }
 
         auto& submission = submissionRef.as<gfx::QueueSubmission>();
-        if (submission.isExecutable()) {
-            submission.submit();
+        if (!submission.isExecutable()) {
+            continue;
         }
+        actualSubmissions[actualSubmissionCount++] = std::pair{ submissionRef, priority };
     }
+
+    std::sort(actualSubmissions.begin(), actualSubmissions.end(), [](auto& a, auto& b) -> bool {
+        auto& [_1, priority1] = a;
+        auto& [_2, priority2] = b;
+
+        return priority1 < priority2;
+    });
+
+    std::ranges::sort(actualSubmissions, [](auto& a, auto& b) -> bool {
+        auto& [_1, priority1] = a;
+        auto& [_2, priority2] = b;
+
+        return priority1 < priority2;
+    });
+
+    for (auto i = size_t{ 0 }; i < actualSubmissionCount; ++i) {
+        auto& [submissionRef, _] = actualSubmissions[i];
+
+        assert(submissionRef.valid());
+        auto& submission = submissionRef.as<gfx::QueueSubmission>();
+
+        assert(submission.isExecutable());
+        submission.submit();
+    }
+
     currentFrameIndex_++;
 }
 }

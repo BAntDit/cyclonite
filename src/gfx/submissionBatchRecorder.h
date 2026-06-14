@@ -3,7 +3,6 @@
 #define CYCLONITE_GFX_SUBMISSION_BATCH_RECORDER_H
 
 #include "commandListRecorder.h"
-#include "frameRecordingContext.h"
 #include "gfx/common.h"
 #include "gfx/queueSubmission.h"
 
@@ -30,9 +29,20 @@ public:
 
     [[nodiscard]] auto submission() const -> gfx::QueueSubmission const&;
 
+    [[nodiscard]] auto queueSubmissionRecorder() const -> QueueSubmissionRecorder const&
+    {
+        assert(queueSubmissionRecorder_ != nullptr);
+        return *queueSubmissionRecorder_;
+    }
+
+    [[nodiscard]] auto queueSubmissionRecorder() -> QueueSubmissionRecorder&
+    {
+        assert(queueSubmissionRecorder_ != nullptr);
+        return *queueSubmissionRecorder_;
+    }
+
 private:
-    SubmissionBatchRecorder(QueueSubmissionRecorder* queueSubmissionRecorder,
-                            FrameRecordingContext* frameRecordingContext);
+    explicit SubmissionBatchRecorder(QueueSubmissionRecorder* queueSubmissionRecorder);
 
     void addPresentationSignal(core::ResourceSharedRef const& signal);
 
@@ -40,7 +50,6 @@ private:
     void finish(bool noexceptions);
 
     QueueSubmissionRecorder* queueSubmissionRecorder_;
-    FrameRecordingContext* frameRecordingContext_;
 };
 }
 

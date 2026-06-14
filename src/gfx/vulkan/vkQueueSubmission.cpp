@@ -18,6 +18,7 @@ QueueSubmission::QueueSubmission(core::ResourceManagerBase* resourceManager,
                                  uint32_t queueFamilyIndex,
                                  CommandPoolFlagBits commandPoolFlags)
   : core::ResourceBase{ resourceManager, resourceId, false }
+  , batchNameToIndex_{}
   , manager_{ manager }
   , commandPool_{}
   , batches_{}
@@ -64,7 +65,7 @@ void QueueSubmission::endRecording()
     state_.value = metrix::value_cast(QueueSubmissionStateFlags::Executable);
 }
 
-void QueueSubmission::beginBatchRecording()
+void QueueSubmission::beginBatchRecording(std::string_view batchName)
 {
     [[maybe_unused]] auto submissionPurpose = purpose();
     assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
@@ -72,9 +73,12 @@ void QueueSubmission::beginBatchRecording()
     assert(!state_.test(QueueSubmissionStateFlags::BatchRecording));
     state_.set(QueueSubmissionStateFlags::BatchRecording);
 
+    auto index = batches_.size();
     auto& batch = batches_.emplace_back();
 
     batch.signal = manager_->acquireSignal(lastCompletedFrameIndex_);
+
+    batchNameToIndex_.emplace(batchName, index);
 }
 
 void QueueSubmission::addBatchDependency(size_t fromBatch, PipelineStageFlagBits stageMask)

@@ -30,7 +30,7 @@ public:
 
     void endRecording();
 
-    void beginBatchRecording();
+    void beginBatchRecording(std::string_view batchName);
     void endBatchRecording();
 
     void addBatchDependency(size_t fromBatch, PipelineStageFlagBits stageMask);
@@ -90,6 +90,7 @@ private:
         core::ResourceSharedRef presentationSignal;
     };
 
+    std::unordered_map<std::string, size_t> batchNameToIndex_;
     QueueSubmissionManager* manager_;
     core::ResourceSharedRef commandPool_;
     std::vector<SubmissionBatch> batches_;

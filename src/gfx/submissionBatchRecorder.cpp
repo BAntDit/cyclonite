@@ -4,10 +4,8 @@
 #include "queueSubmissionRecorder.h"
 
 namespace cyclonite::gfx {
-SubmissionBatchRecorder::SubmissionBatchRecorder(QueueSubmissionRecorder* queueSubmissionRecorder,
-                                                 FrameRecordingContext* frameRecordingContext)
+SubmissionBatchRecorder::SubmissionBatchRecorder(QueueSubmissionRecorder* queueSubmissionRecorder)
   : queueSubmissionRecorder_{ queueSubmissionRecorder }
-  , frameRecordingContext_{ frameRecordingContext }
 {
 }
 
@@ -33,7 +31,7 @@ void SubmissionBatchRecorder::finish(bool noexceptions)
             submission.endBatchRecording();
         };
 
-        frameRecordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+        queueSubmissionRecorder_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 
         if (auto ex = multithreading::Executor::threadExecutor().taskManager().getLastException(); ex) {
             std::rethrow_exception(ex);
@@ -50,7 +48,6 @@ void SubmissionBatchRecorder::finish(bool noexceptions)
         }
     }
     queueSubmissionRecorder_ = nullptr;
-    frameRecordingContext_ = nullptr;
 }
 
 void SubmissionBatchRecorder::addBatchDependency(size_t dependencyIndex, PipelineStageFlagBits stageMask)
@@ -68,7 +65,7 @@ void SubmissionBatchRecorder::addBatchDependency(size_t dependencyIndex, Pipelin
         submission.addBatchDependency(dependencyIndex, stageMask);
     };
 
-    frameRecordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+    queueSubmissionRecorder_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 void SubmissionBatchRecorder::addPresentationSignal(core::ResourceSharedRef const& signal)
@@ -93,7 +90,7 @@ void SubmissionBatchRecorder::addBatchDependency(gfx::SubmissionBatchDependency 
         submission.addBatchDependency(dep);
     };
 
-    frameRecordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+    queueSubmissionRecorder_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
 auto SubmissionBatchRecorder::submission() -> gfx::QueueSubmission&
@@ -132,7 +129,7 @@ auto SubmissionBatchRecorder::addCommandList() -> CommandListRecorder
         submission.beginCommandListRecording();
     };
 
-    frameRecordingContext_->addTask(multithreading::TaskManager::submitTask(task, purpose));
+    queueSubmissionRecorder_->addTask(multithreading::TaskManager::submitTask(task, purpose));
 
     return commandListRecorder;
 }

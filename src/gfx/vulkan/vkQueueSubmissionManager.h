@@ -33,18 +33,20 @@ public:
 
     auto operator=(QueueSubmissionManager&&) -> QueueSubmissionManager& = default;
 
-    [[nodiscard]] auto currentFrameIndex() const -> uint64_t { return currentFrameIndex_; }
+    [[nodiscard]] auto currentFrameNumber() const -> uint64_t { return currentFrameNumber_; }
 
     [[nodiscard]] auto currentSubmissionIndex() const -> uint64_t
     {
-        return currentFrameIndex_ % config_t::queue_submission_ring_size_v;
+        return currentFrameNumber_ % config_t::queue_submission_ring_size_v;
     }
 
     [[nodiscard]] auto acquireQueueSubmission(multithreading::Purpose purpose,
-                                              CommandPoolFlagBits flags) -> core::ResourceSharedRef;
+                                              CommandPoolFlagBits flags,
+                                              uint16_t priorityGroup) -> core::ResourceSharedRef;
 
-    [[nodiscard]] auto getCompletedFrameIndex(multithreading::Purpose purpose,
-                                              CommandPoolFlagBits flags) const -> uint64_t;
+    [[nodiscard]] auto completedFrameNumber(multithreading::Purpose purpose,
+                                            CommandPoolFlagBits flags,
+                                            uint16_t priorityGroup) const -> uint64_t;
 
     void flush();
 
@@ -64,13 +66,15 @@ private:
     using queue_submission_map_t = core::StaticHashTable<queue_submission_ring_t,
                                                          config_t::max_queue_submission_ring_count_v,
                                                          std::underlying_type_t<multithreading::Purpose>,
-                                                         uint32_t,
+                                                         uint32_t, // queue family index
+                                                         uint16_t, // priority group
                                                          std::underlying_type_t<gfx::CommandPoolFlags>>;
 
     using completion_map_t = core::StaticHashTable<uint64_t,
                                                    config_t::max_queue_submission_ring_count_v,
                                                    std::underlying_type_t<multithreading::Purpose>,
-                                                   uint32_t,
+                                                   uint32_t, // queue family index
+                                                   uint16_t, // priority group
                                                    std::underlying_type_t<gfx::CommandPoolFlags>>;
 
     Device* device_;
@@ -80,7 +84,7 @@ private:
     queue_submission_map_t queueSubmissionRingMap_;
     completion_map_t completedFrames_;
 
-    uint64_t currentFrameIndex_;
+    uint64_t currentFrameNumber_;
 };
 }
 #endif // GFX_DRIVER_VULKAN

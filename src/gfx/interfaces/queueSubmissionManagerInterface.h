@@ -12,27 +12,28 @@
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept QueueSubmissionManagerConcept = requires(T t, multithreading::Purpose p, CommandPoolFlagBits f) {
-    { t.currentFrameIndex() } -> std::same_as<uint64_t>;
+concept QueueSubmissionManagerConcept =
+  requires(T t, multithreading::Purpose p, CommandPoolFlagBits f, uint16_t priority) {
+      { t.currentFrameNumber() } -> std::same_as<uint64_t>;
 
-    { t.currentSubmissionIndex() } -> std::same_as<uint64_t>;
+      { t.currentSubmissionIndex() } -> std::same_as<uint64_t>;
 
-    { t.getCompletedFrameIndex() } -> std::same_as<uint64_t>;
+      { t.completedFrameNumber(p, f, priority) } -> std::same_as<uint64_t>;
 
-    { t.acquireQueueSubmission(p, f) } -> std::same_as<core::ResourceSharedRef>;
+      { t.acquireQueueSubmission(p, f, priority) } -> std::same_as<core::ResourceSharedRef>;
 
-    { t.flush() } -> std::same_as<void>;
-};
+      { t.flush() } -> std::same_as<void>;
+  };
 
 template<QueueSubmissionManagerConcept PlatformImplementation>
 class QueueSubmissionManagerInterface : private PlatformImplementation
 {
 public:
     using PlatformImplementation::acquireQueueSubmission;
-    using PlatformImplementation::currentFrameIndex;
+    using PlatformImplementation::completedFrameNumber;
+    using PlatformImplementation::currentFrameNumber;
     using PlatformImplementation::currentSubmissionIndex;
     using PlatformImplementation::flush;
-    using PlatformImplementation::getCompletedFrameIndex;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::platformQueueSubmissionManager;
 };
