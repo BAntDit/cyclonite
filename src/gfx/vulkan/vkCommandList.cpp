@@ -10,6 +10,7 @@
 #include "gfx/pipeline.h"
 #include "gfx/pipelineBindingSchema.h"
 #include "gfx/renderPass.h"
+#include "gfx/vulkan/internal/utils.h"
 #include "vkException.h"
 #include <cassert>
 
@@ -90,7 +91,8 @@ void CommandList::beginRenderPass(core::ResourceSharedRef const& renderPassRef)
     assert(vkCommandBuffer_ != VK_NULL_HANDLE);
     assert(renderPassRef.valid());
 
-    boundRefs_.emplace_back(renderPassRef);
+    auto id = static_cast<uint64_t>(renderPassRef.id());
+    boundRefs_.emplace(id, renderPassRef);
 
     auto& renderPass = renderPassRef.as<type_traits::platform_implementation_t<gfx::RenderPass>>();
 
@@ -119,7 +121,8 @@ void CommandList::bindPipeline(core::ResourceSharedRef const& pipelineRef)
     assert(vkCommandBuffer_ != VK_NULL_HANDLE);
     assert(pipelineRef.valid());
 
-    boundRefs_.emplace_back(pipelineRef);
+    auto id = static_cast<uint64_t>(pipelineRef.id());
+    boundRefs_.emplace(id, pipelineRef);
 
     auto& pipeline = pipelineRef.as<type_traits::platform_implementation_t<gfx::Pipeline>>();
     auto bindPoint = getPipelineBindingPoint(pipeline.type());
@@ -135,8 +138,11 @@ void CommandList::bindDescriptorSet(PipelineBindPoint bindPoint,
     assert(bindingSchemaRef.valid());
     assert(descriptorSetRef.valid());
 
-    boundRefs_.emplace_back(bindingSchemaRef);
-    boundRefs_.emplace_back(descriptorSetRef);
+    auto bindingSchemaId = static_cast<uint64_t>(bindingSchemaRef.id());
+    boundRefs_.emplace(bindingSchemaId, bindingSchemaRef);
+
+    auto descriptorSetId = static_cast<uint64_t>(descriptorSetRef.id());
+    boundRefs_.emplace(descriptorSetId, descriptorSetRef);
 
     auto& bindingSchema = bindingSchemaRef.as<type_traits::platform_implementation_t<gfx::PipelineBindingSchema>>();
     auto& descriptorSet = descriptorSetRef.as<type_traits::platform_implementation_t<gfx::DescriptorSet>>();
@@ -161,7 +167,9 @@ void CommandList::bindIndexBuffer(core::ResourceSharedRef const& bufferRef, size
     assert(vkCommandBuffer_ != VK_NULL_HANDLE);
     assert(bufferRef.valid());
 
-    boundRefs_.emplace_back(bufferRef);
+    auto id = static_cast<uint64_t>(bufferRef.id());
+    boundRefs_.emplace(id, bufferRef);
+
     auto const& buffer = bufferRef.as<type_traits::platform_implementation_t<gfx::Buffer>>();
 
     auto vkIndexType = (indexType == IndexType::TYPE_UINT32) ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
@@ -190,7 +198,8 @@ void CommandList::drawIndirect(core::ResourceSharedRef const& bufferRef, size_t 
     assert(vkCommandBuffer_ != VK_NULL_HANDLE);
 
     assert(bufferRef.valid());
-    boundRefs_.emplace_back(bufferRef);
+    auto id = static_cast<uint64_t>(bufferRef.id());
+    boundRefs_.emplace(id, bufferRef);
 
     auto& buffer = bufferRef.as<type_traits::platform_implementation_t<gfx::Buffer>>();
 
@@ -203,7 +212,8 @@ void CommandList::drawIndexedIndirect(core::ResourceSharedRef const& bufferRef, 
     assert(vkCommandBuffer_ != VK_NULL_HANDLE);
 
     assert(bufferRef.valid());
-    boundRefs_.emplace_back(bufferRef);
+    auto id = static_cast<uint64_t>(bufferRef.id());
+    boundRefs_.emplace(id, bufferRef);
 
     auto& buffer = bufferRef.as<type_traits::platform_implementation_t<gfx::Buffer>>();
 
@@ -215,6 +225,46 @@ void CommandList::endRenderPass()
 {
     assert(vkCommandBuffer_ != VK_NULL_HANDLE);
     vkCmdEndRenderPass(vkCommandBuffer_);
+}
+
+void CommandList::bufferMemoryBarrier(PipelineStageFlagBits srcStageMask,
+                                      PipelineStageFlagBits dstStageMask,
+                                      AccessFlagBits srcAccessMask,
+                                      AccessFlagBits dstAccessMask,
+                                      uint32_t srcQueueFamilyIndex,
+                                      uint32_t dstQueueFamilyIndex,
+                                      core::ResourceSharedRef const& bufferRef,
+                                      size_t offset /* = 0*/,
+                                      size_t size /* = std::numeric_limits<size_t>::max()*/)
+{
+    assert(bufferRef.valid());
+    auto id = static_cast<uint64_t>(bufferRef.id());
+    boundRefs_.emplace(id, bufferRef);
+
+    auto& buffer = bufferRef.as<type_traits::platform_implementation_t<gfx::Buffer>>();
+
+    auto bufferMemoryBarrier = VkBufferMemoryBarrier{};
+    bufferMemoryBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    bufferMemoryBarrier.srcAccessMask = internal::getAccessMask(srcAccessMask);
+    bufferMemoryBarrier.dstAccessMask = internal::getAccessMask(dstAccessMask);
+    bufferMemoryBarrier.srcQueueFamilyIndex = srcQueueFamilyIndex;
+    bufferMemoryBarrier.dstQueueFamilyIndex = dstQueueFamilyIndex;
+    bufferMemoryBarrier.buffer = buffer.handle();
+    bufferMemoryBarrier.offset = static_cast<VkDeviceSize>(offset);
+    bufferMemoryBarrier.size =
+      size != std::numeric_limits<size_t>::max() ? static_cast<VkDeviceSize>(size) : VK_WHOLE_SIZE;
+
+    assert(vkCommandBuffer_ != VK_NULL_HANDLE);
+    vkCmdPipelineBarrier(vkCommandBuffer_,
+                         internal::getPipelineStageFlags(srcStageMask),
+                         internal::getPipelineStageFlags(dstStageMask),
+                         0,
+                         0,
+                         nullptr,
+                         1,
+                         &bufferMemoryBarrier,
+                         0,
+                         nullptr);
 }
 
 void CommandList::end()

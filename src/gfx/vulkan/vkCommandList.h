@@ -12,6 +12,7 @@
 #include <vector>
 
 #if defined(GFX_DRIVER_VULKAN)
+#include <unordered_map>
 #include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan {
@@ -55,12 +56,22 @@ public:
 
     void endRenderPass();
 
+    void bufferMemoryBarrier(PipelineStageFlagBits srcStageMask,
+                             PipelineStageFlagBits dstStageMask,
+                             AccessFlagBits srcAccessMask,
+                             AccessFlagBits dstAccessMask,
+                             uint32_t srcQueueFamilyIndex,
+                             uint32_t dstQueueFamilyIndex,
+                             core::ResourceSharedRef const& bufferRef,
+                             size_t offset = 0,
+                             size_t size = std::numeric_limits<size_t>::max());
+
     void end();
 
     [[nodiscard]] auto handle() const -> VkCommandBuffer { return vkCommandBuffer_; }
 
 private:
-    std::vector<core::ResourceSharedRef> boundRefs_;
+    std::unordered_map<uint64_t, core::ResourceSharedRef> boundRefs_;
     core::ResourceWeakRef commandPool_;
     VkCommandBuffer vkCommandBuffer_;
     CommandListUsageFlagBits usage_;

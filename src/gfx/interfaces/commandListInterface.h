@@ -20,7 +20,9 @@ concept CommandListConcept = requires(T t,
                                       IndexType indexType,
                                       uint32_t val,
                                       int32_t val2,
-                                      std::span<uint32_t> ofs) {
+                                      std::span<uint32_t> ofs,
+                                      PipelineStageFlagBits psf,
+                                      AccessFlagBits afs) {
     { t.state() } -> std::same_as<CommandListState>;
     { t.usage() } -> std::same_as<CommandListUsageFlagBits>;
 
@@ -45,6 +47,8 @@ concept CommandListConcept = requires(T t,
     { t.drawIndirect(ref, a, val) } -> std::same_as<void>;
 
     { t.drawIndexedIndirect(ref, a, val) } -> std::same_as<void>;
+
+    { t.bufferMemoryBarrier(psf, psf, afs, afs, val, val, ref, a, a) } -> std::same_as<void>;
 };
 
 template<CommandListConcept PlatformImplementation>
@@ -56,6 +60,7 @@ public:
     using PlatformImplementation::bindDescriptorSet;
     using PlatformImplementation::bindIndexBuffer;
     using PlatformImplementation::bindPipeline;
+    using PlatformImplementation::bufferMemoryBarrier;
     using PlatformImplementation::draw;
     using PlatformImplementation::drawIndexed;
     using PlatformImplementation::drawIndexedIndirect;
