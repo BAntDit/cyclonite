@@ -443,6 +443,28 @@ enum class PipelineStageFlags : uint32_t
 };
 using PipelineStageFlagBits = metrix::enum_bits<PipelineStageFlags>;
 
+enum class AccessFlags : uint32_t
+{
+    INDIRECT_COMMAND_READ_BIT = 1 << 0,
+    INDEX_READ_BIT = 1 << 1,
+    VERTEX_ATTRIBUTE_READ_BIT = 1 << 2,
+    UNIFORM_READ_BIT = 1 << 3,
+    INPUT_ATTACHMENT_READ_BIT = 1 << 4,
+    SHADER_READ_BIT = 1 << 5,
+    SHADER_WRITE_BIT = 1 << 6,
+    COLOR_ATTACHMENT_READ_BIT = 1 << 7,
+    COLOR_ATTACHMENT_WRITE_BIT = 1 << 8,
+    DEPTH_STENCIL_ATTACHMENT_READ_BIT = 1 << 9,
+    DEPTH_STENCIL_ATTACHMENT_WRITE_BIT = 1 << 10,
+    TRANSFER_READ_BIT = 1 << 11,
+    TRANSFER_WRITE_BIT = 1 << 12,
+    ACCESS_HOST_READ_BIT = 1 << 13,
+    ACCESS_HOST_WRITE_BIT = 1 << 14,
+    ACCESS_MEMORY_READ_BIT = 1 << 15,
+    ACCESS_MEMORY_WRITE_BIT = 1 << 16
+};
+using AccessFlagBits = metrix::enum_bits<AccessFlags>;
+
 enum class QueueSubmissionStateFlags : uint32_t
 {
     Invalid = 1 << 0,
@@ -477,6 +499,8 @@ struct TextureResourceDescription : public ResourceDescription
 {
     TextureState state;
 };
+
+inline constexpr auto default_transfer_submission_priority_v = uint16_t{ 100 };
 }
 
 #endif // GFX_COMMON_H
