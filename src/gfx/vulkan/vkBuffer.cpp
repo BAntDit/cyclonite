@@ -21,6 +21,7 @@ Buffer::Buffer(core::ResourceManagerBase* resourceManager,
   , vkBuffer_{ VK_NULL_HANDLE }
   , usageFlags_{ usageFlags }
   , allocationFlags_{ allocationFlags }
+  , owningQueueFamilyIndex_{ std::numeric_limits<uint32_t>::max() }
 {
     assert(deviceRef_.valid());
     auto& device = deviceRef_.as<type_traits::platform_implementation_t<gfx::Device>>();

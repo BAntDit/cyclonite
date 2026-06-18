@@ -29,6 +29,10 @@ public:
 
     [[nodiscard]] auto usage() const -> BufferUsageFlagBits { return usageFlags_; }
 
+    [[nodiscard]] auto owningQueueFamilyIndex() const -> uint32_t { return owningQueueFamilyIndex_; }
+
+    [[nodiscard]] auto owningQueueFamilyIndex() -> uint32_t& { return owningQueueFamilyIndex_; }
+
     auto map() -> void*;
 
     void unmap();
@@ -39,6 +43,7 @@ private:
     VkBuffer vkBuffer_;
     BufferUsageFlagBits usageFlags_;
     GpuMemoryAllocationFlagBits allocationFlags_;
+    uint32_t owningQueueFamilyIndex_;
 };
 }
 #endif // GFX_DRIVER_VULKAN
