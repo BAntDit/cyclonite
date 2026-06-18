@@ -56,6 +56,33 @@ public:
 
     void endRenderPass();
 
+    void copyBuffers(core::ResourceSharedRef const& srcRef,
+                     core::ResourceSharedRef const& dstRef,
+                     size_t srcOffset,
+                     size_t dstOffset,
+                     size_t size);
+
+    void acquireResourceForTransfer(PipelineStageFlagBits srcStageMask,
+                                    PipelineStageFlagBits dstStageMask,
+                                    AccessFlagBits srcAccessMask,
+                                    AccessFlagBits dstAccessMask,
+                                    core::ResourceSharedRef& resourceRef,
+                                    size_t offset = 0,
+                                    size_t size = std::numeric_limits<size_t>::max());
+
+    void acquireResourceForGraphics(PipelineStageFlagBits srcStageMask,
+                                    PipelineStageFlagBits dstStageMask,
+                                    AccessFlagBits srcAccessMask,
+                                    AccessFlagBits dstAccessMask,
+                                    core::ResourceSharedRef& resourceRef,
+                                    size_t offset = 0,
+                                    size_t size = std::numeric_limits<size_t>::max());
+
+    void end();
+
+    [[nodiscard]] auto handle() const -> VkCommandBuffer { return vkCommandBuffer_; }
+
+private:
     void bufferMemoryBarrier(PipelineStageFlagBits srcStageMask,
                              PipelineStageFlagBits dstStageMask,
                              AccessFlagBits srcAccessMask,
@@ -63,14 +90,9 @@ public:
                              uint32_t srcQueueFamilyIndex,
                              uint32_t dstQueueFamilyIndex,
                              core::ResourceSharedRef const& bufferRef,
-                             size_t offset = 0,
-                             size_t size = std::numeric_limits<size_t>::max());
+                             size_t offset,
+                             size_t size);
 
-    void end();
-
-    [[nodiscard]] auto handle() const -> VkCommandBuffer { return vkCommandBuffer_; }
-
-private:
     std::unordered_map<uint64_t, core::ResourceSharedRef> boundRefs_;
     core::ResourceWeakRef commandPool_;
     VkCommandBuffer vkCommandBuffer_;

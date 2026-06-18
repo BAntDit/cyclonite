@@ -48,19 +48,25 @@ concept CommandListConcept = requires(T t,
 
     { t.drawIndexedIndirect(ref, a, val) } -> std::same_as<void>;
 
-    { t.bufferMemoryBarrier(psf, psf, afs, afs, val, val, ref, a, a) } -> std::same_as<void>;
+    { t.acquireResourceForGraphics(psf, psf, afs, afs, ref, a, a) } -> std::same_as<void>;
+
+    { t.acquireResourceForTransfer(psf, psf, afs, afs, ref, a, a) } -> std::same_as<void>;
+
+    { t.copyBuffers(ref, ref, a, a, a) } -> std::same_as<void>;
 };
 
 template<CommandListConcept PlatformImplementation>
 class CommandListInterface : private PlatformImplementation
 {
 public:
+    using PlatformImplementation::acquireResourceForGraphics;
+    using PlatformImplementation::acquireResourceForTransfer;
     using PlatformImplementation::begin;
     using PlatformImplementation::beginRenderPass;
     using PlatformImplementation::bindDescriptorSet;
     using PlatformImplementation::bindIndexBuffer;
     using PlatformImplementation::bindPipeline;
-    using PlatformImplementation::bufferMemoryBarrier;
+    using PlatformImplementation::copyBuffers;
     using PlatformImplementation::draw;
     using PlatformImplementation::drawIndexed;
     using PlatformImplementation::drawIndexedIndirect;

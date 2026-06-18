@@ -10,6 +10,7 @@
 #include "gfx/pipeline.h"
 #include "gfx/pipelineBindingSchema.h"
 #include "gfx/renderPass.h"
+#include "gfx/resourceManager.h"
 #include "gfx/vulkan/internal/utils.h"
 #include "vkException.h"
 #include <cassert>
@@ -265,6 +266,125 @@ void CommandList::bufferMemoryBarrier(PipelineStageFlagBits srcStageMask,
                          &bufferMemoryBarrier,
                          0,
                          nullptr);
+}
+
+void CommandList::copyBuffers(core::ResourceSharedRef const& srcRef,
+                              core::ResourceSharedRef const& dstRef,
+                              size_t srcOffset,
+                              size_t dstOffset,
+                              size_t size)
+{
+    assert(srcRef.valid());
+    auto srcId = static_cast<uint64_t>(srcRef.id());
+    boundRefs_.emplace(srcId, srcRef);
+
+    auto& bufferSrc = srcRef.as<type_traits::platform_implementation_t<gfx::Buffer>>();
+
+    assert(dstRef.valid());
+    auto dstId = static_cast<uint64_t>(dstRef.id());
+    boundRefs_.emplace(dstId, dstRef);
+
+    auto& bufferDst = dstRef.as<type_traits::platform_implementation_t<gfx::Buffer>>();
+
+    auto region = VkBufferCopy{};
+    region.srcOffset = static_cast<VkDeviceSize>(srcOffset);
+    region.dstOffset = static_cast<VkDeviceSize>(dstOffset);
+    region.size = static_cast<VkDeviceSize>(size);
+
+    assert(vkCommandBuffer_ != VK_NULL_HANDLE);
+    vkCmdCopyBuffer(vkCommandBuffer_, bufferSrc.handle(), bufferDst.handle(), 1, &region);
+}
+
+void CommandList::acquireResourceForGraphics(PipelineStageFlagBits srcStageMask,
+                                             PipelineStageFlagBits dstStageMask,
+                                             AccessFlagBits srcAccessMask,
+                                             AccessFlagBits dstAccessMask,
+                                             core::ResourceSharedRef& resourceRef,
+                                             size_t offset /* = 0*/,
+                                             size_t size /* = std::numeric_limits<size_t>::max()*/)
+{
+    assert(resourceRef.valid());
+    auto id = static_cast<uint64_t>(resourceRef.id());
+    boundRefs_.emplace(id, resourceRef);
+
+    auto poolRef = commandPool_.lock();
+    assert(poolRef.valid());
+
+    auto& pool = poolRef.as<type_traits::platform_implementation_t<gfx::CommandPool>>();
+
+    auto deviceRef = pool.device();
+    assert(deviceRef.valid());
+
+    auto& device = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>();
+
+    auto graphicsQueueFamilyIndex = device.graphicsQueueFamilyIndex();
+
+    if (resource_manager_t::resource_meta_t::type_index_v<gfx::Buffer>() == resourceRef.typeIndex()) {
+        auto& buffer = resourceRef.as<type_traits::platform_implementation_t<gfx::Buffer>>();
+
+        if (auto srcQueueFamilyIndex = buffer.owningQueueFamilyIndex();
+            srcQueueFamilyIndex != std::numeric_limits<uint32_t>::max()) {
+            bufferMemoryBarrier(srcStageMask,
+                                dstStageMask,
+                                srcAccessMask,
+                                dstAccessMask,
+                                srcQueueFamilyIndex,
+                                graphicsQueueFamilyIndex,
+                                resourceRef,
+                                offset,
+                                size);
+        }
+        buffer.owningQueueFamilyIndex() = graphicsQueueFamilyIndex;
+
+    } else {
+        throw std::invalid_argument("wrong resource type");
+    }
+}
+
+void CommandList::acquireResourceForTransfer(PipelineStageFlagBits srcStageMask,
+                                             PipelineStageFlagBits dstStageMask,
+                                             AccessFlagBits srcAccessMask,
+                                             AccessFlagBits dstAccessMask,
+                                             core::ResourceSharedRef& resourceRef,
+                                             size_t offset /* = 0*/,
+                                             size_t size /* = std::numeric_limits<size_t>::max()*/)
+{
+    assert(resourceRef.valid());
+    auto id = static_cast<uint64_t>(resourceRef.id());
+    boundRefs_.emplace(id, resourceRef);
+
+    auto poolRef = commandPool_.lock();
+    assert(poolRef.valid());
+
+    auto& pool = poolRef.as<type_traits::platform_implementation_t<gfx::CommandPool>>();
+
+    auto deviceRef = pool.device();
+    assert(deviceRef.valid());
+
+    auto& device = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>();
+
+    auto transferQueueFamilyIndex = device.transferQueueFamilyIndex();
+
+    if (resource_manager_t::resource_meta_t::type_index_v<gfx::Buffer>() == resourceRef.typeIndex()) {
+        auto& buffer = resourceRef.as<type_traits::platform_implementation_t<gfx::Buffer>>();
+
+        if (auto srcQueueFamilyIndex = buffer.owningQueueFamilyIndex();
+            srcQueueFamilyIndex != std::numeric_limits<uint32_t>::max()) {
+            bufferMemoryBarrier(srcStageMask,
+                                dstStageMask,
+                                srcAccessMask,
+                                dstAccessMask,
+                                srcQueueFamilyIndex,
+                                transferQueueFamilyIndex,
+                                resourceRef,
+                                offset,
+                                size);
+        }
+        buffer.owningQueueFamilyIndex() = transferQueueFamilyIndex;
+
+    } else {
+        throw std::invalid_argument("wrong resource type");
+    }
 }
 
 void CommandList::end()

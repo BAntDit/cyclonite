@@ -117,15 +117,32 @@ void CommandListRecorder::endRenderPass()
     batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
-void CommandListRecorder::bufferMemoryBarrier(PipelineStageFlagBits srcStageMask,
-                                              PipelineStageFlagBits dstStageMask,
-                                              AccessFlagBits srcAccessMask,
-                                              AccessFlagBits dstAccessMask,
-                                              uint32_t srcQueueFamilyIndex,
-                                              uint32_t dstQueueFamilyIndex,
-                                              core::ResourceSharedRef const& bufferRef,
-                                              size_t offset /* = 0*/,
-                                              size_t size /* = std::numeric_limits<size_t>::max()*/)
+void CommandListRecorder::copyBuffers(core::ResourceSharedRef const& srcRef,
+                                      core::ResourceSharedRef const& dstRef,
+                                      size_t srcOffset,
+                                      size_t dstOffset,
+                                      size_t size)
+{
+    auto purpose = batchRecorder_->submission().purpose();
+
+    auto task = [recorder = batchRecorder_, srcRef = srcRef, dstRef = dstRef, srcOffset, dstOffset, size]() -> void {
+        auto& submission = recorder->submission();
+        if (!submission.isInCommandListRecordingState()) {
+            throw std::runtime_error("command list recording is already finished");
+        }
+        submission.commandListToRecord().copyBuffers(srcRef, dstRef, srcOffset, dstOffset, size);
+    };
+
+    batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
+}
+
+void CommandListRecorder::acquireResourceForGraphics(PipelineStageFlagBits srcStageMask,
+                                                     PipelineStageFlagBits dstStageMask,
+                                                     AccessFlagBits srcAccessMask,
+                                                     AccessFlagBits dstAccessMask,
+                                                     core::ResourceSharedRef const& resourceRef,
+                                                     size_t offset /* = 0*/,
+                                                     size_t size /* = std::numeric_limits<size_t>::max()*/)
 {
     auto purpose = batchRecorder_->submission().purpose();
 
@@ -134,24 +151,44 @@ void CommandListRecorder::bufferMemoryBarrier(PipelineStageFlagBits srcStageMask
                  dstStageMask,
                  srcAccessMask,
                  dstAccessMask,
-                 srcQueueFamilyIndex,
-                 dstQueueFamilyIndex,
-                 bufferRef = bufferRef,
+                 resourceRef = resourceRef,
                  offset,
-                 size]() -> void {
+                 size]() mutable -> void {
         auto& submission = recorder->submission();
         if (!submission.isInCommandListRecordingState()) {
             throw std::runtime_error("command list recording is already finished");
         }
-        submission.commandListToRecord().bufferMemoryBarrier(srcStageMask,
-                                                             dstStageMask,
-                                                             srcAccessMask,
-                                                             dstAccessMask,
-                                                             srcQueueFamilyIndex,
-                                                             dstQueueFamilyIndex,
-                                                             bufferRef,
-                                                             offset,
-                                                             size);
+        submission.commandListToRecord().acquireResourceForGraphics(
+          srcStageMask, dstStageMask, srcAccessMask, dstAccessMask, resourceRef, offset, size);
+    };
+
+    batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
+}
+
+void CommandListRecorder::acquireResourceForTransfer(PipelineStageFlagBits srcStageMask,
+                                                     PipelineStageFlagBits dstStageMask,
+                                                     AccessFlagBits srcAccessMask,
+                                                     AccessFlagBits dstAccessMask,
+                                                     core::ResourceSharedRef const& resourceRef,
+                                                     size_t offset /* = 0*/,
+                                                     size_t size /* = std::numeric_limits<size_t>::max()*/)
+{
+    auto purpose = batchRecorder_->submission().purpose();
+
+    auto task = [recorder = batchRecorder_,
+                 srcStageMask,
+                 dstStageMask,
+                 srcAccessMask,
+                 dstAccessMask,
+                 resourceRef = resourceRef,
+                 offset,
+                 size]() mutable -> void {
+        auto& submission = recorder->submission();
+        if (!submission.isInCommandListRecordingState()) {
+            throw std::runtime_error("command list recording is already finished");
+        }
+        submission.commandListToRecord().acquireResourceForTransfer(
+          srcStageMask, dstStageMask, srcAccessMask, dstAccessMask, resourceRef, offset, size);
     };
 
     batchRecorder_->queueSubmissionRecorder().addTask(multithreading::TaskManager::submitTask(task, purpose));
