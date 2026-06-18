@@ -78,6 +78,14 @@ public:
                                     size_t offset = 0,
                                     size_t size = std::numeric_limits<size_t>::max());
 
+    void releaseResourceToGraphics(PipelineStageFlagBits srcStageMask,
+                                   PipelineStageFlagBits dstStageMask,
+                                   AccessFlagBits srcAccessMask,
+                                   AccessFlagBits dstAccessMask,
+                                   core::ResourceSharedRef& resourceRef,
+                                   size_t offset = 0,
+                                   size_t size = std::numeric_limits<size_t>::max());
+
     void end();
 
     [[nodiscard]] auto handle() const -> VkCommandBuffer { return vkCommandBuffer_; }

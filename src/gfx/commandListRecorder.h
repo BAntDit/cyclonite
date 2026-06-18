@@ -71,6 +71,14 @@ public:
                                     size_t offset = 0,
                                     size_t size = std::numeric_limits<size_t>::max());
 
+    void releaseResourceToGraphics(PipelineStageFlagBits srcStageMask,
+                                   PipelineStageFlagBits dstStageMask,
+                                   AccessFlagBits srcAccessMask,
+                                   AccessFlagBits dstAccessMask,
+                                   core::ResourceSharedRef const& resourceRef,
+                                   size_t offset = 0,
+                                   size_t size = std::numeric_limits<size_t>::max());
+
     void end();
 
     void finish() { finish(false); }
