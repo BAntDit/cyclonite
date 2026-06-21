@@ -501,6 +501,7 @@ struct TextureResourceDescription : public ResourceDescription
 };
 
 inline constexpr auto default_transfer_submission_priority_v = uint16_t{ 100 };
+inline constexpr auto default_render_submission_priority_v = uint16_t{ 50 };
 }
 
 #endif // GFX_COMMON_H
