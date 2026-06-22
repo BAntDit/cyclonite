@@ -184,7 +184,7 @@ void QueueSubmissionManager::flush()
 
     for (auto&& [keys, submissions] : queueSubmissionRingMap_) {
         auto&& [_0, _1, priority, flags] = keys;
-        auto& submissionRef = submissions[currentFrameIndex_ % config_t::queue_submission_ring_size_v];
+        auto& submissionRef = submissions[currentFrameNumber_ % config_t::queue_submission_ring_size_v];
 
         if (!submissionRef.valid()) {
             continue;
@@ -221,7 +221,7 @@ void QueueSubmissionManager::flush()
         submission.submit();
     }
 
-    currentFrameIndex_++;
+    currentFrameNumber_++;
 }
 }
 #endif

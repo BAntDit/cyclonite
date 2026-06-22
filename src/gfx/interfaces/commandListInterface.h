@@ -54,6 +54,8 @@ concept CommandListConcept = requires(T t,
 
     { t.releaseResourceToGraphics(psf, psf, afs, afs, ref, a, a) } -> std::same_as<void>;
 
+    { t.releaseResourceToTransfer(psf, psf, afs, afs, ref, a, a) } -> std::same_as<void>;
+
     { t.copyBuffers(ref, ref, a, a, a) } -> std::same_as<void>;
 };
 
@@ -77,6 +79,7 @@ public:
     using PlatformImplementation::endRenderPass;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::releaseResourceToGraphics;
+    using PlatformImplementation::releaseResourceToTransfer;
     using PlatformImplementation::state;
     using PlatformImplementation::usage;
 
