@@ -20,7 +20,7 @@ class Device;
 
 class QueueSubmissionManager
 {
-    friend class Device;
+    friend class vulkan::Device;
 
 public:
     QueueSubmissionManager(QueueSubmissionManager const&) = delete;
@@ -54,12 +54,12 @@ public:
 
     void returnSignal(core::ResourceSharedRef const& signal);
 
-private:
-    explicit QueueSubmissionManager(Device* device);
-
     [[nodiscard]] auto platformQueueSubmissionManager() -> vulkan::QueueSubmissionManager* { return this; };
 
     [[nodiscard]] auto platformQueueSubmissionManager() const -> vulkan::QueueSubmissionManager const* { return this; };
+
+private:
+    explicit QueueSubmissionManager(Device* device);
 
     using queue_submission_ring_t = std::array<core::ResourceSharedRef, config_t::queue_submission_ring_size_v>;
 

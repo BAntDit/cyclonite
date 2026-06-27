@@ -110,6 +110,8 @@ concept DeviceConcept = requires(T t,
     requires std::is_member_function_pointer_v<decltype(&T::getOrCreatePipelineBindingSchema)> &&
                std::is_same_v<core::ResourceSharedRef,
                               metrix::member_function_return_type_t<decltype(&T::getOrCreatePipelineBindingSchema)>>;
+
+    { t.queueSubmissionManager() };
 };
 
 template<DeviceConcept PlatformImplementation>
@@ -132,6 +134,7 @@ public:
     using PlatformImplementation::limits;
     using PlatformImplementation::name;
     using PlatformImplementation::PlatformImplementation;
+    using PlatformImplementation::queueSubmissionManager;
     using PlatformImplementation::resourceBase;
     using PlatformImplementation::vendor;
 };

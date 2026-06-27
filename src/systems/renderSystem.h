@@ -33,8 +33,10 @@ public:
 
     void init(core::ResourceSharedRef const& device,
               core::ResourceSharedRef const& renderWindowRef,
+              core::ResourceSharedRef const& vertexShaderRef,
+              core::ResourceSharedRef const& pixelShaderRef,
               core::ResourceSharedRef const& materialRef,
-              gfx::QueueSubmissionManager* queueSubmissionManager);
+              gfx::QueueSubmissionManager& queueSubmissionManager);
 
     void setupPassConstants(components::Transform const& transform, components::Camera const& camera);
 

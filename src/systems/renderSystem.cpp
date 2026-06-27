@@ -18,10 +18,12 @@
 namespace cyclonite::systems {
 void Renderer::init(core::ResourceSharedRef const& deviceRef,
                     core::ResourceSharedRef const& renderWindowRef,
+                    core::ResourceSharedRef const& vertexShaderRef,
+                    core::ResourceSharedRef const& pixelShaderRef,
                     core::ResourceSharedRef const& materialRef,
-                    gfx::QueueSubmissionManager* queueSubmissionManager)
+                    gfx::QueueSubmissionManager& queueSubmissionManager)
 {
-    queueSubmissionManager_ = queueSubmissionManager;
+    queueSubmissionManager_ = &queueSubmissionManager;
     deviceRef_ = deviceRef;
     renderWindowRef_ = renderWindowRef;
     materialRef_ = materialRef;
@@ -49,6 +51,17 @@ void Renderer::init(core::ResourceSharedRef const& deviceRef,
                                                            .setRenderWindow(renderWindowRef_,
                                                                             cyclonite::gfx::Color{ 0.f, 1.f, 0.f, 1.f })
                                                            .build() };
+
+    auto shaderSet = cyclonite::Material::shader_set_t{};
+    shaderSet.add(vertexShaderRef, cyclonite::gfx::ShaderStageFlags::VERTEX);
+    shaderSet.add(pixelShaderRef, cyclonite::gfx::ShaderStageFlags::FRAGMENT);
+
+    auto rasterizationState = cyclonite::gfx::RasterizationState{};
+    rasterizationState.flags.reset(cyclonite::gfx::RasterizationStateFlags::RASTERIZER_DISCARD_ENABLE);
+
+    auto& material = materialRef_.as<cyclonite::Material>();
+
+    material.manualSetup(renderPassRef_, shaderSet, rasterizationState).get();
 }
 
 void Renderer::setupPassConstants(components::Transform const& transform, components::Camera const& camera)

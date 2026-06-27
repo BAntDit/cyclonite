@@ -34,7 +34,7 @@ public:
 
     [[nodiscard]] auto empty() const -> bool { return readableSize() == 0; }
 
-    [[nodiscard]] auto expectedOffset(size_t size, bool forceShiftToBegin = false) const -> std::pair<size_t, size_t>;
+    [[nodiscard]] auto expectedRange(size_t size, bool forceShiftToBegin = false) const -> std::pair<size_t, size_t>;
 
     auto reserveRange(size_t size, bool forceShiftToBegin = false) -> size_t;
 
@@ -68,7 +68,7 @@ public:
 
     using RingRange<Size>::empty;
 
-    using RingRange<Size>::expectedOffset;
+    using RingRange<Size>::expectedRange;
 
     template<typename ConditionType>
         requires std::is_nothrow_convertible_v<ConditionValueType, std::decay_t<ConditionType>>

@@ -1,5 +1,6 @@
 
 #include <cyclonite.h>
+#include <systems/renderSystem.h>
 
 namespace examples {
 class BasicExample : public cyclonite::EventReceivable
@@ -20,10 +21,9 @@ public:
 private:
     cyclonite::Root<> root_;
     cyclonite::core::ResourceSharedRef deviceRef_;
-    cyclonite::core::ResourceSharedRef renderPassRef_;
     cyclonite::core::ResourceSharedRef windowRef_;
     cyclonite::core::ResourceSharedRef materialRef_;
-    std::unique_ptr<cyclonite::gfx::QueueSubmissionManager> submissionManager_;
+    cyclonite::systems::Renderer renderer_;
     uint32_t defaultResourceGroup_;
     bool shutdown_;
 };
