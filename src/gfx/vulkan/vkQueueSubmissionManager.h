@@ -50,6 +50,8 @@ public:
 
     void flush();
 
+    void reset();
+
     [[nodiscard]] auto acquireSignal(uint64_t signalInitialValue) -> core::ResourceSharedRef;
 
     void returnSignal(core::ResourceSharedRef const& signal);

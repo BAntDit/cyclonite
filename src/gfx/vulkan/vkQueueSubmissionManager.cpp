@@ -15,7 +15,7 @@ QueueSubmissionManager::QueueSubmissionManager(Device* device)
   , signalPool_{}
   , queueSubmissionRingMap_{}
   , completedFrames_{}
-  , currentFrameIndex_{ 1 }
+  , currentFrameNumber_{ 1 }
 {
 }
 
@@ -222,6 +222,29 @@ void QueueSubmissionManager::flush()
     }
 
     currentFrameNumber_++;
+}
+
+void QueueSubmissionManager::reset()
+{
+    for (auto& [_0, submissions] : queueSubmissionRingMap_) {
+        for (auto& submissionRef : submissions) {
+            if (!submissionRef.valid()) {
+                continue;
+            }
+            auto& submission = submissionRef.as<gfx::QueueSubmission>();
+
+            if (submission.isPending())
+                submission.waitOnCpu();
+
+            submission.reset();
+        }
+
+        submissions.fill(core::ResourceSharedRef{});
+    }
+
+    signalPool_.clear();
+    completedFrames_.clear();
+    queueSubmissionRingMap_.clear();
 }
 }
 #endif
