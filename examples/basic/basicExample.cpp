@@ -1,15 +1,13 @@
 
 #include "basicExample.h"
+#include "components/camera.h"
+#include "components/transform.h"
+#include "gfx/queueSubmissionRecorder.h"
 #include <boost/foreach.hpp>
 #include <boost/program_options.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <cassert>
-
-#include "gfx/queueSubmissionRecorder.h"
-#include "gfx/vulkan/vkQueueSubmissionManager.h"
-
 #include <iostream>
-static uint32_t framIndex = 0;
 
 namespace examples {
 BasicExample::BasicExample()
@@ -91,16 +89,25 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
     root_.input().quit += cyclonite::EventHandler(this, &BasicExample::onQuit);
     root_.input().keyDown += cyclonite::EventHandler(this, &BasicExample::onKeyDown);
 
-    renderer_.init(deviceRef_, windowRef_, vertexShaderRef, fragmentShaderRef, materialRef_, device.queueSubmissionManager());
+    renderer_.init(
+      deviceRef_, windowRef_, vertexShaderRef, fragmentShaderRef, materialRef_, device.queueSubmissionManager());
 
     return *this;
 }
 
 auto BasicExample::run() -> BasicExample&
 {
-    // renderer_.setupPassConstants()
+    auto camera =
+      cyclonite::components::Camera{ cyclonite::components::Camera::PerspectiveProjection{ 1.f, 45.f, 0.1f, 100.f } };
 
-    // renderer_.render();
+    // TODO:: normal camera position
+    auto transform = cyclonite::components::Transform{ cyclonite::vec3{ 0.f },
+                                                       cyclonite::vec3{ 1.f },
+                                                       cyclonite::quat{ 1.f, 0.0f, 0.0f, 0.f } };
+
+    renderer_.setupPassConstants(transform, camera);
+
+    renderer_.render();
 
     return *this;
 }
@@ -108,6 +115,14 @@ auto BasicExample::run() -> BasicExample&
 void BasicExample::done()
 {
     std::cout << "app is done!" << std::endl;
+
+    auto& device = deviceRef_.as<cyclonite::gfx::Device>();
+
+    device.queueSubmissionManager().reset();
+
+    root_.taskManager().stop();
+
+    renderer_.reset();
 
     materialRef_ = cyclonite::core::ResourceSharedRef{};
 

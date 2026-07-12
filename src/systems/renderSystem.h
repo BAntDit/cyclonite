@@ -42,6 +42,8 @@ public:
 
     void render();
 
+    void reset();
+
 private:
     [[nodiscard]] auto getPassDescriptorSet() -> core::ResourceSharedRef;
 

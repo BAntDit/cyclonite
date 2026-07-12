@@ -345,4 +345,17 @@ void Renderer::render()
       .submitTask(PassRenderJob{ this }, multithreading::Purpose::Render)
       .get();
 }
+
+void Renderer::reset()
+{
+    transferSubmission_ = cyclonite::core::ResourceSharedRef{};
+    passConstantStagings_.clear();
+    passConstantBuffers_.clear();
+    passDescriptorSets_.clear();
+    passBindingSchemaRef_ = core::ResourceSharedRef{};
+    materialRef_ = core::ResourceSharedRef{};
+    renderPassRef_ = core::ResourceSharedRef{};
+    renderWindowRef_ = core::ResourceSharedRef{};
+    deviceRef_ = core::ResourceSharedRef{};
+}
 }
