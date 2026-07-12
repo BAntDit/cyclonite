@@ -89,16 +89,16 @@ VSOutput main(uint vertexId : SV_VertexID)
 {
     VSOutput output;
 
-    Vertex vertex = vertices[vertexId];
+    VertexData vertex = vDataNonIndexed[vertexId];
 
     float3 position = vertex.position;
     float3 normal = vertex.normal;
 
-    float4 worldPosition = position;
+    float4 worldPosition = float4(position.x, position.y, position.z, 1.0f);
 
     output.position = mul(worldPosition, camera.viewProjMatrix);
     output.normal = normal;
-    output.uv = uv;
+    output.uv = vertex.uv0;
 
     return output;
 }

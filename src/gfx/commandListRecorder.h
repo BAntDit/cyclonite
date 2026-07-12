@@ -9,11 +9,8 @@
 #include "gfx/common.h"
 #include <span>
 
-#include "frameRecordingContext.h"
-
 namespace cyclonite::gfx {
 class SubmissionBatchRecorder;
-class FrameRecordingContext;
 
 class CommandListRecorder
 {

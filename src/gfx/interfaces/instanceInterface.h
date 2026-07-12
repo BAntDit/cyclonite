@@ -15,7 +15,7 @@ template<typename T>
 concept InstanceConcept = requires(T t) {
     { t.physicalDeviceCount() } -> std::same_as<uint32_t>;
 
-    requires std::is_member_function_pointer_v<decltype(&T::bindlessResourceManager)>;
+    { t.bindlessResourceManager() };
 
     requires std::is_member_function_pointer_v<decltype(&T::createDevice)>;
 
@@ -26,6 +26,7 @@ template<InstanceConcept InstanceImplementation>
 class InstanceInterface : private InstanceImplementation
 {
 public:
+    using InstanceImplementation::bindlessResourceManager;
     using InstanceImplementation::createDevice;
     using InstanceImplementation::InstanceImplementation;
     using InstanceImplementation::physicalDeviceCount;

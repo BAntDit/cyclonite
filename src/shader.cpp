@@ -139,11 +139,8 @@ void Shader::loadImpl(std::istream& stream)
         auto descriptorSetLayoutFlags = gfx::DescriptorSetLayoutFlagBits{};
         auto bindingFlags = gfx::BindingFlagBits{};
 
-        if (space == metrix::value_cast(gfx::DescriptorSpace::BINDLESS_TEXTURES) ||
-            space == metrix::value_cast(gfx::DescriptorSpace::BINDLESS_BUFFERS)) {
-            descriptorSetLayoutFlags.set(gfx::DescriptorSetLayoutFlags::UPDATE_AFTER_BIND);
-            bindingFlags.set(gfx::BindingFlags::UPDATE_AFTER_BIND);
-        }
+        descriptorSetLayoutFlags.set(gfx::DescriptorSetLayoutFlags::UPDATE_AFTER_BIND);
+        bindingFlags.set(gfx::BindingFlags::UPDATE_AFTER_BIND);
 
         bindings_.emplace_back(space, point, descriptorType, count, stageFlags, descriptorSetLayoutFlags, bindingFlags);
     }
