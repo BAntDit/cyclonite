@@ -17,6 +17,18 @@ BasicExample::BasicExample()
   , windowRef_{}
   , renderer_{}
   , defaultResourceGroup_{ std::numeric_limits<uint32_t>::max() }
+  , scroll_{ 0.f }
+  , fade_{ .9f }
+  , distance_{ 0.f }
+  , distanceMin_{ .5f }
+  , distanceMax_{ 10.f }
+  , azimuth_{ 0.f }
+  , polar_{ 0.f }
+  , rotate_{}
+  , rotationStart_{}
+  , target_{}
+  , time_{}
+  , isInRotation_{ false }
   , shutdown_{ false }
 {
 }
@@ -88,22 +100,62 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
 
     root_.input().quit += cyclonite::EventHandler(this, &BasicExample::onQuit);
     root_.input().keyDown += cyclonite::EventHandler(this, &BasicExample::onKeyDown);
+    root_.input().mouseButtonDown += cyclonite::EventHandler(this, &BasicExample::onMouseButtonDown);
+    root_.input().mouseButtonUp += cyclonite::EventHandler(this, &BasicExample::onMouseButtonUp);
+    root_.input().mouseMotion += cyclonite::EventHandler(this, &BasicExample::onMouseMotion);
+    root_.input().mouseWheel += cyclonite::EventHandler(this, &BasicExample::onMouseWheel);
 
     renderer_.init(
       deviceRef_, windowRef_, vertexShaderRef, fragmentShaderRef, materialRef_, device.queueSubmissionManager());
+
+    time_ = std::chrono::high_resolution_clock::now();
 
     return *this;
 }
 
 auto BasicExample::run() -> BasicExample&
 {
+    auto frameStartTime = std::chrono::high_resolution_clock::now();
+    auto dt = std::chrono::duration<cyclonite::real, std::ratio<1>>{ frameStartTime - time_ }.count();
+    time_ = frameStartTime;
+
+    root_.input().pollEvent();
+
+    distance_ += scroll_;
+    distance_ = std::max(distanceMin_, std::min(distanceMax_, distance_));
+
+    scroll_ -= scroll_ * (1.f - fade_);
+    scroll_ = abs(scroll_) < 0.1e-3f ? 0.f : scroll_;
+
+    azimuth_ += rotate_.x * dt;
+    polar_ += rotate_.y * dt;
+
+    rotate_.x -= rotate_.x * (1.f - fade_);
+    rotate_.y -= rotate_.y * (1.f - fade_);
+
+    constexpr auto pi = std::numbers::pi_v<cyclonite::real>;
+    polar_ = std::max((pi / 2.f), std::min(pi - 0.1f, polar_));
+
+    auto pos = cyclonite::vec3{ distance_ * sinf(polar_) * cosf(azimuth_),
+                                distance_ * cosf(polar_),
+                                distance_ * sinf(azimuth_) * sinf(polar_) };
+
+    auto up = cyclonite::vec3{ .0f, 1.f, 0.f };
+    auto fw = glm::normalize(-pos);
+    auto lf = glm::normalize(glm::cross(up, fw));
+
+    up = glm::normalize(glm::cross(fw, lf));
+
     auto camera =
       cyclonite::components::Camera{ cyclonite::components::Camera::PerspectiveProjection{ 1.f, 45.f, 0.1f, 100.f } };
 
-    // TODO:: normal camera position
-    auto transform = cyclonite::components::Transform{ cyclonite::vec3{ 0.f },
-                                                       cyclonite::vec3{ 1.f },
-                                                       cyclonite::quat{ 1.f, 0.0f, 0.0f, 0.f } };
+    auto cameraMatrix =
+      cyclonite::mat4{ cyclonite::vec4{ lf.x, lf.y, lf.z, 0.0f },
+                       cyclonite::vec4{ up.x, up.y, up.z, 0.0f },
+                       cyclonite::vec4{ fw.x, fw.y, fw.z, 0.0f },
+                       cyclonite::vec4{ target_.x - pos.x, target_.y - pos.y, target_.z - pos.z, 1.0f } };
+
+    auto transform = cyclonite::components::Transform{ cameraMatrix };
 
     renderer_.setupPassConstants(transform, camera);
 
@@ -140,5 +192,46 @@ void BasicExample::onKeyDown(SDL_Keycode keyCode, uint16_t mod)
 
     if (keyCode == SDLK_ESCAPE)
         onQuit();
+}
+
+void BasicExample::onMouseButtonDown(uint8_t button, uint8_t clicks, float x, float y)
+{
+    if (button == SDL_BUTTON_LEFT && clicks == 1) {
+        isInRotation_ = true;
+        rotationStart_.x = x;
+        rotationStart_.y = y;
+    }
+}
+
+void BasicExample::onMouseButtonUp(uint8_t button, float x, float y)
+{
+    (void)button;
+    (void)x;
+    (void)y;
+
+    isInRotation_ = false;
+}
+
+void BasicExample::onMouseMotion(float x, float y)
+{
+    if (isInRotation_) {
+        constexpr auto speed = cyclonite::real{ 30.f };
+        constexpr auto pi = std::numbers::pi_v<cyclonite::real>;
+
+        rotate_.x = pi * 2.f * speed * (static_cast<cyclonite::real>(x) - rotationStart_.x);
+        rotate_.y = pi * 2.f * speed * (static_cast<cyclonite::real>(y) - rotationStart_.y);
+
+        rotationStart_.x = static_cast<cyclonite::real>(x);
+        rotationStart_.y = static_cast<cyclonite::real>(y);
+    }
+}
+
+void BasicExample::onMouseWheel(float y)
+{
+    if (y > 0) {
+        scroll_ -= 0.05f;
+    } else if (y < 0) {
+        scroll_ += 0.05f;
+    }
 }
 }
