@@ -43,11 +43,20 @@ struct Camera
         real zFar;
     };
 
-    Camera() noexcept;
+    Camera() noexcept
+      : projection{ Camera::PerspectiveProjection{ 1.0f, 1.5708f, 0.1f, 10.f } }
+    {
+    }
 
-    explicit Camera(PerspectiveProjection const& perspective) noexcept;
+    explicit Camera(PerspectiveProjection const& perspective) noexcept
+      : projection{ perspective }
+    {
+    }
 
-    explicit Camera(OrthographicProjection const& orthographic) noexcept;
+    explicit Camera(OrthographicProjection const& orthographic) noexcept
+      : projection{ orthographic }
+    {
+    }
 
     std::variant<PerspectiveProjection, OrthographicProjection> projection;
 };
