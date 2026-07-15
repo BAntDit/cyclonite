@@ -66,7 +66,6 @@ void Renderer::init(core::ResourceSharedRef const& deviceRef,
 
 void Renderer::setupPassConstants(components::Transform const& transform, components::Camera const& camera)
 {
-    auto& device = deviceRef_.as<gfx::Device>();
     auto [stagingRef, stagingMap] = getPassConstantStaging();
 
     auto view = glm::inverse(transform.worldMatrix);
@@ -264,8 +263,6 @@ struct PassRenderJob
           multithreading::Purpose::Render,
           gfx::CommandPoolFlagBits{ cyclonite::gfx::CommandPoolFlags::TRANSIENT },
           gfx::default_render_submission_priority_v);
-
-        auto& renderSubmission = renderSubmissionRef.as<gfx::QueueSubmission>();
 
         auto renderSubmissionRecorder = cyclonite::gfx::QueueSubmissionRecorder{ renderSubmissionRef };
 

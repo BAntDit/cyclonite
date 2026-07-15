@@ -161,6 +161,11 @@ auto BasicExample::run() -> BasicExample&
 
     renderer_.render();
 
+    auto& device = deviceRef_.as<cyclonite::gfx::Device>();
+    device.queueSubmissionManager().flush();
+
+    windowRef_.as<cyclonite::gfx::RenderWindow>().present();
+
     return *this;
 }
 
