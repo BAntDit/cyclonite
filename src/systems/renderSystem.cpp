@@ -57,6 +57,9 @@ void Renderer::init(core::ResourceSharedRef const& deviceRef,
 
     auto rasterizationState = cyclonite::gfx::RasterizationState{};
     rasterizationState.flags.reset(cyclonite::gfx::RasterizationStateFlags::RASTERIZER_DISCARD_ENABLE);
+    rasterizationState.flags.set(cyclonite::gfx::RasterizationStateFlags::DEPTH_TEST_ENABLE);
+    rasterizationState.depthComparison = cyclonite::gfx::CompareOp::LESS_OR_EQUAL;
+    rasterizationState.cullMode = cyclonite::gfx::CullMode::BACK;
 
     auto& material = materialRef_.as<cyclonite::Material>();
 

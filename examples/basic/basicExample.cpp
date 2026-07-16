@@ -222,7 +222,7 @@ void BasicExample::onMouseButtonUp(uint8_t button, float x, float y)
 void BasicExample::onMouseMotion(float x, float y)
 {
     if (isInRotation_) {
-        constexpr auto speed = cyclonite::real{ 30.f };
+        constexpr auto speed = cyclonite::real{ .5f };
         constexpr auto pi = std::numbers::pi_v<cyclonite::real>;
 
         rotate_.x = pi * 2.f * speed * (static_cast<cyclonite::real>(x) - rotationStart_.x);

@@ -96,7 +96,7 @@ VSOutput main(uint vertexId : SV_VertexID)
 
     float4 worldPosition = float4(position.x, position.y, position.z, 1.0f);
 
-    output.position = mul(worldPosition, camera.viewProjMatrix);
+    output.position = mul(camera.viewProjMatrix, worldPosition);
     output.normal = normal;
     output.uv = vertex.uv0;
 
