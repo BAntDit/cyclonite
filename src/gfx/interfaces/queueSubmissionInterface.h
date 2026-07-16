@@ -59,6 +59,8 @@ concept QueueSubmissionConcept = requires(T t,
     { t.addPresentationSignal(signal) } -> std::same_as<void>;
 
     { t.submit() } -> std::same_as<void>;
+
+    { t.signal() } -> std::same_as<core::ResourceSharedRef>;
 };
 
 template<QueueSubmissionConcept PlatformImplementation>
@@ -87,6 +89,7 @@ public:
     using PlatformImplementation::purpose;
     using PlatformImplementation::reset;
     using PlatformImplementation::resourceBase;
+    using PlatformImplementation::signal;
     using PlatformImplementation::submit;
     using PlatformImplementation::waitOnCpu;
 };

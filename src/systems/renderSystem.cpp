@@ -274,14 +274,21 @@ struct PassRenderJob
 
             commandListRecorder.begin(cyclonite::gfx::CommandListUsageFlagBits{});
 
+            renderer_->transferTaskFuture_.get();
+            auto constantBufferRef = renderer_->getPassConstantBuffer();
+
+            commandListRecorder.acquireResourceForGraphics(
+              gfx::PipelineStageFlagBits{ gfx::PipelineStageFlags::TOP_OF_PIPE_BIT },
+              gfx::PipelineStageFlagBits{ gfx::PipelineStageFlags::VERTEX_SHADER_BIT,
+                                          gfx::PipelineStageFlags::FRAGMENT_SHADER_BIT },
+              gfx::AccessFlagBits{},
+              gfx::AccessFlagBits{ gfx::AccessFlags::UNIFORM_READ_BIT },
+              constantBufferRef);
+
             commandListRecorder.beginRenderPass(renderer_->renderPassRef_);
 
             auto& material = renderer_->materialRef_.as<cyclonite::Material>();
             commandListRecorder.bindPipeline(material.pipeline());
-
-            renderer_->transferTaskFuture_.get();
-
-            auto constantBufferRef = renderer_->getPassConstantBuffer();
 
             auto resDesc = gfx::BufferResourceDescription{};
             resDesc.type = gfx::DescriptorType::UNIFORM_BUFFER;
@@ -296,18 +303,12 @@ struct PassRenderJob
 
             descriptorSet.update(std::span{ &descriptorWriteData, 1 });
 
-            commandListRecorder.acquireResourceForGraphics(
-              gfx::PipelineStageFlagBits{ gfx::PipelineStageFlags::TOP_OF_PIPE_BIT },
-              gfx::PipelineStageFlagBits{ gfx::PipelineStageFlags::VERTEX_SHADER_BIT,
-                                          gfx::PipelineStageFlags::FRAGMENT_SHADER_BIT },
-              gfx::AccessFlagBits{},
-              gfx::AccessFlagBits{ gfx::AccessFlags::UNIFORM_READ_BIT },
-              constantBufferRef);
-
             auto bindingSchemaRef = material.pipeline().as<gfx::Pipeline>().bindingSchema();
             commandListRecorder.bindDescriptorSet(gfx::PipelineBindPoint::GRAPHICS, bindingSchemaRef, descriptorSetRef);
 
             commandListRecorder.draw(36, 1, 0, 0);
+
+            commandListRecorder.endRenderPass();
 
             commandListRecorder.releaseResourceToTransfer(
               gfx::PipelineStageFlagBits{ gfx::PipelineStageFlags::VERTEX_SHADER_BIT,
@@ -317,12 +318,18 @@ struct PassRenderJob
               gfx::AccessFlagBits{},
               constantBufferRef);
 
-            commandListRecorder.endRenderPass();
-
             commandListRecorder.end();
 
             commandListRecorder.finish();
 
+            auto& transferSubmission = renderer_->transferSubmission_.as<gfx::QueueSubmission>();
+
+            auto dependencyStageMask = gfx::PipelineStageFlagBits{ gfx::PipelineStageFlags::VERTEX_SHADER_BIT };
+            auto dependency = gfx::SubmissionBatchDependency{ transferSubmission.signal(),
+                                                              dependencyStageMask,
+                                                              submissionManager->currentFrameNumber() };
+
+            batchRecorder.addBatchDependency(dependency);
             batchRecorder.finish();
         }
 
