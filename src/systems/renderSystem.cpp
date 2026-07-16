@@ -30,16 +30,15 @@ void Renderer::init(core::ResourceSharedRef const& deviceRef,
 
     auto& device = deviceRef_.as<gfx::Device>();
 
-    auto allShaderStages = gfx::ShaderStageFlagBits{ gfx::ShaderStageFlags::ALL };
+    auto shaderStages = gfx::ShaderStageFlagBits{ gfx::ShaderStageFlags::VERTEX };
     auto setLayoutFlags = gfx::DescriptorSetLayoutFlagBits{ gfx::DescriptorSetLayoutFlags::UPDATE_AFTER_BIND };
-    auto bindingFlags =
-      gfx::BindingFlagBits{ gfx::BindingFlags::UPDATE_AFTER_BIND, gfx::BindingFlags::PARTIALLY_BOUND };
+    auto bindingFlags = gfx::BindingFlagBits{ gfx::BindingFlags::UPDATE_AFTER_BIND };
 
     auto bindings = std::array{ gfx::Binding{ metrix::value_cast(gfx::DescriptorSpace::PER_PASS),
                                               0,
                                               gfx::DescriptorType::UNIFORM_BUFFER,
                                               1,
-                                              allShaderStages,
+                                              shaderStages,
                                               setLayoutFlags,
                                               bindingFlags } };
 
@@ -68,7 +67,7 @@ void Renderer::setupPassConstants(components::Transform const& transform, compon
 {
     auto [stagingRef, stagingMap] = getPassConstantStaging();
 
-    auto view = glm::inverse(transform.worldMatrix);
+    auto view = glm::inverse(transform.matrix);
     stagingMap->view = view;
 
     auto projection = std::visit(

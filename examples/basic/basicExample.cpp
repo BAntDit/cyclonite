@@ -115,56 +115,58 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
 
 auto BasicExample::run() -> BasicExample&
 {
-    auto frameStartTime = std::chrono::high_resolution_clock::now();
-    auto dt = std::chrono::duration<cyclonite::real, std::ratio<1>>{ frameStartTime - time_ }.count();
-    time_ = frameStartTime;
+    while (!shutdown_) {
+        auto frameStartTime = std::chrono::high_resolution_clock::now();
+        auto dt = std::chrono::duration<cyclonite::real, std::ratio<1>>{ frameStartTime - time_ }.count();
+        time_ = frameStartTime;
 
-    root_.input().pollEvent();
+        root_.input().pollEvent();
 
-    distance_ += scroll_;
-    distance_ = std::max(distanceMin_, std::min(distanceMax_, distance_));
+        distance_ += scroll_;
+        distance_ = std::max(distanceMin_, std::min(distanceMax_, distance_));
 
-    scroll_ -= scroll_ * (1.f - fade_);
-    scroll_ = abs(scroll_) < 0.1e-3f ? 0.f : scroll_;
+        scroll_ -= scroll_ * (1.f - fade_);
+        scroll_ = abs(scroll_) < 0.1e-3f ? 0.f : scroll_;
 
-    azimuth_ += rotate_.x * dt;
-    polar_ += rotate_.y * dt;
+        azimuth_ += rotate_.x * dt;
+        polar_ += rotate_.y * dt;
 
-    rotate_.x -= rotate_.x * (1.f - fade_);
-    rotate_.y -= rotate_.y * (1.f - fade_);
+        rotate_.x -= rotate_.x * (1.f - fade_);
+        rotate_.y -= rotate_.y * (1.f - fade_);
 
-    constexpr auto pi = std::numbers::pi_v<cyclonite::real>;
-    polar_ = std::max((pi / 2.f), std::min(pi - 0.1f, polar_));
+        constexpr auto pi = std::numbers::pi_v<cyclonite::real>;
+        polar_ = std::max((pi / 2.f), std::min(pi - 0.1f, polar_));
 
-    auto pos = cyclonite::vec3{ distance_ * sinf(polar_) * cosf(azimuth_),
-                                distance_ * cosf(polar_),
-                                distance_ * sinf(azimuth_) * sinf(polar_) };
+        auto pos = cyclonite::vec3{ distance_ * sinf(polar_) * cosf(azimuth_),
+                                    distance_ * cosf(polar_),
+                                    distance_ * sinf(azimuth_) * sinf(polar_) };
 
-    auto up = cyclonite::vec3{ .0f, 1.f, 0.f };
-    auto fw = glm::normalize(-pos);
-    auto lf = glm::normalize(glm::cross(up, fw));
+        auto up = cyclonite::vec3{ .0f, 1.f, 0.f };
+        auto fw = glm::normalize(-pos);
+        auto lf = glm::normalize(glm::cross(up, fw));
 
-    up = glm::normalize(glm::cross(fw, lf));
+        up = glm::normalize(glm::cross(fw, lf));
 
-    auto camera =
-      cyclonite::components::Camera{ cyclonite::components::Camera::PerspectiveProjection{ 1.f, 45.f, 0.1f, 100.f } };
+        auto camera =
+          cyclonite::components::Camera{ cyclonite::components::Camera::PerspectiveProjection{ 1.f, 45.f, 0.1f, 100.f } };
 
-    auto cameraMatrix =
-      cyclonite::mat4{ cyclonite::vec4{ lf.x, lf.y, lf.z, 0.0f },
-                       cyclonite::vec4{ up.x, up.y, up.z, 0.0f },
-                       cyclonite::vec4{ fw.x, fw.y, fw.z, 0.0f },
-                       cyclonite::vec4{ target_.x - pos.x, target_.y - pos.y, target_.z - pos.z, 1.0f } };
+        auto cameraMatrix =
+          cyclonite::mat4{ cyclonite::vec4{ lf.x, lf.y, lf.z, 0.0f },
+                           cyclonite::vec4{ up.x, up.y, up.z, 0.0f },
+                           cyclonite::vec4{ fw.x, fw.y, fw.z, 0.0f },
+                           cyclonite::vec4{ target_.x - pos.x, target_.y - pos.y, target_.z - pos.z, 1.0f } };
 
-    auto transform = cyclonite::components::Transform{ cameraMatrix };
+        auto transform = cyclonite::components::Transform{ cameraMatrix };
 
-    renderer_.setupPassConstants(transform, camera);
+        renderer_.setupPassConstants(transform, camera);
 
-    renderer_.render();
+        renderer_.render();
 
-    auto& device = deviceRef_.as<cyclonite::gfx::Device>();
-    device.queueSubmissionManager().flush();
+        auto& device = deviceRef_.as<cyclonite::gfx::Device>();
+        device.queueSubmissionManager().flush();
 
-    windowRef_.as<cyclonite::gfx::RenderWindow>().present();
+        windowRef_.as<cyclonite::gfx::RenderWindow>().present();
+    }
 
     return *this;
 }

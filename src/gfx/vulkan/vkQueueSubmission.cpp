@@ -170,9 +170,6 @@ auto QueueSubmission::signal() const -> core::ResourceSharedRef
 
 auto QueueSubmission::waitOnCpu() -> uint64_t
 {
-    [[maybe_unused]] auto submissionPurpose = purpose();
-    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
-
     assert(state_.test(QueueSubmissionStateFlags::Pending));
     assert(signal().valid());
 
@@ -193,9 +190,6 @@ auto QueueSubmission::waitOnCpu() -> uint64_t
 
 void QueueSubmission::reset()
 {
-    [[maybe_unused]] auto submissionPurpose = purpose();
-    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
-
     if (state_.test(QueueSubmissionStateFlags::Pending)) {
         throw std::runtime_error("attempt to reset queue commands in pending state");
     }
@@ -248,9 +242,7 @@ auto QueueSubmission::purpose() const -> multithreading::Purpose
 
 void QueueSubmission::submit()
 {
-    [[maybe_unused]] auto submissionPurpose = purpose();
-    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
-
+    auto submissionPurpose = purpose();
     auto& pool = commandPool_.as<type_traits::platform_implementation_t<gfx::CommandPool>>();
     auto& device = pool.device().as<type_traits::platform_implementation_t<gfx::Device>>();
 
