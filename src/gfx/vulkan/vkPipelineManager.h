@@ -47,6 +47,8 @@ private:
     [[nodiscard]] auto getOrCreateDescriptorSetLayout(std::span<gfx::Binding const> bindings)
       -> core::ResourceSharedRef;
 
+    [[nodiscard]] auto getOrCreateEmptyDescriptorSetLayout() -> core::ResourceSharedRef;
+
     void freeDescriptorSetLayouts(uint32_t count);
 
     void freePipelineLayouts(uint32_t count);
@@ -70,6 +72,8 @@ private:
                max_pipeline_set_layout_count_v>
       pipelineLayouts_;
     uint32_t pipelineLayoutCount_;
+
+    core::ResourceSharedRef emptyDescriptorSetLayout_;
 
     std::array<std::tuple<std::vector<gfx::Binding>,
                           std::pair<core::ResourceSharedRef, std::chrono::high_resolution_clock::time_point>>,

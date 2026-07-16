@@ -74,7 +74,7 @@ auto getDescriptorType(shared::ShaderResourceType resType,
         } else {
             descType = gfx::DescriptorType::SAMPLED_IMAGE;
         }
-    } else if (resType == shared::ShaderResourceType::CBuffer && dimension == shared::ResourceViewDimension::Buffer) {
+    } else if (resType == shared::ShaderResourceType::CBuffer) {
         descType = isDynamic ? gfx::DescriptorType::UNIFORM_BUFFER_DYNAMIC : gfx::DescriptorType::UNIFORM_BUFFER;
     } else if (resType == shared::ShaderResourceType::StructuredBuffer &&
                dimension == shared::ResourceViewDimension::Buffer) {

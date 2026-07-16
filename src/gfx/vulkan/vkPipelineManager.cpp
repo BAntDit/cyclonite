@@ -10,6 +10,7 @@
 #include "vkDevice.h"
 #include <algorithm>
 #include <cstring>
+#include <numeric>
 #include <ranges>
 #include <unordered_set>
 
@@ -82,6 +83,7 @@ PipelineManager::PipelineManager(Device* device)
   : device_{ device }
   , pipelineLayouts_{}
   , pipelineLayoutCount_{ 0 }
+  , emptyDescriptorSetLayout_{}
   , descriptorSetLayouts_{}
   , descriptorSetLayoutCount_{ 0 }
   , descriptorPools_{}
@@ -94,17 +96,18 @@ auto PipelineManager::getOrCreatePipelineBindingSchema(std::span<gfx::Binding co
 {
     auto bindingSchemaRef = core::ResourceSharedRef();
 
-    auto sets = std::unordered_set<uint32_t>{};
-    std::transform(bindings.begin(), bindings.end(), std::inserter(sets, sets.end()), [](auto const& b) -> uint32_t {
-        return b.set();
-    });
+    auto sets = std::array<uint32_t, metrix::value_cast(DescriptorSpace::DESCRIPTOR_SPACE_COUNT)>{};
+    std::iota(sets.begin(), sets.end(), 0);
 
-    auto descrSets = std::vector<core::ResourceSharedRef>{};
-    descrSets.reserve(sets.size());
+    auto descrSets = std::array<core::ResourceSharedRef, metrix::value_cast(DescriptorSpace::DESCRIPTOR_SPACE_COUNT)>{};
 
     for (auto set : sets) {
         auto sb = bindings | std::views::filter([=](auto const& binding) -> uint32_t { return binding.set() == set; });
-        descrSets.emplace_back(getOrCreateDescriptorSetLayout(std::vector<gfx::Binding>(sb.begin(), sb.end())));
+        if (sb.empty()) {
+            descrSets[set] = getOrCreateEmptyDescriptorSetLayout();
+        } else {
+            descrSets[set] = getOrCreateDescriptorSetLayout(std::vector<gfx::Binding>(sb.begin(), sb.end()));
+        }
     }
 
     for (auto i = uint32_t{ 0 }; i < pipelineLayoutCount_; i++) {
@@ -199,6 +202,17 @@ auto PipelineManager::getOrCreateDescriptorSetLayout(std::span<gfx::Binding cons
 
     assert(descriptorSetLayoutRef.valid());
     return descriptorSetLayoutRef;
+}
+
+auto PipelineManager::getOrCreateEmptyDescriptorSetLayout() -> core::ResourceSharedRef
+{
+    if (!emptyDescriptorSetLayout_.valid()) {
+        auto bindings = std::array<gfx::Binding, 0>{};
+        emptyDescriptorSetLayout_ = device_->createDescriptorSetLayout(bindings);
+    }
+
+    assert(emptyDescriptorSetLayout_.valid());
+    return emptyDescriptorSetLayout_;
 }
 
 auto PipelineManager::getOrCreatePrimitiveRasterizationPipeline(PipelineCreationFlagBits creationFlags,

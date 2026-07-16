@@ -17,6 +17,9 @@ namespace cyclonite::gfx::vulkan {
 class PipelineBindingSchema : public core::ResourceBase
 {
 public:
+    using descriptor_set_layouts_t =
+      std::array<core::ResourceSharedRef, metrix::value_cast(DescriptorSpace::DESCRIPTOR_SPACE_COUNT)>;
+
     PipelineBindingSchema(core::ResourceManagerBase* resourceManager,
                           core::ResourceId resourceId,
                           core::ResourceSharedRef deviceRef,
@@ -28,15 +31,12 @@ public:
                           core::ResourceSharedRef deviceRef,
                           std::span<core::ResourceSharedRef const> descriptorSetLayouts);
 
-    [[nodiscard]] auto descriptorSetLayouts() const -> std::vector<core::ResourceSharedRef> const&
-    {
-        return descriptorSetLayouts_;
-    }
+    [[nodiscard]] auto descriptorSetLayouts() const -> descriptor_set_layouts_t const& { return descriptorSetLayouts_; }
 
     [[nodiscard]] auto handle() const -> VkPipelineLayout { return static_cast<VkPipelineLayout>(pipelineLayout_); }
 
 private:
-    std::vector<core::ResourceSharedRef> descriptorSetLayouts_;
+    descriptor_set_layouts_t descriptorSetLayouts_;
     std::vector<PushConstantRange> constantRanges_;
     Handle<VkPipelineLayout> pipelineLayout_;
 };

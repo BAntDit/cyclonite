@@ -11,7 +11,10 @@
 namespace cyclonite::gfx::interfaces {
 template<typename T>
 concept PipelineBindingSchemaConcept = requires(T t) {
-    { t.descriptorSetLayouts() } -> std::same_as<std::vector<core::ResourceSharedRef> const&>;
+    {
+        t.descriptorSetLayouts()
+    } -> std::same_as<
+        std::array<core::ResourceSharedRef, metrix::value_cast(DescriptorSpace::DESCRIPTOR_SPACE_COUNT)> const&>;
 };
 
 template<PipelineBindingSchemaConcept PlatformImplementation>

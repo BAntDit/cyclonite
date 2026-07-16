@@ -313,7 +313,8 @@ enum class DescriptorSpace : uint_fast8_t
     PER_PASS = 2,
     PER_BATCH_STATIC = 3,
     PER_BATCH_DYNAMIC = 4,
-    GLOBAL_BINDLESS = 5
+    GLOBAL_BINDLESS = 5,
+    DESCRIPTOR_SPACE_COUNT = GLOBAL_BINDLESS + 1
 };
 
 enum class DescriptorSetLayoutFlags : uint32_t

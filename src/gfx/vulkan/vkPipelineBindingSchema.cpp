@@ -16,13 +16,19 @@ PipelineBindingSchema::PipelineBindingSchema(core::ResourceManagerBase* resource
                                              std::span<core::ResourceSharedRef const> descriptorSetLayouts,
                                              std::span<PushConstantRange const> pushConstantRanges)
   : core::ResourceBase{ resourceManager, resourceId, false }
-  , descriptorSetLayouts_(descriptorSetLayouts.begin(), descriptorSetLayouts.end())
+  , descriptorSetLayouts_{}
   , constantRanges_(pushConstantRanges.begin(), pushConstantRanges.end())
   , pipelineLayout_{ deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>().handle(),
                      vkDestroyPipelineLayout }
 {
     assert(deviceRef.valid());
     auto& device = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>();
+
+    assert(descriptorSetLayouts.size() <= metrix::value_cast(DescriptorSpace::DESCRIPTOR_SPACE_COUNT));
+    for (auto setIdx = uint32_t{ 0 }, setCount = static_cast<uint32_t>(descriptorSetLayouts.size()); setIdx < setCount;
+         setIdx++) {
+        descriptorSetLayouts_[setIdx] = descriptorSetLayouts[setIdx];
+    }
 
     auto layoutRange = descriptorSetLayouts | std::views::transform([](auto const& ref) -> VkDescriptorSetLayout {
                            assert(ref.valid());
