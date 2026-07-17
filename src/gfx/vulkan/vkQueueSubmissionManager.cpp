@@ -232,19 +232,25 @@ void QueueSubmissionManager::reset()
                 continue;
             }
             auto& submission = submissionRef.as<gfx::QueueSubmission>();
+            auto submissionPurpose = submission.purpose();
 
-            if (submission.isPending())
-                submission.waitOnCpu();
+            multithreading::TaskManager::submitTask(
+              [&]() -> void {
+                  if (submission.isPending())
+                      submission.waitOnCpu();
 
-            submission.reset();
+                  submission.reset();
+              },
+              submissionPurpose)
+              .get();
         }
 
         submissions.fill(core::ResourceSharedRef{});
     }
 
+    queueSubmissionRingMap_.clear();
     signalPool_.clear();
     completedFrames_.clear();
-    queueSubmissionRingMap_.clear();
 }
 }
 #endif

@@ -54,6 +54,8 @@ Buffer::~Buffer()
 
     vkBuffer_ = VK_NULL_HANDLE;
     allocation_ = VK_NULL_HANDLE;
+
+    deviceRef_ = core::ResourceSharedRef{};
 }
 
 auto Buffer::map() -> void*

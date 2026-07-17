@@ -22,6 +22,8 @@ public:
            SignalType signalType,
            uint64_t initialValue = 0);
 
+    ~Signal();
+
     [[nodiscard]] auto type() const -> SignalType { return type_; }
 
     [[nodiscard]] auto handle() const -> VkSemaphore { return static_cast<VkSemaphore>(vkSemaphore_); }

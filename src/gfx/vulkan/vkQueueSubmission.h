@@ -26,6 +26,8 @@ public:
                     uint32_t queueFamilyIndex,
                     CommandPoolFlagBits commandPoolFlags);
 
+    ~QueueSubmission();
+
     void beginRecording();
 
     void endRecording();

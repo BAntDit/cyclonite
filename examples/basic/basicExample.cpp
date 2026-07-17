@@ -15,6 +15,7 @@ BasicExample::BasicExample()
   , root_{}
   , deviceRef_{}
   , windowRef_{}
+  , materialRef_{}
   , renderer_{}
   , defaultResourceGroup_{ std::numeric_limits<uint32_t>::max() }
   , scroll_{ 0.f }
@@ -147,8 +148,8 @@ auto BasicExample::run() -> BasicExample&
 
         up = glm::normalize(glm::cross(fw, lf));
 
-        auto camera =
-          cyclonite::components::Camera{ cyclonite::components::Camera::PerspectiveProjection{ 1.f, 45.f, 0.1f, 100.f } };
+        auto camera = cyclonite::components::Camera{ cyclonite::components::Camera::PerspectiveProjection{
+          1.f, 45.f, 0.1f, 100.f } };
 
         auto cameraMatrix =
           cyclonite::mat4{ cyclonite::vec4{ lf.x, lf.y, lf.z, 0.0f },
@@ -178,8 +179,6 @@ void BasicExample::done()
     auto& device = deviceRef_.as<cyclonite::gfx::Device>();
 
     device.queueSubmissionManager().reset();
-
-    root_.taskManager().stop();
 
     renderer_.reset();
 

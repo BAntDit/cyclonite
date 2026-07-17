@@ -93,6 +93,12 @@ auto Signal::waitOnCpu(uint64_t value, uint64_t timeout) -> bool
     return vkResult == VK_SUCCESS;
 }
 
+Signal::~Signal()
+{
+    vkSemaphore_.reset();
+    deviceRef_ = core::ResourceSharedRef{};
+}
+
 }
 
 #endif

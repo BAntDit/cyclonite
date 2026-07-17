@@ -47,7 +47,10 @@ ResourceSharedRef::ResourceSharedRef(ResourceSharedRef&& ref) noexcept
 
 auto ResourceSharedRef::valid() const -> bool
 {
-    return resource_ != nullptr && resource_->resourceManager_->isResourceValid(id_);
+    auto isNull = resource_ == nullptr;
+    auto isResourceManagerNull = isNull ? true : resource_->resourceManager_ == nullptr;
+    auto isValid = isResourceManagerNull ? false : resource_->resourceManager_->isResourceValid(id_);
+    return isValid;
 }
 
 auto ResourceSharedRef::typeIndex() const -> uint8_t
@@ -61,10 +64,16 @@ ResourceSharedRef::~ResourceSharedRef()
     if (valid()) {
         release();
     }
+    id_ = ResourceId{};
+    resource_ = nullptr;
 }
 
 auto ResourceSharedRef::operator=(ResourceSharedRef const& rhs) -> ResourceSharedRef&
 {
+    if (valid()) {
+        release();
+    }
+
     id_ = rhs.id_;
     resource_ = rhs.resource_;
 
@@ -77,6 +86,10 @@ auto ResourceSharedRef::operator=(ResourceSharedRef const& rhs) -> ResourceShare
 
 auto ResourceSharedRef::operator=(ResourceSharedRef&& rhs) noexcept -> ResourceSharedRef&
 {
+    if (valid()) {
+        release();
+    }
+
     id_ = std::exchange(rhs.id_, core::ResourceId{});
     resource_ = std::exchange(rhs.resource_, nullptr);
 
@@ -85,6 +98,10 @@ auto ResourceSharedRef::operator=(ResourceSharedRef&& rhs) noexcept -> ResourceS
 
 auto ResourceSharedRef::operator=(ResourceUniqueRef&& rhs) noexcept -> ResourceSharedRef&
 {
+    if (valid()) {
+        release();
+    }
+
     id_ = std::exchange(rhs.id_, core::ResourceId{});
     resource_ = std::exchange(rhs.resource_, nullptr);
 

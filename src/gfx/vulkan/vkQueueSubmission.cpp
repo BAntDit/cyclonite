@@ -44,6 +44,33 @@ QueueSubmission::QueueSubmission(core::ResourceManagerBase* resourceManager,
     commandPool_ = device.createCommandPool(queueFamilyIndex, commandPoolFlags);
 }
 
+QueueSubmission::~QueueSubmission()
+{
+    state_.set(QueueSubmissionStateFlags::Invalid);
+
+    batchNameToIndex_.clear();
+    batches_.clear();
+
+    if (commandPool_.valid()) {
+        commandPool_ = core::ResourceSharedRef{};
+    }
+
+    completionFrameIndex_ = 0;
+    currentFrameIndex_ = 0;
+    lastCompletedFrameIndex_ = 0;
+
+    vkSubmissions_.clear();
+    vkTimelineSubmissions_.clear();
+    timelineSemaphoreValues_.clear();
+    signalValues_.clear();
+    waitSemaphores_.clear();
+    waitStages_.clear();
+    vkCommandBuffers_.clear();
+    vkSignals_.clear();
+    dependencyCount_ = 0;
+    commandBufferCount_ = 0;
+}
+
 void QueueSubmission::beginRecording()
 {
     [[maybe_unused]] auto submissionPurpose = purpose();
@@ -170,6 +197,9 @@ auto QueueSubmission::signal() const -> core::ResourceSharedRef
 
 auto QueueSubmission::waitOnCpu() -> uint64_t
 {
+    [[maybe_unused]] auto submissionPurpose = purpose();
+    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
+
     assert(state_.test(QueueSubmissionStateFlags::Pending));
     assert(signal().valid());
 
@@ -190,6 +220,9 @@ auto QueueSubmission::waitOnCpu() -> uint64_t
 
 void QueueSubmission::reset()
 {
+    [[maybe_unused]] auto submissionPurpose = purpose();
+    assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
+
     if (state_.test(QueueSubmissionStateFlags::Pending)) {
         throw std::runtime_error("attempt to reset queue commands in pending state");
     }

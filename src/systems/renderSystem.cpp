@@ -354,6 +354,14 @@ void Renderer::render()
 
 void Renderer::reset()
 {
+    for (auto& [_0, p] : passConstantStagings_) {
+        auto& [ref, _1] = p;
+
+        if (ref.valid()) {
+            ref.as<cyclonite::gfx::Buffer>().unmap();
+        }
+    }
+
     transferSubmission_ = cyclonite::core::ResourceSharedRef{};
     passConstantStagings_.clear();
     passConstantBuffers_.clear();
