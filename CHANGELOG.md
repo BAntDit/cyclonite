@@ -1,3 +1,57 @@
+## 0.6.0 (2026-07-17)
+
+### Fix
+
+- **core**: fixes an issue with recursive lock on attempt to delete resource
+- **vulkan**: fixes an issue when pipeline manager attempts to access invalid shader ref.
+- **vulkan**: fixes wrong shader code size computation
+- **core**: fixes issue when resourceId always refers to 0 index
+- **gfx**: fixes device creation issue
+- **tools**: fixes shader-compiler common enums
+- **multithreading**: fixes missed include files
+
+### Feat
+
+- **gfx**: device limits now contains min uniform buffer offset alignment
+- **cyclonite**: adds materials
+- **resources**: adds default resource loader
+- **multithreading**: when_all function now returns void future instead of vector of void results in case receives vector of void futures as argument.
+- **core**: make possible to iterate over specified types of resources
+- **shader-compiler**: adds new shader-compiler tool
+- **tools**: adds tool to compile shader modules
+
+### Refactor
+
+- **cyclonite**: event class refactored
+
+## gfx-first-mt-render (2025-10-28)
+
+### Fix
+
+- **core**: fixes an issue with implicitly deleted move assignment operator
+- **multithreading**: fix an issue when executors waste CPU cycles even when all task queues are empty.
+- fixes wrong platform options.
+
+### Feat
+
+- **multithreading**: adds multithreading utility functions when_all and when_any
+- **multithreading**: adds the strandTask method that guarantees strictly sequential invocation of tasks submitted through.
+- **multithreading**: splits general purpose and render tasks execution
+- CRTP base application class is replaced with application concept
+- **vulkan**: adds new type of exception for cases when exception is related to vulkan api.
+- **core**: adds static hash table.
+- **core**: adds functions to compute combined hash of combined keys.
+- **tests**: adds tests for ring ranges
+- **core**: adds BufferView class to present a piece of buffer as a view of necessary type.
+- **vulkan**: adds device creation method implementation.
+- **gfx**: gfx::Instance concept now requires instance to implement the method ::createDevice
+- **gfx**: adds option to be able to select necessary graphics API.
+
+### Refactor
+
+- **sdl**: SDL initialization migrated into Root::init.
+- platform option refactored
+
 ## 0.5.0 (2025-06-10)
 
 ### Feat
