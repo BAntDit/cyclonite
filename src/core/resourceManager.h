@@ -419,7 +419,7 @@ auto ResourceManager<ResourceTypes...>::allocResource(Args&&... args) -> Resourc
 template<ResourceConcept... ResourceTypes>
 void ResourceManager<ResourceTypes...>::free(uint32_t headerIndex)
 {
-    auto lock = std::unique_lock{ headersGuard_ };
+    headersGuard_.lock();
 
     auto& header = headers_[headerIndex];
     auto chunk = header.chunk;
@@ -428,17 +428,24 @@ void ResourceManager<ResourceTypes...>::free(uint32_t headerIndex)
 
     auto& chunks = storage_.chunks[type];
 
+    ++header.version;
+
+    headersGuard_.unlock();
+
     header.deleter(chunks[chunk].resources[idx].bytes);
+
+    headersGuard_.lock();
 
     chunks[chunk].freeIndices.push_back(idx);
 
-    header.version++;
     header.type = std::numeric_limits<uint8_t>::max();
     header.chunk = std::numeric_limits<uint16_t>::max();
     header.index = std::numeric_limits<uint16_t>::max();
     header.deleter = [](void*) -> void {};
 
     emptyHeaders_.push_back(headerIndex);
+
+    headersGuard_.unlock();
 }
 
 template<ResourceConcept... ResourceTypes>
@@ -473,9 +480,9 @@ void ResourceManager<ResourceTypes...>::releaseResourceImmediate(ResourceId id)
 template<ResourceConcept... ResourceTypes>
 void ResourceManager<ResourceTypes...>::releaseResourceDeferred(ResourceId id)
 {
-    auto lock = std::unique_lock{ headersGuard_ };
-
     assert(isResourceValid(id));
+
+    auto lock = std::unique_lock{ headersGuard_ };
     garbage_.emplace_back(std::chrono::high_resolution_clock::now(), id.index());
 }
 
