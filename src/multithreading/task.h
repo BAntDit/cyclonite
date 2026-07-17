@@ -1,29 +1,24 @@
 //
-// Created by bantdit on 10/27/22.
+// Created by anton on 9/9/25.
 //
 
-#ifndef CYCLONITE_TASK_H
-#define CYCLONITE_TASK_H
+#ifndef CYCLONITE_MULTITHREADING_TASK_H
+#define CYCLONITE_MULTITHREADING_TASK_H
 
-#include "typedefs.h"
+#include "multithreading/common.h"
 #include <atomic>
-#include <functional>
-#include <array>
+#include <cassert>
 
 namespace cyclonite::multithreading {
 class Task;
 
-template<typename F>
-concept TaskFunctor = requires(F&& f) {
-                          // !std::is_same_v<std::decay_t<F>, Task> &&
-                          std::invoke(std::forward<F>(f));
-                      };
+template<typename T>
+concept TaskFunctorConcept = !std::is_same_v<std::decay_t<T>, Task>;
 
-class alignas(hardware_constructive_interference_size) Task
+class alignas(hardware_destructive_interference_size) Task
 {
+    static constexpr size_t storage_align_v = alignof(void (*)());
     static constexpr size_t storage_size_v = 64;
-
-    using storage_t = std::array<std::byte, 64>;
 
     struct functor_base_t
     {
@@ -32,7 +27,8 @@ class alignas(hardware_constructive_interference_size) Task
         virtual ~functor_base_t() = default;
 
         virtual void invoke() = 0;
-        virtual auto move_to(storage_t& storage) -> functor_base_t* = 0;
+
+        virtual auto move_to(std::byte (&storage)[storage_size_v]) -> functor_base_t* = 0;
     };
 
     template<typename F>
@@ -48,9 +44,9 @@ class alignas(hardware_constructive_interference_size) Task
         {
         }
 
-        void invoke() override { f_(); };
+        void invoke() override { f_(); }
 
-        auto move_to(storage_t& storage) -> functor_base_t* override;
+        auto move_to(std::byte (&storage)[storage_size_v]) -> functor_base_t* override;
 
     private:
         F f_;
@@ -59,7 +55,7 @@ class alignas(hardware_constructive_interference_size) Task
 public:
     Task();
 
-    template<TaskFunctor F>
+    template<TaskFunctorConcept F>
     explicit Task(F&& f);
 
     Task(Task const&) = delete;
@@ -74,46 +70,57 @@ public:
 
     [[nodiscard]] auto pending() const -> bool { return pending_.load(std::memory_order_acquire); }
 
+    [[nodiscard]] auto pending() -> std::atomic<bool>& { return pending_; }
+
     ~Task();
 
 private:
     void _reset();
 
-    auto storage() -> void* { return storage_.data(); }
+    auto storage() -> void* { return storage_; }
 
 private:
-    storage_t storage_;
+    alignas(storage_align_v) std::byte storage_[storage_size_v]; // for small functor optimization (sfo)
     functor_base_t* functor_;
     std::atomic<bool> pending_;
 };
 
-template<TaskFunctor F>
-Task::Task(F&& f)
-  : storage_{}
-  , functor_{ nullptr }
-  , pending_{ false }
-{
-    if constexpr (sizeof(functor_t<F>) <= sizeof(storage_t)) {
-        functor_ = new (storage()) functor_t<F>{ std::forward<F>(f) };
-    } else {
-        functor_ = new functor_t<F>{ std::forward<F>(f) };
-    }
-
-    pending_.store(functor_ != nullptr, std::memory_order_relaxed);
-}
+using task_ptr_t = std::add_pointer_t<Task>;
+static_assert(DequeItemConcept<task_ptr_t>);
 
 template<typename F>
-auto Task::functor_t<F>::move_to(storage_t& storage) -> functor_base_t*
+auto Task::functor_t<F>::move_to(std::byte (&storage)[storage_size_v]) -> functor_base_t*
 {
-    functor_base_t* r = nullptr;
+    auto* r = std::add_pointer_t<functor_base_t>{ nullptr };
 
-    if constexpr (sizeof(f_) <= sizeof(storage_t)) {
-        r = new (storage.data()) functor_t<std::decay_t<decltype(f_)>>{ std::move(f_) };
+    void* sdata = std::data(storage);
+    size_t ssize = std::size(storage);
+
+    if (auto* p = std::align(alignof(functor_t<F>), sizeof(functor_t<F>), sdata, ssize); p == std::data(storage)) {
+        r = new (p) functor_t<F>{ std::move(f_) };
     }
 
     assert(r != nullptr);
     return r;
 }
+
+template<TaskFunctorConcept F>
+Task::Task(F&& f)
+  : storage_{}
+  , functor_{ nullptr }
+  , pending_{ false }
+{
+    void* storage = std::data(storage_);
+    auto size = std::size(storage_);
+
+    if (auto* p = std::align(alignof(functor_t<F>), sizeof(functor_t<F>), storage, size); p == std::data(storage_)) {
+        // in case functor is small enough and functor alignment matches with sfo buffer alignment
+        functor_ = new (p) functor_t<F>{ std::forward<F>(f) };
+    } else {
+        functor_ = new functor_t<F>{ std::forward<F>(f) };
+    }
+    pending_.store(functor_ != nullptr, std::memory_order_relaxed);
+}
 }
 
-#endif // CYCLONITE_TASK_H
+#endif // CYCLONITE_MULTITHREADING__TASK_H

@@ -5,22 +5,18 @@
 #ifndef CYCLONITE_ROOT_H
 #define CYCLONITE_ROOT_H
 
-#include "compositor/workspace.h"
-#include "config.h"
+#include "gfx/instance.h"
 #include "input.h"
 #include "multithreading/taskManager.h"
-#include "platform.h"
-#include "resources/resourceManager.h"
-#include "sdl/sdlSupport.h"
-#include "surface.h"
-#include "vulkan/device.h"
-#include "vulkan/instance.h"
+#include "resources/resourceGroupManager.h"
 
-#include <iostream>
+#include "material.h"
+#include "rootConfigTraits.h"
 #include <memory>
+#include <string_view>
 
 namespace cyclonite {
-class Root
+class RootBase
 {
 public:
     struct Capabilities
@@ -29,27 +25,19 @@ public:
     };
 
 public:
-    Root();
+    RootBase(RootBase const&) = delete;
 
-    Root(Root const&) = delete;
+    RootBase(RootBase&&) = delete;
 
-    Root(Root&&) = delete;
+    ~RootBase() = default;
 
-    ~Root() = default;
+    auto operator=(RootBase const&) -> RootBase& = delete;
 
-    auto operator=(Root const&) -> Root& = delete;
+    auto operator=(RootBase&&) -> RootBase& = delete;
 
-    auto operator=(Root&&) -> Root& = delete;
-
-    void init();
-
-    void init(uint32_t deviceId);
-
-    [[nodiscard]] auto getDeviceCount() const -> size_t { return physicalDeviceList_.size(); }
-
-    [[nodiscard]] auto getDeviceId(size_t deviceIndex = 0) const -> uint32_t;
-
-    [[nodiscard]] auto getDeviceId(std::string const& deviceName) const -> uint32_t;
+    void initTaskManager(bool dedicatedTransferRequired,
+                         bool dedicatedComputeRequired,
+                         size_t threadPoolSize = std::max(std::thread::hardware_concurrency(), 1u));
 
     [[nodiscard]] auto capabilities() const -> Capabilities const& { return capabilities_; }
 
@@ -57,41 +45,71 @@ public:
 
     [[nodiscard]] auto input() -> Input& { return input_; }
 
-    [[nodiscard]] auto device() const -> vulkan::Device const& { return *vulkanDevice_; }
+    [[nodiscard]] auto gfxInstance() const -> gfx::Instance const& { return *gfxInstance_; }
 
-    [[nodiscard]] auto device() -> vulkan::Device& { return *vulkanDevice_; }
+    [[nodiscard]] auto gfxInstance() -> gfx::Instance& { return *gfxInstance_; }
 
-    [[nodiscard]] auto taskManager() -> multithreading::TaskManager& { return taskManager_; }
+    [[nodiscard]] auto taskManager() const -> multithreading::TaskManager const& { return *taskManager_; }
 
-    [[nodiscard]] auto taskManager() const -> multithreading::TaskManager const& { return taskManager_; }
+    [[nodiscard]] auto taskManager() -> multithreading::TaskManager& { return *taskManager_; }
 
-    [[nodiscard]] auto resourceManager() -> resources::ResourceManager&;
+    void init(std::string_view appName);
 
-    [[nodiscard]] auto resourceManager() const -> resources::ResourceManager const&;
+    void reset();
 
-    template<typename WorkspaceFactory>
-    auto createWorkspace(WorkspaceFactory&& workspaceFactory) -> std::shared_ptr<compositor::Workspace> const&;
+protected:
+    RootBase();
 
-    void dispose();
-
-private:
     Capabilities capabilities_;
-    std::unique_ptr<resources::ResourceManager> resourceManager_;
-    multithreading::TaskManager taskManager_;
-    sdl::SDLSupport sdlSupport_;
-    std::unique_ptr<vulkan::Instance> vulkanInstance_;
-    std::vector<VkPhysicalDevice> physicalDeviceList_;
-    std::unordered_map<std::string, VkPhysicalDeviceProperties> physicalDevicePropertiesMap_;
-    std::unique_ptr<vulkan::Device> vulkanDevice_;
-    std::vector<std::shared_ptr<compositor::Workspace>> workspaces_;
+    std::unique_ptr<multithreading::TaskManager> taskManager_;
+    std::unique_ptr<gfx::Instance> gfxInstance_;
     Input input_;
 };
 
-template<typename WorkspaceFactory>
-auto Root::createWorkspace(WorkspaceFactory&& workspaceFactory) -> std::shared_ptr<compositor::Workspace> const&
+namespace internal {
+struct DefaultConfig
+{};
+};
+
+template<typename Config = internal::DefaultConfig>
+class Root : public RootBase
 {
-    return workspaces_.emplace_back(std::make_shared<compositor::Workspace>(
-      workspaceFactory(compositor::Workspace::Builder{ *resourceManager_, *vulkanDevice_ })));
+public:
+    using config_t = cyclonite::ConfigTraits<Config>;
+    using resource_type_list_t =
+      metrix::distinct<typename metrix::concat<typename config_t::custom_resource_type_list_t,
+                                               metrix::type_list<Shader, Material>>::type>::type;
+
+    Root() = default;
+
+    void initResourceManager(core::ResourceSharedRef const& deviceRef);
+
+private:
+    template<typename... TypeList>
+    struct resource_manager_wrap_t;
+
+    template<typename... Resources>
+    struct resource_manager_wrap_t<metrix::type_list<Resources...>>
+    {
+        explicit resource_manager_wrap_t(core::ResourceSharedRef const& deviceRef)
+          : manager_{ deviceRef }
+        {
+        }
+
+        resources::ResourceGroupManager<Resources...> manager_;
+    };
+
+    std::unique_ptr<resource_manager_wrap_t<resource_type_list_t>> resourceManager_;
+
+public:
+    [[nodiscard]] auto resourceManager() const -> decltype(auto) { return (resourceManager_->manager_); }
+    [[nodiscard]] auto resourceManager() -> decltype(auto) { return (resourceManager_->manager_); }
+};
+
+template<typename Config>
+void Root<Config>::initResourceManager(core::ResourceSharedRef const& deviceRef)
+{
+    resourceManager_ = std::make_unique<resource_manager_wrap_t<resource_type_list_t>>(deviceRef);
 }
 }
 #endif // CYCLONITE_ROOT_H

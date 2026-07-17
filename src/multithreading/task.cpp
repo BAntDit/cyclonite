@@ -1,5 +1,5 @@
 //
-// Created by bantdit on 10/28/22.
+// Created by anton on 9/12/25.
 //
 
 #include "task.h"
@@ -20,7 +20,7 @@ Task::Task(Task&& task) noexcept
 {
     assert(task.functor_);
 
-    if (task.functor_ == task.storage()) {
+    if (task.storage_ == reinterpret_cast<std::byte*>(task.functor_)) {
         functor_ = task.functor_->move_to(storage_);
         std::exchange(task.functor_, nullptr)->~functor_base_t();
     } else {
@@ -35,11 +35,9 @@ auto Task::operator=(Task&& rhs) noexcept -> Task&
 {
     assert(rhs.functor_);
 
-    _reset();
-
-    if (rhs.functor_ == rhs.storage()) {
+    if (rhs.storage_ == reinterpret_cast<std::byte*>(rhs.functor_)) {
         functor_ = rhs.functor_->move_to(storage_);
-        rhs.functor_ = nullptr;
+        std::exchange(rhs.functor_, nullptr)->~functor_base_t();
     } else {
         functor_ = std::exchange(rhs.functor_, nullptr);
     }
@@ -50,21 +48,20 @@ auto Task::operator=(Task&& rhs) noexcept -> Task&
     return *this;
 }
 
-void Task::_reset()
-{
-    if (functor_ == storage()) {
-        functor_->~functor_base_t();
-    } else {
-        delete functor_;
-    }
-
-    functor_ = nullptr;
-}
-
 void Task::operator()()
 {
     assert(functor_);
     functor_->invoke();
+}
+
+void Task::_reset()
+{
+    if (storage_ == reinterpret_cast<std::byte*>(functor_)) {
+        functor_->~functor_base_t();
+    } else if (functor_ != nullptr) {
+        delete functor_;
+    }
+    functor_ = nullptr;
 }
 
 Task::~Task()

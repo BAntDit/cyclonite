@@ -1,9 +1,25 @@
 
-find_program(
+if (CLANG_FORMAT_PATH)
+    set(CLANG_FORMAT "${CLANG_FORMAT_PATH}/clang-format")
+
+    if(EXISTS "${CLANG_FORMAT}")
+        message(STATUS "Using Conan clang-format: ${CLANG_FORMAT}")
+    else()
+        message(WARNING "Conan clang-format not found at: ${CLANG_FORMAT}")
+
+        find_program(
+            CLANG_FORMAT
+            NAMES "clang-format"
+            DOC "Path to clang-format executable"
+        )
+    endif()
+else()
+    find_program(
         CLANG_FORMAT
         NAMES "clang-format"
         DOC "Path to clang-format executable"
-)
+    )
+endif()
 
 macro(CODE_STYLE_CORRECTION FILES_TO_ADJUST_STYLE)
     set(CODE_STYLE Mozilla)

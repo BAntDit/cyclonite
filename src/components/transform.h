@@ -1,12 +1,10 @@
 //
-// Created by bantdit on 1/12/20.
+// Created by anton on 6/7/26.
 //
 
-#ifndef CYCLONITE_TRANSFORM_H
-#define CYCLONITE_TRANSFORM_H
-
-#include "../typedefs.h"
-#include <enttx/enttx.h>
+#ifndef CYCLONITE_COMPONENTS_TRANSFORM_H
+#define CYCLONITE_COMPONENTS_TRANSFORM_H
+#include "common.h"
 
 namespace cyclonite::components {
 struct Transform
@@ -22,26 +20,21 @@ struct Transform
         COUNT = 4
     };
 
-    Transform() noexcept;
+    Transform();
 
-    Transform(vec3 localPosition, vec3 localScale, quat localOrientation) noexcept;
+    Transform(vec3 const& pos, vec3 const& sc, quat const& rot);
 
-    explicit Transform(mat4 localMatrix);
+    explicit Transform(mat4 mat);
 
-    vec3 position;
-    vec3 scale;
+    glm::vec3 position;
+    glm::vec3 scale;
     quat orientation;
+
     mat4 matrix;
     mat4 worldMatrix;
 
     State state;
-
-    enttx::Entity parent;
-
-    size_t depth;
-
-    uint64_t lastFrameUpdate;
 };
 }
 
-#endif // CYCLONITE_TRANSFORM_H
+#endif // CYCLONITE_COMPONENTS_TRANSFORM_H

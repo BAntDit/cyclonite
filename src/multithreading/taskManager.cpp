@@ -1,42 +1,127 @@
-//
-// Created by bantdit on 1/19/19.
-//
 
 #include "taskManager.h"
-#include "render.h"
+#include "multithreading/config.h"
+#include <cassert>
 
 namespace cyclonite::multithreading {
-static constexpr auto _taskPoolSize = size_t{ 1024 };
+size_t TaskManager::renderExecutorIndex = std::numeric_limits<size_t>::max();
+size_t TaskManager::computeExecutorIndex = std::numeric_limits<size_t>::max();
+size_t TaskManager::transferExecutorIndex = std::numeric_limits<size_t>::max();
 
-TaskManager::TaskManager(size_t workerCount)
-  : exceptions_{}
-  , threadPool_{}
-  , workers_{ std::make_unique_for_overwrite<Worker[]>(workerCount) }
-  , workerCount_{ workerCount }
-  , render_{ *this }
-  , exceptionMutex_{}
-  , alive_{ true }
+namespace {
+auto setExecutorIndies(PurposeBits requirements,
+                       size_t executorCount,
+                       size_t& renderIdx,
+                       size_t& transferIdx,
+                       size_t& computeIdx) -> void
 {
-    for (auto i = size_t{ 0 }; i < workerCount_; i++) {
-        new (&workers_[i]) Worker{ *this, _taskPoolSize };
+    auto lastAvailableDedicatedExecutorIdx = size_t{ 1 }; // main thread executor is counted
+
+    auto dedicatedTransferRequired = requirements.test(Purpose::Transfer);
+    auto dedicatedComputeRequired = requirements.test(Purpose::Compute);
+    auto dedicatedRenderRequired = requirements.test(Purpose::Render);
+
+    if (dedicatedRenderRequired && lastAvailableDedicatedExecutorIdx < executorCount) {
+        renderIdx = lastAvailableDedicatedExecutorIdx++;
     }
 
-    threadPool_.reserve(workerCount_);
-    threadPool_.emplace_back([](Render& render) -> void { render(); }, std::ref(render_));
+    if (dedicatedTransferRequired && lastAvailableDedicatedExecutorIdx < executorCount) {
+        transferIdx = lastAvailableDedicatedExecutorIdx++;
+    } else {
+        transferIdx = renderIdx;
+    }
 
-    exceptions_.reserve(workerCount);
+    if (dedicatedComputeRequired && lastAvailableDedicatedExecutorIdx < executorCount) {
+        computeIdx = lastAvailableDedicatedExecutorIdx++;
+    } else {
+        computeIdx = renderIdx;
+    }
+}
 
-    workers_[0]._setAsMainThreadWorker();
+auto executorPurpose(size_t i, size_t renderIdx, size_t transferIdx, size_t computeIdx) -> PurposeBits
+{
+    auto purposeBits = PurposeBits{ Purpose::General };
+
+    if (i == renderIdx)
+        purposeBits.set(Purpose::Render);
+
+    if (i == transferIdx)
+        purposeBits.set(Purpose::Transfer);
+
+    if (i == computeIdx)
+        purposeBits.set(Purpose::Compute);
+
+    return purposeBits;
+}
+}
+
+TaskManager::TaskManager(bool dedicatedTransferRequired,
+                         bool dedicatedComputeRequired,
+                         size_t threadPoolSize /*= std::max(std::thread::hardware_concurrency(), 1u)*/)
+  : threadPool_{}
+  , executorCount_{ threadPoolSize + 1 } // plus main thread
+  , executors_{ std::make_unique_for_overwrite<Executor[]>(executorCount_) }
+  , executorPurposes_{ std::make_unique_for_overwrite<PurposeBits[]>(executorCount_) }
+  , executorIndexToStealTask_{ 0 }
+  , taskPoolForStrand_{ config_t::strand_queue_max_size_v }
+  , strandDeque_{ std::make_unique<StrandDeque>(config_t::strand_queue_max_size_v) }
+  , alive_{ true }
+  , generalTaskCount_{ 0 }
+  , specialPurposeTaskCount_{ 0 }
+  , noTaskCv_{}
+  , noTaskLock_{}
+#if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
+  , exPropagationLock_{}
+  , exceptions_{}
+#endif
+{
+    threadPool_.reserve(threadPoolSize);
+
+    auto executorRequirements = PurposeBits{ Purpose::Render };
+    if (dedicatedComputeRequired)
+        executorRequirements.set(Purpose::Compute);
+    if (dedicatedTransferRequired)
+        executorRequirements.set(Purpose::Transfer);
+
+    assert(executorCount_ >= 2);
+
+    setExecutorIndies(
+      executorRequirements, executorCount_, renderExecutorIndex, transferExecutorIndex, computeExecutorIndex);
+
+    for (auto i = size_t{ 0 }; i < executorCount_; i++) {
+        executorPurposes_[i] = executorPurpose(i, renderExecutorIndex, transferExecutorIndex, computeExecutorIndex);
+        new (&executors_[i]) Executor{ *this, i };
+    }
+    executors_[0]._setAsMainThreadExecutor();
 }
 
 TaskManager::~TaskManager()
 {
     stop();
+    executors_[0]._resetMainThreadExecutor();
+}
+
+void TaskManager::start()
+{
+    assert(Executor::isInMainThread());
+
+    for (auto i = size_t{ 0 }; i < executorCount_; i++) {
+        if (executors_[i].canSubmit()) {
+            executors_[i]();
+        } else {
+            threadPool_.emplace_back([](Executor& executor, PurposeBits purpose) -> void { executor(purpose); },
+                                     std::ref(executors_[i]),
+                                     executorPurposes_[i]);
+        }
+    }
 }
 
 void TaskManager::stop()
 {
-    alive_.store(false);
+    alive_.store(false, std::memory_order_release);
+
+    // submit empty task to avoid executor deadlock
+    Executor::threadExecutor().submitTask([]() -> void {});
 
     for (auto&& thread : threadPool_) {
         if (thread.joinable())
@@ -44,34 +129,93 @@ void TaskManager::stop()
     }
 }
 
-void TaskManager::propagateException(std::exception_ptr const& exception)
+auto TaskManager::executorIndexToStealTask() -> size_t
 {
-    std::lock_guard<std::mutex> lock{ exceptionMutex_ };
-    exceptions_.push_back(exception);
+    return executorIndexToStealTask_.fetch_add(1, std::memory_order_acq_rel) % executorCount_;
+}
+
+void TaskManager::waitForTasks(size_t executorIndex)
+{
+    auto executorPurposeBits = executorPurposes_[executorIndex];
+
+    auto lk = std::unique_lock{ noTaskLock_ };
+    noTaskCv_.wait(lk, [this, executorPurposeBits]() -> bool {
+        auto count = uint32_t{ 0 };
+        if (executorPurposeBits.test(Purpose::Compute) || executorPurposeBits.test(Purpose::Transfer) ||
+            executorPurposeBits.test(Purpose::Render)) {
+            count = generalTaskCount_.load(std::memory_order_acquire) +
+                    specialPurposeTaskCount_.load(std::memory_order_acquire);
+        } else {
+            count = generalTaskCount_.load(std::memory_order_acquire);
+        }
+        return count > 0 || !alive_.load(std::memory_order_acquire);
+    });
+}
+
+void TaskManager::notifyNewTask(Purpose purpose)
+{
+    if (purpose == Purpose::General) {
+        generalTaskCount_.fetch_add(1, std::memory_order_release);
+    } else {
+        specialPurposeTaskCount_.fetch_add(1, std::memory_order_release);
+    }
+
+    auto lg = std::lock_guard{ noTaskLock_ };
+    noTaskCv_.notify_all();
+}
+
+void TaskManager::decreaseTaskCount(bool isGeneralTask)
+{
+    auto decrease = [](std::atomic<uint32_t>& a) -> void {
+        auto count = a.load(std::memory_order_relaxed);
+        while (count > 0 &&
+               !a.compare_exchange_weak(count, count - 1, std::memory_order_acq_rel, std::memory_order_acquire)) {
+        }
+    };
+
+    if (isGeneralTask) {
+        decrease(generalTaskCount_);
+    } else {
+        decrease(specialPurposeTaskCount_);
+    }
+}
+
+auto TaskManager::getExecutorPurposeBits(Purpose purpose) const -> PurposeBits
+{
+    auto purposeBits = PurposeBits{ Purpose::General };
+
+    if (purpose == multithreading::Purpose::Render) {
+        purposeBits = executorPurposes_[renderExecutorIndex];
+    } else if (purpose == multithreading::Purpose::Compute) {
+        purposeBits = executorPurposes_[computeExecutorIndex];
+    } else if (purpose == multithreading::Purpose::Transfer) {
+        purposeBits = executorPurposes_[transferExecutorIndex];
+    }
+
+    return purposeBits;
 }
 
 auto TaskManager::getLastException() -> std::exception_ptr
 {
-    std::lock_guard<std::mutex> lock{ exceptionMutex_ };
-
     auto ex = std::exception_ptr{};
+
+#if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
+    auto lock = std::lock_guard<core::SpinLock>{ exPropagationLock_ };
 
     if (!exceptions_.empty()) {
         ex = exceptions_.back();
         exceptions_.pop_back();
     }
+#endif
 
     return ex;
 }
 
-auto TaskManager::renderQueue(size_t workerIndex) const -> lock_free_spmc_queue_t<Task*> const&
+#if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
+void TaskManager::propagateException(std::exception_ptr const& exception)
 {
-    assert(workerIndex < workerCount_);
-    return workers_[workerIndex].renderQueue();
+    auto lock = std::lock_guard<core::SpinLock>{ exPropagationLock_ };
+    exceptions_.push_back(exception);
 }
-auto TaskManager::renderQueue(size_t workerIndex) -> lock_free_spmc_queue_t<Task*>&
-{
-    assert(workerIndex < workerCount_);
-    return workers_[workerIndex].renderQueue();
-}
+#endif
 }

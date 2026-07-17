@@ -15,16 +15,11 @@ class Model
 public:
     Model() noexcept;
 
-    void init(cyclonite::Root& root,
-              std::string const& path,
-              std::shared_ptr<cyclonite::compositor::Workspace> const& workspace);
+    void init(cyclonite::Root& root, std::string const& path);
 
     void setCameraTransform(cyclonite::mat4 const& transform);
 
     void dispose();
-
-private:
-    std::shared_ptr<cyclonite::compositor::Workspace> workspace_;
 };
 }
 

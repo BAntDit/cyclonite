@@ -1,75 +1,68 @@
 //
-// Created by bantdit on 3/21/20.
+// Created by anton on 5/18/26.
 //
 
-#ifndef CYCLONITE_RENDERSYSTEM_H
-#define CYCLONITE_RENDERSYSTEM_H
+#ifndef CYCLONITE_SYSTEMS_RENDER_SYSTEM_H
+#define CYCLONITE_SYSTEMS_RENDER_SYSTEM_H
 
-#include "multithreading/taskManager.h"
-#include "updateStages.h"
-#include "vulkan/device.h"
-#include <enttx/enttx.h>
-#include <metrix/enum.h>
+#include "components/camera.h"
+#include "components/transform.h"
+#include "core/hashTable.h"
+#include "core/resourceSharedRef.h"
+#include "core/ringBuffer.h"
+#include "gfx/queueSubmissionManager.h"
 
 namespace cyclonite::systems {
-class RenderSystem : public enttx::BaseSystem<RenderSystem>
+struct PassConstantsTransferJob;
+struct PassRenderJob;
+
+class Renderer
 {
+    friend struct PassConstantsTransferJob;
+    friend struct PassRenderJob;
+
+    struct PassConstants
+    {
+        mat4 view;
+        mat4 projection;
+        mat4 viewProj;
+    };
+
 public:
-    RenderSystem() = default;
+    Renderer() = default;
 
-    RenderSystem(RenderSystem const&) = delete;
+    void init(core::ResourceSharedRef const& device,
+              core::ResourceSharedRef const& renderWindowRef,
+              core::ResourceSharedRef const& vertexShaderRef,
+              core::ResourceSharedRef const& pixelShaderRef,
+              core::ResourceSharedRef const& materialRef,
+              gfx::QueueSubmissionManager& queueSubmissionManager);
 
-    RenderSystem(RenderSystem&&) = default;
+    void setupPassConstants(components::Transform const& transform, components::Camera const& camera);
 
-    ~RenderSystem() = default;
+    void render();
 
-    auto operator=(RenderSystem const&) -> RenderSystem& = delete;
-
-    auto operator=(RenderSystem&&) -> RenderSystem& = default;
-
-    void init(multithreading::TaskManager& taskManager, vulkan::Device& device);
-
-    template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
-    void update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args);
-
-    void finish();
+    void reset();
 
 private:
-    multithreading::TaskManager* taskManager_;
-    vulkan::Device* device_;
+    [[nodiscard]] auto getPassDescriptorSet() -> core::ResourceSharedRef;
+
+    [[nodiscard]] auto getPassConstantBuffer() -> core::ResourceSharedRef;
+
+    [[nodiscard]] auto getPassConstantStaging() -> std::pair<core::ResourceSharedRef, PassConstants*>;
+
+    core::ResourceSharedRef deviceRef_;
+    core::ResourceSharedRef renderWindowRef_;
+    core::ResourceSharedRef renderPassRef_;
+    core::ResourceSharedRef materialRef_;
+    gfx::QueueSubmissionManager* queueSubmissionManager_;
+    core::ResourceSharedRef passBindingSchemaRef_;
+    core::StaticHashTable<core::ResourceSharedRef, 16, uint64_t> passDescriptorSets_;
+    core::StaticHashTable<core::ResourceSharedRef, 16, uint64_t> passConstantBuffers_;
+    core::StaticHashTable<std::pair<core::ResourceSharedRef, PassConstants*>, 16, uint64_t> passConstantStagings_;
+    std::future<void> transferTaskFuture_;
+    core::ResourceSharedRef transferSubmission_;
 };
-
-template<typename SystemManager, typename EntityManager, size_t STAGE, typename... Args>
-void RenderSystem::update(SystemManager& systemManager, EntityManager& entityManager, Args&&... args)
-{
-    using namespace metrix;
-
-    if constexpr (STAGE == metrix::value_cast(UpdateStage::RENDERING)) {
-        auto&& [node, semaphoreCount, frameNumber, dt] = std::forward_as_tuple(std::forward<Args>(args)...);
-
-        (void)semaphoreCount;
-        (void)frameNumber;
-        (void)dt;
-
-        assert(device_ != nullptr);
-
-        auto writeCommandsTask = [&device = *device_, &node = node]() -> void { node.writeFrameCommands(device); };
-
-        if (multithreading::Render::isInRenderThread()) {
-            writeCommandsTask();
-        } else {
-            assert(multithreading::Worker::isInWorkerThread());
-            auto future = multithreading::Worker::threadWorker().taskManager().submitRenderTask(writeCommandsTask);
-            future.get();
-        }
-    }
-
-    (void)systemManager;
-
-    (void)entityManager;
-
-    ((void)args, ...);
-}
 }
 
-#endif // CYCLONITE_RENDERSYSTEM_H
+#endif // CYCLONITE_SYSTEMS_RENDER_SYSTEM_H

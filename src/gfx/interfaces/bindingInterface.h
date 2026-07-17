@@ -1,0 +1,64 @@
+//
+// Created by anton on 11/8/25.
+//
+
+#ifndef CYCLONITE_BINDING_INTERFACE_H
+#define CYCLONITE_BINDING_INTERFACE_H
+
+#include "gfx/common.h"
+#include <concepts>
+
+namespace cyclonite::gfx::interfaces {
+template<typename T>
+concept BindingConcept = requires(T t) {
+    { t.set() } -> std::same_as<uint32_t>;
+
+    { t.binding() } -> std::same_as<uint32_t>;
+
+    { t.descriptorType() } -> std::same_as<DescriptorType>;
+
+    { t.stageFlags() } -> std::same_as<ShaderStageFlagBits>;
+
+    { t.descriptorSetFlags() } -> std::same_as<DescriptorSetLayoutFlagBits>;
+
+    { t.bindingFlags() } -> std::same_as<BindingFlagBits>;
+
+    { t.descriptorCount() } -> std::same_as<uint32_t>;
+};
+
+template<BindingConcept PlatformImplementation>
+class BindingInterface;
+
+template<BindingConcept PlatformImplementation>
+auto operator==(BindingInterface<PlatformImplementation> const& lhs,
+                BindingInterface<PlatformImplementation> const& rhs) -> bool;
+
+template<BindingConcept PlatformImplementation>
+class BindingInterface : private PlatformImplementation
+{
+public:
+    using PlatformImplementation::binding;
+    using PlatformImplementation::bindingFlags;
+    using PlatformImplementation::descriptorCount;
+    using PlatformImplementation::descriptorSetFlags;
+    using PlatformImplementation::descriptorType;
+    using PlatformImplementation::PlatformImplementation;
+    using PlatformImplementation::set;
+    using PlatformImplementation::stageFlags;
+
+    [[nodiscard]] auto platformImplementation() const -> PlatformImplementation const& { return *this; }
+    [[nodiscard]] auto platformImplementation() -> PlatformImplementation& { return *this; }
+
+    friend auto operator== <PlatformImplementation>(BindingInterface<PlatformImplementation> const& lhs,
+                                                    BindingInterface<PlatformImplementation> const& rhs) -> bool;
+};
+
+template<BindingConcept PlatformImplementation>
+auto operator==(BindingInterface<PlatformImplementation> const& lhs,
+                BindingInterface<PlatformImplementation> const& rhs) -> bool
+{
+    return lhs.platformImplementation() == rhs.platformImplementation();
+}
+}
+
+#endif // CYCLONITE_BINDING_INTERFACE_H

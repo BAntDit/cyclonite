@@ -1,12 +1,11 @@
 //
-// Created by bantdit on 2/23/20.
+// Created by anton on 6/7/26.
 //
 
-#ifndef CYCLONITE_CAMERA_H
-#define CYCLONITE_CAMERA_H
+#ifndef CYCLONITE_COMPONENTS_CAMERA_H
+#define CYCLONITE_COMPONENTS_CAMERA_H
 
-#include "typedefs.h"
-#include <cstddef>
+#include "common.h"
 #include <variant>
 
 namespace cyclonite::components {
@@ -44,14 +43,23 @@ struct Camera
         real zFar;
     };
 
-    Camera() noexcept;
+    Camera() noexcept
+      : projection{ Camera::PerspectiveProjection{ 1.0f, 1.5708f, 0.1f, 10.f } }
+    {
+    }
 
-    explicit Camera(PerspectiveProjection const& perspective) noexcept;
+    explicit Camera(PerspectiveProjection const& perspective) noexcept
+      : projection{ perspective }
+    {
+    }
 
-    explicit Camera(OrthographicProjection const& orthographic) noexcept;
+    explicit Camera(OrthographicProjection const& orthographic) noexcept
+      : projection{ orthographic }
+    {
+    }
 
     std::variant<PerspectiveProjection, OrthographicProjection> projection;
 };
 }
 
-#endif // CYCLONITE_CAMERA_H
+#endif // CYCLONITE_COMPONENTS_CAMERA_H

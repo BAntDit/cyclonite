@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(basic.example VERSION 0.0.0.0)
+project(basic.example VERSION 0.0.1.0)
 
-set(SOURCE_FILES basic.h basic.cpp)
+file(GLOB BASIC_EXAMPLE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
+file(GLOB BASIC_EXAMPLE_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+add_executable(${PROJECT_NAME} ${BASIC_EXAMPLE_HEADERS} ${BASIC_EXAMPLE_SOURCES})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
@@ -30,6 +31,7 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../../src/")
+target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../../../shared/")
 
 target_link_libraries(${PROJECT_NAME} cyclonite)
 
@@ -43,3 +45,5 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE GLM_ENABLE_EXPERIMENTAL)
 target_link_libraries(${PROJECT_NAME} glm::glm)
 
 target_link_libraries(${PROJECT_NAME} SDL3::SDL3)
+
+target_link_libraries(${PROJECT_NAME} enttx::enttx)

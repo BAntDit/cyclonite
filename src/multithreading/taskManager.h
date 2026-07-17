@@ -1,28 +1,31 @@
 //
-// Created by bantdit on 1/19/19.
+// Created by anton on 9/13/25.
 //
 
 #ifndef CYCLONITE_TASKMANAGER_H
 #define CYCLONITE_TASKMANAGER_H
 
-#include "render.h"
-#include "worker.h"
-#include <thread>
-#include <type_traits>
+#include "core/spinLock.h"
+#include "executor.h"
+#include "multithreading/common.h"
+#include "strandDeque.h"
+#include "taskPool.h"
+#include <condition_variable>
 #include <vector>
 
 namespace cyclonite::multithreading {
-
-/**
- * Task manager class
- */
 class TaskManager
 {
-    friend class Worker;
-    friend class Render;
+    friend class Executor;
+
+    static size_t renderExecutorIndex;
+    static size_t computeExecutorIndex;
+    static size_t transferExecutorIndex;
 
 public:
-    explicit TaskManager(size_t workerCount = std::max(std::thread::hardware_concurrency(), 2u) - 1u);
+    TaskManager(bool dedicatedTransferRequired,
+                bool dedicatedComputeRequired,
+                size_t threadPoolSize = std::max(std::thread::hardware_concurrency(), 1u));
 
     TaskManager(TaskManager const&) = delete;
 
@@ -34,68 +37,104 @@ public:
 
     auto operator=(TaskManager&&) -> TaskManager& = delete;
 
-    [[nodiscard]] auto keepAlive() const -> bool { return alive_.load(std::memory_order_relaxed); }
-
-    [[nodiscard]] auto workerCount() const -> uint32_t { return workerCount_; }
-
-    template<TaskFunctor F>
-    auto start(F&& f) -> std::future<std::invoke_result_t<F>>;
+    void start();
 
     void stop();
 
-    template<TaskFunctor F>
-    auto submitRenderTask(F&& f) -> std::future<std::invoke_result_t<F>>;
+    [[nodiscard]] auto keepAlive() const -> bool { return alive_.load(std::memory_order_relaxed); }
 
-    template<TaskFunctor F>
-    auto submitTask(F&& f) -> std::future<std::invoke_result_t<F>>;
+    [[nodiscard]] auto executorCount() const -> size_t { return executorCount_; }
 
     auto getLastException() -> std::exception_ptr;
 
+    template<typename F>
+        requires std::is_invocable_v<F>
+    static auto submitTask(F&& f, Purpose purpose = Purpose::General) -> std::future<std::invoke_result_t<F>>;
+
+    template<typename F>
+        requires std::is_invocable_v<F>
+    static auto strandTask(F&& f) -> std::future<std::invoke_result_t<F>>;
+
+    [[nodiscard]] auto getExecutorPurposeBits(Purpose purpose) const -> PurposeBits;
+
 private:
+    [[nodiscard]] auto executors() const -> std::unique_ptr<Executor[]> const& { return executors_; }
+    [[nodiscard]] auto executors() -> std::unique_ptr<Executor[]>& { return executors_; }
+
+    [[nodiscard]] auto taskPool() const -> TaskPoolMC const& { return taskPoolForStrand_; }
+    [[nodiscard]] auto taskPool() -> TaskPoolMC& { return taskPoolForStrand_; }
+
+    [[nodiscard]] auto strandQueue() const -> StrandDeque const& { return *strandDeque_; }
+    [[nodiscard]] auto strandQueue() -> StrandDeque& { return *strandDeque_; }
+
+    [[nodiscard]] auto executorIndexToStealTask() -> size_t;
+
+    void decreaseTaskCount(bool isGeneralTask);
+    void notifyNewTask(Purpose purpose);
+    void waitForTasks(size_t executorIndex);
+
+#if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
     void propagateException(std::exception_ptr const& exception);
-
-    [[nodiscard]] auto workers() const -> std::unique_ptr<Worker[]> const& { return workers_; }
-
-    auto workers() -> std::unique_ptr<Worker[]>& { return workers_; }
-
-    [[nodiscard]] auto renderQueue(size_t workerIndex) const -> lock_free_spmc_queue_t<Task*> const&;
-    auto renderQueue(size_t workerIndex) -> lock_free_spmc_queue_t<Task*>&;
+#endif
 
 private:
-    std::vector<std::exception_ptr> exceptions_;
     std::vector<std::thread> threadPool_;
-    std::unique_ptr<Worker[]> workers_;
-    size_t workerCount_;
-    Render render_;
-    std::mutex exceptionMutex_;
+
+    size_t executorCount_;
+    std::unique_ptr<Executor[]> executors_;
+    std::unique_ptr<PurposeBits[]> executorPurposes_;
+    std::atomic<size_t> executorIndexToStealTask_;
+
+    TaskPoolMC taskPoolForStrand_;
+    std::unique_ptr<StrandDeque> strandDeque_;
+
     std::atomic<bool> alive_;
+
+    std::atomic<uint32_t> generalTaskCount_;
+    std::atomic<uint32_t> specialPurposeTaskCount_;
+
+    std::condition_variable_any noTaskCv_;
+    core::SpinLock noTaskLock_;
+
+#if !defined(DISABLE_THREAD_EXCEPTIONS_PROPAGATION)
+    core::SpinLock exPropagationLock_;
+    std::vector<std::exception_ptr> exceptions_;
+#endif
 };
 
-template<TaskFunctor F>
-auto TaskManager::submitRenderTask(F&& f) -> std::future<std::invoke_result_t<F>>
+template<typename F>
+    requires std::is_invocable_v<F>
+auto TaskManager::submitTask(F&& f, Purpose purpose /* = Purpose::General*/) -> std::future<std::invoke_result_t<F>>
 {
-    assert(!Render::isInRenderThread());
-    assert(Worker::isInWorkerThread());
-
-    return Worker::threadWorker().submitRenderTask(std::forward<F>(f));
+    return Executor::threadExecutor().submitTask(std::forward<F>(f), purpose);
 }
 
-template<TaskFunctor F>
-auto TaskManager::start(F&& f) -> std::future<std::invoke_result_t<F>>
+template<typename F>
+    requires std::is_invocable_v<F>
+auto TaskManager::strandTask(F&& f) -> std::future<std::invoke_result_t<F>>
 {
-    auto const firstWorkerThread = size_t{ 1 };
+    using result_type_t = std::invoke_result_t<F>;
 
-    for (auto i = firstWorkerThread; i < workerCount_; i++)
-        threadPool_.emplace_back([](Worker& worker) -> void { worker(); }, std::ref(workers_[i]));
+    auto* task = std::add_pointer_t<Task>{ nullptr };
 
-    // TODO:: adds ability to steal task for main thread
-    return workers_[0](std::forward<F>(f));
-}
+    auto& taskManager = Executor::threadExecutor().taskManager();
 
-template<TaskFunctor F>
-auto TaskManager::submitTask(F&& f) -> std::future<std::invoke_result_t<F>>
-{
-    return workers_[0].submitTask(std::forward<F>(f));
+    while ((task = taskManager.taskPool().writeableTask(), task == nullptr))
+        std::this_thread::yield();
+
+    auto&& packedTask = std::packaged_task<result_type_t()>{ std::forward<F>(f) };
+    auto future = packedTask.get_future();
+
+    *task = Task{ std::move(packedTask) };
+
+    // cycle waits space in deque if there is no one
+    // it must happen hardly ever as well
+    while (taskManager.strandQueue().tryEmplace(task))
+        std::this_thread::yield();
+
+    taskManager.notifyNewTask(Purpose::General);
+
+    return future;
 }
 }
 

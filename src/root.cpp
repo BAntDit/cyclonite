@@ -3,185 +3,77 @@
 //
 
 #include "root.h"
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_video.h>
 
 namespace cyclonite {
-Root::Root()
+RootBase::RootBase()
   : capabilities_{}
-  , resourceManager_{ std::make_unique<resources::ResourceManager>() }
-  , taskManager_{}
-  , sdlSupport_{}
-  , vulkanInstance_
+  , taskManager_{ nullptr }
+  , gfxInstance_{ nullptr }
+  , input_{}
 {
-#if defined(VK_USE_PLATFORM_XLIB_KHR)
-#if !defined(NDEBUG)
-    std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_KHRONOS_validation" },
-                                       std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-                                                                   VK_KHR_SURFACE_EXTENSION_NAME,
-                                                                   VK_KHR_XLIB_SURFACE_EXTENSION_NAME })
-#else
-    std::make_unique<vulkan::Instance>(
-      std::array<char const*, 0>{},
-      std::array<char const*, 2>{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_XLIB_SURFACE_EXTENSION_NAME })
-#endif
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-#if !defined(NDEBUG)
-    std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_LUNARG_standard_validation" },
-                                       std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-                                                                   VK_KHR_SURFACE_EXTENSION_NAME,
-                                                                   VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME })
-#else
-    std::make_unique<vulkan::Instance>(
-      std::array<char const*, 0>{},
-      std::array<char const*, 2>{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME })
-#endif
-#elif defined(VK_USE_PLATFORM_WIN32_KHR)
-#if !defined(NDEBUG)
-    std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_LUNARG_standard_validation" },
-                                       std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-                                                                   VK_KHR_SURFACE_EXTENSION_NAME,
-                                                                   VK_KHR_WIN32_SURFACE_EXTENSION_NAME })
-#else
-    std::make_unique<vulkan::Instance>(
-      std::array<char const*, 0>{},
-      std::array<char const*, 2>{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME })
-#endif
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-#if !defined(NDEBUG)
-    std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_LUNARG_standard_validation" },
-                                       std::array<char const*, 3>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-                                                                   VK_KHR_SURFACE_EXTENSION_NAME,
-                                                                   VK_KHR_ANDROID_SURFACE_EXTENSION_NAME })
-#else
-    std::make_unique<vulkan::Instance>(
-      std::array<char const*, 0>{},
-      std::array<char const*, 2>{ VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_ANDROID_SURFACE_EXTENSION_NAME })
-#endif
-#else
-#if !defined(NDEBUG)
-    std::make_unique<vulkan::Instance>(std::array<char const*, 1>{ "VK_LAYER_LUNARG_standard_validation" },
-                                       std::array<char const*, 1>{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME })
-#else
-    std::make_unique<vulkan::Instance>(std::array<char const*, 0>{}, std::array<char const*, 0>{})
-#endif
-#endif
-}
-, physicalDeviceList_{}, physicalDevicePropertiesMap_{}, vulkanDevice_{ nullptr }, input_{}
-{
-    uint32_t physicalDeviceCount = 0;
-
-    if (vkEnumeratePhysicalDevices(vulkanInstance_->handle(), &physicalDeviceCount, VK_NULL_HANDLE) != VK_SUCCESS) {
-        throw std::runtime_error("could not enumerate physical devices");
-    }
-
-    physicalDeviceList_.resize(physicalDeviceCount);
-
-    if (vkEnumeratePhysicalDevices(vulkanInstance_->handle(), &physicalDeviceCount, physicalDeviceList_.data()) !=
-        VK_SUCCESS) {
-        throw std::runtime_error("could not get physical devices");
-    }
-
-    for (auto const& physicalDevice : physicalDeviceList_) {
-        auto properties = VkPhysicalDeviceProperties{};
-
-        vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-
-        physicalDevicePropertiesMap_.emplace(std::string{ properties.deviceName }, properties);
-    }
 }
 
-void Root::init()
+void RootBase::init(std::string_view appName)
 {
-    init(getDeviceId());
-}
-
-void Root::init(uint32_t deviceId)
-{
-    {
-        // every time use primary display at least for now
-        // multi display support later, okay?
-        auto displayId = SDL_GetPrimaryDisplay();
-
-        sdlSupport_.storeDisplayResolutions(capabilities_.displayResolutions, displayId);
+    // SDL initialization:
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
+        throw std::runtime_error("SDL: could not initialize SDL video subsystem");
     }
 
     {
-        std::vector<const char*> requiredExtensions = {};
+        auto const displayId = SDL_GetPrimaryDisplay();
+        auto displayModeCount = int32_t{ 0 };
 
-#if defined(VK_USE_PLATFORM_XLIB_KHR) || defined(VK_USE_PLATFORM_WAYLAND_KHR) || (VK_USE_PLATFORM_WIN32_KHR) ||        \
-  defined(VK_USE_PLATFORM_ANDROID_KHR)
-        requiredExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-#endif
-        for (size_t i = 0, count = getDeviceCount(); i < count; i++) {
-            auto&& [name, properties] = *std::next(physicalDevicePropertiesMap_.cbegin(), i);
+        if (auto** displayModes = SDL_GetFullscreenDisplayModes(displayId, &displayModeCount);
+            displayModes != nullptr && displayModeCount > 0) {
+            auto displayResolutions = std::vector<std::pair<uint16_t, uint16_t>>{};
+            displayResolutions.reserve(displayModeCount);
 
-            if (properties.deviceID != deviceId)
-                continue;
+            for (auto i = 0; i < displayModeCount; i++) {
+                auto const& displayMode = *(displayModes[i]);
 
-            auto&& physicalDevice = physicalDeviceList_[i];
+                auto width = static_cast<uint16_t>(displayMode.w);
+                auto height = static_cast<uint16_t>(displayMode.h);
 
-            try {
-                vulkanDevice_ = std::make_unique<vulkan::Device>(
-                  taskManager_, vulkanInstance_->handle(), physicalDevice, properties, requiredExtensions);
-            } catch (const std::exception& e) {
-                std::cout << "device " << name << " skipped, cause of: " << e.what() << std::endl;
-
-                throw;
+                displayResolutions.emplace_back(width, height);
             }
 
-            break;
+            std::swap(displayResolutions, capabilities_.displayResolutions);
+        } else {
+            throw std::runtime_error("SDL: could not get available display modes");
         }
+    }
 
-        if (!vulkanDevice_) {
-            throw std::runtime_error("device: " + std::to_string(deviceId) + " is no longer available.");
+    if (!(gfxInstance_ = std::make_unique<gfx::Instance>(appName))) {
+        throw std::runtime_error("gfx:: could not create gfx-instance");
+    }
+}
+
+void RootBase::initTaskManager(bool dedicatedTransferRequired,
+                               bool dedicatedComputeRequired,
+                               size_t threadPoolSize /* = std::max(std::thread::hardware_concurrency(), 1u)*/)
+{
+    if (taskManager_ = std::make_unique<multithreading::TaskManager>(
+          dedicatedTransferRequired, dedicatedComputeRequired, threadPoolSize);
+        taskManager_) {
+        taskManager_->start();
+        if (auto ex = taskManager_->getLastException()) {
+            std::rethrow_exception(ex);
         }
-    } // end vulkan device creation
+    } else {
+        throw std::runtime_error("Root:: could not initialize task manager");
+    }
 }
 
-auto Root::getDeviceId(size_t deviceIndex /* = 0*/) const -> uint32_t
+void RootBase::reset()
 {
-    assert(deviceIndex < physicalDevicePropertiesMap_.size());
+    if (taskManager_) {
+        taskManager_->stop();
+        taskManager_.reset();
+    }
 
-    auto&& [name, properties] = *std::next(physicalDevicePropertiesMap_.cbegin(), static_cast<long>(deviceIndex));
-
-    (void)name;
-
-    return properties.deviceID;
-}
-
-auto Root::getDeviceId(std::string const& deviceName) const -> uint32_t
-{
-    assert(physicalDevicePropertiesMap_.count(deviceName) > 0);
-
-    auto&& [name, properties] = *physicalDevicePropertiesMap_.find(deviceName);
-
-    (void)name;
-
-    return properties.deviceID;
-}
-
-auto Root::resourceManager() -> resources::ResourceManager&
-{
-    assert(resourceManager_);
-    return *resourceManager_;
-}
-
-auto Root::resourceManager() const -> resources::ResourceManager const&
-{
-    assert(resourceManager_);
-    return *resourceManager_;
-}
-
-void Root::dispose()
-{
-    auto disposeTask = [this]() -> void {
-        workspaces_.clear();
-        resourceManager_.reset();
-        vulkanDevice_.reset();
-        vulkanInstance_.reset();
-    };
-
-    taskManager_.submitTask(disposeTask).get();
-
-    taskManager_.stop();
+    SDL_Quit();
 }
 }

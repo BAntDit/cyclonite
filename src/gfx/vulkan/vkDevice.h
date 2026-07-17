@@ -1,0 +1,225 @@
+//
+// Created by bantdit on 9/4/19.
+//
+
+#ifndef CYCLONITE_DEVICE_H
+#define CYCLONITE_DEVICE_H
+
+#include "core/hashTable.h"
+#include "core/refFromThisMixin.h"
+#include "core/resourceBase.h"
+#include "core/resourceSharedRef.h"
+#include "core/resourceUniqueRef.h"
+#include "gfx/binding.h"
+#include "gfx/color.h"
+#include "gfx/common.h"
+#include "gfx/config.h"
+#include "gfx/queueSubmissionManager.h"
+#include "handle.h"
+#include "vmaUsage.h"
+#include <array>
+#include <span>
+#include <string_view>
+
+namespace cyclonite::gfx {
+struct RasterizationState;
+}
+
+#if defined(GFX_DRIVER_VULKAN)
+namespace cyclonite::gfx::vulkan {
+class PipelineManager;
+
+class Device
+  : public core::ResourceBase
+  , public core::EnableRefFromThis
+{
+    friend class vulkan::QueueSubmissionManager;
+
+public:
+    Device(core::ResourceManagerBase* resourceManager,
+           core::ResourceId resourceId,
+           VkInstance vkInstance,
+           VkPhysicalDevice vkPhysicalDevice,
+           VkPhysicalDeviceProperties const& physicalDeviceProperties,
+           std::vector<const char*> const& requiredExtensions);
+
+    ~Device();
+
+    [[nodiscard]] auto allocator() const -> VmaAllocator { return vmaAllocator_; }
+
+    [[nodiscard]] auto vulkanInstance() const -> VkInstance { return vkInstance_; }
+
+    [[nodiscard]] auto physicalDevice() const -> VkPhysicalDevice { return vkPhysicalDevice_; }
+
+    [[nodiscard]] auto graphicsQueueFamilyIndex() const -> uint32_t { return graphicsQueueFamilyIndex_; }
+
+    [[nodiscard]] auto transferQueueFamilyIndex() const -> uint32_t { return transferQueueFamilyIndex_; }
+
+    [[nodiscard]] auto computeQueueFamilyIndex() const -> uint32_t { return computeQueueFamilyIndex_; }
+
+    [[nodiscard]] auto graphicsQueue() const -> VkQueue { return static_cast<VkQueue>(graphicsQueue_); }
+
+    [[nodiscard]] auto transferQueue() const -> VkQueue { return static_cast<VkQueue>(transferQueue_); }
+
+    [[nodiscard]] auto computeQueue() const -> VkQueue { return static_cast<VkQueue>(computeQueue_); }
+
+    [[nodiscard]] auto handle() const -> VkDevice { return static_cast<VkDevice>(vkDevice_); }
+
+    [[nodiscard]] auto name() const -> std::string_view { return name_; }
+
+    [[nodiscard]] auto vendor() const -> DeviceVendor { return vendor_; }
+
+    [[nodiscard]] auto limits() const -> DeviceLimits const& { return limits_; }
+
+    [[nodiscard]] auto createSignal(SignalType signalType, uint64_t initialValue = 0) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto createRenderWindow(uint32_t width,
+                                          uint32_t height,
+                                          std::string_view title,
+                                          SurfaceFlagBits flags) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto createBuffer(GpuMemoryAllocationFlagBits allocationFlags,
+                                    BufferUsageFlagBits usageFlags,
+                                    size_t size) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto createShader(size_t codeSize,
+                                    uint32_t const* code,
+                                    ShaderStageCreationFlagBits creationFlags,
+                                    ShaderStageFlags stage,
+                                    std::string_view entryPointName) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto createTexture(GpuMemoryAllocationFlagBits allocationFlags,
+                                     TextureCreationFlagBits imageCreateFlags,
+                                     core::ResourceSharedRef samplerRef,
+                                     TextureType textureType,
+                                     Format format,
+                                     uint32_t width,
+                                     uint32_t height,
+                                     uint32_t depth,
+                                     uint32_t mipCount,
+                                     uint32_t arrayLayerCount,
+                                     TextureTiling tiling,
+                                     TextureUsageFlagBits usageFlags) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto createSampler(TextureFilter magFilter,
+                                     TextureFilter minFilter,
+                                     TextureFilter mipFilter,
+                                     TextureAddressMode addressModeU,
+                                     TextureAddressMode addressModeV,
+                                     TextureAddressMode addressModeW,
+                                     real mipLodBias,
+                                     real maxAnisotropy,
+                                     CompareOp compareOp,
+                                     real minLod,
+                                     real maxLod,
+                                     BorderColor borderColor,
+                                     bool unnormalizedCoords) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto createRenderPassWithRTVs(
+      core::ResourceSharedRef depthStencilRef,
+      std::array<core::ResourceSharedRef, config_t::max_color_attachment_count_v> colorAttachmentRefs,
+      std::array<std::pair<uint16_t, uint16_t>, config_t::max_color_attachment_count_v> colorAttachmentSubresDescs,
+      std::array<gfx::Color, config_t::max_color_attachment_count_v> clearColors,
+      uint32_t width,
+      uint32_t height,
+      real depthClearValue,
+      uint8_t stencilClearValue) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto createRenderPassWithRenderWindow(core::ResourceSharedRef renderWindowRef,
+                                                        gfx::Color colorClearValue,
+                                                        real depthClearValue,
+                                                        uint8_t stencilClearValue) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto createCommandPool(uint32_t queueFamilyIndex,
+                                         CommandPoolFlagBits flags) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto createDescriptorSetLayout(std::span<gfx::Binding const> bindings) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto createPipelineBindingSchema(std::span<core::ResourceSharedRef const> setLayouts,
+                                                   std::span<PushConstantRange const> pushConstantRanges)
+      -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto getOrCreatePipelineBindingSchema(std::span<gfx::Binding const> bindings,
+                                                        std::span<PushConstantRange const> pushConstantRanges)
+      -> core::ResourceSharedRef;
+
+    [[nodiscard]] auto createPrimitiveRasterizationPipeline(PipelineCreationFlagBits creationFlags,
+                                                            core::ResourceSharedRef bindingSchemaRef,
+                                                            PrimitiveTopology primitiveTopology,
+                                                            bool primitiveRestartEnable,
+                                                            core::ResourceSharedRef renderPassRef,
+                                                            RasterizationState const& rasterizationState,
+                                                            std::span<core::ResourceSharedRef const> shaders)
+      -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto createComputePipeline(PipelineCreationFlagBits creationFlags,
+                                             core::ResourceSharedRef bindingSchemaRef,
+                                             core::ResourceSharedRef shaderRef) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto getOrCreatePrimitiveRasterizationPipeline(PipelineCreationFlagBits creationFlags,
+                                                                 std::span<gfx::Binding const> bindings,
+                                                                 std::span<PushConstantRange const> pushConstantRanges,
+                                                                 PrimitiveTopology primitiveTopology,
+                                                                 bool primitiveRestartEnable,
+                                                                 core::ResourceSharedRef const& renderPassRef,
+                                                                 RasterizationState const& rasterizationState,
+                                                                 std::span<core::ResourceSharedRef const> shaders)
+      -> core::ResourceSharedRef;
+
+    [[nodiscard]] auto getOrCreateComputePipeline(PipelineCreationFlagBits creationFlags,
+                                                  std::span<gfx::Binding const> bindings,
+                                                  std::span<PushConstantRange const> pushConstantRanges,
+                                                  core::ResourceSharedRef const& shaderRef) -> core::ResourceSharedRef;
+
+    [[nodiscard]] auto allocateDescriptorSetFromPool(core::ResourceSharedRef poolRef,
+                                                     uint32_t setIndex) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto allocateDescriptorSetBySchema(core::ResourceSharedRef const& schemaRef,
+                                                     uint32_t setIndex,
+                                                     bool resetable) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto createDescriptorPool(core::ResourceSharedRef layoutRef,
+                                            uint32_t maxSetCount,
+                                            bool allowReset) -> core::ResourceUniqueRef;
+
+    [[nodiscard]] auto pipelineCache() const -> VkPipelineCache
+    {
+        return static_cast<VkPipelineCache>(vkPipelineCache_);
+    }
+
+    [[nodiscard]] auto queueSubmissionManager() -> gfx::QueueSubmissionManager& { return *queueSubmissionManager_; }
+
+    [[nodiscard]] auto queueSubmissionManager() const -> gfx::QueueSubmissionManager const&
+    {
+        return *queueSubmissionManager_;
+    }
+
+    using core::ResourceBase::resourceBase;
+
+private:
+    [[nodiscard]] auto createQueueSubmission(uint32_t queueFamilyIndex,
+                                             CommandPoolFlagBits commandPoolFlags) -> core::ResourceUniqueRef;
+
+    VkInstance vkInstance_;
+    VkPhysicalDevice vkPhysicalDevice_;
+    std::string name_;
+    DeviceVendor vendor_;
+    DeviceLimits limits_;
+    Handle<VkDevice> vkDevice_;
+    uint32_t graphicsQueueFamilyIndex_;
+    uint32_t transferQueueFamilyIndex_;
+    uint32_t computeQueueFamilyIndex_;
+    Handle<VkQueue> graphicsQueue_;
+    Handle<VkQueue> transferQueue_;
+    Handle<VkQueue> computeQueue_;
+    Handle<VkPipelineCache> vkPipelineCache_;
+    VmaAllocator vmaAllocator_;
+    std::unique_ptr<core::ResourceManagerBase> internalResourceManager_;
+    std::unique_ptr<PipelineManager> pipelineManager_;
+    std::unique_ptr<gfx::QueueSubmissionManager> queueSubmissionManager_;
+};
+}
+
+#endif // GFX_DRIVER_VULKAN
+
+#endif // CYCLONITE_DEVICE_H

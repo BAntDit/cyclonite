@@ -1,17 +1,14 @@
 //
-// Created by bantdit on 10/30/22.
+// Created by anton on 9/13/25.
 //
 
-#ifndef CYCLONITE_TASKPOOL_H
-#define CYCLONITE_TASKPOOL_H
+#ifndef CYCLONITE_MT_TASKPOOL_H
+#define CYCLONITE_MT_TASKPOOL_H
 
 #include "task.h"
-#include <cstddef>
-#include <memory>
 
 namespace cyclonite::multithreading {
-class TaskManager;
-
+namespace internal {
 class TaskPool
 {
 public:
@@ -29,12 +26,31 @@ public:
 
     auto operator=(TaskPool&&) -> TaskPool& = default;
 
-    auto writeableTask() -> Task*;
-
-private:
+protected:
     size_t size_;
     std::unique_ptr<Task[]> tasks_;
 };
 }
 
-#endif // CYCLONITE_TASKPOOL_H
+class TaskPoolSC : public internal::TaskPool
+{
+public:
+    TaskPoolSC() = default;
+
+    explicit TaskPoolSC(size_t size);
+
+    auto writeableTask() -> Task*;
+};
+
+class TaskPoolMC : public internal::TaskPool
+{
+public:
+    TaskPoolMC() = default;
+
+    explicit TaskPoolMC(size_t size);
+
+    auto writeableTask() -> Task*;
+};
+}
+
+#endif // CYCLONITE_MT_TASKPOOL_H

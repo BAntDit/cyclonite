@@ -6,8 +6,11 @@
 #define CYCLONITE_CYCLONITE_H
 
 #include "app.h"
+#include "commandLine.h"
 #include "event.h"
-#include "hash.h"
+#include "gfx/queueSubmissionManager.h"
+#include "gfx/renderPassBuilder.h"
+#include "gfx/renderWindowBuilder.h"
 #include "root.h"
 
 #endif // CYCLONITE_CYCLONITE_H

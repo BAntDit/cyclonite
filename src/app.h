@@ -5,45 +5,29 @@
 #ifndef CYCLONITE_APP_H
 #define CYCLONITE_APP_H
 
-#include "options.h"
+#include "commandLine.h"
+#include <concepts>
 #include <exception>
 #include <iostream>
+#include <type_traits>
 
 namespace cyclonite {
-template<class Application>
-class BaseApp
-{
-public:
-    auto init(Options options) -> Application&;
+template<typename T>
+concept ApplicationConcept = requires(T t, CommandLine const& commandLine) {
+    { t.init(commandLine) } -> std::same_as<T&>;
 
-    auto run() -> Application&;
+    { t.run() } -> std::same_as<T&>;
 
-    void done();
+    { t.done() } -> std::same_as<void>;
+
+    requires std::is_default_constructible_v<T>;
 };
 
-template<class Application>
-auto BaseApp<Application>::init(Options options) -> Application&
-{
-    return static_cast<Application*>(this)->init(options);
-}
-
-template<class Application>
-auto BaseApp<Application>::run() -> Application&
-{
-    return static_cast<Application*>(this)->run();
-}
-
-template<class Application>
-void BaseApp<Application>::done()
-{
-    static_cast<Application*>(this)->done();
-}
-
-template<class Application>
+template<ApplicationConcept Application>
 int letsGo(int argc, const char* argv[])
 {
     try {
-        Application{}.init(Options{ argc, argv }).run().done();
+        Application{}.init(CommandLine{ argc, argv }).run().done();
     } catch (std::exception const& e) {
         std::cout << "an exception has occurred: " << e.what() << std::endl;
 
@@ -55,6 +39,7 @@ int letsGo(int argc, const char* argv[])
 }
 
 #define CYCLONITE_APP(cls)                                                                                             \
+    static_assert(cyclonite::ApplicationConcept<cls>, "Application must respect application concept");                 \
     int main(int argc, const char* argv[])                                                                             \
     {                                                                                                                  \
         return cyclonite::letsGo<cls>(argc, argv);                                                                     \

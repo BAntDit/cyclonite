@@ -5,17 +5,14 @@ Cyclonite is a graphics engine I mostly use for my own experiments.
 
 ![s1.png](./examples/gltf-viewer/screenshots/s1.png)
 
-## Build dependencies
-[CONAN](https://conan.io/) - The open source, decentralized and multi-platform package
-manager to create and share all your native binaries.
+## Project installation
 
-## Dependencies
-- [GLM](https://github.com/g-truc/glm) - header only C++ mathematics library for graphics software.
-- [SDL2](https://github.com/libsdl-org) - Simple DirectMedia Layer is a cross-platform development library designed to provide low level access to audio, keyboard, mouse, joystick, and graphics hardware.
-- [Enttx](https://github.com/BAntDit/enttx) - Compile-time and header-only Entity-Component-System library.
-- [easy-mp](https://github.com/BAntDit/easy-mp) - Simple meta-programming library.
-- [boost](https://www.boost.org/users/history/version_1_79_0.html) - The Boost C++ Libraries are a collection of modern libraries based on the C++ standard.
-- [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) - The Vulkan SDK is a collection of essential tools used by developers to assist in development and debugging of Vulkan applications.
+1. build and install shader-compiler package first: <br />
+ ` conan install . -s compiler.cppstd=20 -s build_type=Release --build=missing --output-folder=cmake-build-release` <br />
+ ` conan create . -s build_type=Release -s compiler.cppstd=20` <br />
+
+2. install cyclonite dependencies: <br />
+   `conan install . -s compiler.cppstd=20 -s build_type=Debug --build=missing --output-folder=cmake-build-debug -o platform=linux-x11`
 
 ## Last update
 

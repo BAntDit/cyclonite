@@ -1,47 +1,38 @@
 //
-// Created by bantdit on 1/12/20.
+// Created by anton on 6/7/26.
 //
 
 #include "transform.h"
 #include <glm/gtx/matrix_decompose.hpp>
 
 namespace cyclonite::components {
-Transform::Transform() noexcept
-  : position{ 0.0f }
-  , scale{ 1.0f }
-  , orientation{ glm::angleAxis(glm::radians(0.0f), vec3{ 0.0f, 1.0f, 1.0f }) }
-  , matrix{ 1.0f }
-  , worldMatrix{ 1.0f }
+Transform::Transform()
+  : position{ 0.f }
+  , scale{ 1.f }
+  , orientation{ glm::angleAxis(glm::radians(0.f), vec3{ 0.f, 1.f, 1.f }) }
+  , matrix{ 1.f }
+  , worldMatrix{ 1.f }
+  , state{ State::UPDATE_NOTHING }
+{
+}
+
+Transform::Transform(vec3 const& pos, vec3 const& sc, quat const& rot)
+  : position(pos)
+  , scale(sc)
+  , orientation(rot)
+  , matrix{ glm::translate(pos) * glm::mat4_cast(rot) * glm::scale(sc) }
+  , worldMatrix{ 1.f }
   , state{ State::UPDATE_WORLD }
-  , parent{}
-  , depth{ 0 }
-  , lastFrameUpdate{ std::numeric_limits<uint64_t>::max() }
 {
 }
 
-Transform::Transform(vec3 localPosition, vec3 localScale, quat localOrientation) noexcept
-  : position{ localPosition }
-  , scale{ localScale }
-  , orientation{ localOrientation }
-  , matrix{ glm::translate(localPosition) * glm::mat4_cast(localOrientation) * glm::scale(localScale) } // TRS
-  , worldMatrix{ 1.0f }
-  , state{ State::UPDATE_LOCAL }
-  , parent{}
-  , depth{ 0 }
-  , lastFrameUpdate{ std::numeric_limits<uint64_t>::max() }
-{
-}
-
-Transform::Transform(mat4 localMatrix)
-  : position{ 0.0f }
-  , scale{ 1.0f }
-  , orientation{ glm::angleAxis(glm::radians(0.0f), vec3{ 0.0f, 1.0f, 1.0f }) }
-  , matrix{ localMatrix }
-  , worldMatrix{ 1.0f }
-  , state{ State::UPDATE_COMPONENTS }
-  , parent{}
-  , depth{ 0 }
-  , lastFrameUpdate{ std::numeric_limits<uint64_t>::max() }
+Transform::Transform(mat4 mat)
+  : position{ 1.f }
+  , scale{ 1.f }
+  , orientation{ glm::angleAxis(glm::radians(0.f), vec3{ 0.f, 1.f, 1.f }) }
+  , matrix{ mat }
+  , worldMatrix{ 1.f }
+  , state{ State::UPDATE_WORLD }
 {
     [[maybe_unused]] vec3 skew{};
     [[maybe_unused]] vec4 perspective{};

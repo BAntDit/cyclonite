@@ -10,16 +10,29 @@ class CycloniteRecipe(ConanFile):
     description = "Cyclonite is a graphics engine."
 
     options = {
-        "platform": ["x11", "wayland", "xcb", "mir", "windows", "android", "auto"],  # Let users choose
+        "platform": [
+            "linux-x11",
+            "linux-wayland",
+            "linux-xcb",
+            "linux-mir",
+            "windows",
+            "android",
+            "auto"
+        ],  # Let users choose
+        "gapi": [
+            "vulkan",
+            "d3d12"
+        ]
     }
 
     default_options = {
-        "platform": "auto"
+        "platform": "auto",
+        "gapi": "vulkan"
     }
 
     settings = "os", "compiler", "arch", "build_type"
 
-    export_sources = "CMakeLists.txt", "*.cmake", ".clang-format", ".md", "src/*.h", "tests/*.h", "cmake/*"
+    export_sources = "CMakeLists.txt", "*.cmake", ".clang-format", ".md", "src/*", "tests/*", "examples/*", "cmake/*", "tools/*"
 
     def build_requirements(self):
         self.tool_requires("cmake/[>=3.10]")
@@ -27,19 +40,23 @@ class CycloniteRecipe(ConanFile):
         if self.settings.compiler != "msvc":
             self.tool_requires("ninja/[>=1.11.0]")
 
+        self.tool_requires("shader-compiler/0.1.2.0")
+
     def requirements(self):
         self.requires("gtest/[~1.16]")
-        self.requires("metrix/[~1.5]")
-        self.requires("taskweaver/[~0.3]")
-        self.requires("enttx/4.0.4.0")
+        self.requires("metrix/1.8.2.0")
         self.requires("glm/1.0.1")
         self.requires("sdl/3.2.6")
-        self.requires("vulkan-validationlayers/1.3.243.0")
-        self.requires("vulkan-loader/1.3.243.0")
-        self.requires("vulkan-headers/1.3.243.0")
-        self.requires("glslang/1.3.243.0")
-        self.requires("spirv-tools/1.3.243.0")
-        self.requires("spirv-headers/1.3.243.0")
+
+        if self.options.gapi == "vulkan":
+            self.requires("spirv-headers/1.3.243.0")
+            self.requires("spirv-tools/1.3.243.0")
+            self.requires("glslang/1.3.243.0")
+            self.requires("vulkan-validationlayers/1.3.243.0")
+            self.requires("vulkan-loader/1.3.243.0")
+            self.requires("vulkan-headers/1.3.243.0")
+            self.requires("vulkan-memory-allocator/3.0.1")
+
         self.requires("boost/1.87.0")
         self.requires("nlohmann_json/3.12.0")
 
@@ -60,20 +77,27 @@ class CycloniteRecipe(ConanFile):
             tc.generator = "Ninja"
 
         if self.options.platform != "auto":
-            if self.options.platform == "x11":
-                tc.variables["VK_USE_PLATFORM_XLIB_KHR"] = True
-            elif self.options.platform == "wayland":
-                tc.variables["VK_USE_PLATFORM_WAYLAND_KHR"] = True
-            elif self.options.platform == "xcb":
-                tc.variables["VK_USE_PLATFORM_XCB_KHR"] = True
-            elif self.options.platform == "mir":
-                tc.variables["VK_USE_PLATFORM_MIR_KHR"] = True
+            if self.options.platform == "linux-x11":
+                tc.variables["PLATFORM_LINUX_X11"] = True
+            elif self.options.platform == "linux-wayland":
+                tc.variables["PLATFORM_LINUX_WAYLAND"] = True
+            elif self.options.platform == "linux-xcb":
+                tc.variables["PLATFORM_LINUX_XCB"] = True
+            elif self.options.platform == "linux-mir":
+                tc.variables["PLATFORM_LINUX_MIR"] = True
             elif self.options.platform == "android":
-                tc.variables["VK_USE_PLATFORM_ANDROID_KHR"] = True
+                tc.variables["PLATFORM_ANDROID"] = True
             elif self.options.platform == "windows":
-                tc.variables["VK_USE_PLATFORM_WIN32_KHR"] = True
+                tc.variables["PLATFORM_WINDOWS"] = True
             else:
                 raise ConanInvalidConfiguration("Unexpected platform name.")
+
+        if self.options.gapi == "vulkan":
+            tc.variables["GAPI_VULKAN"] = True
+        elif self.options.gapi == "d3d12":
+            tc.variables["GAPI_D3D12"] = True
+        else:
+            raise ConanInvalidConfiguration("Unsupported graphics API.")
 
 
         tc.variables["REQUIRED_CXX_STANDARD"] = "20"
