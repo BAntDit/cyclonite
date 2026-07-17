@@ -47,10 +47,8 @@ ResourceSharedRef::ResourceSharedRef(ResourceSharedRef&& ref) noexcept
 
 auto ResourceSharedRef::valid() const -> bool
 {
-    auto isNull = resource_ == nullptr;
-    auto isResourceManagerNull = isNull ? true : resource_->resourceManager_ == nullptr;
-    auto isValid = isResourceManagerNull ? false : resource_->resourceManager_->isResourceValid(id_);
-    return isValid;
+    return resource_ != nullptr && resource_->resourceManager_ != nullptr &&
+           resource_->resourceManager_->isResourceValid(id_);
 }
 
 auto ResourceSharedRef::typeIndex() const -> uint8_t
