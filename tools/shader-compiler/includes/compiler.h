@@ -9,8 +9,16 @@
 #if !defined(_WIN32) // _WIN32 / _WIN64 at once
 #include <dxc/dxcapi.h>
 #else
-#include <dxcapi.h>
 #include <windows.h>
+#include <dxcapi.h>
+#include <initguid.h> 
+#include <d3d12shader.h>
+#ifdef max
+#undef max
+#endif
+#ifdef min
+#undef min
+#endif
 #endif
 
 #include "compilerInput.h"

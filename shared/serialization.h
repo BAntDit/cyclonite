@@ -13,7 +13,9 @@
 #include <metrix/type_traits.h>
 #include <tuple>
 #include <type_traits>
+#if !defined(_WIN32)
 #include <unistd.h>
+#endif
 #include <vector>
 
 namespace cyclonite::shared {

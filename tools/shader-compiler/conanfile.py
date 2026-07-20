@@ -2,8 +2,9 @@
 from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
 from conan.errors import ConanInvalidConfiguration
-from conan.tools.files import copy
+from conan.tools.files import copy, load, save
 import os
+import glob
 
 class ToolsShaderCompilerRecipe(ConanFile):
     name = "shader-compiler"
@@ -36,9 +37,29 @@ class ToolsShaderCompilerRecipe(ConanFile):
     def configure(self):
         self.settings.compiler.cppstd = "20"
 
+    def _fix_directx_headers_cmake(self):
+        self.output.info(f">>> generators_folder: {self.generators_folder}")
+        self.output.info(f">>> build_folder: {self.build_folder}")
+
+        # Search recursively to find where the file actually is
+        for root, dirs, files in os.walk(self.build_folder):
+            for f in files:
+                if "DirectX" in f and f.endswith(".cmake"):
+                    full_path = os.path.join(root, f)
+                    self.output.info(f">>> Found cmake file: {full_path}")
+                    content = load(self, full_path)
+                    if "d3dx12-format-properties" in content:
+                        self.output.info(f">>> Patching: {full_path}")
+                        patched = content.replace("d3dx12-format-properties", "")
+                        save(self, full_path, patched)
+                        self.output.info(f">>> Patched successfully: {full_path}")
+
     def generate(self):
         deps = CMakeDeps(self)
         deps.generate()
+
+        if self.settings.os == "Windows":
+            self._fix_directx_headers_cmake()
 
         tc = CMakeToolchain(self)
         if self.settings.compiler == "msvc":
@@ -46,12 +67,17 @@ class ToolsShaderCompilerRecipe(ConanFile):
         else:
             tc.generator = "Ninja"
 
-        #tc.cache_variables["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,-rpath,'$ORIGIN'"
-        tc.variables["SHARED_HEADERS_DIR"] = os.path.join(self.recipe_folder, "..", "..", "shared")
+        shared_dir = os.path.join(self.recipe_folder, "..", "..", "shared")
+        shared_dir = shared_dir.replace("\\", "/")
+
+        tc.variables["SHARED_HEADERS_DIR"] = shared_dir
         tc.variables["REQUIRED_CXX_STANDARD"] = "20"
         tc.generate()
 
     def build(self):
+        if self.settings.os == "Windows":
+            self._fix_directx_headers_cmake()
+
         cmake = CMake(self)
         cmake.configure()
         cmake.build()
