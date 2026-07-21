@@ -35,7 +35,6 @@ class CycloniteRecipe(ConanFile):
     export_sources = "CMakeLists.txt", "*.cmake", ".clang-format", ".md", "src/*", "tests/*", "examples/*", "cmake/*", "tools/*"
 
     def build_requirements(self):
-        self.tool_requires("cmake/[>=3.10]")
         self.tool_requires("glslang/[~11.7]")
         if self.settings.compiler != "msvc":
             self.tool_requires("ninja/[>=1.11.0]")
@@ -71,9 +70,7 @@ class CycloniteRecipe(ConanFile):
         deps.generate()
         tc = CMakeToolchain(self)
 
-        if self.settings.compiler == "msvc":
-            tc.generator = "Visual Studio 17 2022"
-        else:
+        if self.settings.compiler != "msvc":
             tc.generator = "Ninja"
 
         if self.options.platform != "auto":
