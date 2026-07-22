@@ -122,9 +122,15 @@ class ToolsShaderCompilerRecipe(ConanFile):
             self.output.warning("Could not find dxcompiler config files to copy")
 
         dxcompiler_cpp_info = self.dependencies["dxcompiler"].cpp_info
-        for libdir in dxcompiler_cpp_info.libdirs:
-            copy(self, "libdxcompiler.so*", src=libdir,
-                 dst=os.path.join(self.package_folder, "lib"))
+
+        if self.settings.os == "Windows":
+            for bindir in dxcompiler_cpp_info.bindirs:
+                copy(self, "dxcompiler.dll", src=bindir, dst=os.path.join(self.package_folder, "bin"))
+                copy(self, "dxil.dll", src=bindir, dst=os.path.join(self.package_folder, "bin"))
+        else:
+            for libdir in dxcompiler_cpp_info.libdirs:
+                copy(self, "libdxcompiler.so*", src=libdir,
+                     dst=os.path.join(self.package_folder, "lib"))
 
     def package_info(self):
         # Library component
