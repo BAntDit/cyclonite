@@ -46,4 +46,4 @@ target_link_libraries(${PROJECT_NAME} glm::glm)
 
 target_link_libraries(${PROJECT_NAME} SDL3::SDL3)
 
-target_link_libraries(${PROJECT_NAME} enttx::enttx)
+#target_link_libraries(${PROJECT_NAME} enttx::enttx)
