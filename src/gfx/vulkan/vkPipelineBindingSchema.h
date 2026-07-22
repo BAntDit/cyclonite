@@ -11,6 +11,7 @@
 #include "handle.h"
 #include <span>
 #include <vector>
+#include <array>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {

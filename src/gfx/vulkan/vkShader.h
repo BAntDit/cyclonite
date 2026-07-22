@@ -11,6 +11,7 @@
 #include "handle.h"
 #include <memory>
 #include <string>
+#include <array>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
@@ -18,7 +19,7 @@ class Shader : public core::ResourceBase
 {
     // the most common use case for specialization constant
     // is ability to specify local work group size in runtime
-    // so, 8 specialization entries is mpre then enough
+    // so, 8 specialization entries is more then enough
     static constexpr auto max_specialization_entry_count_v = size_t{ 8 };
 
     struct SpecializationEntry

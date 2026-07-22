@@ -6,6 +6,7 @@
 #define CYCLONITE_RESOURCES_RESOURCE_GROUP_MANAGER_BASE_H
 
 #include "event.h"
+#include <string_view>
 
 namespace cyclonite::resources {
 class ResourceGroupManagerBase

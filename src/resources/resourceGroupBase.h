@@ -9,6 +9,7 @@
 #include "managedResourceState.h"
 #include "resourceGroupManagerBase.h"
 #include <string>
+#include <string_view>
 
 namespace cyclonite::resources {
 class ResourceGroupBase
