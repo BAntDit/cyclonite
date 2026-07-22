@@ -2,6 +2,7 @@
 from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
 from conan.errors import ConanInvalidConfiguration
+from conan.tools.files import copy
 
 class CycloniteRecipe(ConanFile):
     name = "cyclonite"
@@ -32,7 +33,16 @@ class CycloniteRecipe(ConanFile):
 
     settings = "os", "compiler", "arch", "build_type"
 
-    export_sources = "CMakeLists.txt", "*.cmake", ".clang-format", ".md", "src/*", "tests/*", "examples/*", "cmake/*", "tools/*"
+    def export_sources(self):
+        copy(self, "CMakeLists.txt", src=self.recipe_folder, dst=self.export_sources_folder)
+        copy(self, "*.cmake", src=self.recipe_folder, dst=self.export_sources_folder)
+        copy(self, ".clang-format", src=self.recipe_folder, dst=self.export_sources_folder)
+        copy(self, "src/*", src=self.recipe_folder, dst=self.export_sources_folder)
+        copy(self, "tests/*", src=self.recipe_folder, dst=self.export_sources_folder)
+        copy(self, "examples/*", src=self.recipe_folder, dst=self.export_sources_folder)
+        copy(self, "cmake/*", src=self.recipe_folder, dst=self.export_sources_folder)
+        #copy(self, "tools/*", src=self.recipe_folder, dst=self.export_sources_folder, excludes=["*/.vs/*", "*/cmake-build-*/*", "*/build/*", "*/__pycache__/*"])
+        copy(self, "shared/*", src=self.recipe_folder, dst=self.export_sources_folder)
 
     def build_requirements(self):
         self.tool_requires("glslang/[~11.7]")
@@ -67,6 +77,11 @@ class CycloniteRecipe(ConanFile):
 
     def generate(self):
         deps = CMakeDeps(self)
+
+        if self.settings.os == "Windows":
+            deps.set_property("vulkan-memory-allocator", "cmake_file_name", "vulkan-memory-allocator")
+            deps.set_property("vulkan-memory-allocator", "cmake_target_name", "vulkan-memory-allocator::vulkan-memory-allocator")
+
         deps.generate()
         tc = CMakeToolchain(self)
 
