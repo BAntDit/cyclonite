@@ -3,6 +3,7 @@ from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
 from conan.errors import ConanInvalidConfiguration
 from conan.tools.files import copy
+import os
 
 class CycloniteRecipe(ConanFile):
     name = "cyclonite"
@@ -111,6 +112,11 @@ class CycloniteRecipe(ConanFile):
         else:
             raise ConanInvalidConfiguration("Unsupported graphics API.")
 
+
+        local_shared_dir = os.path.join(self.source_folder, "shared")
+        local_shared_dir = local_shared_dir.replace("\\", "/")
+
+        tc.variables["LOCAL_SHARED_HEADERS_DIR"] = local_shared_dir
 
         tc.variables["REQUIRED_CXX_STANDARD"] = "20"
         tc.generate()
