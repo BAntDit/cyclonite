@@ -63,7 +63,7 @@ TEST(RingRangeTest, ExpectedOffsetCalculation)
 
     {
         // Simple case - empty buffer
-        auto [offset, available] = ringRange.expectedOffset(5);
+        auto [offset, available] = ringRange.expectedRange(5);
         EXPECT_EQ(offset, 0);
         EXPECT_EQ(available, 10);
     }
@@ -71,7 +71,7 @@ TEST(RingRangeTest, ExpectedOffsetCalculation)
     // After reserving some space
     {
         ringRange.reserveRange(3);
-        auto [offset, available] = ringRange.expectedOffset(4);
+        auto [offset, available] = ringRange.expectedRange(4);
         EXPECT_EQ(offset, 3);
         EXPECT_EQ(available, 7);
     }
@@ -79,7 +79,7 @@ TEST(RingRangeTest, ExpectedOffsetCalculation)
     // Wrap-around case
     {
         ringRange.reserveRange(7); // Now at position 0 again
-        auto [offset, available] = ringRange.expectedOffset(3);
+        auto [offset, available] = ringRange.expectedRange(3);
         EXPECT_EQ(offset, cyclonite::core::RingRange<10>::invalid_offset_v);
         EXPECT_EQ(available, 0);
     }
@@ -98,14 +98,14 @@ TEST(RingRangeTest, ForceShiftToBegin)
 
     // Check expected offset without forcing
     {
-        auto [offset, available] = ringRange.expectedOffset(2);
+        auto [offset, available] = ringRange.expectedRange(2);
         EXPECT_EQ(offset, 0);
         EXPECT_EQ(available, 3);
     }
 
     // Check with forceShiftToBegin
     {
-        auto [offset, available] = ringRange.expectedOffset(1, true);
+        auto [offset, available] = ringRange.expectedRange(1, true);
         EXPECT_EQ(offset, 0);
         EXPECT_EQ(available, 3);
     }
@@ -186,7 +186,7 @@ TEST(RingRangeTest, MultipleReservePopCycles)
     EXPECT_EQ(ringRange.readableSize(), 5);
 
     // Check positions
-    auto [offset, size] = ringRange.expectedOffset(1);
+    auto [offset, size] = ringRange.expectedRange(1);
     EXPECT_EQ(offset, 0);
     EXPECT_EQ(size, 3);
 

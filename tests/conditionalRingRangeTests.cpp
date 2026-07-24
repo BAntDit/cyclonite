@@ -65,7 +65,7 @@ TEST(ConditionalRingRangeTest, MultipleReservePopCycles)
     EXPECT_EQ(ringRange.readableSize(), 8);
 
     // Check positions
-    auto [offset, size] = ringRange.expectedOffset(1);
+    auto [offset, size] = ringRange.expectedRange(1);
     EXPECT_EQ(offset, cyclonite::core::RingRange<8>::invalid_offset_v);
     EXPECT_EQ(size, 0);
 

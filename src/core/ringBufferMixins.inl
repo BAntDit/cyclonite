@@ -47,7 +47,7 @@ auto bytes_ring_range_t<Size, hasExternalBuffer, RingBufferType>::reserveToWrite
     auto size = sizeof(DataType) * count;
     auto viewOffset = RingRange<Size>::invalid_offset_v;
 
-    if (auto [offset, available] = RingRange<Size>::expectedOffset(size); offset != RingRange<Size>::invalid_offset_v) {
+    if (auto [offset, available] = RingRange<Size>::expectedRange(size); offset != RingRange<Size>::invalid_offset_v) {
         auto* basePtr = reinterpret_cast<void*>(rb->data() + offset);
         auto space = available;
         if (auto* alignedPtr = reinterpret_cast<std::byte*>(std::align(alignof(DataType), size, basePtr, space));
@@ -57,7 +57,7 @@ auto bytes_ring_range_t<Size, hasExternalBuffer, RingBufferType>::reserveToWrite
             viewOffset = offset + diff;
 
             ptr = reserveAlignedRange<DataType>(offset, count, diff, alignedPtr);
-        } else if (auto [offset2, available2] = RingRange<Size>::expectedOffset(size, true);
+        } else if (auto [offset2, available2] = RingRange<Size>::expectedRange(size, true);
                    offset2 != RingRange<Size>::invalid_offset_v) {
             basePtr = reinterpret_cast<void*>(rb->data() + offset2);
             space = available2;
@@ -229,7 +229,7 @@ auto conditional_bytes_ring_range_t<ConditionValueType, Size, hasExternalBuffer,
     auto size = sizeof(DataType) * count;
     auto viewOffset = RingRange<Size>::invalid_offset_v;
 
-    if (auto [offset, available] = RingRange<Size>::expectedOffset(size); offset != RingRange<Size>::invalid_offset_v) {
+    if (auto [offset, available] = RingRange<Size>::expectedRange(size); offset != RingRange<Size>::invalid_offset_v) {
         auto* basePtr = reinterpret_cast<void*>(rb->data() + offset);
         auto space = available;
         if (auto* alignedPtr = reinterpret_cast<std::byte*>(std::align(alignof(DataType), size, basePtr, space));
@@ -238,7 +238,7 @@ auto conditional_bytes_ring_range_t<ConditionValueType, Size, hasExternalBuffer,
             auto diff = available - space;
             viewOffset = offset + diff;
             ptr = reserveAlignedRange<DataType>(offset, count, diff, condition, alignedPtr);
-        } else if (auto [offset2, available2] = RingRange<Size>::expectedOffset(size, true);
+        } else if (auto [offset2, available2] = RingRange<Size>::expectedRange(size, true);
                    offset2 != RingRange<Size>::invalid_offset_v) {
             basePtr = reinterpret_cast<void*>(rb->data() + offset2);
             space = available2;
