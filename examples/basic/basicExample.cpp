@@ -8,6 +8,7 @@
 #include <boost/uuid/random_generator.hpp>
 #include <cassert>
 #include <iostream>
+#include <numbers>
 
 namespace examples {
 BasicExample::BasicExample()
