@@ -62,10 +62,7 @@ class ToolsShaderCompilerRecipe(ConanFile):
             self._fix_directx_headers_cmake()
 
         tc = CMakeToolchain(self)
-        if self.settings.compiler == "msvc":
-            tc.generator = "Visual Studio 17 2022"
-        else:
-            tc.generator = "Ninja"
+        tc.generator = "Ninja"
 
         shared_dir = os.path.join(self.recipe_folder, "..", "..", "shared")
         shared_dir = shared_dir.replace("\\", "/")

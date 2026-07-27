@@ -85,9 +85,7 @@ class CycloniteRecipe(ConanFile):
 
         deps.generate()
         tc = CMakeToolchain(self)
-
-        if self.settings.compiler != "msvc":
-            tc.generator = "Ninja"
+        tc.generator = "Ninja"
 
         if self.options.platform != "auto":
             if self.options.platform == "linux-x11":
