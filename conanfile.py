@@ -3,6 +3,7 @@ from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
 from conan.errors import ConanInvalidConfiguration
 from conan.tools.files import copy
+from conan.tools.env import VirtualRunEnv, VirtualBuildEnv
 import os
 
 class CycloniteRecipe(ConanFile):
@@ -84,6 +85,13 @@ class CycloniteRecipe(ConanFile):
             deps.set_property("vulkan-memory-allocator", "cmake_target_name", "vulkan-memory-allocator::vulkan-memory-allocator")
 
         deps.generate()
+
+        if self.settings.os == "Windows":
+            run_env = VirtualRunEnv(self)
+            run_env.generate()
+            build_env = VirtualBuildEnv(self)
+            build_env.generate()
+
         tc = CMakeToolchain(self)
         tc.generator = "Ninja"
 
