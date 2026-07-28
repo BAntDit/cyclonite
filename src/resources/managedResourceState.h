@@ -8,7 +8,7 @@
 #include <cstdint>
 
 namespace cyclonite::resources {
-enum class ManagedResourceState : uint_fast8_t
+enum class ManagedResourceState : uint8_t
 {
     Initial = 1,
     Loading = 2,
