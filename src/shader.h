@@ -32,11 +32,11 @@ public:
 
     using core::ResourceBase::resourceBase;
 
-private:
     void loadImpl(std::istream& stream);
 
     void prepareImpl();
 
+private:
     struct raw_data_t
     {
         std::vector<uint32_t> code;

@@ -39,11 +39,11 @@ public:
 
     [[nodiscard]] auto pipeline() const -> core::ResourceSharedRef { return pipeline_; }
 
+    void prepareImpl();
+
     using core::ResourceBase::resourceBase;
 
 private:
-    void prepareImpl();
-
     struct raw_data_t
     {
         shader_set_t shaderSet;
