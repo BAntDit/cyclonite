@@ -23,6 +23,7 @@
 #include <variant>
 
 namespace cyclonite::resources {
+// TODO:: rewrite concepts to be able test private methods
 template<typename T>
 concept is_loadable = requires(T t, std::istream& stream) {
     { t.loadImpl(stream) } -> std::same_as<void>;
@@ -187,7 +188,7 @@ template<typename Resource>
 auto ManagedResource<Resource>::loadInternal(loading_context_t&& loadingContext) -> std::shared_future<void>
 {
     auto expectedState = ManagedResourceState::Initial;
-    if (state_.compare_exchange_weak(
+    if (state_.compare_exchange_strong(
           expectedState, ManagedResourceState::Loading, std::memory_order_release, std::memory_order_relaxed)) {
         ownerGroup_->notifyResourceStateChange(ManagedResourceState::Loading, name_);
 
@@ -220,7 +221,7 @@ auto ManagedResource<Resource>::prepare() -> std::shared_future<void>
 {
     auto expectedState = is_loadable<Resource> ? ManagedResourceState::Loaded : ManagedResourceState::Initial;
 
-    if (state_.compare_exchange_weak(
+    if (state_.compare_exchange_strong(
           expectedState, ManagedResourceState::Preparing, std::memory_order_release, std::memory_order_relaxed)) {
         ownerGroup_->notifyResourceStateChange(ManagedResourceState::Preparing, name_);
 
@@ -259,7 +260,7 @@ void ManagedResource<Resource>::setState(ManagedResourceState state)
 {
     if (state == ManagedResourceState::Loaded) {
         auto expectedState = ManagedResourceState::Loading;
-        if (!state_.compare_exchange_weak(
+        if (!state_.compare_exchange_strong(
               expectedState, ManagedResourceState::Loaded, std::memory_order_release, std::memory_order_relaxed)) {
             throw std::logic_error("load state can be set from loading state only");
         }
@@ -269,7 +270,7 @@ void ManagedResource<Resource>::setState(ManagedResourceState state)
         ownerGroup_->notifyResourceStateChange(ManagedResourceState::GoingToBeRemoved, name_);
     } else if (state == ManagedResourceState::Ready) {
         auto expectedState = ManagedResourceState::Preparing;
-        if (!state_.compare_exchange_weak(
+        if (!state_.compare_exchange_strong(
               expectedState, ManagedResourceState::Loaded, std::memory_order_release, std::memory_order_relaxed)) {
             throw std::logic_error("load state can be set from loading state only");
         }
