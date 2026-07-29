@@ -3,8 +3,6 @@
 
 Cyclonite is a graphics engine I mostly use for my own experiments.
 
-![s1.png](./examples/gltf-viewer/screenshots/s1.png)
-
 ## Project installation
 
 1. build and install shader-compiler package first: <br />
