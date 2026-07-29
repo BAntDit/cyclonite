@@ -72,6 +72,12 @@ enum class DeviceVendor : uint32_t
 #ifdef TRANSPARENT
 #undef TRANSPARENT
 #endif
+#ifdef near
+#undef near
+#endif
+#ifdef far
+#undef far
+#endif
 #endif
 
 enum class SurfaceFlags : uint64_t

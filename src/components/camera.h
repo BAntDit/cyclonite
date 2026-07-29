@@ -13,11 +13,11 @@ struct Camera
 {
     struct PerspectiveProjection
     {
-        PerspectiveProjection(real aspectRatio, real fov, real near, real far)
+        PerspectiveProjection(real aspectRatio, real fov, real n, real f)
           : aspect{ aspectRatio }
           , yFov{ fov }
-          , zNear{ near }
-          , zFar{ far }
+          , zNear{ n }
+          , zFar{ f }
         {
         }
 
@@ -29,11 +29,11 @@ struct Camera
 
     struct OrthographicProjection
     {
-        OrthographicProjection(real xMagnification, real yMagnification, real near, real far)
+        OrthographicProjection(real xMagnification, real yMagnification, real n, real f)
           : xMag{ xMagnification }
           , yMag{ yMagnification }
-          , zNear{ near }
-          , zFar{ far }
+          , zNear{ n }
+          , zFar{ f }
         {
         }
 
