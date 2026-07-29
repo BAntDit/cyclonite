@@ -1,3 +1,16 @@
+## 0.7.0 (2026-07-29)
+
+### Fix
+
+- **resources**: fixes resource state test in case of spurious fails of weak comparision
+- **tools**: fixes shader-compiler installation on windows
+- fixes cyclonite package installation
+
+### Feat
+
+- windows platform support
+- **tools**: make possible to compile shader compiler for windows
+
 ## 0.6.0 (2026-07-17)
 
 ### Fix
