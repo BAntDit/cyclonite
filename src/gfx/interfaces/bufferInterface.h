@@ -17,6 +17,8 @@ concept BufferConcept = requires(T t) {
     { t.map() } -> std::same_as<void*>;
 
     { t.unmap() } -> std::same_as<void>;
+
+    { t.deviceAddress() } -> std::same_as<uint64_t>;
 };
 
 template<BufferConcept PlatformImplementation>
@@ -25,6 +27,7 @@ class BufferInterface : private PlatformImplementation
 public:
     friend class core::ResourceBase;
 
+    using PlatformImplementation::deviceAddress;
     using PlatformImplementation::map;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::resourceBase;

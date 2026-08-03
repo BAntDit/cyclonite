@@ -9,9 +9,9 @@
 #include "core/resourceSharedRef.h"
 #include "gfx/common.h"
 #include "handle.h"
+#include <array>
 #include <span>
 #include <vector>
-#include <array>
 
 #if defined(GFX_DRIVER_VULKAN)
 namespace cyclonite::gfx::vulkan {
