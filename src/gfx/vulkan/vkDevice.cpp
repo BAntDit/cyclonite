@@ -323,12 +323,23 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     }
 
     // ext features
-    auto indexingFeatures = VkPhysicalDeviceDescriptorIndexingFeatures{};
-    indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-
-    auto timelineSemaphoreFeatures = VkPhysicalDeviceTimelineSemaphoreFeatures{};
-    timelineSemaphoreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
-    timelineSemaphoreFeatures.pNext = &indexingFeatures;
+    auto vulkan12Features = VkPhysicalDeviceVulkan12Features{};
+    vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    vulkan12Features.timelineSemaphore = VK_TRUE;
+    vulkan12Features.descriptorIndexing = VK_TRUE;
+    vulkan12Features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    vulkan12Features.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+    vulkan12Features.shaderUniformBufferArrayNonUniformIndexing = VK_TRUE;
+    vulkan12Features.descriptorBindingUniformBufferUpdateAfterBind = VK_TRUE;
+    vulkan12Features.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
+    vulkan12Features.descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE;
+    vulkan12Features.descriptorBindingUpdateUnusedWhilePending = VK_TRUE;
+    vulkan12Features.descriptorBindingPartiallyBound = VK_TRUE;
+    vulkan12Features.runtimeDescriptorArray = VK_TRUE;
+    vulkan12Features.bufferDeviceAddress = VK_TRUE;
+#if !defined(NDEBUG)
+    vulkan12Features.bufferDeviceAddressCaptureReplay = VK_TRUE;
+#endif
 
     auto features2 = VkPhysicalDeviceFeatures2{};
     // turn off unused features (for now)
@@ -337,29 +348,32 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     features2.features.shaderInt64 = VK_FALSE;
     features2.features.inheritedQueries = VK_FALSE;
     features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    features2.pNext = &timelineSemaphoreFeatures;
+    features2.pNext = &vulkan12Features;
 
     vkGetPhysicalDeviceFeatures2(vkPhysicalDevice_, &features2);
-    if (!timelineSemaphoreFeatures.timelineSemaphore) {
-        throw std::runtime_error("select device does not support necessary feature: timeline semaphores");
+    if (!vulkan12Features.timelineSemaphore) {
+        throw std::runtime_error("selected device does not support necessary feature: timeline semaphores");
     }
-    if (!indexingFeatures.shaderSampledImageArrayNonUniformIndexing) {
+    if (!vulkan12Features.shaderSampledImageArrayNonUniformIndexing) {
         throw std::runtime_error("selected device does not support sampled image non-uniform indexing");
     }
-    if (!indexingFeatures.descriptorBindingSampledImageUpdateAfterBind) {
+    if (!vulkan12Features.descriptorBindingSampledImageUpdateAfterBind) {
         throw std::runtime_error("selected device does not support sampled image descriptors update after bind");
     }
-    if (!indexingFeatures.shaderUniformBufferArrayNonUniformIndexing) {
+    if (!vulkan12Features.shaderUniformBufferArrayNonUniformIndexing) {
         throw std::runtime_error("selected device does not support UBO array non-uniform indexing");
     }
-    if (!indexingFeatures.descriptorBindingUniformBufferUpdateAfterBind) {
+    if (!vulkan12Features.descriptorBindingUniformBufferUpdateAfterBind) {
         throw std::runtime_error("selected device does not support UBO descriptors update after bind");
     }
-    if (!indexingFeatures.shaderStorageBufferArrayNonUniformIndexing) {
+    if (!vulkan12Features.shaderStorageBufferArrayNonUniformIndexing) {
         throw std::runtime_error("selected device does not support SSBO array non-uniform indexing");
     }
-    if (!indexingFeatures.descriptorBindingStorageBufferUpdateAfterBind) {
-        throw std::runtime_error("seleced device does not support SSBO descriptors update after bind");
+    if (!vulkan12Features.descriptorBindingStorageBufferUpdateAfterBind) {
+        throw std::runtime_error("selected device does not support SSBO descriptors update after bind");
+    }
+    if (!vulkan12Features.bufferDeviceAddress) {
+        throw std::runtime_error("selected device does not support buffer device addresses");
     }
 
     auto deviceInfo = VkDeviceCreateInfo{};
@@ -390,11 +404,12 @@ Device::Device(core::ResourceManagerBase* resourceManager,
     }
 
     auto allocatorCreateInfo = VmaAllocatorCreateInfo{};
-    allocatorCreateInfo.flags = VMA_ALLOCATOR_CREATE_EXTERNALLY_SYNCHRONIZED_BIT;
+    allocatorCreateInfo.flags =
+      VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT | VMA_ALLOCATOR_CREATE_EXTERNALLY_SYNCHRONIZED_BIT;
     allocatorCreateInfo.physicalDevice = vkPhysicalDevice_;
     allocatorCreateInfo.device = static_cast<VkDevice>(vkDevice_);
     allocatorCreateInfo.instance = vkInstance;
-    allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_0;
+    allocatorCreateInfo.vulkanApiVersion = VK_API_VERSION_1_3;
 
     if (auto vkResult = vmaCreateAllocator(&allocatorCreateInfo, &vmaAllocator_); vkResult != VK_SUCCESS) {
         throw Exception{ vkResult, "vmaCreateAllocator" };

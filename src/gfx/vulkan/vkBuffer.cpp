@@ -19,6 +19,7 @@ Buffer::Buffer(core::ResourceManagerBase* resourceManager,
   , deviceRef_{ std::move(deviceRef) }
   , allocation_{ VK_NULL_HANDLE }
   , vkBuffer_{ VK_NULL_HANDLE }
+  , deviceAddress_{}
   , usageFlags_{ usageFlags }
   , allocationFlags_{ allocationFlags }
   , owningQueueFamilyIndex_{ std::numeric_limits<uint32_t>::max() }
@@ -41,6 +42,14 @@ Buffer::Buffer(core::ResourceManagerBase* resourceManager,
           vmaCreateBuffer(allocator, &bufferCreateInfo, &allocationCreateInfo, &vkBuffer_, &allocation_, nullptr);
         vkResult != VK_SUCCESS) {
         throw Exception{ vkResult, "vkCreateBuffer" };
+    }
+
+    if (usageFlags_.test(BufferUsageFlags::SHADER_DEVICE_ADDRESS)) {
+        auto deviceAddressInfo = VkBufferDeviceAddressInfo{};
+        deviceAddressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+        deviceAddressInfo.buffer = static_cast<VkBuffer>(vkBuffer_);
+
+        deviceAddress_ = vkGetBufferDeviceAddress(device.handle(), &deviceAddressInfo);
     }
 }
 

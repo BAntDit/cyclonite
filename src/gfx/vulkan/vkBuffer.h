@@ -27,6 +27,8 @@ public:
 
     [[nodiscard]] auto handle() const -> VkBuffer { return vkBuffer_; }
 
+    [[nodiscard]] auto deviceAddress() const -> uint64_t { return static_cast<uint64_t>(deviceAddress_); }
+
     [[nodiscard]] auto usage() const -> BufferUsageFlagBits { return usageFlags_; }
 
     [[nodiscard]] auto owningQueueFamilyIndex() const -> uint32_t { return owningQueueFamilyIndex_; }
@@ -41,6 +43,7 @@ private:
     core::ResourceSharedRef deviceRef_;
     VmaAllocation allocation_;
     VkBuffer vkBuffer_;
+    VkDeviceAddress deviceAddress_;
     BufferUsageFlagBits usageFlags_;
     GpuMemoryAllocationFlagBits allocationFlags_;
     uint32_t owningQueueFamilyIndex_;
