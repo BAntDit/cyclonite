@@ -59,7 +59,7 @@ void SubmissionBatchRecorder::addBatchDependency(size_t dependencyIndex, Pipelin
       [submissionRef = queueSubmissionRecorder_->submissionRef_, dependencyIndex, stageMask]() mutable -> void {
         auto& submission = submissionRef.as<gfx::QueueSubmission>();
         if (!submission.isInBatchRecordingState()) {
-            throw std::runtime_error("batch recording is already finished");
+            throw std::runtime_error("batch is not in recording state");
         }
 
         submission.addBatchDependency(dependencyIndex, stageMask);
@@ -85,7 +85,7 @@ void SubmissionBatchRecorder::addBatchDependency(gfx::SubmissionBatchDependency 
     auto task = [submissionRef = queueSubmissionRecorder_->submissionRef_, dep = externalDependency]() mutable -> void {
         auto& submission = submissionRef.as<gfx::QueueSubmission>();
         if (!submission.isInBatchRecordingState()) {
-            throw std::runtime_error("batch recording is already finished");
+            throw std::runtime_error("batch is not in recording state");
         }
         submission.addBatchDependency(dep);
     };
