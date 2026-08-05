@@ -7,6 +7,7 @@
 
 #include "entity.h"
 #include "enttx/configTraits.h"
+#include "componentStorage.h"
 #include <metrix/type_list.h>
 #include <metrix/type_traits.h>
 #include <tuple>
@@ -36,7 +37,7 @@ struct component_storage_pair
 
     using storage_t = std::conditional_t<metrix::is_specialization_of_v<Component, metrix::type_pair>,
                                          typename component_storage_pair_decompose<Component>::storage_t,
-                                         void>;
+                                         ComponentStorage<32, 4, component_t>>;
 };
 
 template<typename... Components>
