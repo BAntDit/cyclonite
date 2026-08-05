@@ -12,8 +12,7 @@
 #undef max
 #endif
 
-namespace cyclonite::enttx
-{
+namespace cyclonite::enttx {
 class Entity
 {
 public:
@@ -47,4 +46,4 @@ private:
 };
 }
 
-#endif //CYCLONITE_ENTITY_H
+#endif // CYCLONITE_ENTITY_H

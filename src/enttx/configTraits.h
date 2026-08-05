@@ -6,14 +6,12 @@
 #define CYCLONITE_ENTTX_CONFIG_TRAITS_H
 
 #include "core/configTraitMacro.h"
+#include <components/camera.h>
 #include <cstdint>
 #include <metrix/type_list.h>
-#include <components/camera.h>
 
-namespace cyclonite::enttx
-{
-namespace internal
-{
+namespace cyclonite::enttx {
+namespace internal {
 template<typename T>
 struct config_traits_declaration
 {
@@ -31,4 +29,4 @@ struct ConfigTraits
 }
 }
 
-#endif //CYCLONITE_ENTTX_CONFIG_TRAITS_H
+#endif // CYCLONITE_ENTTX_CONFIG_TRAITS_H
