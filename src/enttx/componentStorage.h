@@ -8,6 +8,7 @@
 #include "componentStorageConcept.h"
 #include <cassert>
 #include <limits>
+#include <memory>
 #include <vector>
 
 #if defined(max)
@@ -45,6 +46,10 @@ public:
     [[nodiscard]] auto begin() -> std::vector<ComponentType>::iterator { return storage_.begin(); }
 
     [[nodiscard]] auto end() -> std::vector<ComponentType>::iterator { return storage_.end(); }
+
+    [[nodiscard]] auto getFirstEntityIndex() const -> uint32_t;
+
+    [[nodiscard]] auto getNextEntityIndex(uint32_t current) const -> uint32_t;
 
 private:
     void resizeIndicesIfNecessary(uint32_t index);
@@ -214,6 +219,33 @@ void ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::reserveSt
 
         storage_.reserve(capacity);
     }
+}
+
+template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT, ComponentConcept ComponentType>
+auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::getNextEntityIndex(uint32_t current) const
+  -> uint32_t
+{
+    auto index = std::numeric_limits<uint32_t>::max();
+    for (auto i = ++current; i <= indexToMaxValidComponentIndex_; i++) {
+        if (indices_[i] != std::numeric_limits<uint32_t>::max()) {
+            index = i;
+            break;
+        }
+    }
+    return index;
+}
+
+template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT, ComponentConcept ComponentType>
+auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::getFirstEntityIndex() const -> uint32_t
+{
+    auto index = std::numeric_limits<uint32_t>::max();
+    for (auto i = uint32_t{ 0 }; i <= indexToMaxValidComponentIndex_; i++) {
+        if (indices_[i] != std::numeric_limits<uint32_t>::max()) {
+            index = i;
+            break;
+        }
+    }
+    return index;
 }
 }
 

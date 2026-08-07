@@ -5,9 +5,11 @@
 #ifndef CYCLONITE_ENTTX_COMPONENT_STORAGE_CONCEPT_H
 #define CYCLONITE_ENTTX_COMPONENT_STORAGE_CONCEPT_H
 
+#include "entityIndexList.h"
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <utility>
 
 namespace cyclonite::enttx {
@@ -52,6 +54,10 @@ concept ComponentStorageConcept = requires(T& t, T const& ct, uint32_t index) {
     { t.end() } -> std::same_as<typename T::storage_type::iterator>;
 
     { ct.end() } -> std::same_as<typename T::storage_type::const_iterator>;
+
+    { ct.getFirstEntityIndex() } -> std::same_as<uint32_t>;
+
+    { ct.getNextEntityIndex(index) } -> std::same_as<uint32_t>;
 };
 }
 

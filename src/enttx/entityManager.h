@@ -82,6 +82,9 @@ public:
     using meta_t = Meta<config_t>;
 
     using component_list_t = typename config_t::component_list_t;
+    using component_mask_t = typename config_t::component_mask_t;
+
+    using storage_tuple_t = typename meta_t::storage_tuple_t;
 
     template<typename C, typename R = void>
     using enable_if_component = std::enable_if_t<component_list_t::template has_type<C>::value, R>;
@@ -137,12 +140,63 @@ public:
     template<typename... Cs>
     auto hasComponents(Entity entity) const -> enable_if_components<std::bitset<sizeof...(Cs)>, Cs...>;
 
+    template<bool isConst, typename... FilterComponents>
+    class View
+    {
+    private:
+        using entity_manager_t =
+          typename std::conditional_t<isConst, EntityManager<Config> const&, EntityManager<Config>&>;
+
+    public:
+        using filter_component_list_t = metrix::type_list<FilterComponents...>;
+
+        class Iterator
+        {
+        public:
+            using iterator_category = std::input_iterator_tag;
+            using value_type = std::tuple<Entity, FilterComponents&...>;
+            using difference_type = uint32_t;
+            using pointer = value_type*;
+            using reference = value_type&;
+
+            auto operator++() -> Iterator&;
+
+            auto operator==(Iterator const& rhs) const -> bool { return cursor_ == rhs.cursor_; }
+            auto operator!=(Iterator const& rhs) const -> bool { return cursor_ != rhs.cursor_; }
+
+            auto operator*() const -> std::tuple<Entity, FilterComponents&...>;
+
+        private:
+            friend class View<isConst, FilterComponents...>;
+
+            Iterator(entity_manager_t entityManager, component_mask_t filter, uint32_t cursor)
+              : cursor_{ cursor }
+              , capacity_{ entityManager.capacity() }
+              , filter_{ filter }
+              , entityManager_{ entityManager }
+            {
+            }
+
+            void next();
+
+            uint32_t cursor_;
+            size_t capacity_;
+
+            component_mask_t filter_;
+
+            entity_manager_t entityManager_;
+        };
+
+    private:
+        friend class EntityManager<Config>;
+
+        entity_manager_t entityManager_;
+        component_mask_t filter_;
+    };
+
 private:
     template<typename Component>
     auto removeComponent(Entity entity) -> enable_if_component<Component>;
-
-    using storage_tuple_t = typename meta_t::storage_tuple_t;
-    using component_mask_t = typename meta_t::component_mask_t;
 
     std::vector<uint32_t> versions_;
     std::vector<uint32_t> freeIndices_;
