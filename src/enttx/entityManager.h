@@ -86,6 +86,9 @@ public:
     template<typename C, typename R = void>
     using enable_if_component = std::enable_if_t<component_list_t::template has_type<C>::value, R>;
 
+    template<typename R, typename... Cs>
+    using enable_if_components = std::enable_if_t<(... && component_list_t::template has_type<Cs>::value), R>;
+
     explicit EntityManager(size_t initialCapacity = 10000);
 
     [[nodiscard]] auto size() const -> size_t { return versions_.size() - freeIndices_.size(); }
@@ -115,6 +118,24 @@ public:
 
     template<typename Component>
     auto getComponent(Entity entity) -> enable_if_component<Component, Component&>;
+
+    template<typename Component>
+    auto tryGetComponent(Entity entity) const -> enable_if_component<Component, Component const*>;
+
+    template<typename Component>
+    auto tryGetComponent(Entity entity) -> enable_if_component<Component, Component*>;
+
+    template<typename... Cs>
+    auto tryGetComponents(Entity entity) const -> enable_if_components<std::tuple<Cs const*...>, Cs...>;
+
+    template<typename... Cs>
+    auto tryGetComponents(Entity entity) -> enable_if_components<std::tuple<Cs*...>, Cs...>;
+
+    template<typename Component>
+    auto hasComponent(Entity entity) const -> enable_if_component<Component, bool>;
+
+    template<typename... Cs>
+    auto hasComponents(Entity entity) const -> enable_if_components<std::bitset<sizeof...(Cs)>, Cs...>;
 
 private:
     template<typename Component>
@@ -272,6 +293,58 @@ template<typename Component>
 auto EntityManager<Config>::getComponent(Entity entity) -> enable_if_component<Component, Component&>
 {
     return const_cast<Component&>(std::as_const(*this).template getComponent<Component>(entity));
+}
+
+template<typename Config>
+template<typename Component>
+auto EntityManager<Config>::tryGetComponent(Entity entity) const -> enable_if_component<Component, Component const*>
+{
+    assert(isValid(entity));
+    return masks_[entity.index()].test(component_list_t::template get_type_index<Component>::value)
+             ? &getComponent<Component>(entity)
+             : nullptr;
+}
+
+template<typename Config>
+template<typename Component>
+auto EntityManager<Config>::tryGetComponent(Entity entity) -> enable_if_component<Component, Component*>
+{
+    return const_cast<Component*>(std::as_const(*this).template tryGetComponent<Component>(entity));
+}
+
+template<typename Config>
+template<typename... Cs>
+auto EntityManager<Config>::tryGetComponents(Entity entity) const
+  -> enable_if_components<std::tuple<Cs const*...>, Cs...>
+{
+    return std::tuple<Cs const*...>(tryGetComponent<Cs>(entity)...);
+}
+
+template<typename Config>
+template<typename... Cs>
+auto EntityManager<Config>::tryGetComponents(Entity entity) -> enable_if_components<std::tuple<Cs*...>, Cs...>
+{
+    return std::tuple<Cs*...>(tryGetComponent<Cs>(entity)...);
+}
+
+template<typename Config>
+template<typename Component>
+auto EntityManager<Config>::hasComponent(Entity entity) const -> enable_if_component<Component, bool>
+{
+    assert(isValid(entity));
+    return masks_[entity.index()].test(component_list_t::template get_type_index<Component>::value);
+}
+
+template<typename Config>
+template<typename... Cs>
+auto EntityManager<Config>::hasComponents(Entity entity) const
+  -> enable_if_components<std::bitset<sizeof...(Cs)>, Cs...>
+{
+    auto result = std::bitset<sizeof...(Cs)>{};
+
+    (result.set(hasComponent<Cs>(entity)), ...);
+
+    return result;
 }
 }
 
