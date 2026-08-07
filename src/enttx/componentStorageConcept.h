@@ -11,11 +11,9 @@
 #include <utility>
 
 namespace cyclonite::enttx {
-namespace internal
-{
+namespace internal {
 template<typename T>
-concept has_iterator_traits = requires(T)
-{
+concept has_iterator_traits = requires(T) {
     typename T::iterator;
 
     typename T::const_iterator;
