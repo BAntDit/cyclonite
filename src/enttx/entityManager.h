@@ -169,9 +169,9 @@ public:
         private:
             friend class View<isConst, FilterComponents...>;
 
-            Iterator(entity_manager_t entityManager, component_mask_t filter, uint32_t cursor)
+            Iterator(entity_manager_t entityManager, component_mask_t filter, uint32_t cursor, uint32_t endIndex)
               : cursor_{ cursor }
-              , capacity_{ entityManager.capacity() }
+              , endIndex_{ endIndex }
               , filter_{ filter }
               , entityManager_{ entityManager }
             {
@@ -180,12 +180,14 @@ public:
             void next();
 
             uint32_t cursor_;
-            size_t capacity_;
-
+            uint32_t endIndex_;
             component_mask_t filter_;
-
             entity_manager_t entityManager_;
         };
+
+        auto begin() const -> Iterator;
+
+        auto end() const -> Iterator;
 
     private:
         friend class EntityManager<Config>;
@@ -399,6 +401,44 @@ auto EntityManager<Config>::hasComponents(Entity entity) const
     (result.set(hasComponent<Cs>(entity)), ...);
 
     return result;
+}
+
+template<typename Config>
+template<bool isConst, typename... FilterComponents>
+auto EntityManager<Config>::View<isConst, FilterComponents...>::Iterator::operator++()
+  -> EntityManager<Config>::View<isConst, FilterComponents...>::Iterator&
+{
+    cursor_++;
+    next();
+    return *this;
+}
+
+template<typename Config>
+template<bool isConst, typename... FilterComponents>
+auto EntityManager<Config>::View<isConst, FilterComponents...>::Iterator::operator*() const
+  -> std::tuple<Entity, FilterComponents&...>
+{
+    auto entity = Entity{ cursor_, entityManager_.versions_[cursor_] };
+
+    [[maybe_unused]] auto components = entityManager_.template tryGetComponents<FilterComponents...>(entity);
+
+    return std::tie(entity, (*std::get<FilterComponents*>(components))...);
+}
+
+template<typename Config>
+template<bool isConst, typename... FilterComponents>
+void EntityManager<Config>::View<isConst, FilterComponents...>::Iterator::next()
+{
+    if constexpr (sizeof...(FilterComponents) != 0) {
+        while (cursor_ < endIndex_ && (entityManager_.masks_[cursor_] & filter_) != filter_) {
+            cursor_++;
+        }
+    }
+    if constexpr (sizeof...(FilterComponents) != 0) {
+        while (cursor_ < endIndex_ && entityManager_.masks_[cursor_].none()) {
+            cursor_++;
+        }
+    }
 }
 }
 

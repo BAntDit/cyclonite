@@ -14,6 +14,9 @@
 #if defined(max)
 #undef max
 #endif
+#if defined(min)
+#undef min
+#endif
 
 namespace cyclonite::enttx {
 template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT, ComponentConcept ComponentType>
@@ -59,6 +62,7 @@ private:
     std::vector<uint32_t> indices_;
     std::vector<component_type> storage_;
     uint32_t indexToMaxValidComponentIndex_;
+    uint32_t indexToMinValidComponentIndex_;
 };
 // quick test:
 static_assert(ComponentStorageConcept<ComponentStorage<1, 1, uint32_t>>);
@@ -68,6 +72,7 @@ ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::ComponentStora
   : indices_(CHUNK_SIZE * INITIAL_CHUNK_COUNT, std::numeric_limits<uint32_t>::max())
   , storage_{}
   , indexToMaxValidComponentIndex_{ std::numeric_limits<uint32_t>::max() }
+  , indexToMinValidComponentIndex_{ std::numeric_limits<uint32_t>::max() }
 {
     storage_.reserve(CHUNK_SIZE * INITIAL_CHUNK_COUNT);
 }
@@ -154,6 +159,7 @@ auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::create(ui
         it = storage_.emplace(std::next(storage_.cbegin(), componentIdx), std::forward<Args>(args)...);
     }
 
+    indexToMinValidComponentIndex_ = std::min(indexToMinValidComponentIndex_, index);
     assert(it != storage_.end());
 
     return *it;
@@ -163,6 +169,7 @@ template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT, ComponentConcept Compone
 void ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::destroy(uint32_t index)
 {
     assert(index <= indexToMaxValidComponentIndex_);
+    assert(index >= indexToMinValidComponentIndex_);
     assert(indices_[index] != std::numeric_limits<uint32_t>::max());
 
     auto componentIdx = indices_[index];
@@ -193,6 +200,17 @@ void ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::destroy(u
         }
 
         indexToMaxValidComponentIndex_ = validIndex;
+    }
+    if (index == indexToMinValidComponentIndex_) {
+        uint32_t validIndex = std::numeric_limits<uint32_t>::max();
+        for (uint32_t i = indexToMinValidComponentIndex_; i < indexToMaxValidComponentIndex_; i++) {
+            if (indices_[i] != std::numeric_limits<uint32_t>::max()) {
+                validIndex = i;
+                break;
+            }
+        }
+
+        indexToMinValidComponentIndex_ = validIndex;
     }
 }
 
@@ -238,14 +256,7 @@ auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::getNextEn
 template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT, ComponentConcept ComponentType>
 auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::getFirstEntityIndex() const -> uint32_t
 {
-    auto index = std::numeric_limits<uint32_t>::max();
-    for (auto i = uint32_t{ 0 }; i <= indexToMaxValidComponentIndex_; i++) {
-        if (indices_[i] != std::numeric_limits<uint32_t>::max()) {
-            index = i;
-            break;
-        }
-    }
-    return index;
+    return indexToMinValidComponentIndex_;
 }
 }
 
