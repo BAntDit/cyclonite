@@ -117,28 +117,28 @@ public:
     auto assign(Entity entity, Args&&... args) -> enable_if_component<Component, Component&>;
 
     template<typename Component>
-    auto getComponent(Entity entity) const -> enable_if_component<Component, Component const&>;
+    [[nodiscard]] auto getComponent(Entity entity) const -> enable_if_component<Component, Component const&>;
 
     template<typename Component>
-    auto getComponent(Entity entity) -> enable_if_component<Component, Component&>;
+    [[nodiscard]] auto getComponent(Entity entity) -> enable_if_component<Component, Component&>;
 
     template<typename Component>
-    auto tryGetComponent(Entity entity) const -> enable_if_component<Component, Component const*>;
+    [[nodiscard]] auto tryGetComponent(Entity entity) const -> enable_if_component<Component, Component const*>;
 
     template<typename Component>
-    auto tryGetComponent(Entity entity) -> enable_if_component<Component, Component*>;
+    [[nodiscard]] auto tryGetComponent(Entity entity) -> enable_if_component<Component, Component*>;
 
     template<typename... Cs>
-    auto tryGetComponents(Entity entity) const -> enable_if_components<std::tuple<Cs const*...>, Cs...>;
+    [[nodiscard]] auto tryGetComponents(Entity entity) const -> enable_if_components<std::tuple<Cs const*...>, Cs...>;
 
     template<typename... Cs>
-    auto tryGetComponents(Entity entity) -> enable_if_components<std::tuple<Cs*...>, Cs...>;
+    [[nodiscard]] auto tryGetComponents(Entity entity) -> enable_if_components<std::tuple<Cs*...>, Cs...>;
 
     template<typename Component>
-    auto hasComponent(Entity entity) const -> enable_if_component<Component, bool>;
+    [[nodiscard]] auto hasComponent(Entity entity) const -> enable_if_component<Component, bool>;
 
     template<typename... Cs>
-    auto hasComponents(Entity entity) const -> enable_if_components<std::bitset<sizeof...(Cs)>, Cs...>;
+    [[nodiscard]] auto hasComponents(Entity entity) const -> enable_if_components<std::bitset<sizeof...(Cs)>, Cs...>;
 
     template<bool isConst, typename... FilterComponents>
     class View
@@ -185,16 +185,28 @@ public:
             entity_manager_t entityManager_;
         };
 
-        auto begin() const -> Iterator;
+        [[nodiscard]] auto begin() const -> Iterator;
 
-        auto end() const -> Iterator;
+        [[nodiscard]] auto end() const -> Iterator;
 
     private:
         friend class EntityManager<Config>;
 
+        explicit View(entity_manager_t entityManager);
+
+        template<ComponentStorageConcept StorageType>
+        auto getIteratorIndices(StorageType& storage, size_t entityCount, uint32_t& firstIndex, uint32_t& lastIndex)
+          -> size_t;
+
         entity_manager_t entityManager_;
         component_mask_t filter_;
     };
+
+    template<typename... FilterComponents>
+    auto getView() const -> typename EntityManager<Config>::template View<true, FilterComponents...>;
+
+    template<typename... FilterComponents>
+    auto getView() -> typename EntityManager<Config>::template View<false, FilterComponents...>;
 
 private:
     template<typename Component>
@@ -439,6 +451,91 @@ void EntityManager<Config>::View<isConst, FilterComponents...>::Iterator::next()
             cursor_++;
         }
     }
+}
+
+template<typename Config>
+template<bool isConst, typename... FilterComponents>
+template<ComponentStorageConcept StorageType>
+auto EntityManager<Config>::View<isConst, FilterComponents...>::getIteratorIndices(StorageType& storage,
+                                                                                   size_t entityCount,
+                                                                                   uint32_t& firstIndex,
+                                                                                   uint32_t& lastIndex) -> size_t
+{
+    if (storage.size() > entityCount) {
+        entityCount = storage.size();
+        firstIndex = storage.getFirstEntityIndex();
+        lastIndex = storage.getLastEntityIndex();
+    }
+
+    return entityCount;
+}
+
+template<typename Config>
+template<bool isConst, typename... FilterComponents>
+EntityManager<Config>::View<isConst, FilterComponents...>::View(entity_manager_t entityManager)
+  : entityManager_{ entityManager }
+  , filter_{}
+{
+    static_assert(std::is_same_v<typename metrix::inner_join<component_list_t, filter_component_list_t>::type,
+                                 filter_component_list_t>);
+
+    (filter_.set(component_list_t::template get_type_index<FilterComponents>::value), ...);
+}
+
+template<typename Config>
+template<bool isConst, typename... FilterComponents>
+auto EntityManager<Config>::View<isConst, FilterComponents...>::begin() const -> Iterator
+{
+    auto entityCount = size_t{ 0 };
+    auto firstIndex = uint32_t{ 0 };
+    auto lastIndex = uint32_t{ 0 };
+
+    ((entityCount = getIteratorIndices(
+        std::get<EntityManager<Config>::component_list_t::template get_type_index<FilterComponents>::value>(
+          entityManager_.storage_),
+        entityCount,
+        firstIndex,
+        lastIndex)),
+     ...);
+
+    auto iterator = Iterator{ entityManager_, filter_, firstIndex, lastIndex };
+
+    iterator.next();
+
+    return iterator;
+}
+
+template<typename Config>
+template<bool isConst, typename... FilterComponents>
+auto EntityManager<Config>::View<isConst, FilterComponents...>::end() const -> Iterator
+{
+    auto entityCount = size_t{ 0 };
+    auto firstIndex = uint32_t{ 0 };
+    auto lastIndex = uint32_t{ 0 };
+
+    ((entityCount = getIteratorIndices(
+        std::get<EntityManager<Config>::component_list_t::template get_type_index<FilterComponents>::value>(
+          entityManager_.storage_),
+        entityCount,
+        firstIndex,
+        lastIndex)),
+     ...);
+
+    return Iterator{ entityManager_, filter_, lastIndex, lastIndex };
+}
+
+template<typename Config>
+template<typename... FilterComponents>
+auto EntityManager<Config>::getView() const -> typename EntityManager<Config>::template View<true, FilterComponents...>
+{
+    return View<true, FilterComponents...>{ *this };
+}
+
+template<typename Config>
+template<typename... FilterComponents>
+auto EntityManager<Config>::getView() -> typename EntityManager<Config>::template View<false, FilterComponents...>
+{
+    return View<false, FilterComponents...>{ *this };
 }
 }
 

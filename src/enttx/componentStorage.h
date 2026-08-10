@@ -50,7 +50,9 @@ public:
 
     [[nodiscard]] auto end() -> std::vector<ComponentType>::iterator { return storage_.end(); }
 
-    [[nodiscard]] auto getFirstEntityIndex() const -> uint32_t;
+    [[nodiscard]] auto getFirstEntityIndex() const -> uint32_t { return indexToMinValidComponentIndex_; }
+
+    [[nodiscard]] auto getLastEntityIndex() const -> uint32_t;
 
     [[nodiscard]] auto getNextEntityIndex(uint32_t current) const -> uint32_t;
 
@@ -254,9 +256,13 @@ auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::getNextEn
 }
 
 template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT, ComponentConcept ComponentType>
-auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::getFirstEntityIndex() const -> uint32_t
+auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::getLastEntityIndex() const -> uint32_t
 {
-    return indexToMinValidComponentIndex_;
+    auto index = indexToMaxValidComponentIndex_;
+    if (index < std::numeric_limits<uint32_t>::max()) {
+        index++; // next after max valid
+    }
+    return index;
 }
 }
 

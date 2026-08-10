@@ -57,6 +57,8 @@ concept ComponentStorageConcept = requires(T& t, T const& ct, uint32_t index) {
 
     { ct.getFirstEntityIndex() } -> std::same_as<uint32_t>;
 
+    { ct.getLastEntityIndex() } -> std::same_as<uint32_t>;
+
     { ct.getNextEntityIndex(index) } -> std::same_as<uint32_t>;
 };
 }
