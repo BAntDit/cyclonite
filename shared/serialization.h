@@ -19,7 +19,7 @@ template<BinaryWriterConcept W, typename T>
     requires std::is_arithmetic_v<T> || std::is_enum_v<T>
 void writePrimitive(W& writer, T value)
 {
-    T converted = toEndian(value, writer.endianness());
+    auto converted = toEndian(value, writer.endianness());
     writer.writeBytes(&converted, sizeof(T));
 }
 
@@ -27,7 +27,7 @@ template<BinaryReaderConcept R, typename T>
     requires std::is_arithmetic_v<T> || std::is_enum_v<T>
 auto readPrimitive(R& reader, T& value) -> void
 {
-    T raw{};
+    auto raw = T{};
     reader.readBytes(&raw, sizeof(T));
     value = fromEndian(raw, reader.endianness());
 }
