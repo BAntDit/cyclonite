@@ -9,6 +9,8 @@
 #include <ranges>
 #include <tuple>
 #include <type_traits>
+#include <string>
+#include <string_view>
 #if !defined(_WIN32)
 #include <unistd.h>
 #endif
