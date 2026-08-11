@@ -5,405 +5,338 @@
 #ifndef CYCLONITE_SHARED_SERIALIZATION_H
 #define CYCLONITE_SHARED_SERIALIZATION_H
 
-#include <array>
-#include <concepts>
-#include <cstddef>
-#include <cstdint>
-#include <metrix/containers.h>
-#include <metrix/type_traits.h>
+#include "serializationCommon.h"
+#include <ranges>
 #include <tuple>
 #include <type_traits>
 #if !defined(_WIN32)
 #include <unistd.h>
 #endif
-#include <vector>
 
 namespace cyclonite::shared {
 namespace internal {
-template<typename StreamWriter>
-struct stream_writer_type_wrap_t
-{};
-
-template<typename... Accessors>
-struct first_accessor_class_type;
-
-template<typename First, typename... Rest>
-struct first_accessor_class_type<First, Rest...>
+template<BinaryWriterConcept W, typename T>
+    requires std::is_arithmetic_v<T> || std::is_enum_v<T>
+void writePrimitive(W& writer, T value)
 {
-    using type = First;
-};
+    T converted = toEndian(value, writer.endianness());
+    writer.writeBytes(&converted, sizeof(T));
+}
 
-template<typename... Accessors>
-using first_accessor_class_type_t = typename first_accessor_class_type<Accessors...>::type;
+template<BinaryReaderConcept R, typename T>
+    requires std::is_arithmetic_v<T> || std::is_enum_v<T>
+auto readPrimitive(R& reader, T& value) -> void
+{
+    T raw{};
+    reader.readBytes(&raw, sizeof(T));
+    value = fromEndian(raw, reader.endianness());
+}
 
-template<auto... Values>
-struct value_list
+using serialized_container_length_type_t = uint32_t;
+
+template<typename T>
+struct is_stringlike : std::false_type
 {};
 
-template<typename ArgumentsList>
-struct decayed_args_tuple;
+template<>
+struct is_stringlike<std::string> : std::true_type
+{};
+
+template<>
+struct is_stringlike<std::string_view> : std::true_type
+{};
+
+template<typename T>
+inline constexpr bool is_stringlike_v = is_stringlike<std::decay_t<T>>::value;
+}
+
+template<BinaryWriterConcept W, typename T>
+void serializeValue(W& writer, T const& value);
+
+template<BinaryReaderConcept R, typename T>
+void deserializeValue(R& reader, T& value);
+
+template<BinaryWriterConcept W, typename T>
+void serializeValue(W& writer, T const& value)
+{
+    using decayed_t = std::decay_t<T>;
+
+    if constexpr (internal::is_stringlike_v<decayed_t>) {
+        auto length = static_cast<internal::serialized_container_length_type_t>(value.size());
+        internal::writePrimitive(writer, length);
+
+        if (length > 0)
+            writer.writeBytes(value.data(), length);
+    } else if constexpr (std::ranges::contiguous_range<decayed_t>) {
+        auto length = static_cast<internal::serialized_container_length_type_t>(value.size());
+        internal::writePrimitive(writer, length);
+
+        for (auto const& element : value)
+            serializeValue(writer, element);
+    } else if constexpr (std::is_arithmetic_v<decayed_t> || std::is_enum_v<decayed_t>) {
+        internal::writePrimitive(writer, value);
+    } else {
+        static_assert(!sizeof(T), "serializeValue: unsupported value type - add an overload / trait specialization");
+    }
+}
+
+template<BinaryReaderConcept R, typename T>
+auto deserializeValue(R& reader, T& value) -> void
+{
+    using decayed_t = std::decay_t<T>;
+
+    if constexpr (std::is_same_v<decayed_t, std::string>) {
+        auto length = internal::serialized_container_length_type_t{};
+        internal::readPrimitive(reader, length);
+        value.resize(length);
+
+        if (length > 0)
+            reader.readBytes(value.data(), length);
+    } else if constexpr (std::ranges::contiguous_range<decayed_t>) {
+        auto length = internal::serialized_container_length_type_t{};
+        internal::readPrimitive(reader, length);
+        value.resize(length);
+
+        for (auto& element : value)
+            deserializeValue(reader, element);
+    } else if constexpr (std::is_arithmetic_v<decayed_t> || std::is_enum_v<decayed_t>) {
+        internal::readPrimitive(reader, value);
+    } else {
+        static_assert(!sizeof(T), "deserializeValue: unsupported value type - add an overload / trait specialization");
+    }
+}
+
+namespace internal {
+template<typename... Args>
+inline constexpr bool all_non_const_lvalue_refs_v =
+  (... && (std::is_lvalue_reference_v<Args> && !std::is_const_v<std::remove_reference_t<Args>>));
 
 template<typename... Args>
-struct decayed_args_tuple<metrix::type_list<Args...>>
+inline constexpr bool all_by_value_or_const_ref_v =
+  (... && (!std::is_lvalue_reference_v<Args> || std::is_const_v<std::remove_reference_t<Args>>));
+
+template<typename Ptr>
+struct member_fn_info
 {
-    using type = std::tuple<std::remove_pointer_t<std::decay_t<Args>>...>;
+    static constexpr bool is_multi_out_getter_v = false;
+    static constexpr bool is_multi_in_setter_v = false;
 };
 
-template<typename ArgumentsList>
-using decayed_args_tuple_t = typename decayed_args_tuple<ArgumentsList>::type;
-
-template<typename TupleType, typename T>
-struct has_element;
-
-template<typename... Element, typename T>
-struct has_element<std::tuple<Element...>, T>
+template<typename C, typename... Args>
+struct member_fn_info<void (C::*)(Args...) const>
 {
-    static constexpr bool value = metrix::type_list<Element...>::template has_type<T>::value;
-};
+    static constexpr bool is_multi_out_getter_v = sizeof...(Args) > 0 && all_non_const_lvalue_refs_v<Args...>;
+    static constexpr bool is_multi_in_setter_v = false;
 
-template<typename TupleType, typename T>
-inline constexpr bool has_element_v = has_element<TupleType, T>::value;
-
-template<typename Type, typename PassedType>
-inline constexpr auto passArgument(PassedType&& val) -> decltype(auto)
-{
-    if constexpr (std::is_pointer_v<Type>) {
-        return std::addressof(val);
-    } else {
-        return std::forward<PassedType>(val);
+    template<auto Fn, BinaryWriterConcept W>
+    static void writeAll(W& writer, C const& obj)
+    {
+        auto values = std::tuple<std::remove_cvref_t<Args>...>{};
+        std::apply([&](auto&... vals) { (obj.*Fn)(vals...); }, values);
+        std::apply([&](auto const&... vals) { (serializeValue(writer, vals), ...); }, values);
     }
+};
+
+template<typename C, typename... Args>
+struct member_fn_info<void (C::*)(Args...)>
+{
+    static constexpr bool is_multi_out_getter_v = sizeof...(Args) > 0 && all_non_const_lvalue_refs_v<Args...>;
+    static constexpr bool is_multi_in_setter_v = sizeof...(Args) > 0 && all_by_value_or_const_ref_v<Args...>;
+
+    template<auto Fn, BinaryWriterConcept W>
+    static void writeAll(W& writer, C const& obj)
+    {
+        auto values = std::tuple<std::remove_cvref_t<Args>...>{};
+        std::apply([&](auto&... vals) { (obj.*Fn)(vals...); }, values);
+        std::apply([&](auto const&... vals) { (serializeValue(writer, vals), ...); }, values);
+    }
+
+    template<auto Fn, BinaryReaderConcept R>
+    static auto readAll(R& reader, C& obj) -> void
+    {
+        auto values = std::tuple<std::remove_cvref_t<Args>...>{};
+        std::apply([&](auto&... vals) { (deserializeValue(reader, vals), ...); }, values);
+        std::apply([&](auto const&... vals) { (obj.*Fn)(vals...); }, values);
+    }
+};
 }
 
-template<typename Accessor>
-class AccessChainItem
+// Compile-time access chains
+namespace internal {
+template<auto Head, auto... Tail>
+struct AccessChainResolver
 {
-public:
-    using class_t = metrix::member_function_class_type_t<Accessor>;
-    using args_list_t = metrix::member_function_argument_type_list_t<Accessor>;
-    using decayed_args_tuple_t = decayed_args_tuple_t<args_list_t>;
+    using access_ptr_type_t = decltype(Head);
 
-    static constexpr size_t args_count_v = std::tuple_size_v<decayed_args_tuple_t>;
-
-    decayed_args_tuple_t arguments;
-
-    template<typename AnyObject>
-    AccessChainItem(Accessor const& accessor, AnyObject& anyObject);
-
-    template<typename NextAccessor>
-    auto operator<<(NextAccessor const& nextAccessor) &&;
-
-    auto getArguments()
+    template<BinaryWriterConcept W, typename T>
+    static void serialize(W& writer, T const& obj)
     {
-        using args_vector_t = std::vector<typename AccessChainItem<Accessor>::decayed_args_tuple_t>;
+        if constexpr (std::is_member_function_pointer_v<access_ptr_type_t>) {
+            using info_t = member_fn_info<access_ptr_type_t>;
 
-        auto res = args_vector_t{};
-        res.emplace_back(arguments);
-
-        return res;
-    }
-
-    [[nodiscard]] auto getArgumentsSize() const -> size_t
-    {
-        auto getArgsSize = [this]<size_t... Idx>(std::index_sequence<Idx...>) -> size_t {
-            auto getArgSize = [](auto const& a) -> size_t {
-                auto s = size_t{ 0 };
-                if constexpr (metrix::is_iterable_v<std::decay_t<decltype(a)>>) {
-                    s += sizeof(uint32_t);
-                    for (auto const& arg : a) {
-                        s += sizeof(arg);
-                    }
-                } else {
-                    s += sizeof(a);
-                }
-
-                return s;
-            };
-
-            return (getArgSize(std::get<Idx>(arguments)) + ... + size_t{ 0 });
-        };
-
-        return getArgsSize(std::make_index_sequence<args_count_v>{});
-    }
-
-private:
-    template<typename AnyObject, size_t... Idx>
-    void invokeImpl(Accessor const& accessor, AnyObject& anyObject, std::index_sequence<Idx...>);
-};
-
-template<typename Accessor>
-class AccessChainItemArray
-{
-public:
-    AccessChainItemArray() = default;
-
-    template<typename AnyObject>
-    void addAccessChainItem(Accessor const& accessor, AnyObject& anyObject);
-
-    template<typename NextAccessor>
-    auto operator<<(NextAccessor const& nextAccessor) && -> AccessChainItemArray<NextAccessor>;
-
-    auto getArguments()
-    {
-        using args_vector_t = std::vector<typename AccessChainItem<Accessor>::decayed_args_tuple_t>;
-
-        auto res = args_vector_t{};
-        res.reserve(accessChainItems_.size());
-
-        for (auto& accessChainItem : accessChainItems_) {
-            res.emplace_back(accessChainItem.arguments);
+            if constexpr (info_t::is_multi_out_getter_v) {
+                static_assert(
+                  sizeof...(Tail) == 0,
+                  "AccessChain: a multi-output getter (void(T&...) const) must be the last access chain item");
+                info_t::template writeAll<Head>(writer, obj);
+            } else {
+                auto&& result = (obj.*Head)();
+                serializeNext(writer, std::forward<decltype(result)>(result));
+            }
+        } else if constexpr (std::is_member_object_pointer_v<access_ptr_type_t>) {
+            auto&& result = obj.*Head;
+            serializeNext(writer, std::forward<decltype(result)>(result));
+        } else {
+            static_assert(!sizeof(T),
+                          "AccessChain: each access chain item must be a member function or member object pointer");
         }
-
-        return res;
     }
 
-    [[nodiscard]] auto getArgumentsSize() const -> size_t
+    template<BinaryReaderConcept R, typename T>
+    static void deserialize(R& reader, T& obj)
     {
-        auto s = size_t{ 0 };
-        for (auto& accessChainItem : accessChainItems_) {
-            s += accessChainItem.getArgumentsSize();
+        if constexpr (std::is_member_function_pointer_v<access_ptr_type_t>) {
+            using info_t = member_fn_info<access_ptr_type_t>;
+
+            if constexpr (info_t::is_multi_in_setter_v) {
+                static_assert(sizeof...(Tail) == 0,
+                              "AccessChain: a multi-input setter (void(T...)) must be the last access chain item");
+                info_t::template readAll<Head>(reader, obj);
+            } else if constexpr (info_t::is_multi_out_getter_v) {
+                static_assert(!sizeof(T),
+                              "AccessChain: a multi-output getter cannot be used for deserialization; "
+                              "provide a matching setter (void(T...)) instead");
+            } else if constexpr (sizeof...(Tail) == 0) {
+                static_assert(!sizeof(T),
+                              "AccessChain: the last access chain item used for deserialization must be a data member "
+                              "pointer or a multi-input setter - you cannot assign through a plain getter");
+            } else {
+                // Intermediate getter: must yield a mutable reference so we
+                // can keep navigating and eventually write through it.
+                auto&& result = (obj.*Head)();
+                static_assert(std::is_lvalue_reference_v<decltype(result)> &&
+                                !std::is_const_v<std::remove_reference_t<decltype(result)>>,
+                              "AccessChain: an intermediate getter used for deserialization must return a "
+                              "non-const reference");
+                deserializeNext(reader, std::forward<decltype(result)>(result));
+            }
+        } else if constexpr (std::is_member_object_pointer_v<access_ptr_type_t>) {
+            auto&& result = obj.*Head;
+            deserializeNext(reader, std::forward<decltype(result)>(result));
+        } else {
+            static_assert(!sizeof(T),
+                          "AccessChain: each access chain item must be a member function or member object pointer");
         }
-        return s;
     }
 
 private:
-    std::vector<AccessChainItem<Accessor>> accessChainItems_;
-};
+    template<BinaryWriterConcept W, typename Value>
+    static void serializeNext(W& writer, Value const& value)
+    {
+        using decayed_t = std::decay_t<Value>;
 
-template<typename Accessor>
-template<typename AnyObject>
-void AccessChainItemArray<Accessor>::addAccessChainItem(Accessor const& accessor, AnyObject& anyObject)
-{
-    accessChainItems_.emplace_back(accessor, anyObject);
-}
+        if constexpr (sizeof...(Tail) == 0) {
+            // Terminal access chain item: a scalar, string, or container of leaves -
+            // serializeValue already recurses through nested containers.
+            serializeValue(writer, value);
+        } else if constexpr (std::ranges::contiguous_range<decayed_t>) {
+            // More access chain items remain and this is a container: apply the rest
+            // of the chain to every element (supports containers of
+            // structs, not just containers of scalars).
+            auto length = static_cast<serialized_container_length_type_t>(value.size());
+            internal::writePrimitive(writer, length);
 
-template<typename Accessor>
-template<typename NextAccessor>
-auto AccessChainItemArray<Accessor>::operator<<(
-  NextAccessor const& nextAccessor) && -> AccessChainItemArray<NextAccessor>
-{
-    using invoking_class_t = typename metrix::member_function_class_type_t<NextAccessor>;
-
-    auto accessChainItemArray = AccessChainItemArray<NextAccessor>{};
-    for (auto& accessChainItem : accessChainItems_) {
-        accessChainItemArray.addAccessChainItem(nextAccessor, std::get<invoking_class_t>(accessChainItem.arguments));
-    }
-
-    return accessChainItemArray;
-}
-
-// AccessChainItem methods:
-template<typename Accessor>
-template<typename AnyObject>
-AccessChainItem<Accessor>::AccessChainItem(Accessor const& accessor, AnyObject& anyObject)
-  : arguments{}
-{
-    invokeImpl(accessor, anyObject, std::make_index_sequence<args_count_v>{});
-}
-
-template<typename Accessor>
-template<typename AnyObject, size_t... Idx>
-void AccessChainItem<Accessor>::invokeImpl(Accessor const& accessor, AnyObject& anyObject, std::index_sequence<Idx...>)
-{
-    (anyObject.*
-     accessor)(passArgument<typename args_list_t::template get_type<Idx>::type>(std::get<Idx>(arguments))...);
-}
-
-template<typename Accessor>
-template<typename NextAccessor>
-auto AccessChainItem<Accessor>::operator<<(NextAccessor const& nextAccessor) &&
-{
-    using invoking_class_t = typename metrix::member_function_class_type_t<NextAccessor>;
-
-    if constexpr (has_element_v<decayed_args_tuple_t, invoking_class_t>) {
-        return AccessChainItem<NextAccessor>(nextAccessor, std::get<invoking_class_t>(arguments));
-    } else if constexpr (has_element_v<decayed_args_tuple_t, std::vector<invoking_class_t>>) {
-        auto accessChainItemArray = AccessChainItemArray<NextAccessor>{};
-        auto& objectArray = std::get<std::vector<invoking_class_t>>(arguments);
-        for (auto& anyObject : objectArray) {
-            accessChainItemArray.addAccessChainItem(nextAccessor, anyObject);
+            for (auto const& element : value)
+                AccessChainResolver<Tail...>::serialize(writer, element);
+        } else {
+            AccessChainResolver<Tail...>::serialize(writer, value);
         }
-        return accessChainItemArray;
-    } /*else if extends for other types here*/
-    else {
-        static_assert(false);
     }
-}
-//
 
-template<typename AnyObject>
-class AccessChainBeginner
-{
-public:
-    explicit AccessChainBeginner(AnyObject& anyObject)
-      : anyObject_{ anyObject }
+    template<BinaryReaderConcept R, typename Value>
+    static void deserializeNext(R& reader, Value& value)
     {
-    }
+        using decayed_t = std::decay_t<Value>;
 
-    template<typename NextAccessor>
-    auto operator<<(NextAccessor const& nextAccessor) -> AccessChainItem<NextAccessor>
-    {
-        return AccessChainItem<NextAccessor>{ nextAccessor, anyObject_ };
-    }
+        if constexpr (sizeof...(Tail) == 0) {
+            deserializeValue(reader, value);
+        } else if constexpr (std::ranges::contiguous_range<decayed_t>) {
+            auto length = serialized_container_length_type_t{};
+            internal::readPrimitive(reader, length);
 
-private:
-    AnyObject& anyObject_;
-};
+            value.resize(length);
 
-template<typename AnyObject, typename... Accessor>
-auto invokeAccessChain(AnyObject&& anyObject, Accessor&&... accessor)
-{
-    return (AccessChainBeginner<std::decay_t<AnyObject>>{ anyObject } << ... << std::forward<Accessor>(accessor))
-      .getArguments();
-}
-
-template<typename AnyObject, typename... Accessor>
-auto computeAccessChainSize(AnyObject&& anyObject, Accessor&&... accessor) -> size_t
-{
-    return (AccessChainBeginner<std::decay_t<AnyObject>>{ anyObject } << ... << std::forward<Accessor>(accessor))
-      .getArgumentsSize();
-}
-
-template<typename AnyObject, typename StreamWriter>
-class AccessChainInvoker
-{
-public:
-    template<auto... Accessor>
-    explicit AccessChainInvoker(value_list<Accessor...>);
-
-    void operator()(AnyObject& anyObject, StreamWriter& streamWriter) const;
-
-    [[nodiscard]] auto expectedSize(AnyObject& anyObject) const -> size_t;
-
-private:
-    template<auto... Accessor>
-    static void accessChainInvoke(AnyObject& anyObject, StreamWriter& streamWriter);
-
-    template<auto... Accessor>
-    static auto accessChainExpectedSizeInvoke(AnyObject& anyObject) -> size_t;
-
-private:
-    using access_chain_invoker_f = void (*)(AnyObject&, StreamWriter&);
-    using size_computation_f = size_t (*)(AnyObject&);
-
-    access_chain_invoker_f invoke_;
-    size_computation_f sizeComputation_;
-};
-
-template<typename AnyObject, typename StreamWriter>
-template<auto... Accessor>
-/*explicit*/ AccessChainInvoker<AnyObject, StreamWriter>::AccessChainInvoker(value_list<Accessor...>)
-  : invoke_{ &accessChainInvoke<Accessor...> }
-  , sizeComputation_{ &accessChainExpectedSizeInvoke<Accessor...> }
-{
-}
-
-template<typename AnyObject, typename StreamWriter>
-template<auto... Accessor>
-/*static*/ void AccessChainInvoker<AnyObject, StreamWriter>::accessChainInvoke(AnyObject& anyObject,
-                                                                               StreamWriter& streamWriter)
-{
-    auto&& argsVec = invokeAccessChain(anyObject, Accessor...);
-    for (auto&& args : argsVec) {
-        streamWriter << args;
-    }
-}
-
-template<typename AnyObject, typename StreamWriter>
-template<auto... Accessor>
-/*static*/ auto AccessChainInvoker<AnyObject, StreamWriter>::accessChainExpectedSizeInvoke(AnyObject& anyObject)
-  -> size_t
-{
-    return computeAccessChainSize(anyObject, Accessor...);
-}
-
-template<typename AnyObject, typename StreamWriter>
-void AccessChainInvoker<AnyObject, StreamWriter>::operator()(AnyObject& anyObject, StreamWriter& streamWriter) const
-{
-    invoke_(anyObject, streamWriter);
-}
-
-template<typename AnyObject, typename StreamWriter>
-auto AccessChainInvoker<AnyObject, StreamWriter>::expectedSize(AnyObject& anyObject) const -> size_t
-{
-    return sizeComputation_(anyObject);
-}
-
-template<auto... Accessor>
-struct AccessChainInvokeForwarder
-{
-    using first_t = typename metrix::type_list<std::decay_t<decltype(Accessor)>...>::template get_type<0>::type;
-    using class_t = typename metrix::member_function_class_type_t<first_t>;
-
-    template<typename StreamWriter>
-    auto invoke() const
-    {
-        return AccessChainInvoker<class_t, StreamWriter>{ value_list<Accessor...>{} };
+            for (auto& element : value)
+                AccessChainResolver<Tail...>::deserialize(reader, element);
+        } else {
+            AccessChainResolver<Tail...>::deserialize(reader, value);
+        }
     }
 };
 }
 
-template<auto... Accessor>
-constexpr auto makeAccessChain()
+template<auto... AccessChainItem>
+struct AccessChain
 {
-    return internal::AccessChainInvokeForwarder<Accessor...>{};
+    static_assert(sizeof...(AccessChainItem) > 0, "AccessChain requires at least one pointer-to-member");
+
+    template<BinaryWriterConcept W, typename Root>
+    auto serialize(W& writer, Root const& root) const -> void
+    {
+        internal::AccessChainResolver<AccessChainItem...>::serialize(writer, root);
+    }
+
+    template<BinaryReaderConcept R, typename Root>
+    auto deserializeFrom(R& reader, Root& root) const -> void
+    {
+        internal::AccessChainResolver<AccessChainItem...>::deserialize(reader, root);
+    }
+};
+
+template<auto... AccessChainItem>
+constexpr auto makeAccessChain() noexcept
+{
+    return AccessChain<AccessChainItem...>{};
 }
 
-template<typename AnyObject, size_t N, typename StreamWriter>
+// Serializer / Deserializer
+template<typename... AccessChains>
 class Serializer
 {
 public:
-    using data_access_chain_t = internal::AccessChainInvoker<AnyObject, StreamWriter>;
+    explicit Serializer(AccessChains... chains)
+      : chains_{ std::move(chains)... }
+    {
+    }
 
-    template<typename... AccessChain>
-    Serializer(internal::stream_writer_type_wrap_t<StreamWriter>, AccessChain&&... accessChain);
-
-    [[nodiscard]] auto expectedSize(AnyObject& anyObject) const -> size_t;
-
-    void serialize(AnyObject& anyObject, StreamWriter& sw) const;
+    template<typename Root, BinaryWriterConcept Writer>
+    auto serialize(Root const& root, Writer& writer) const -> void
+    {
+        std::apply([&](auto const&... chain) { (chain.serialize(writer, root), ...); }, chains_);
+    }
 
 private:
-    std::array<data_access_chain_t, N> accessChains_;
+    std::tuple<AccessChains...> chains_;
 };
 
-template<typename AnyObject, size_t N, typename StreamWriter>
-template<typename... AccessChain>
-Serializer<AnyObject, N, StreamWriter>::Serializer(internal::stream_writer_type_wrap_t<StreamWriter>,
-                                                   AccessChain&&... accessChain)
-  : accessChains_{ accessChain.template invoke<StreamWriter>()... }
+template<typename... AccessChains>
+class Deserializer
 {
-}
-
-template<typename AnyObject, size_t N, typename StreamWriter>
-void Serializer<AnyObject, N, StreamWriter>::serialize(AnyObject& anyObject, StreamWriter& sw) const
-{
-    for (auto const& ac : accessChains_) {
-        ac(anyObject, sw);
-    }
-}
-
-template<typename AnyObject, size_t N, typename StreamWriter>
-auto Serializer<AnyObject, N, StreamWriter>::expectedSize(AnyObject& anyObject) const -> size_t
-{
-    auto result = size_t{ 0 };
-    for (auto const& ac : accessChains_) {
-        result += ac.expectedSize(anyObject);
+public:
+    explicit Deserializer(AccessChains... chains)
+      : chains_{ std::move(chains)... }
+    {
     }
 
-    return result;
-}
+    template<typename Root, BinaryReaderConcept Reader>
+    auto deserialize(Root& root, Reader& reader) const -> void
+    {
+        std::apply([&](auto const&... chain) { (chain.deserialize(reader, root), ...); }, chains_);
+    }
 
-template<typename StreamWriter>
-constexpr inline auto useWriter() -> internal::stream_writer_type_wrap_t<StreamWriter>
-{
-    return internal::stream_writer_type_wrap_t<StreamWriter>{};
-}
-
-// deduction guide:
-template<typename StreamWriter, typename... AccessChain>
-Serializer(internal::stream_writer_type_wrap_t<StreamWriter>,
-           AccessChain...) -> Serializer<typename internal::first_accessor_class_type_t<AccessChain...>::class_t,
-                                         sizeof...(AccessChain),
-                                         StreamWriter>;
+private:
+    std::tuple<AccessChains...> chains_;
+};
 }
 
 #endif // CYCLONITE_SHARED_SERIALIZATION_H
