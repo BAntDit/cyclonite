@@ -27,7 +27,7 @@ void writePrimitive(W& writer, T value)
 
 template<BinaryReaderConcept R, typename T>
     requires std::is_arithmetic_v<T> || std::is_enum_v<T>
-auto readPrimitive(R& reader, T& value) -> void
+void readPrimitive(R& reader, T& value)
 {
     auto raw = T{};
     reader.readBytes(&raw, sizeof(T));
@@ -83,7 +83,7 @@ void serializeValue(W& writer, T const& value)
 }
 
 template<BinaryReaderConcept R, typename T>
-auto deserializeValue(R& reader, T& value) -> void
+void deserializeValue(R& reader, T& value)
 {
     using decayed_t = std::decay_t<T>;
 
@@ -106,6 +106,29 @@ auto deserializeValue(R& reader, T& value) -> void
     } else {
         static_assert(!sizeof(T), "deserializeValue: unsupported value type - add an overload / trait specialization");
     }
+}
+
+template<typename T>
+auto serializedSize(T const& value) -> size_t
+{
+    using decayed_t = std::decay_t<T>;
+    auto result = size_t{0};
+
+    if constexpr (internal::is_stringlike_v<decayed_t>) {
+        result = sizeof(internal::serialized_container_length_type_t) + value.size();
+    } else if constexpr (std::ranges::contiguous_range<decayed_t>) {
+        size_t total = sizeof(internal::serialized_container_length_type_t);
+        for (auto const& element : value) {
+            total += serializedSize(element);
+        }
+        result = total;
+    } else if constexpr (std::is_arithmetic_v<decayed_t> || std::is_enum_v<decayed_t>) {
+        result = sizeof(decayed_t);
+    } else {
+        static_assert(!sizeof(T), "serializedSize: unsupported value type - add an overload / trait specialization");
+    }
+
+    return result;
 }
 
 namespace internal {
@@ -137,6 +160,17 @@ struct member_fn_info<void (C::*)(Args...) const>
         std::apply([&](auto&... vals) { (obj.*Fn)(vals...); }, values);
         std::apply([&](auto const&... vals) { (serializeValue(writer, vals), ...); }, values);
     }
+
+    template<auto Fn>
+    static auto sizeOfGetters(C const& obj) -> size_t
+    {
+        auto values = std::tuple<std::remove_cvref_t<Args>...>{};
+        std::apply([&](auto&... vals) { (obj.*Fn)(vals...); }, values);
+
+        auto result = size_t{0};
+        std::apply([&](auto const&... vals) mutable { ((result += serializedSize(vals)), ...); }, values);
+        return result;
+    }
 };
 
 template<typename C, typename... Args>
@@ -154,11 +188,22 @@ struct member_fn_info<void (C::*)(Args...)>
     }
 
     template<auto Fn, BinaryReaderConcept R>
-    static auto readAll(R& reader, C& obj) -> void
+    static void readAll(R& reader, C& obj)
     {
         auto values = std::tuple<std::remove_cvref_t<Args>...>{};
         std::apply([&](auto&... vals) { (deserializeValue(reader, vals), ...); }, values);
         std::apply([&](auto const&... vals) { (obj.*Fn)(vals...); }, values);
+    }
+
+    template<auto Fn>
+    static auto sizeOfGetters(C const& obj) -> size_t
+    {
+        auto values = std::tuple<std::remove_cvref_t<Args>...>{};
+        std::apply([&](auto&... vals) { (obj.*Fn)(vals...); }, values);
+
+        auto result = size_t{0};
+        std::apply([&](auto const&... vals) mutable { ((result += serializedSize(vals)), ...); }, values);
+        return result;
     }
 };
 }
@@ -231,6 +276,34 @@ struct AccessChainResolver
         }
     }
 
+    template<typename T>
+    static auto computeSize(T const& obj) -> size_t
+    {
+        auto result = size_t{0};
+
+        if constexpr (std::is_member_function_pointer_v<access_ptr_type_t>) {
+            using info_t = member_fn_info<access_ptr_type_t>;
+
+            if constexpr (info_t::is_multi_out_getter_v) {
+                static_assert(
+                  sizeof...(Tail) == 0,
+                  "AccessChain: a multi-output getter (void(T&...) const) must be the last access chain item");
+                result = info_t::template sizeOfGetters<Head>(obj);
+            } else {
+                auto&& r = (obj.*Head)();
+                result = sizeOfNext(r);
+            }
+        } else if constexpr (std::is_member_object_pointer_v<access_ptr_type_t>) {
+            auto&& r = obj.*Head;
+            result = sizeOfNext(r);
+        } else {
+            static_assert(!sizeof(T),
+                          "AccessChain: each access chain item must be a member function or member object pointer");
+        }
+
+        return result;
+    }
+
 private:
     template<BinaryWriterConcept W, typename Value>
     static void serializeNext(W& writer, Value const& value)
@@ -274,6 +347,25 @@ private:
             AccessChainResolver<Tail...>::deserialize(reader, value);
         }
     }
+
+    template<typename Value>
+    static auto sizeOfNext(Value const& value) -> size_t
+    {
+        using decayed_t = std::decay_t<Value>;
+
+        auto result = size_t{0};
+        if constexpr (sizeof...(Tail) == 0) {
+            result = serializedSize(value);
+        } else if constexpr (std::ranges::contiguous_range<decayed_t>) {
+            result = sizeof(serialized_container_length_type_t);
+            for (auto const& element : value) {
+                result += AccessChainResolver<Tail...>::computeSize(element);
+            }
+        } else {
+            result = AccessChainResolver<Tail...>::computeSize(value);
+        }
+        return result;
+    }
 };
 }
 
@@ -283,15 +375,21 @@ struct AccessChain
     static_assert(sizeof...(AccessChainItem) > 0, "AccessChain requires at least one pointer-to-member");
 
     template<BinaryWriterConcept W, typename Root>
-    auto serialize(W& writer, Root const& root) const -> void
+    void serialize(W& writer, Root const& root) const
     {
         internal::AccessChainResolver<AccessChainItem...>::serialize(writer, root);
     }
 
     template<BinaryReaderConcept R, typename Root>
-    auto deserializeFrom(R& reader, Root& root) const -> void
+    void deserializeFrom(R& reader, Root& root) const
     {
         internal::AccessChainResolver<AccessChainItem...>::deserialize(reader, root);
+    }
+
+    template<typename Root>
+    [[nodiscard]] auto computeSize(Root const& root) const -> size_t
+    {
+        return internal::AccessChainResolver<AccessChainItem...>::computeSize(root);
     }
 };
 
@@ -312,9 +410,15 @@ public:
     }
 
     template<typename Root, BinaryWriterConcept Writer>
-    auto serialize(Root const& root, Writer& writer) const -> void
+    void serialize(Root const& root, Writer& writer) const
     {
         std::apply([&](auto const&... chain) { (chain.serialize(writer, root), ...); }, chains_);
+    }
+
+    template<typename Root>
+    [[nodiscard]] auto computeSize(Root const& root) const -> size_t
+    {
+        return std::apply([&](auto const&... chain) { return (chain.computeSize(root) + ...); }, chains_);
     }
 
 private:
@@ -331,7 +435,7 @@ public:
     }
 
     template<typename Root, BinaryReaderConcept Reader>
-    auto deserialize(Root& root, Reader& reader) const -> void
+    void deserialize(Root& root, Reader& reader) const
     {
         std::apply([&](auto const&... chain) { (chain.deserialize(reader, root), ...); }, chains_);
     }
