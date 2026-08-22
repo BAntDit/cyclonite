@@ -118,12 +118,15 @@ struct ConstantBufferReflection
 
 struct ShaderReflectionData
 {
-    void getVersion(uint32_t& ver) const { ver = version; }
-    void getGeneratorName(std::string_view& name) const { name = generatorName; }
-    void getBoundResourceCount(uint32_t& count) const { count = static_cast<uint32_t>(boundResources.size()); }
-    void getBoundResources(std::vector<BoundResource>& resources) const { resources = boundResources; }
-    void getConstantBufferCount(uint32_t& count) const { count = static_cast<uint32_t>(constantBuffers.size()); }
-    void getConstantBuffers(std::vector<ConstantBufferReflection>& cbuffers) const { cbuffers = constantBuffers; }
+    [[nodiscard]] auto getBoundResourceCount() const -> uint32_t
+    {
+        return static_cast<uint32_t>(boundResources.size());
+    }
+
+    [[nodiscard]] auto getConstantBufferCount() const -> uint32_t
+    {
+        return static_cast<uint32_t>(constantBuffers.size());
+    }
 
     uint32_t version;
     std::string generatorName;

@@ -18,12 +18,12 @@ inline constexpr uint32_t SHADER_MODULE_REFLECTION_BLOCK = 0x43534D52; // Cyclon
 
 struct ShaderModuleBlockHeader
 {
-    void getBlockHeaderData(uint32_t& blockId, uint64_t& offsetBlock, uint64_t& offsetBase, uint64_t& sizeBlock) const
+    void getBlockHeaderData(uint32_t& baseOffsetOut, uint32_t& blockOffsetOut, uint32_t& sizeOut, uint32_t& idOut) const
     {
-        blockId = id;
-        offsetBlock = blockOffset;
-        offsetBase = baseOffset;
-        sizeBlock = size;
+        baseOffsetOut = baseOffset;
+        blockOffsetOut = blockOffset;
+        sizeOut = size;
+        idOut = id;
     }
 
     uint64_t baseOffset;
@@ -34,11 +34,6 @@ struct ShaderModuleBlockHeader
 
 struct ShaderInfoBlock
 {
-    void getEntryPoint(std::string& ep) const { ep = entryPoint; }
-    void getProfile(uint32_t& tp) const { tp = targetProfile; }
-    void getName(std::string& n) const { n = name; }
-    void getUUID(std::string& u) const { u = uuid; }
-
     uint32_t targetProfile;
     std::string entryPoint;
     std::string name;
@@ -47,12 +42,7 @@ struct ShaderInfoBlock
 
 struct ShaderModuleBinary
 {
-    void getMagicNumber(uint32_t& magicNumber) const { magicNumber = SHADER_MODULE_MAGIC_NUMBER; }
-    void getBlockCount(uint32_t& blockCount) const { blockCount = static_cast<uint32_t>(blockHeaders.size()); }
-    void getBlockHeaders(std::vector<ShaderModuleBlockHeader>& blocks) const { blocks = blockHeaders; }
-    void getSpirvCode(std::vector<uint32_t>& code) const { code = spirvCode; }
-    void getReflectionData(ShaderReflectionData& reflection) const { reflection = reflectionData; }
-    void getInfoBlock(ShaderInfoBlock& ib) const { ib = infoBlock; }
+    [[nodiscard]] auto getMagicNumber() const -> uint32_t { return SHADER_MODULE_MAGIC_NUMBER; }
 
     std::vector<ShaderModuleBlockHeader> blockHeaders;
     ShaderInfoBlock infoBlock;

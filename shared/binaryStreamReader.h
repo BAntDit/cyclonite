@@ -13,7 +13,7 @@ namespace cyclonite::shared {
 class BinaryStreamReader
 {
 public:
-    BinaryStreamReader(std::istream& stream, Endian endian = Endian::native)
+    BinaryStreamReader(std::istream& stream, Endian endian = Endian::Native)
       : stream_{ stream }
       , endian_{ endian }
     {

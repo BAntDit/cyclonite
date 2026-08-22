@@ -112,7 +112,7 @@ template<typename T>
 auto serializedSize(T const& value) -> size_t
 {
     using decayed_t = std::decay_t<T>;
-    auto result = size_t{0};
+    auto result = size_t{ 0 };
 
     if constexpr (internal::is_stringlike_v<decayed_t>) {
         result = sizeof(internal::serialized_container_length_type_t) + value.size();
@@ -167,7 +167,7 @@ struct member_fn_info<void (C::*)(Args...) const>
         auto values = std::tuple<std::remove_cvref_t<Args>...>{};
         std::apply([&](auto&... vals) { (obj.*Fn)(vals...); }, values);
 
-        auto result = size_t{0};
+        auto result = size_t{ 0 };
         std::apply([&](auto const&... vals) mutable { ((result += serializedSize(vals)), ...); }, values);
         return result;
     }
@@ -201,7 +201,7 @@ struct member_fn_info<void (C::*)(Args...)>
         auto values = std::tuple<std::remove_cvref_t<Args>...>{};
         std::apply([&](auto&... vals) { (obj.*Fn)(vals...); }, values);
 
-        auto result = size_t{0};
+        auto result = size_t{ 0 };
         std::apply([&](auto const&... vals) mutable { ((result += serializedSize(vals)), ...); }, values);
         return result;
     }
@@ -279,7 +279,7 @@ struct AccessChainResolver
     template<typename T>
     static auto computeSize(T const& obj) -> size_t
     {
-        auto result = size_t{0};
+        auto result = size_t{ 0 };
 
         if constexpr (std::is_member_function_pointer_v<access_ptr_type_t>) {
             using info_t = member_fn_info<access_ptr_type_t>;
@@ -353,7 +353,7 @@ private:
     {
         using decayed_t = std::decay_t<Value>;
 
-        auto result = size_t{0};
+        auto result = size_t{ 0 };
         if constexpr (sizeof...(Tail) == 0) {
             result = serializedSize(value);
         } else if constexpr (std::ranges::contiguous_range<decayed_t>) {

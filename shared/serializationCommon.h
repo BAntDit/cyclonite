@@ -13,9 +13,9 @@
 namespace cyclonite::shared {
 enum class Endian : uint8_t
 {
-    little,
-    big,
-    native = (std::endian::native == std::endian::little) ? little : big
+    Little,
+    Big,
+    Native = (std::endian::native == std::endian::little) ? Little : Big
 };
 
 namespace internal {
@@ -40,7 +40,7 @@ constexpr auto byteSwap(T value) noexcept -> T
 template<typename T>
 constexpr auto toEndian(T value, Endian target) noexcept -> T
 {
-    if (target == Endian::native)
+    if (target == Endian::Native)
         return value;
     return internal::byteSwap(value);
 }
