@@ -27,7 +27,8 @@ enum class ShaderResourceType : uint8_t
     ConsumeStructuredBuffer = 11,
     RwStructuredWithCounter = 12,
     RtAccelerationStructure = 13,
-    FeedbackTexture = 14
+    FeedbackTexture = 14,
+    COUNT = 15
 };
 
 enum class TextureResourceComponetType : uint8_t
@@ -40,7 +41,8 @@ enum class TextureResourceComponetType : uint8_t
     FLOAT = 5,
     MIXED = 6,
     DOUBLE = 7,
-    CONTINUED = 8
+    CONTINUED = 8,
+    COUNT = 9
 };
 
 enum class ResourceViewDimension : uint8_t
@@ -56,7 +58,8 @@ enum class ResourceViewDimension : uint8_t
     Texture3D = 8,
     TextureCube = 9,
     TextureCubeArray = 10,
-    BufferEx = 11
+    BufferEx = 11,
+    COUNT = 12
 };
 
 enum class ConstantBufferType : uint8_t
@@ -65,7 +68,8 @@ enum class ConstantBufferType : uint8_t
     CBuffer = 1,
     TBuffer = 2,
     InterfacePointer = 3,
-    ResourceBindInfo = 4
+    ResourceBindInfo = 4,
+    COUNT = 5
 };
 
 struct BoundResource
@@ -89,6 +93,39 @@ struct BoundResource
         resourceViewDimension = metrix::value_cast(dimension);
     }
 
+    void setResourceData(std::string resourceName,
+                         uint8_t resourceType,
+                         uint32_t resourceSpace,
+                         uint32_t resourceBindPoint,
+                         uint32_t resourceCount,
+                         uint8_t texComponent,
+                         uint32_t resourceSampleCount,
+                         uint8_t resourceViewDimension)
+    {
+        name = std::move(resourceName);
+
+        type = ShaderResourceType::Undefined;
+        if (resourceType < metrix::value_cast(ShaderResourceType::COUNT)) {
+            type = static_cast<ShaderResourceType>(resourceType);
+        }
+
+        space = resourceSpace;
+        bindPoint = resourceBindPoint;
+        bindCount = resourceCount;
+
+        textureComponetType = TextureResourceComponetType::Undefined;
+        if (texComponent < metrix::value_cast(TextureResourceComponetType::COUNT)) {
+            textureComponetType = static_cast<TextureResourceComponetType>(texComponent);
+        }
+
+        sampleCount = resourceSampleCount;
+
+        dimension = ResourceViewDimension::Undefined;
+        if (resourceViewDimension < metrix::value_cast(ResourceViewDimension::COUNT)) {
+            dimension = static_cast<ResourceViewDimension>(resourceViewDimension);
+        }
+    }
+
     std::string name;
     ShaderResourceType type;
 
@@ -109,6 +146,18 @@ struct ConstantBufferReflection
         bufferName = name;
         bufferType = metrix::value_cast(type);
         bufferSize = size;
+    }
+
+    void setBufferData(std::string bufferName, uint8_t bufferType, uint64_t bufferSize)
+    {
+        name = std::move(bufferName);
+
+        type = ConstantBufferType::Undefined;
+        if (bufferType < metrix::value_cast(ConstantBufferType::COUNT)) {
+            type = static_cast<ConstantBufferType>(bufferType);
+        }
+
+        size = bufferSize;
     }
 
     std::string name;

@@ -60,6 +60,7 @@ concept BinaryWriterConcept = requires(W w, void const* data, size_t size) {
 template<typename R>
 concept BinaryReaderConcept = requires(R r, void* data, size_t size) {
     { r.readBytes(data, size) } -> std::same_as<void>;
+    { r.setStreamOffset(0) } -> std::same_as<void>;
     { r.endianness() } -> std::same_as<Endian>;
 };
 }

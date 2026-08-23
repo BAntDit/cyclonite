@@ -5,6 +5,10 @@
 #ifndef CYCLONITE_SHARED_SERIALIZATION_H
 #define CYCLONITE_SHARED_SERIALIZATION_H
 
+// the idea of this serialization/deserialization solution
+// is based on this example: https://github.com/mera-company/cpp-serialization-library
+// but it's extended with ability to repeat invoke chains for elements of containers
+
 #include "serializationCommon.h"
 #include <ranges>
 #include <string>
@@ -97,7 +101,14 @@ void deserializeValue(R& reader, T& value)
     } else if constexpr (std::ranges::contiguous_range<decayed_t>) {
         auto length = internal::serialized_container_length_type_t{};
         internal::readPrimitive(reader, length);
-        value.resize(length);
+
+        if (length > value.size()) {
+            if constexpr (requires(std::decay_t<decltype(value)> v) { v.resize(0); }) {
+                value.resize(length);
+            } else {
+                assert(false);
+            }
+        }
 
         for (auto& element : value)
             deserializeValue(reader, element);
@@ -339,7 +350,13 @@ private:
             auto length = serialized_container_length_type_t{};
             internal::readPrimitive(reader, length);
 
-            value.resize(length);
+            if (length > value.size()) {
+                if constexpr (requires(std::decay_t<decltype(value)> v) { v.resize(0); }) {
+                    value.resize(length);
+                } else {
+                    assert(false);
+                }
+            }
 
             for (auto& element : value)
                 AccessChainResolver<Tail...>::deserialize(reader, element);
@@ -381,7 +398,7 @@ struct AccessChain
     }
 
     template<BinaryReaderConcept R, typename Root>
-    void deserializeFrom(R& reader, Root& root) const
+    void deserialize(R& reader, Root& root) const
     {
         internal::AccessChainResolver<AccessChainItem...>::deserialize(reader, root);
     }

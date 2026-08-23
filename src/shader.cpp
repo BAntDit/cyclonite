@@ -3,8 +3,9 @@
 //
 
 #include "shader.h"
-#include "deserialization.h"
+#include "binaryStreamReader.h"
 #include "gfx/device.h"
+#include "serialization.h"
 #include "shaderModuleBinary.h"
 
 namespace cyclonite {
@@ -98,40 +99,66 @@ void Shader::loadImpl(std::istream& stream)
     stream.read(reinterpret_cast<char*>(&magicNumber), sizeof(uint32_t));
     assert(magicNumber == shared::SHADER_MODULE_MAGIC_NUMBER);
 
-    auto smBlockHeaders = std::vector<shared::ShaderModuleBlockHeader>{};
-    shared::readStream(smBlockHeaders, stream);
+    auto shaderModuleBinary = shared::ShaderModuleBinary{};
 
-    auto moduleInfo = shared::ShaderInfoBlock{};
-    auto code = std::vector<uint32_t>{};
-    auto reflectionData = shared::ShaderReflectionData{};
+    auto headersDeserializer =
+      shared::Deserializer{ shared::makeAccessChain<&shared::ShaderModuleBinary::testMagicNumber>(),
+                            shared::makeAccessChain<&shared::ShaderModuleBinary::blockHeaders,
+                                                    &shared::ShaderModuleBlockHeader::setBlockHeaderData>() };
 
-    for (auto blockHeader : smBlockHeaders) {
-        auto [baseOffset, blockOffset, size, id] = blockHeader;
-        stream.seekg(baseOffset + blockOffset, std::ios::beg);
+    auto reader = shared::BinaryStreamReader{ stream, shared::Endian::Little };
+
+    headersDeserializer.deserialize(shaderModuleBinary, reader);
+
+    for (auto const& header : shaderModuleBinary.blockHeaders) {
+        auto [baseOffset, blockOffset, size, id] = header;
+
+        reader.setStreamOffset(baseOffset + blockOffset);
 
         switch (id) {
             case shared::SHADER_MODULE_INFO_BLOCK: {
-                shared::readStream(moduleInfo, stream);
+                auto infoBlockDeserializaer = shared::Deserializer{
+                    shared::makeAccessChain<&shared::ShaderModuleBinary::infoBlock,
+                                            &shared::ShaderInfoBlock::entryPoint>(),
+                    shared::makeAccessChain<&shared::ShaderModuleBinary::infoBlock,
+                                            &shared::ShaderInfoBlock::targetProfile>(),
+                    shared::makeAccessChain<&shared::ShaderModuleBinary::infoBlock, &shared::ShaderInfoBlock::name>(),
+                    shared::makeAccessChain<&shared::ShaderModuleBinary::infoBlock, &shared::ShaderInfoBlock::uuid>()
+                };
+                infoBlockDeserializaer.deserialize(shaderModuleBinary, reader);
             } break;
             case shared::SHADER_MODULE_SPIRV_BLOCK: {
-                shared::readStream(code, stream);
+                auto spirvDeserializaer =
+                  shared::Deserializer{ shared::makeAccessChain<&shared::ShaderModuleBinary::spirvCode>() };
+                spirvDeserializaer.deserialize(shaderModuleBinary, reader);
             } break;
             case shared::SHADER_MODULE_REFLECTION_BLOCK: {
-                shared::readStream(reflectionData, stream);
+                auto reflectionDeserializaer =
+                  shared::Deserializer{ shared::makeAccessChain<&shared::ShaderModuleBinary::reflectionData,
+                                                                &shared::ShaderReflectionData::version>(),
+                                        shared::makeAccessChain<&shared::ShaderModuleBinary::reflectionData,
+                                                                &shared::ShaderReflectionData::generatorName>(),
+                                        shared::makeAccessChain<&shared::ShaderModuleBinary::reflectionData,
+                                                                &shared::ShaderReflectionData::boundResources,
+                                                                &shared::BoundResource::setResourceData>(),
+                                        shared::makeAccessChain<&shared::ShaderModuleBinary::reflectionData,
+                                                                &shared::ShaderReflectionData::constantBuffers,
+                                                                &shared::ConstantBufferReflection::setBufferData>() };
+
+                reflectionDeserializaer.deserialize(shaderModuleBinary, reader);
             } break;
             default:
                 assert(false);
         }
     }
-
     rawData_ = std::make_unique<raw_data_t>();
-    rawData_->entryName = moduleInfo.entryPoint;
-    rawData_->stage = getShaderStage(moduleInfo.targetProfile);
-    std::swap(rawData_->code, code);
+    rawData_->entryName = shaderModuleBinary.infoBlock.entryPoint;
+    rawData_->stage = getShaderStage(shaderModuleBinary.infoBlock.targetProfile);
+    std::swap(rawData_->code, shaderModuleBinary.spirvCode);
 
-    bindings_.reserve(reflectionData.boundResources.size());
+    bindings_.reserve(shaderModuleBinary.reflectionData.boundResources.size());
     for (auto&& [name, type, space, point, count, texComponentCount, sampleCount, dimension] :
-         reflectionData.boundResources) {
+         shaderModuleBinary.reflectionData.boundResources) {
 
         auto descriptorType =
           getDescriptorType(type, dimension, space == metrix::value_cast(gfx::DescriptorSpace::PER_BATCH_DYNAMIC));

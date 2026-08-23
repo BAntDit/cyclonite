@@ -6,6 +6,7 @@
 #define CYCLONITE_SHARED_BINARY_STREAM_READER_H
 
 #include "serializationCommon.h"
+#include <cassert>
 #include <istream>
 #include <stdexcept>
 
@@ -14,22 +15,30 @@ class BinaryStreamReader
 {
 public:
     BinaryStreamReader(std::istream& stream, Endian endian = Endian::Native)
-      : stream_{ stream }
+      : stream_{ &stream }
       , endian_{ endian }
     {
+        assert(stream_ != nullptr);
+    }
+
+    void setStreamOffset(size_t offset)
+    {
+        assert(stream_ != nullptr);
+        stream_->seekg(static_cast<int32_t>(offset), std::ios::beg);
     }
 
     auto readBytes(void* data, size_t size) -> void
     {
-        stream_.read(reinterpret_cast<char*>(data), static_cast<std::streamsize>(size));
-        if (!stream_)
+        assert(stream_ != nullptr);
+        if (!stream_->read(reinterpret_cast<char*>(data), static_cast<std::streamsize>(size))) {
             throw std::runtime_error("BinaryStreamReader: read failed");
+        }
     }
 
     [[nodiscard]] auto endianness() const -> Endian { return endian_; }
 
 private:
-    std::istream& stream_;
+    std::istream* stream_;
     Endian endian_;
 };
 }

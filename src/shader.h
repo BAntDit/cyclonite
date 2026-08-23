@@ -5,12 +5,11 @@
 #ifndef CYCLONITE_SHADER_H
 #define CYCLONITE_SHADER_H
 
-#include <boost/uuid/uuid.hpp>
-
 #include "core/resourceBase.h"
 #include "gfx/binding.h"
 #include "gfx/common.h"
 #include "resources/managedResource.h"
+#include <boost/uuid/uuid.hpp>
 
 namespace cyclonite {
 class Shader

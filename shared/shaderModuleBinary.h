@@ -26,6 +26,14 @@ struct ShaderModuleBlockHeader
         idOut = id;
     }
 
+    void setBlockHeaderData(uint32_t baseOffsetIn, uint32_t blockOffsetIn, uint32_t sizeIn, uint32_t idIn)
+    {
+        baseOffset = baseOffsetIn;
+        blockOffset = blockOffsetIn;
+        size = sizeIn;
+        id = idIn;
+    }
+
     uint64_t baseOffset;
     uint64_t blockOffset;
     uint64_t size;
@@ -43,6 +51,13 @@ struct ShaderInfoBlock
 struct ShaderModuleBinary
 {
     [[nodiscard]] auto getMagicNumber() const -> uint32_t { return SHADER_MODULE_MAGIC_NUMBER; }
+
+    void testMagicNumber(uint32_t magicNumber)
+    {
+        if (magicNumber != SHADER_MODULE_MAGIC_NUMBER) {
+            throw std::runtime_error("Invalid shader magic number");
+        }
+    }
 
     std::vector<ShaderModuleBlockHeader> blockHeaders;
     ShaderInfoBlock infoBlock;
