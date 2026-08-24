@@ -10,6 +10,7 @@
 #include <memory>
 #include <ostream>
 #include <stdexcept>
+#include <cassert>
 
 namespace cyclonite::shared {
 class BinaryStreamWriter

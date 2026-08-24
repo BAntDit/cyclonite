@@ -15,6 +15,7 @@
 #include <string_view>
 #include <tuple>
 #include <type_traits>
+#include <cassert>
 #if !defined(_WIN32)
 #include <unistd.h>
 #endif
