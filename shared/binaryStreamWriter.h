@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <memory>
 #include <ostream>
+#include <fstream>
 #include <stdexcept>
 #include <cassert>
 
