@@ -95,10 +95,6 @@ auto getDescriptorType(shared::ShaderResourceType resType,
 
 void Shader::loadImpl(std::istream& stream)
 {
-    [[maybe_unused]] auto magicNumber = uint32_t{ 0 };
-    stream.read(reinterpret_cast<char*>(&magicNumber), sizeof(uint32_t));
-    assert(magicNumber == shared::SHADER_MODULE_MAGIC_NUMBER);
-
     auto shaderModuleBinary = shared::ShaderModuleBinary{};
 
     auto headersDeserializer =
