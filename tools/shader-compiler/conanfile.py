@@ -8,7 +8,7 @@ import glob
 
 class ToolsShaderCompilerRecipe(ConanFile):
     name = "shader-compiler"
-    version = "0.1.3.0"
+    version = "0.1.5.0"
     description = "shader-compiler tool for cyclonite engine."
 
     settings = "os", "compiler", "arch", "build_type"

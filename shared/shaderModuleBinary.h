@@ -18,7 +18,7 @@ inline constexpr uint32_t SHADER_MODULE_REFLECTION_BLOCK = 0x43534D52; // Cyclon
 
 struct ShaderModuleBlockHeader
 {
-    void getBlockHeaderData(uint32_t& baseOffsetOut, uint32_t& blockOffsetOut, uint32_t& sizeOut, uint32_t& idOut) const
+    void getBlockHeaderData(uint64_t& baseOffsetOut, uint64_t& blockOffsetOut, uint64_t& sizeOut, uint32_t& idOut) const
     {
         baseOffsetOut = baseOffset;
         blockOffsetOut = blockOffset;
@@ -26,7 +26,7 @@ struct ShaderModuleBlockHeader
         idOut = id;
     }
 
-    void setBlockHeaderData(uint32_t baseOffsetIn, uint32_t blockOffsetIn, uint32_t sizeIn, uint32_t idIn)
+    void setBlockHeaderData(uint64_t baseOffsetIn, uint64_t blockOffsetIn, uint64_t sizeIn, uint32_t idIn)
     {
         baseOffset = baseOffsetIn;
         blockOffset = blockOffsetIn;

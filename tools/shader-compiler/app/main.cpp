@@ -818,7 +818,7 @@ int main(int argc, char* argv[])
     spirvBlockHeader.baseOffset = baseOffset;
     spirvBlockHeader.blockOffset = blockOffset;
     spirvBlockHeader.size = sizeof(uint32_t) + compilerOutput.spirvModule().size() * sizeof(uint32_t);
-    baseOffset += spirvBlockHeader.size;
+    blockOffset += spirvBlockHeader.size;
 
     // reflection block:
     auto reflectionSerializer = cyclonite::shared::Serializer{
