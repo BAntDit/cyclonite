@@ -10,12 +10,12 @@
 // but it's extended with ability to repeat invoke chains for elements of containers
 
 #include "serializationCommon.h"
+#include <cassert>
 #include <ranges>
 #include <string>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
-#include <cassert>
 #if !defined(_WIN32)
 #include <unistd.h>
 #endif

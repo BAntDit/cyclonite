@@ -5,9 +5,10 @@
 #ifndef CYCLONITE_RESOURCES_DEFAULT_RESOURCE_LOADER_H
 #define CYCLONITE_RESOURCES_DEFAULT_RESOURCE_LOADER_H
 
+#include "binaryStreamReader.h"
 #include "core/resourceSharedRef.h"
-#include "deserialization.h"
 #include "multithreading/utility.h"
+#include "serialization.h"
 #include "shader.h"
 #include "shaderModuleBinary.h"
 #include <boost/uuid/string_generator.hpp>
@@ -15,9 +16,15 @@
 #include <cassert>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 
 namespace cyclonite::resources {
+namespace internal {
+struct magic_number_t
+{
+    uint32_t value;
+};
+}
+
 class ResourceGroupBase;
 
 class DefaultResourceLoader
@@ -74,47 +81,76 @@ template<typename ResourceGroup>
             continue;
 
         if (entry.path().extension().string() == ".bin") {
+            auto magicNumber = internal::magic_number_t{};
+
+            auto magicDeserializer =
+              shared::Deserializer{ shared::makeAccessChain<&internal::magic_number_t::value>() };
+
             auto file = std::ifstream{};
 
             file.exceptions(std::ios::failbit);
             file.open(entry.path().string(), std::ios::binary | std::ios::in);
             file.exceptions(std::ios::badbit);
 
-            auto magicNumber = uint32_t{ 0 };
-            file.read(reinterpret_cast<char*>(&magicNumber), sizeof(uint32_t));
+            auto magicReader = shared::BinaryStreamReader{ file, shared::Endian::Little };
 
-            switch (magicNumber) {
+            magicDeserializer.deserialize(magicNumber, magicReader);
+
+            switch (magicNumber.value) {
                 case shared::SHADER_MODULE_MAGIC_NUMBER:
                     if constexpr (ResourceGroup::template is_group_resource_type<cyclonite::Shader>) {
-                        auto smBlockHeaders = std::vector<shared::ShaderModuleBlockHeader>{};
-                        shared::readStream(smBlockHeaders, file);
+                        auto shaderModuleBinary = shared::ShaderModuleBinary{};
+
+                        auto headersDeserializer = shared::Deserializer{
+                            shared::makeAccessChain<&shared::ShaderModuleBinary::blockHeaders,
+                                                    &shared::ShaderModuleBlockHeader::setBlockHeaderData>()
+                        };
+
+                        auto headersReader = shared::BinaryStreamReader{ file, shared::Endian::Little };
+                        headersReader.setStreamOffset(sizeof(magicNumber.value));
+
+                        headersDeserializer.deserialize(shaderModuleBinary, headersReader);
 
                         auto infoBlockIt =
-                          std::find_if(smBlockHeaders.begin(), smBlockHeaders.end(), [](auto&& h) -> bool {
-                              return (h.id == shared::SHADER_MODULE_INFO_BLOCK);
-                          });
+                          std::find_if(shaderModuleBinary.blockHeaders.begin(),
+                                       shaderModuleBinary.blockHeaders.end(),
+                                       [](auto&& h) -> bool { return (h.id == shared::SHADER_MODULE_INFO_BLOCK); });
 
-                        if (infoBlockIt != smBlockHeaders.end()) {
-                            auto [baseOffset, blockOffset, size, _] = *infoBlockIt;
-                            file.seekg(baseOffset + blockOffset, std::ios::beg);
+                        if (infoBlockIt != shaderModuleBinary.blockHeaders.end()) {
+                            auto [baseOffset, blockOffset, _0, _1] = *infoBlockIt;
 
-                            auto moduleInfo = shared::ShaderInfoBlock{};
-                            shared::readStream(moduleInfo, file);
+                            auto infoBlockDeserializaer =
+                              shared::Deserializer{ shared::makeAccessChain<&shared::ShaderModuleBinary::infoBlock,
+                                                                            &shared::ShaderInfoBlock::entryPoint>(),
+                                                    shared::makeAccessChain<&shared::ShaderModuleBinary::infoBlock,
+                                                                            &shared::ShaderInfoBlock::targetProfile>(),
+                                                    shared::makeAccessChain<&shared::ShaderModuleBinary::infoBlock,
+                                                                            &shared::ShaderInfoBlock::name>(),
+                                                    shared::makeAccessChain<&shared::ShaderModuleBinary::infoBlock,
+                                                                            &shared::ShaderInfoBlock::uuid>() };
+
+                            auto infoBlockReader = shared::BinaryStreamReader{ file, shared::Endian::Little };
+                            infoBlockReader.setStreamOffset(baseOffset + blockOffset);
+
+                            infoBlockDeserializaer.deserialize(shaderModuleBinary, infoBlockReader);
 
                             auto generator = boost::uuids::string_generator{};
-                            auto uuid = generator(moduleInfo.uuid);
+                            auto uuid = generator(shaderModuleBinary.infoBlock.uuid);
 
                             auto ref = resourceGroup->getResource(uuid);
                             if (!ref.valid()) {
                                 ref = core::ResourceSharedRef{ resourceGroup->template addResource<cyclonite::Shader>(
-                                  moduleInfo.name, uuid) };
+                                  shaderModuleBinary.infoBlock.name, uuid) };
                             }
+
                             auto future =
                               ref.template as<cyclonite::Shader>().load(entry.path(), std::ios::binary | std::ios::in);
                             futures.push_back(std::move(future));
-                        }
-                    }
+                        } // if info block found
+                    } // sm case
                     break;
+                default:
+                    [[fallthrough]];
             }
 
             file.close();

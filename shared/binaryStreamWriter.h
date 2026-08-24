@@ -6,12 +6,12 @@
 #define CYCLONITE_SHARED_BINARY_STREAM_WRITER_H
 
 #include "serializationCommon.h"
+#include <cassert>
 #include <filesystem>
+#include <fstream>
 #include <memory>
 #include <ostream>
-#include <fstream>
 #include <stdexcept>
-#include <cassert>
 
 namespace cyclonite::shared {
 class BinaryStreamWriter
