@@ -1,0 +1,20 @@
+//
+// Created by anton on 8/25/26.
+//
+
+#include <boost/program_options.hpp>
+
+int main(int argc, char* argv[])
+{
+    namespace po = boost::program_options;
+
+    auto desc = po::options_description{ "asset-tool options", 160 };
+
+    desc.add_options()                                                           // options:
+        ("help", "Produce help message")  // --help
+        ("command", po::value<std::string>(), "command to execute")
+            // --command <gltf-to-asset, glb-to-asset>
+        ("gltf-src", po::value<std::string>(), "gltf source file");  // --gltf-src <path>
+
+    return 0;
+}
