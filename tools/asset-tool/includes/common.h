@@ -7,6 +7,11 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <variant>
+#include <optional>
+#include <array>
+#include "fvf.h"
+#include "assetModuleBinary.h"
 
 namespace cyclonite::tools {
 enum class CommandType: uint16_t
@@ -15,10 +20,16 @@ enum class CommandType: uint16_t
     GLB_TO_ASSET = 1
 };
 
+struct ConversionFromFile
+{
+    std::filesystem::path path;
+};
+
 struct AssetToolCommand
 {
     CommandType type;
-    std::filesystem::path gltfPath;
+    std::variant<std::monostate, ConversionFromFile> input;
+    std::variant<std::monostate, shared::AssetModuleBinary> output;
 };
 }
 

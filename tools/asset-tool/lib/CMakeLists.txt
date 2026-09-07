@@ -3,7 +3,7 @@ file(GLOB TOOLS_ASSET_TOOL_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
 add_library("${PROJECT_NAME}-lib"
         ${ALL_SHARED_HEADERS}
-        ${TOOLS_ASSET_TOOL_HEADERS}
+        ${ALL_HEADERS}
         ${TOOLS_ASSET_TOOL_SOURCES})
 
 set_target_properties("${PROJECT_NAME}-lib" PROPERTIES
@@ -32,3 +32,9 @@ endif()
 target_include_directories("${PROJECT_NAME}-lib" PRIVATE $<BUILD_INTERFACE:${SHARED_HEADERS_DIR}>)
 target_include_directories("${PROJECT_NAME}-lib" PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/shared/>)
 target_include_directories("${PROJECT_NAME}-lib" PUBLIC $<BUILD_INTERFACE:${TOOL_COMMON_INCLUDE_DIRS}>)
+
+find_package(TinyGLTF REQUIRED)
+target_link_libraries("${PROJECT_NAME}-lib" PRIVATE TinyGLTF::TinyGLTF)
+
+find_package(metrix REQUIRED)
+target_link_libraries("${PROJECT_NAME}-lib" PRIVATE metrix::metrix)

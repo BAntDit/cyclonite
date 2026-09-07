@@ -32,3 +32,9 @@ endif()
 target_include_directories("${PROJECT_NAME}-console" PRIVATE $<BUILD_INTERFACE:${SHARED_HEADERS_DIR}>)
 target_include_directories("${PROJECT_NAME}-console" PRIVATE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/shared/>)
 target_include_directories("${PROJECT_NAME}-console" PUBLIC $<BUILD_INTERFACE:${TOOL_COMMON_INCLUDE_DIRS}>)
+
+find_package(metrix REQUIRED)
+target_link_libraries("${PROJECT_NAME}-console" PRIVATE metrix::metrix)
+
+find_package(Boost COMPONENTS)
+target_link_libraries("${PROJECT_NAME}-console" PRIVATE boost::boost)

@@ -25,6 +25,7 @@ class AssetToolRecipe(ConanFile):
     def requirements(self):
         self.requires("boost/1.87.0")
         self.requires("metrix/1.8.2.0")
+        self.requires("tinygltf/2.9.7")
 
     def configure(self):
         self.settings.compiler.cppstd = "20"
