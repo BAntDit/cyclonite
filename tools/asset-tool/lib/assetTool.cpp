@@ -7,7 +7,38 @@
 #include <string>
 #include <iostream>
 
+#if defined(_WIN32) // _WIN32 / _WIN64 at once
+#ifdef max
+#undef max
+#endif
+#ifdef min
+#undef min
+#endif
+#endif
+
+#include <limits>
+
 namespace cyclonite::tools {
+namespace internal
+{
+struct TwoIntKey
+{
+    TwoIntKey() : 
+        value{ std::numeric_limits<uint64_t>::max() }
+    {}
+
+    explicit TwoIntKey(uint64_t v) : 
+        value{ v }
+    {}
+
+    TwoIntKey(uint32_t a, uint32_t b) : 
+        value{ static_cast<uint64_t>(a) | (static_cast<uint64_t>(b) << 32ull) }
+    {}
+
+    uint64_t value;
+};
+}
+
 /*static */ void AssetTool::doCommand(AssetToolCommand& command)
 {
     switch (command.type) {
@@ -45,6 +76,22 @@ namespace cyclonite::tools {
                     assetBuffer.push_back(std::byte{ byte });
                 }
             }
+
+            output.bufferViews.reserve(model.bufferViews.size());
+            for (auto const& gltfBufferView : model.bufferViews) {
+                auto& assetBufferView = output.bufferViews.emplace_back();
+                assetBufferView.bufferIndex = static_cast<uint32_t>(gltfBufferView.buffer);
+                assetBufferView.offset = static_cast<uint32_t>(gltfBufferView.byteOffset);
+                assetBufferView.size = static_cast<uint32_t>(gltfBufferView.byteLength);
+                assetBufferView.stride = static_cast<uint32_t>(gltfBufferView.byteStride);
+            }
+
+            auto subMeshCount = uint32_t{0};
+            for (auto const& gltfMesh : model.meshes) {
+                subMeshCount += gltfMesh.primitives.size();
+            }
+
+            output.subMeshes.reserve(subMeshCount);
 
             /*auto accessor = tinygltf::Accessor{};
             auto mesh = tinygltf::Mesh{};
