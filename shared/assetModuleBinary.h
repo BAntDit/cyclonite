@@ -107,6 +107,57 @@ inline auto toAssetPrimitiveTopology(uint8_t v) -> AssetPrimitiveTopology
     }
     return r;
 }
+
+inline auto toVertexFormatFlag(uint64_t v) -> VertexFormatFlags 
+{
+    auto r = VertexFormatFlags::UNDEFINED;
+    switch (v) {
+        case metrix::value_cast(VertexFormatFlags::POSITION):
+        case metrix::value_cast(VertexFormatFlags::NORMAL):
+        case metrix::value_cast(VertexFormatFlags::TANGENT):
+        case metrix::value_cast(VertexFormatFlags::BINORMAL):
+        case metrix::value_cast(VertexFormatFlags::BONE_WEIGHTS):
+        case metrix::value_cast(VertexFormatFlags::BONE_INDICES):
+        case metrix::value_cast(VertexFormatFlags::COMPRESSED_SKINNING_DATA):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_01): 
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_02): 
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_03): 
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_04): 
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_11): 
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_12): 
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_13): 
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_14): 
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_21): 
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_22): 
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_23):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_24):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_31):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_32):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_33):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_34):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_41):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_42):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_43):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_44):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_51):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_52):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_53):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_54):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_61):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_62):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_63):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_64):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_71):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_72):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_73):
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_74):
+            r = static_cast<VertexFormatFlags>(v);
+        default:
+            r = VertexFormatFlags::UNDEFINED;
+    }
+
+    return r;
+}
 }
 
 struct AssetBlockHeader
@@ -257,8 +308,9 @@ struct AssetVertexAttribute
     }
 
     void set(uint64_t semanticIn, uint32_t accessorIn)
-    {
-        // todo:: ... 
+    { 
+        attributeAccessor = accessorIn;
+        semantic = internal::toVertexFormatFlag(semanticIn);
     }
 
     VertexFormatFlags semantic;
@@ -272,6 +324,39 @@ struct AssetMaterial
 
 struct AssetNode
 {
+    void get(std::string& nameOut,
+             std::vector<uint32_t>& childrenOut,
+             std::array<boost::float32_t, 12>& transformOut,
+             uint32_t& meshOut,
+             uint8_t& transformTypeOut)
+    {
+        nameOut = name;
+        childrenOut = children;
+        transformOut = transform;
+        meshOut = mesh;
+        transformTypeOut = metrix::value_cast(transformType);
+    }
+
+    void set(std::string const& nameIn,
+             std::vector<uint32_t> const& childrenIn,
+             std::array<boost::float32_t, 12> const& transformIn,
+             uint32_t meshIn,
+             uint8_t transformTypeIn)
+    {
+        name = nameIn;
+        children = childrenIn;
+        transform = transformIn;
+        mesh = meshIn;
+
+        if (transformTypeIn == metrix::value_cast(AssetTransformType::Components)) {
+            transformType = AssetTransformType::Components;
+        } else if (transformTypeIn == metrix::value_cast(AssetTransformType::Matrix)) {
+            transformType = AssetTransformType::Matrix;
+        } else {
+            transformType = AssetTransformType::Undefined;
+        }
+    }
+
     std::string name;
     std::vector<uint32_t> children;
     std::array<boost::float32_t, 12> transform;
@@ -285,7 +370,7 @@ struct AssetModuleBinary
     std::vector<std::vector<std::byte>> buffers;
     std::vector<AssetBufferView> bufferViews;
     std::vector<AssetDataAccessor> dataAccessors;
-    std::vector<AssetVertexAttribute> dataAccessors;
+    std::vector<AssetVertexAttribute> subMeshAttributes;
     std::vector<AssetSubMesh> subMeshes;
     std::vector<AssetMaterial> materials;
     std::vector<AssetMesh> meshes;

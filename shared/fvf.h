@@ -6,6 +6,7 @@ namespace cyclonite::shared
 {
 enum class VertexFormatFlags : uint64_t
 {
+    UNDEFINED = 0,
     POSITION = 1ull << 0,    // float3 position
     NORMAL = 1ull << 1,      // float3 normal
     TANGENT = 1ull << 2,     // float3
@@ -49,7 +50,7 @@ enum class VertexFormatFlags : uint64_t
     TEX_COORD_32 = (1ULL << 27), // TEXCOORD3 channel 2
     TEX_COORD_33 = (1ULL << 28), // TEXCOORD3 channel 3
     TEX_COORD_34 = (1ULL << 29), // TEXCOORD3 channel 4
-    TEX_COORD_41 = (1ULL << 20), // TEXCOORD4 channel 1 
+    TEX_COORD_41 = (1ULL << 30), // TEXCOORD4 channel 1 
     TEX_COORD_42 = (1ULL << 31), // TEXCOORD4 channel 2
     TEX_COORD_43 = (1ULL << 32), // TEXCOORD4 channel 3
     TEX_COORD_44 = (1ULL << 33), // TEXCOORD4 channel 4
