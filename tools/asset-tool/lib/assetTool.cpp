@@ -2,6 +2,7 @@
 // Created by anton on 8/25/26.
 //
 #include "assetTool.h"
+#include "serialization.h"
 #include <cassert>
 #include <tiny_gltf.h>
 #include <string>
@@ -292,6 +293,21 @@ void fillAssetAccessor(tinygltf::Model const& model, int gltfAccessorIndex, shar
             }
 
             // asset serialization:
+            auto assetBinaryModule = shared::AssetModuleBinary{};
+
+            auto assetBinaryModuleBlockCount = uint32_t{ 1 }; 
+
+            auto headerSerializer = cyclonite::shared::Serializer{
+                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetBlockHeader::baseOffset>(),
+                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetBlockHeader::blockOffset>(),
+                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetBlockHeader::size>(),
+                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetBlockHeader::id>()
+            };
+
+            auto emptyHeader = cyclonite::shared::AssetBlockHeader{}; // to define size (all headers has the same size)
+            auto baseOffset = headerSerializer.computeSize(emptyHeader) * assetBinaryModuleBlockCount +
+                              sizeof(assetBinaryModuleBlockCount) +
+                              sizeof(cyclonite::shared::SHADER_MODULE_MAGIC_NUMBER);
 
             /*auto accessor = tinygltf::Accessor{};
             auto mesh = tinygltf::Mesh{};
