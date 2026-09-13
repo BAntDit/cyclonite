@@ -29,7 +29,7 @@ struct AssetToolCommand
 {
     CommandType type;
     std::variant<std::monostate, ConversionFromFile> input;
-    std::variant<std::monostate, shared::AssetModuleBinary> output;
+    std::variant<std::monostate, shared::AssetMainBlock> output;
 };
 }
 

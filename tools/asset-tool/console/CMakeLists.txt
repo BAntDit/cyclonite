@@ -38,3 +38,5 @@ target_link_libraries("${PROJECT_NAME}-console" PRIVATE metrix::metrix)
 
 find_package(Boost COMPONENTS)
 target_link_libraries("${PROJECT_NAME}-console" PRIVATE boost::boost)
+
+target_link_libraries("${PROJECT_NAME}-console" PRIVATE "${PROJECT_NAME}-lib")

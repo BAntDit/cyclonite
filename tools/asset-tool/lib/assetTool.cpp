@@ -1,12 +1,17 @@
 //
 // Created by anton on 8/25/26.
 //
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+
 #include "assetTool.h"
-#include "serialization.h"
 #include <cassert>
 #include <tiny_gltf.h>
 #include <string>
 #include <iostream>
+#include <algorithm>
+#include <iterator>
 #include <regex>
 #include <bit>
 
@@ -65,16 +70,15 @@ auto attributeNameToSemanticFlag(std::string_view name) -> shared::VertexFormatF
         r = shared::VertexFormatFlags::BONE_WEIGHTS; 
     } else if (name.starts_with("TEXCOORD_")) {
         auto nameStr = std::string(name);
-        auto pattern = std::regex("TEXCOORD _(\\d+)");
+        auto pattern = std::regex("TEXCOORD_(\\d+)");
         auto match = std::smatch{};
 
         if (std::regex_search(nameStr, match, pattern)) {
             auto const channelCountPerSet = uint64_t{ 4 }; 
-            auto texcoordSet = static_cast<uint64_t>(std::stoi(match[0].str()));
-
-            r = static_cast<shared::VertexFormatFlags>(
-              1ull << metrix::value_cast(shared::VertexFormatFlags::TEX_COORD_ZERO_CHANNEL_SHIFT) +
-                        texcoordSet * channelCountPerSet);
+            auto texcoordSet = static_cast<uint64_t>(std::stoi(match[1].str()));
+            auto texcoordBits = metrix::value_cast(shared::VertexFormatFlags::TEX_COORD_ZERO_CHANNEL_SHIFT);
+            texcoordBits << (texcoordSet * channelCountPerSet);
+            r = static_cast<shared::VertexFormatFlags>(texcoordBits);
         }
     }
      
@@ -111,7 +115,7 @@ void fillAssetAccessor(tinygltf::Model const& model, int gltfAccessorIndex, shar
     assert(gltfAccessor.bufferView != -1);
     assetAccessor.bufferViewIndex = static_cast<uint32_t>(gltfAccessor.bufferView);
 
-    assert(gltfAccessor.byteOffset > 255);
+    assert(gltfAccessor.byteOffset <= 255);
     assetAccessor.byteOffset = static_cast<uint8_t>(gltfAccessor.byteOffset);
 
     assetAccessor.elementCount = static_cast<uint32_t>(gltfAccessor.count);
@@ -164,7 +168,7 @@ void fillAssetAccessor(tinygltf::Model const& model, int gltfAccessorIndex, shar
         case CommandType::GLTF_TO_ASSET: {
             auto model = tinygltf::Model{};
             auto const& input = std::get<ConversionFromFile>(command.input);
-            auto& output = std::get<shared::AssetModuleBinary>(command.output);
+            auto& output = std::get<shared::AssetMainBlock>(command.output);
             auto loader = tinygltf::TinyGLTF{};
             
             auto err = std::string{};
@@ -224,7 +228,12 @@ void fillAssetAccessor(tinygltf::Model const& model, int gltfAccessorIndex, shar
                         auto semanticKey = semanticFlagToUInt32(semanticFlag);
                         auto uintAccessor = static_cast<uint32_t>(accessorIdx);
                         auto key = TwoIntKey{ semanticKey, uintAccessor };
-                        attributesMap.insert(key.value, std::numeric_limits<size_t>::max());
+                        attributesMap.emplace(key.value, std::numeric_limits<size_t>::max());
+                        accessorMap.emplace(uintAccessor, std::numeric_limits<size_t>::max());
+                    }
+
+                    if (gltfPrimitive.indices != -1) {
+                        auto uintAccessor = static_cast<uint32_t>(gltfPrimitive.indices);
                         accessorMap.emplace(uintAccessor, std::numeric_limits<size_t>::max());
                     }
                 }
@@ -233,6 +242,7 @@ void fillAssetAccessor(tinygltf::Model const& model, int gltfAccessorIndex, shar
             output.subMeshes.reserve(subMeshCount);
             output.subMeshAttributes.reserve(attributesMap.size());
             output.dataAccessors.reserve(accessorMap.size());
+            output.meshes.reserve(model.meshes.size());
 
             for (auto const& gltfMesh : model.meshes) { // meshes
                 auto& assetMesh = output.meshes.emplace_back();
@@ -292,31 +302,81 @@ void fillAssetAccessor(tinygltf::Model const& model, int gltfAccessorIndex, shar
                 }
             }
 
-            // asset serialization:
-            auto assetBinaryModule = shared::AssetModuleBinary{};
+            output.nodes.reserve(model.nodes.size());
+            for (auto const& gltfNode : model.nodes) {
+                auto& assetNode = output.nodes.emplace_back();
 
-            auto assetBinaryModuleBlockCount = uint32_t{ 1 }; 
+                assetNode.name = gltfNode.name;
 
-            auto headerSerializer = cyclonite::shared::Serializer{
-                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetBlockHeader::baseOffset>(),
-                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetBlockHeader::blockOffset>(),
-                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetBlockHeader::size>(),
-                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetBlockHeader::id>()
-            };
+                assetNode.children.reserve(gltfNode.children.size());
+                std::transform(gltfNode.children.begin(),
+                               gltfNode.children.end(),
+                               std::back_inserter(assetNode.children),
+                               [](int n) -> uint32_t { return static_cast<uint32_t>(n); });
 
-            auto emptyHeader = cyclonite::shared::AssetBlockHeader{}; // to define size (all headers has the same size)
-            auto baseOffset = headerSerializer.computeSize(emptyHeader) * assetBinaryModuleBlockCount +
-                              sizeof(assetBinaryModuleBlockCount) +
-                              sizeof(cyclonite::shared::SHADER_MODULE_MAGIC_NUMBER);
+                if (!gltfNode.matrix.empty()) {
+                    assetNode.transformType = shared::AssetTransformType::Matrix;
+                    for (auto i = 0; i < 4; i++) { // raw (pack into 4x3 raw major)
+                        assetNode.transform[i * 4 + 0] = gltfNode.matrix[0 + i];
+                        assetNode.transform[i * 4 + 1] = gltfNode.matrix[4 + i];
+                        assetNode.transform[i * 4 + 2] = gltfNode.matrix[8 + i]; 
+                        assetNode.transform[i * 4 + 3] = gltfNode.matrix[12 + i];
+                    }
+                } else {
+                    assetNode.transformType = shared::AssetTransformType::Components;
 
-            /*auto accessor = tinygltf::Accessor{};
-            auto mesh = tinygltf::Mesh{};
-            auto primitive = tinygltf::Primitive{};
+                    if (gltfNode.translation.size() < 3) {
+                        assetNode.transform[0] = 0.f;
+                        assetNode.transform[1] = 0.f;
+                        assetNode.transform[2] = 0.f;
+                    } else {
+                        assetNode.transform[0] = gltfNode.translation[0];
+                        assetNode.transform[1] = gltfNode.translation[1];
+                        assetNode.transform[2] = gltfNode.translation[2];
+                    }
 
-            primitive.attributes*/
+                    if (gltfNode.rotation.size() < 4) {
+                        assetNode.transform[3] = 0.f;
+                        assetNode.transform[4] = 0.f;
+                        assetNode.transform[5] = 0.f;
+                        assetNode.transform[6] = 1.f;
+                    } else {
+                        assetNode.transform[3] = gltfNode.rotation[0];
+                        assetNode.transform[4] = gltfNode.rotation[1];
+                        assetNode.transform[5] = gltfNode.rotation[2];
+                        assetNode.transform[6] = gltfNode.rotation[3];
+                    }
 
-            // model.
-            // model.buffers
+                    if (gltfNode.scale.size() < 3) {
+                        assetNode.transform[7] = 1.f;
+                        assetNode.transform[8] = 1.f;
+                        assetNode.transform[9] = 1.f;
+                    } else {
+                        assetNode.transform[7] = gltfNode.scale[0];
+                        assetNode.transform[8] = gltfNode.scale[1];
+                        assetNode.transform[9] = gltfNode.scale[2];
+                    }
+                }
+
+                assetNode.mesh =
+                  gltfNode.mesh != -1 
+                    ? static_cast<uint32_t>(gltfNode.mesh) 
+                    : std::numeric_limits<uint32_t>::max();
+
+            }
+
+            auto rootNodeCount = size_t{ 0 };
+            for (auto& gltfScene : model.scenes) {
+                rootNodeCount += gltfScene.nodes.size();
+            }
+
+            output.rootNodes.reserve(rootNodeCount);
+            for (auto& gltfScene : model.scenes) {
+                std::transform(gltfScene.nodes.begin(),
+                               gltfScene.nodes.end(),
+                               std::back_inserter(output.rootNodes),
+                               [](int n) -> uint32_t { return static_cast<uint32_t>(n); });
+            }
         } break;
         default:
             assert(false);

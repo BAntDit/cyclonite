@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include "common.h"
 #include "assetTool.h"
+#include "serialization.h"
+#include "binaryStreamWriter.h"
 
 int main(int argc, char* argv[])
 {
@@ -18,7 +20,8 @@ int main(int argc, char* argv[])
     desc.add_options()                                                              // options:
         ("help", "Produce help message")                                            // --help
         ("command", po::value<std::string>(), "command to execute")                 // --command <gltf-to-asset, glb-to-asset>
-        ("gltf-src", po::value<std::string>(), "gltf source file");                 // --gltf-src <path>
+        ("gltf-src", po::value<std::string>(), "gltf source file")                  // --gltf-src <path>
+        ("output", po::value<std::string>(), "output file");                        // --output <path>
 
     auto vm = po::variables_map{};
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -52,6 +55,8 @@ int main(int argc, char* argv[])
             coversionInput.path = filepath;
 
             command.type = cyclonite::tools::CommandType::GLTF_TO_ASSET;
+            command.input = coversionInput;
+            command.output = cyclonite::shared::AssetMainBlock{};
 
         } else if (cmd == "glb-to-asset") {
             if (filepath.empty()) {
@@ -65,6 +70,8 @@ int main(int argc, char* argv[])
             coversionInput.path = filepath;
 
             command.type = cyclonite::tools::CommandType::GLTF_TO_ASSET;
+            command.input = coversionInput;
+            command.output = cyclonite::shared::AssetMainBlock{};
 
         }
         else {
@@ -82,6 +89,97 @@ int main(int argc, char* argv[])
     }
 
     cyclonite::tools::AssetTool::doCommand(command);
+
+    if (command.type == cyclonite::tools::CommandType::GLTF_TO_ASSET ||
+        command.type == cyclonite::tools::CommandType::GLTF_TO_ASSET) {
+        if (!vm.contains("output")) {
+            std::cout << "output path is missed! - read help for correct usage" << "\n";
+            std::cout << "-----------------------" << "\n";
+            std::cout << desc << "\n";
+            return 0;
+        }
+        auto outputPath = std::filesystem::path(vm["output"].as<std::string>());
+
+        // asset serialization:
+        auto assetBinaryModule = cyclonite::shared::AssetModuleBinary{};
+
+        auto assetBinaryModuleBlockCount = uint32_t{ 1 };
+
+        auto headerSerializer = cyclonite::shared::Serializer{
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetBlockHeader::baseOffset>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetBlockHeader::blockOffset>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetBlockHeader::size>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetBlockHeader::id>()
+        };
+
+        auto emptyHeader = cyclonite::shared::AssetBlockHeader{}; // to define size (all headers has the same size)
+        auto baseOffset = headerSerializer.computeSize(emptyHeader) * assetBinaryModuleBlockCount +
+                          sizeof(assetBinaryModuleBlockCount) + sizeof(cyclonite::shared::ASSET_MODULE_MAIN_BLOCK);
+
+        auto blockOffset = uint64_t{ 0 };
+
+        // main block serializer:
+        auto mainBlockSerializer = cyclonite::shared::Serializer{
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::buffers>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::bufferViews,
+                                               &cyclonite::shared::AssetBufferView::get>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::dataAccessors,
+                                               &cyclonite::shared::AssetDataAccessor::get>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::subMeshAttributes,
+                                               &cyclonite::shared::AssetVertexAttribute::get>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::subMeshes,
+                                               &cyclonite::shared::AssetSubMesh::get>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::meshes,
+                                               &cyclonite::shared::AssetMesh::get>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::materials,
+                                               &cyclonite::shared::AssetMaterial::name>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::nodes,
+                                               &cyclonite::shared::AssetNode::get>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::rootNodes>()
+        };
+
+        assetBinaryModule.mainBlock = std::move(std::get<cyclonite::shared::AssetMainBlock>(command.output));
+
+        auto& mainBlockHeader = assetBinaryModule.blockHeaders.emplace_back();
+        mainBlockHeader.id = cyclonite::shared::ASSET_MODULE_MAIN_BLOCK;
+        mainBlockHeader.baseOffset = baseOffset;
+        mainBlockHeader.blockOffset = blockOffset;
+        mainBlockHeader.size = mainBlockSerializer.computeSize(assetBinaryModule.mainBlock);
+
+        auto serializer = cyclonite::shared::Serializer{
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetModuleBinary::getMagicNumber>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetModuleBinary::blockHeaders,
+                                               &cyclonite::shared::AssetBlockHeader::getBlockHeaderData>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetModuleBinary::mainBlock, 
+                                               &cyclonite::shared::AssetMainBlock::buffers>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetModuleBinary::mainBlock,
+                                               &cyclonite::shared::AssetMainBlock::bufferViews,
+                                               &cyclonite::shared::AssetBufferView::get>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetModuleBinary::mainBlock,
+                                               &cyclonite::shared::AssetMainBlock::dataAccessors,
+                                               &cyclonite::shared::AssetDataAccessor::get>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetModuleBinary::mainBlock,
+                                               &cyclonite::shared::AssetMainBlock::subMeshAttributes,
+                                               &cyclonite::shared::AssetVertexAttribute::get>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetModuleBinary::mainBlock,
+                                               &cyclonite::shared::AssetMainBlock::subMeshes,
+                                               &cyclonite::shared::AssetSubMesh::get>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetModuleBinary::mainBlock,
+                                               &cyclonite::shared::AssetMainBlock::meshes,
+                                               &cyclonite::shared::AssetMesh::get>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetModuleBinary::mainBlock,
+                                               &cyclonite::shared::AssetMainBlock::materials,
+                                               &cyclonite::shared::AssetMaterial::name>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetModuleBinary::mainBlock,
+                                               &cyclonite::shared::AssetMainBlock::nodes,
+                                               &cyclonite::shared::AssetNode::get>(),
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetModuleBinary::mainBlock,
+                                               &cyclonite::shared::AssetMainBlock::rootNodes>()
+        }; 
+        
+        auto binaryWriter = cyclonite::shared::BinaryStreamWriter{ outputPath, cyclonite::shared::Endian::Little };
+        serializer.serialize(assetBinaryModule, binaryWriter);
+    }
 
     return 0;
 }

@@ -1,4 +1,7 @@
 
+#ifndef CYCLONITE_SHARED_VERTEX_FORMATS_H
+#define CYCLONITE_SHARED_VERTEX_FORMATS_H
+
 #include <metrix/enum.h>
 #include <cstdint>
 
@@ -69,3 +72,5 @@ enum class VertexFormatFlags : uint64_t
 };
 using VertexFormatFlagBits = metrix::enum_bits<VertexFormatFlags>;
 }
+
+#endif // CYCLONITE_SHARED_VERTEX_FORMATS_H

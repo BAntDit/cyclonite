@@ -38,3 +38,6 @@ target_link_libraries("${PROJECT_NAME}-lib" PRIVATE TinyGLTF::TinyGLTF)
 
 find_package(metrix REQUIRED)
 target_link_libraries("${PROJECT_NAME}-lib" PRIVATE metrix::metrix)
+
+find_package(Boost COMPONENTS)
+target_link_libraries("${PROJECT_NAME}-lib" PRIVATE boost::boost)

@@ -5,17 +5,18 @@
 #ifndef CYCLONITE_SHARED_ASSET_MODULE_BINARY_H
 #define CYCLONITE_SHARED_ASSET_MODULE_BINARY_H
 
-#include <cstdint>
-#include <cstddef>
-#include <vector>
 #include <array>
-#include <string>
 #include <boost/cstdfloat.hpp>
+#include <cstddef>
+#include <cstdint>
 #include <fvf.h>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
-namespace cyclonite::shared
-{
-inline constexpr uint32_t ASSET_MODULE_MAGIC_NUMBER = 0x41534301;     // Cyclonite Asset Module v01
+namespace cyclonite::shared {
+inline constexpr uint32_t ASSET_MODULE_MAGIC_NUMBER = 0x41534301; // Cyclonite Asset Module v01
+inline constexpr uint32_t ASSET_MODULE_MAIN_BLOCK = 0x4153434D;
 
 enum class AssetAccessorDataType : uint8_t
 {
@@ -72,15 +73,14 @@ enum class AssetPrimitiveTopology : uint8_t
     COUNT = 12
 };
 
-enum class AssetTransformType: uint8_t
+enum class AssetTransformType : uint8_t
 {
     Undefined = 0,
     Components = 1,
     Matrix = 2
 };
 
-namespace internal
-{
+namespace internal {
 inline auto toAssetAccessorDataType(uint8_t v) -> AssetAccessorDataType
 {
     auto r = AssetAccessorDataType::Undefined;
@@ -108,48 +108,86 @@ inline auto toAssetPrimitiveTopology(uint8_t v) -> AssetPrimitiveTopology
     return r;
 }
 
-inline auto toVertexFormatFlag(uint64_t v) -> VertexFormatFlags 
+inline auto toVertexFormatFlag(uint64_t v) -> VertexFormatFlags
 {
     auto r = VertexFormatFlags::UNDEFINED;
     switch (v) {
         case metrix::value_cast(VertexFormatFlags::POSITION):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::NORMAL):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TANGENT):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::BINORMAL):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::BONE_WEIGHTS):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::BONE_INDICES):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::COMPRESSED_SKINNING_DATA):
-        case metrix::value_cast(VertexFormatFlags::TEX_COORD_01): 
-        case metrix::value_cast(VertexFormatFlags::TEX_COORD_02): 
-        case metrix::value_cast(VertexFormatFlags::TEX_COORD_03): 
-        case metrix::value_cast(VertexFormatFlags::TEX_COORD_04): 
-        case metrix::value_cast(VertexFormatFlags::TEX_COORD_11): 
-        case metrix::value_cast(VertexFormatFlags::TEX_COORD_12): 
-        case metrix::value_cast(VertexFormatFlags::TEX_COORD_13): 
-        case metrix::value_cast(VertexFormatFlags::TEX_COORD_14): 
-        case metrix::value_cast(VertexFormatFlags::TEX_COORD_21): 
-        case metrix::value_cast(VertexFormatFlags::TEX_COORD_22): 
+            [[fallthrough]];
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_01):
+            [[fallthrough]];
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_02):
+            [[fallthrough]];
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_03):
+            [[fallthrough]];
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_04):
+            [[fallthrough]];
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_11):
+            [[fallthrough]];
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_12):
+            [[fallthrough]];
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_13):
+            [[fallthrough]];
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_14):
+            [[fallthrough]];
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_21):
+            [[fallthrough]];
+        case metrix::value_cast(VertexFormatFlags::TEX_COORD_22):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_23):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_24):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_31):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_32):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_33):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_34):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_41):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_42):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_43):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_44):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_51):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_52):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_53):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_54):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_61):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_62):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_63):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_64):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_71):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_72):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_73):
+            [[fallthrough]];
         case metrix::value_cast(VertexFormatFlags::TEX_COORD_74):
             r = static_cast<VertexFormatFlags>(v);
         default:
@@ -186,7 +224,7 @@ struct AssetBlockHeader
 
 struct AssetBufferView
 {
-    void get(uint32_t& bufferIndexOut, uint32_t& offsetOut, uint32_t sizeOut, uint8_t& strideOut) 
+    void get(uint32_t& bufferIndexOut, uint32_t& offsetOut, uint32_t& sizeOut, uint8_t& strideOut) const
     {
         bufferIndexOut = bufferIndex;
         offsetOut = offset;
@@ -211,12 +249,11 @@ struct AssetBufferView
 
 struct AssetDataAccessor
 {
-    void get(
-        uint32_t& bufferViewOut, 
-        uint32_t& elementCountOut, 
-        uint8_t& byteOffsetOut, 
-        uint8_t& typeOut, 
-        uint8_t& componentTypeOut)
+    void get(uint32_t& bufferViewOut,
+             uint32_t& elementCountOut,
+             uint8_t& byteOffsetOut,
+             uint8_t& typeOut,
+             uint8_t& componentTypeOut) const
     {
         bufferViewOut = bufferViewIndex;
         elementCountOut = elementCount;
@@ -225,11 +262,11 @@ struct AssetDataAccessor
         componentTypeOut = metrix::value_cast(componentType);
     }
 
-    void set(uint32_t bufferViewIn, 
-        uint32_t elementCountIn, 
-        uint8_t byteOffsetIn, 
-        uint8_t typeIn, 
-        uint8_t componentTypeIn)
+    void set(uint32_t bufferViewIn,
+             uint32_t elementCountIn,
+             uint8_t byteOffsetIn,
+             uint8_t typeIn,
+             uint8_t componentTypeIn)
     {
         bufferViewIndex = bufferViewIn;
         elementCount = elementCountIn;
@@ -247,12 +284,11 @@ struct AssetDataAccessor
 
 struct AssetSubMesh
 {
-    void get(
-        std::vector<uint32_t>& attributesOut, 
-        std::vector<uint32_t>& morphTargetOut, 
-        uint32_t& indicesOut, 
-        uint32_t& materialOut, 
-        uint8_t& topologyOut)
+    void get(std::vector<uint32_t>& attributesOut,
+             std::vector<uint32_t>& morphTargetOut,
+             uint32_t& indicesOut,
+             uint32_t& materialOut,
+             uint8_t& topologyOut) const
     {
         attributesOut = attributes;
         morphTargetOut = morphTargetAccessors;
@@ -261,11 +297,11 @@ struct AssetSubMesh
         topologyOut = metrix::value_cast(primitiveTopology);
     }
 
-    void set(std::vector<uint32_t> const& attributesIn, 
-        std::vector<uint32_t> const& morphTargetIn, 
-        uint32_t indicesIn, 
-        uint32_t materialIn, 
-        uint8_t topologyIn) 
+    void set(std::vector<uint32_t> const& attributesIn,
+             std::vector<uint32_t> const& morphTargetIn,
+             uint32_t indicesIn,
+             uint32_t materialIn,
+             uint8_t topologyIn)
     {
         attributes = attributesIn;
         morphTargetAccessors = morphTargetIn;
@@ -283,7 +319,7 @@ struct AssetSubMesh
 
 struct AssetMesh
 {
-    void get(std::string& nameOut, std::vector<uint32_t>& subMeshesOut) 
+    void get(std::string& nameOut, std::vector<uint32_t>& subMeshesOut) const
     {
         nameOut = name;
         subMeshesOut = subMeshes;
@@ -301,14 +337,14 @@ struct AssetMesh
 
 struct AssetVertexAttribute
 {
-    void get(uint64_t& semanticOut, uint32_t accessorOut)
+    void get(uint64_t& semanticOut, uint32_t& accessorOut) const
     {
         semanticOut = metrix::value_cast(semantic);
         accessorOut = attributeAccessor;
     }
 
     void set(uint64_t semanticIn, uint32_t accessorIn)
-    { 
+    {
         attributeAccessor = accessorIn;
         semantic = internal::toVertexFormatFlag(semanticIn);
     }
@@ -328,7 +364,7 @@ struct AssetNode
              std::vector<uint32_t>& childrenOut,
              std::array<boost::float32_t, 12>& transformOut,
              uint32_t& meshOut,
-             uint8_t& transformTypeOut)
+             uint8_t& transformTypeOut) const
     {
         nameOut = name;
         childrenOut = children;
@@ -364,9 +400,8 @@ struct AssetNode
     AssetTransformType transformType;
 };
 
-struct AssetModuleBinary
+struct AssetMainBlock
 {
-    std::vector<AssetBlockHeader> blockHeaders;
     std::vector<std::vector<std::byte>> buffers;
     std::vector<AssetBufferView> bufferViews;
     std::vector<AssetDataAccessor> dataAccessors;
@@ -376,6 +411,21 @@ struct AssetModuleBinary
     std::vector<AssetMesh> meshes;
     std::vector<AssetNode> nodes;
     std::vector<uint32_t> rootNodes;
+};
+
+struct AssetModuleBinary
+{
+    [[nodiscard]] auto getMagicNumber() const -> uint32_t { return ASSET_MODULE_MAGIC_NUMBER; }
+
+    void testMagicNumber(uint32_t magicNumber)
+    {
+        if (magicNumber != ASSET_MODULE_MAGIC_NUMBER) {
+            throw std::runtime_error("Invalid shader magic number");
+        }
+    }
+
+    std::vector<AssetBlockHeader> blockHeaders;
+    AssetMainBlock mainBlock;
 };
 }
 
