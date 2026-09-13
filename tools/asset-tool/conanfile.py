@@ -59,7 +59,11 @@ class AssetToolRecipe(ConanFile):
         self.cpp_info.components["asset-tool-lib"].libs = ["asset-tool-lib"]
         self.cpp_info.components["asset-tool-lib"].includedirs = ["include"]
         self.cpp_info.components["asset-tool-lib"].bindirs = []
-        self.cpp_info.components["asset-tool-lib"].requires = ["metrix::metrix"]
+        self.cpp_info.components["asset-tool-lib"].requires = [
+            "TinyGLTF::TinyGLTF",
+            "boost::boost", 
+            "metrix::metrix"
+        ]
 
         exe_name = "asset-tool-console"
         if self.settings.build_type == "Debug":

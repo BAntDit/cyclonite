@@ -40,3 +40,7 @@ find_package(Boost COMPONENTS)
 target_link_libraries("${PROJECT_NAME}-console" PRIVATE boost::boost)
 
 target_link_libraries("${PROJECT_NAME}-console" PRIVATE "${PROJECT_NAME}-lib")
+
+install(TARGETS ${PROJECT_NAME}-console
+        EXPORT ${PROJECT_NAME}-targets
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

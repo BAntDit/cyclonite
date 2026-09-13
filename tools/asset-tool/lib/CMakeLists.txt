@@ -41,3 +41,17 @@ target_link_libraries("${PROJECT_NAME}-lib" PRIVATE metrix::metrix)
 
 find_package(Boost COMPONENTS)
 target_link_libraries("${PROJECT_NAME}-lib" PRIVATE boost::boost)
+
+# Install the library
+install(TARGETS ${PROJECT_NAME}-lib
+        EXPORT ${PROJECT_NAME}-targets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+# Install headers
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/includes/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}-lib
+        FILES_MATCHING PATTERN "*.h"
+)

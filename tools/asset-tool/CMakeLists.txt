@@ -21,3 +21,43 @@ endif()
 
 add_subdirectory("lib")
 add_subdirectory("console")
+
+# Generate package configuration files
+set(CONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/asset-tool)
+
+# Install headers
+install(
+    DIRECTORY ${CMAKE_SOURCE_DIR}/shared/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/shared
+    FILES_MATCHING PATTERN "*.h"
+)
+install(DIRECTORY ${SHARED_HEADERS_DIR}/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/shared
+    FILES_MATCHING PATTERN "*.h"
+)
+
+install(EXPORT ${PROJECT_NAME}-targets
+        FILE ${PROJECT_NAME}-targets.cmake
+        NAMESPACE ${PROJECT_NAME}::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+)
+
+# Create package version file
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/asset-tool-config.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+    INSTALL_DESTINATION ${CONFIG_INSTALL_DIR}
+    PATH_VARS CMAKE_INSTALL_INCLUDEDIR
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+    DESTINATION ${CONFIG_INSTALL_DIR}
+)
