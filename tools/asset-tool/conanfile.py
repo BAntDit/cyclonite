@@ -6,14 +6,14 @@ import os
 
 class AssetToolRecipe(ConanFile):
     name = "asset-tool"
-    version = "0.1.0.0"
+    version = "0.1.2.0"
     description = "asset tool for cyclonite engine."
 
     settings = "os", "compiler", "arch", "build_type"
 
     def export_sources(self):
         copy(self, "CMakeLists.txt", src=self.recipe_folder, dst=self.export_sources_folder)
-        copy(self, "app/*", src=self.recipe_folder, dst=self.export_sources_folder)
+        copy(self, "console/*", src=self.recipe_folder, dst=self.export_sources_folder)
         copy(self, "lib/*", src=self.recipe_folder, dst=self.export_sources_folder)
         copy(self, "includes/*", src=self.recipe_folder, dst=self.export_sources_folder)
         copy(self, "shared/*", src=self.recipe_folder, dst=self.export_sources_folder)
@@ -60,7 +60,7 @@ class AssetToolRecipe(ConanFile):
         self.cpp_info.components["asset-tool-lib"].includedirs = ["include"]
         self.cpp_info.components["asset-tool-lib"].bindirs = []
         self.cpp_info.components["asset-tool-lib"].requires = [
-            "TinyGLTF::TinyGLTF",
+            "tinygltf::tinygltf",
             "boost::boost", 
             "metrix::metrix"
         ]
