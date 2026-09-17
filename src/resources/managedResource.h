@@ -30,8 +30,8 @@ concept is_loadable = requires(T t, std::istream& stream) {
 };
 
 template<typename T>
-concept is_prepareable = requires(T t) {
-    { t.prepareImpl() } -> std::same_as<void>;
+concept is_prepareable = requires(T t, core::ResourceSharedRef const& deviceRef) {
+    { t.prepareImpl(deviceRef) } -> std::same_as<void>;
 };
 
 template<typename Resource>
