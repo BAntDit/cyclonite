@@ -20,10 +20,9 @@ Material::Material(core::ResourceManagerBase* resourceManager,
 {
 }
 
-void Material::prepareImpl()
+void Material::prepareImpl(core::ResourceSharedRef const& deviceRef)
 {
-    auto& g = group();
-    auto ref = g.deviceRef();
+    auto ref = deviceRef;
     auto& device = ref.as<gfx::Device>();
 
     assert(rawData_);
@@ -88,7 +87,8 @@ void Material::prepareImpl()
                                                                  actualShaders);
 }
 
-auto Material::manualSetup(core::ResourceSharedRef passRef,
+auto Material::manualSetup(core::ResourceSharedRef const& deviceRef,
+                           core::ResourceSharedRef passRef,
                            shader_set_t const& shaderSet,
                            gfx::RasterizationState const& rasterizationState,
                            gfx::PrimitiveTopology primitiveTopology /* = gfx::PrimitiveTopology::TRIANGLE_LIST*/,
@@ -106,6 +106,6 @@ auto Material::manualSetup(core::ResourceSharedRef passRef,
     rawData_->primitiveTopology = primitiveTopology;
     rawData_->primitiveRestart = primitiveRestart;
 
-    return prepare();
+    return prepare(deviceRef);
 }
 }

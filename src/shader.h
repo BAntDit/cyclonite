@@ -33,7 +33,7 @@ public:
 
     void loadImpl(std::istream& stream);
 
-    void prepareImpl();
+    void prepareImpl(core::ResourceSharedRef const& deviceRef);
 
 private:
     struct raw_data_t

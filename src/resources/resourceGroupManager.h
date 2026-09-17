@@ -12,13 +12,14 @@
 #include <unordered_map>
 
 namespace cyclonite::resources {
-template<ManagedResourceConcept... Resources>
+template<typename Config>
 class ResourceGroupManager : public ResourceGroupManagerBase
 {
 public:
-    explicit ResourceGroupManager(core::ResourceSharedRef const& deviceRef)
-      : deviceRef_{ deviceRef }
+    explicit ResourceGroupManager(Root<Config>& root)
+      : ResourceGroupManagerBase{}
       , resourceGroups_{}
+      , root_{ &root }
     {
     }
 
@@ -26,44 +27,43 @@ public:
 
     auto load(uint32_t groupId, std::wstring_view location) -> std::future<void>;
 
-    auto prepare(uint32_t groupId) -> std::future<void>;
-
     template<CustomSourceConcept CustomSource>
     auto load(uint32_t groupId, CustomSource&& customSource) -> std::future<void>
         requires std::is_rvalue_reference_v<CustomSource>;
 
+    auto prepare(uint32_t groupId, core::ResourceSharedRef const& deviceRef) -> std::future<void>;
+
+    template<ManagedResourceConcept R, typename... Args>
+    auto addResource(uint32_t groupId, Args&&... args) -> core::ResourceSharedRef;
+
     void releaseResource(uint32_t groupId, boost::uuids::uuid const& uuid);
 
     void releaseGroup(uint32_t groupId);
-
-    template<typename R, typename... Args>
-    auto addResource(uint32_t groupId, Args&&... args) -> core::ResourceSharedRef
-        requires(metrix::type_list<Resources...>::template has_type<R>::value);
 
     [[nodiscard]] auto getResource(uint32_t groupId, std::string_view name) const -> core::ResourceSharedRef;
 
 private:
     static std::atomic<uint32_t> nextResourceGroupId;
 
-    core::ResourceSharedRef deviceRef_;
-    std::unordered_map<uint32_t, std::shared_ptr<ResourceGroup<Resources...>>> resourceGroups_;
+    std::unordered_map<uint32_t, std::shared_ptr<ResourceGroup<Config>>> resourceGroups_;
+    Root<Config>* root_;
 };
 
-template<ManagedResourceConcept... Resources>
-/*static */ std::atomic<uint32_t> ResourceGroupManager<Resources...>::nextResourceGroupId = 0;
+template<typename Config>
+/*static */ std::atomic<uint32_t> ResourceGroupManager<Config>::nextResourceGroupId = 0;
 
-template<ManagedResourceConcept... Resources>
-auto ResourceGroupManager<Resources...>::addResourceGroup() -> uint32_t
+template<typename Config>
+auto ResourceGroupManager<Config>::addResourceGroup() -> uint32_t
 {
     auto id = nextResourceGroupId.fetch_add(1, std::memory_order_acq_rel);
-    auto resourceGroupNew = std::make_shared<ResourceGroup<Resources...>>(this, id, deviceRef_);
+    auto resourceGroupNew = std::make_shared<ResourceGroup<Config>>(*root_, this, id);
     resourceGroups_.emplace(id, std::move(resourceGroupNew));
 
     return id;
 }
 
-template<ManagedResourceConcept... Resources>
-auto ResourceGroupManager<Resources...>::load(uint32_t groupId, std::wstring_view location) -> std::future<void>
+template<typename Config>
+auto ResourceGroupManager<Config>::load(uint32_t groupId, std::wstring_view location) -> std::future<void>
 {
     auto it = resourceGroups_.find(groupId);
     if (it == resourceGroups_.end()) {
@@ -74,33 +74,9 @@ auto ResourceGroupManager<Resources...>::load(uint32_t groupId, std::wstring_vie
     return group->load(location);
 }
 
-template<ManagedResourceConcept... Resources>
-void ResourceGroupManager<Resources...>::releaseResource(uint32_t groupId, boost::uuids::uuid const& uuid)
-{
-    auto it = resourceGroups_.find(groupId);
-    if (it == resourceGroups_.end()) {
-        throw std::runtime_error("Resource group does not exist");
-    }
-
-    auto& [_, group] = *it;
-    group->releaseResource(uuid);
-}
-
-template<ManagedResourceConcept... Resources>
-void ResourceGroupManager<Resources...>::releaseGroup(uint32_t groupId)
-{
-    auto it = resourceGroups_.find(groupId);
-    if (it == resourceGroups_.end()) {
-        throw std::runtime_error("Resource group does not exist");
-    }
-
-    auto& [_, group] = *it;
-    group->releaseAll();
-}
-
-template<ManagedResourceConcept... Resources>
+template<typename Config>
 template<CustomSourceConcept CustomSource>
-auto ResourceGroupManager<Resources...>::load(uint32_t groupId, CustomSource&& customSource) -> std::future<void>
+auto ResourceGroupManager<Config>::load(uint32_t groupId, CustomSource&& customSource) -> std::future<void>
     requires std::is_rvalue_reference_v<CustomSource>
 {
     auto it = resourceGroups_.find(groupId);
@@ -109,12 +85,12 @@ auto ResourceGroupManager<Resources...>::load(uint32_t groupId, CustomSource&& c
     }
 
     auto& [_, group] = *it;
-    return group->load(std::move(customSource));
+    return group->load(std::forward<CustomSource>(customSource));
 }
 
-template<ManagedResourceConcept... Resources>
-auto ResourceGroupManager<Resources...>::getResource(uint32_t groupId,
-                                                     std::string_view name) const -> core::ResourceSharedRef
+template<typename Config>
+auto ResourceGroupManager<Config>::prepare(uint32_t groupId,
+                                           core::ResourceSharedRef const& deviceRef) -> std::future<void>
 {
     auto it = resourceGroups_.find(groupId);
     if (it == resourceGroups_.end()) {
@@ -122,13 +98,12 @@ auto ResourceGroupManager<Resources...>::getResource(uint32_t groupId,
     }
 
     auto& [_, group] = *it;
-    return group->getResource(name);
+    return group->prepare(deviceRef);
 }
 
-template<ManagedResourceConcept... Resources>
-template<typename R, typename... Args>
-auto ResourceGroupManager<Resources...>::addResource(uint32_t groupId, Args&&... args) -> core::ResourceSharedRef
-    requires(metrix::type_list<Resources...>::template has_type<R>::value)
+template<typename Config>
+template<ManagedResourceConcept R, typename... Args>
+auto ResourceGroupManager<Config>::addResource(uint32_t groupId, Args&&... args) -> core::ResourceSharedRef
 {
     auto it = resourceGroups_.find(groupId);
     if (it == resourceGroups_.end()) {
@@ -139,8 +114,8 @@ auto ResourceGroupManager<Resources...>::addResource(uint32_t groupId, Args&&...
     return core::ResourceSharedRef{ group->template addResource<R>(std::forward<Args>(args)...) };
 }
 
-template<ManagedResourceConcept... Resources>
-auto ResourceGroupManager<Resources...>::prepare(uint32_t groupId) -> std::future<void>
+template<typename Config>
+void ResourceGroupManager<Config>::releaseResource(uint32_t groupId, boost::uuids::uuid const& uuid)
 {
     auto it = resourceGroups_.find(groupId);
     if (it == resourceGroups_.end()) {
@@ -148,7 +123,31 @@ auto ResourceGroupManager<Resources...>::prepare(uint32_t groupId) -> std::futur
     }
 
     auto& [_, group] = *it;
-    return group->prepare();
+    group->releaseResource(uuid);
+}
+
+template<typename Config>
+void ResourceGroupManager<Config>::releaseGroup(uint32_t groupId)
+{
+    auto it = resourceGroups_.find(groupId);
+    if (it == resourceGroups_.end()) {
+        throw std::runtime_error("Resource group does not exist");
+    }
+
+    auto& [_, group] = *it;
+    group->releaseAll();
+}
+
+template<typename Config>
+auto ResourceGroupManager<Config>::getResource(uint32_t groupId, std::string_view name) const -> core::ResourceSharedRef
+{
+    auto it = resourceGroups_.find(groupId);
+    if (it == resourceGroups_.end()) {
+        throw std::runtime_error("Resource group does not exist");
+    }
+
+    auto& [_, group] = *it;
+    return group->getResource(name);
 }
 }
 

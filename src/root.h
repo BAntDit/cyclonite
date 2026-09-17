@@ -10,7 +10,6 @@
 #include "multithreading/taskManager.h"
 #include "resources/resourceGroupManager.h"
 
-#include "material.h"
 #include "rootConfigTraits.h"
 #include <memory>
 #include <string_view>
@@ -76,40 +75,33 @@ class Root : public RootBase
 {
 public:
     using config_t = cyclonite::ConfigTraits<Config>;
-    using resource_type_list_t =
-      metrix::distinct<typename metrix::concat<typename config_t::custom_resource_type_list_t,
-                                               metrix::type_list<Shader, Material>>::type>::type;
 
-    Root() = default;
+    Root();
 
-    void initResourceManager(core::ResourceSharedRef const& deviceRef);
+    Root(Root const&) = delete;
+
+    Root(Root&&) = delete;
+
+    auto operator=(Root const&) -> Root& = delete;
+
+    auto operator=(Root&&) -> Root& = delete;
 
 private:
-    template<typename... TypeList>
-    struct resource_manager_wrap_t;
-
-    template<typename... Resources>
-    struct resource_manager_wrap_t<metrix::type_list<Resources...>>
-    {
-        explicit resource_manager_wrap_t(core::ResourceSharedRef const& deviceRef)
-          : manager_{ deviceRef }
-        {
-        }
-
-        resources::ResourceGroupManager<Resources...> manager_;
-    };
-
-    std::unique_ptr<resource_manager_wrap_t<resource_type_list_t>> resourceManager_;
+    resources::ResourceGroupManager<Config> resourceGroupManager_;
 
 public:
-    [[nodiscard]] auto resourceManager() const -> decltype(auto) { return (resourceManager_->manager_); }
-    [[nodiscard]] auto resourceManager() -> decltype(auto) { return (resourceManager_->manager_); }
+    [[nodiscard]] auto resourceManager() const -> resources::ResourceGroupManager<Config> const&
+    {
+        return resourceGroupManager_;
+    }
+
+    [[nodiscard]] auto resourceManager() -> resources::ResourceGroupManager<Config>& { return resourceGroupManager_; }
 };
 
 template<typename Config>
-void Root<Config>::initResourceManager(core::ResourceSharedRef const& deviceRef)
+Root<Config>::Root()
+  : resourceGroupManager_{ *this }
 {
-    resourceManager_ = std::make_unique<resource_manager_wrap_t<resource_type_list_t>>(deviceRef);
 }
 }
 #endif // CYCLONITE_ROOT_H

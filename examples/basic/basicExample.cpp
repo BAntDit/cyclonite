@@ -68,12 +68,10 @@ auto BasicExample::init(cyclonite::CommandLine const& commandLine) -> BasicExamp
     auto& limits = device.limits();
     root_.initTaskManager(limits.dedicatedTransferQueue, limits.dedicatedComputeQueue);
 
-    root_.initResourceManager(deviceRef);
-
     defaultResourceGroup_ = root_.resourceManager().addResourceGroup();
     root_.resourceManager().load(defaultResourceGroup_, L"./../../src/shaders/").get();
 
-    root_.resourceManager().prepare(defaultResourceGroup_).get();
+    root_.resourceManager().prepare(defaultResourceGroup_, deviceRef).get();
 
     auto vertexShaderRef = root_.resourceManager().getResource(defaultResourceGroup_, "testBox.vs.hlsl.sm.bin");
     assert(vertexShaderRef.valid());

@@ -169,10 +169,9 @@ void Shader::loadImpl(std::istream& stream)
     }
 }
 
-void Shader::prepareImpl()
+void Shader::prepareImpl(core::ResourceSharedRef const& deviceRef)
 {
-    auto& g = group();
-    auto ref = g.deviceRef();
+    auto ref = deviceRef;
     auto& device = ref.as<gfx::Device>();
 
     assert(rawData_);

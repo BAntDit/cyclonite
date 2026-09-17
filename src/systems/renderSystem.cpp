@@ -63,7 +63,7 @@ void Renderer::init(core::ResourceSharedRef const& deviceRef,
 
     auto& material = materialRef_.as<cyclonite::Material>();
 
-    material.manualSetup(renderPassRef_, shaderSet, rasterizationState).get();
+    material.manualSetup(deviceRef, renderPassRef_, shaderSet, rasterizationState).get();
 }
 
 void Renderer::setupPassConstants(components::Transform const& transform, components::Camera const& camera)

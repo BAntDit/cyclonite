@@ -83,7 +83,7 @@ public:
 
     auto load(std::byte const* data, size_t size) -> std::shared_future<void>;
 
-    auto prepare() -> std::shared_future<void>;
+    auto prepare(core::ResourceSharedRef const& deviceRef) -> std::shared_future<void>;
 
     void markToRemove();
 
@@ -217,7 +217,7 @@ auto ManagedResource<Resource>::loadInternal(loading_context_t&& loadingContext)
 }
 
 template<typename Resource>
-auto ManagedResource<Resource>::prepare() -> std::shared_future<void>
+auto ManagedResource<Resource>::prepare(core::ResourceSharedRef const& deviceRef) -> std::shared_future<void>
 {
     auto expectedState = is_loadable<Resource> ? ManagedResourceState::Loaded : ManagedResourceState::Initial;
 
@@ -229,11 +229,11 @@ auto ManagedResource<Resource>::prepare() -> std::shared_future<void>
             auto* res = static_cast<Resource*>(this);
             auto weakRef = core::ResourceWeakRef{ core::makeResourceSharedRefUnsafe(res) };
 
-            preparationResult_ =
-              multithreading::Executor::threadExecutor().taskManager().submitTask([weakRef]() mutable -> void {
+            preparationResult_ = multithreading::Executor::threadExecutor().taskManager().submitTask(
+              [weakRef, deviceRef]() mutable -> void {
                   if (auto sharedRef = weakRef.lock(); sharedRef.valid()) {
                       auto& r = sharedRef.as<Resource>();
-                      r.prepareImpl();
+                      r.prepareImpl(deviceRef);
                       r.setState(ManagedResourceState::Ready);
                   }
               });

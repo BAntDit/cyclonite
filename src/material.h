@@ -31,7 +31,8 @@ public:
              std::string_view name,
              boost::uuids::uuid const& uuid);
 
-    auto manualSetup(core::ResourceSharedRef passRef,
+    auto manualSetup(core::ResourceSharedRef const& deviceRef,
+                     core::ResourceSharedRef passRef,
                      shader_set_t const& shaderSet,
                      gfx::RasterizationState const& rasterizationState,
                      gfx::PrimitiveTopology primitiveTopology = gfx::PrimitiveTopology::TRIANGLE_LIST,
@@ -39,7 +40,7 @@ public:
 
     [[nodiscard]] auto pipeline() const -> core::ResourceSharedRef { return pipeline_; }
 
-    void prepareImpl();
+    void prepareImpl(core::ResourceSharedRef const& deviceRef);
 
     using core::ResourceBase::resourceBase;
 
