@@ -11,6 +11,7 @@
 #include "serialization.h"
 #include "shader.h"
 #include "shaderModuleBinary.h"
+#include "assetModuleBinary.h"
 #include <boost/uuid/string_generator.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <cassert>
@@ -97,6 +98,9 @@ template<typename ResourceGroup>
             magicDeserializer.deserialize(magicNumber, magicReader);
 
             switch (magicNumber.value) {
+                case shared::ASSET_MODULE_MAGIC_NUMBER: 
+                    // TODO:: create a word cell
+                    break;
                 case shared::SHADER_MODULE_MAGIC_NUMBER:
                     if constexpr (ResourceGroup::template is_group_resource_type<cyclonite::Shader>) {
                         auto shaderModuleBinary = shared::ShaderModuleBinary{};
