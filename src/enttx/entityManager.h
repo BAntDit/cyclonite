@@ -78,9 +78,8 @@ public:
 
     using meta_t = Meta<config_t>;
 
-    using component_list_t = typename config_t::component_list_t;
-    using component_mask_t = typename config_t::component_mask_t;
-
+    using component_list_t = typename meta_t::component_list_t;
+    using component_mask_t = typename meta_t::component_mask_t;
     using storage_tuple_t = typename meta_t::storage_tuple_t;
 
     template<typename C, typename R = void>
@@ -413,7 +412,7 @@ void EntityManager<Config>::View<isConst, FilterComponents...>::Iterator::next()
 {
     if constexpr (sizeof...(FilterComponents) != 0) {
         while (cursor_ < endIndex_ && (entityManager_.masks_[cursor_] & filter_) != filter_) {
-            cursor_++;
+            cursor_++; // TODO:: make better get next
         }
     }
     if constexpr (sizeof...(FilterComponents) == 0) {
