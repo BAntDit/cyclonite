@@ -1,8 +1,5 @@
-//
-// Created by bantdit on 2/11/20.
-//
 
-#include "root.h"
+#include "rootBase.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_video.h>
 
