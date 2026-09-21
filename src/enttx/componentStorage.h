@@ -50,41 +50,52 @@ public:
 
     [[nodiscard]] auto end() -> std::vector<ComponentType>::iterator { return storage_.end(); }
 
-    [[nodiscard]] auto getFirstEntityIndex() const -> uint32_t { return indexToMinValidComponentIndex_; }
+    [[nodiscard]] auto getFirstEntityIndex() const -> uint32_t
+    {
+        return componentIdxToEntityIdx_.empty() ? std::numeric_limits<uint32_t>::max()
+                                                : *componentIdxToEntityIdx_.cbegin();
+    }
 
-    [[nodiscard]] auto getLastEntityIndex() const -> uint32_t;
+    [[nodiscard]] auto getLastEntityIndex() const -> uint32_t
+    {
+        return componentIdxToEntityIdx_.empty() ? std::numeric_limits<uint32_t>::max()
+                                                : *componentIdxToEntityIdx_.crbegin();
+    }
 
-    [[nodiscard]] auto getNextEntityIndex(uint32_t current) const -> uint32_t;
+    [[nodiscard]] auto getEntityIndex(uint32_t componentIdx) const -> uint32_t
+    {
+        return componentIdx < componentIdxToEntityIdx_.size() ? componentIdxToEntityIdx_[componentIdx]
+                                                              : std::numeric_limits<uint32_t>::max();
+    }
 
 private:
     void resizeIndicesIfNecessary(uint32_t index);
 
     void reserveStoreIfNecessary(uint32_t componentIdx);
 
-    std::vector<uint32_t> indices_;
+    std::vector<uint32_t> entityIdxToComponent_; // maybe better use unordered map
+    std::vector<uint32_t> componentIdxToEntityIdx_;
     std::vector<component_type> storage_;
-    uint32_t indexToMaxValidComponentIndex_;
-    uint32_t indexToMinValidComponentIndex_;
 };
 // quick test:
 static_assert(ComponentStorageConcept<ComponentStorage<1, 1, uint32_t>>);
 
 template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT, ComponentConcept ComponentType>
 ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::ComponentStorage()
-  : indices_(CHUNK_SIZE * INITIAL_CHUNK_COUNT, std::numeric_limits<uint32_t>::max())
+  : entityIdxToComponent_(CHUNK_SIZE * INITIAL_CHUNK_COUNT, std::numeric_limits<uint32_t>::max())
+  , componentIdxToEntityIdx_{}
   , storage_{}
-  , indexToMaxValidComponentIndex_{ std::numeric_limits<uint32_t>::max() }
-  , indexToMinValidComponentIndex_{ std::numeric_limits<uint32_t>::max() }
 {
     storage_.reserve(CHUNK_SIZE * INITIAL_CHUNK_COUNT);
+    componentIdxToEntityIdx_.reserve(CHUNK_SIZE * INITIAL_CHUNK_COUNT);
 }
 
 template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT, ComponentConcept ComponentType>
 auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::get(uint32_t index) const -> ComponentType const&
 {
-    assert(index < indices_.size());
+    assert(index < entityIdxToComponent_.size());
 
-    auto componentIdx = indices_[index];
+    auto componentIdx = entityIdxToComponent_[index];
 
     assert(componentIdx < storage_.size());
 
@@ -102,129 +113,91 @@ template<typename... Args>
 auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::create(uint32_t index, Args&&... args)
   -> ComponentType&
 {
-    assert(index != indexToMaxValidComponentIndex_ || index >= indices_.size() ||
-           indices_[index] == std::numeric_limits<uint32_t>::max());
-
     auto it = storage_.end();
 
-    if (indexToMaxValidComponentIndex_ == std::numeric_limits<uint32_t>::max()) {
+    if (componentIdxToEntityIdx_.empty()) {
         auto componentIdx = uint32_t{ 0 };
-
-        indexToMaxValidComponentIndex_ = index;
 
         resizeIndicesIfNecessary(index);
 
-        indices_[index] = componentIdx;
+        entityIdxToComponent_[index] = componentIdx;
 
         reserveStoreIfNecessary(componentIdx);
 
         it = storage_.emplace(storage_.cbegin(), std::forward<Args>(args)...);
-    } else if (index > indexToMaxValidComponentIndex_) {
-        auto componentIdx = indices_[indexToMaxValidComponentIndex_];
-
-        indexToMaxValidComponentIndex_ = index;
-
-        assert(componentIdx < storage_.size());
+        componentIdxToEntityIdx_.emplace(componentIdxToEntityIdx_.cbegin(), index);
+    } else if (auto maxValidEntityIdx = componentIdxToEntityIdx_.back(); index > maxValidEntityIdx) {
+        auto componentIdx = entityIdxToComponent_[maxValidEntityIdx];
 
         resizeIndicesIfNecessary(index);
 
-        indices_[index] = ++componentIdx;
+        entityIdxToComponent_[index] = ++componentIdx;
 
         reserveStoreIfNecessary(componentIdx);
 
         it = storage_.emplace(std::next(storage_.cbegin(), componentIdx), std::forward<Args>(args)...);
+        componentIdxToEntityIdx_.emplace(std::next(componentIdxToEntityIdx_.cbegin(), componentIdx), index);
     } else {
-        assert(indices_[indexToMaxValidComponentIndex_] < storage_.size());
-
-        reserveStoreIfNecessary(indices_[indexToMaxValidComponentIndex_] + 1);
+        auto maxValidEntityIdx = componentIdxToEntityIdx_.back();
 
         auto componentIdx = std::numeric_limits<uint32_t>::max();
 
         // increment all indices after the element we're going to place component in
-        for (auto componentIdxIt = std::next(indices_.begin(), index);
-             componentIdxIt != std::next(indices_.begin(), indexToMaxValidComponentIndex_ + 1);
+        for (auto componentIdxIt = std::next(entityIdxToComponent_.begin(), index);
+             componentIdxIt != std::next(entityIdxToComponent_.begin(), componentIdxToEntityIdx_.crbegin() + 1);
              ++componentIdxIt) {
+
             if (*componentIdxIt == std::numeric_limits<uint32_t>::max())
-                continue;
+                continue; // skips empty
 
             if (componentIdx == std::numeric_limits<uint32_t>::max()) {
-                componentIdx = *componentIdxIt;
+                componentIdx = *componentIdxIt; // index to place before
             }
 
             (*componentIdxIt)++;
         }
-
         assert(componentIdx < storage_.size());
 
-        indices_[index] = componentIdx;
+        entityIdxToComponent_[index] = componentIdx;
 
         it = storage_.emplace(std::next(storage_.cbegin(), componentIdx), std::forward<Args>(args)...);
+
+        componentIdxToEntityIdx_.emplace(std::next(componentIdxToEntityIdx_.cbegin(), componentIdx), index);
     }
 
-    indexToMinValidComponentIndex_ = std::min(indexToMinValidComponentIndex_, index);
     assert(it != storage_.end());
-
     return *it;
 }
 
 template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT, ComponentConcept ComponentType>
 void ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::destroy(uint32_t index)
 {
-    assert(index <= indexToMaxValidComponentIndex_);
-    assert(index >= indexToMinValidComponentIndex_);
-    assert(indices_[index] != std::numeric_limits<uint32_t>::max());
-
-    auto componentIdx = indices_[index];
-
-    assert(componentIdx < storage_.size());
+    auto componentIdx = entityIdxToComponent_[index];
 
     storage_.erase(std::next(storage_.cbegin(), componentIdx));
+    componentIdxToEntityIdx_.erase(std::next(componentIdxToEntityIdx_.cbegin(), componentIdx));
 
-    indices_[index] = std::numeric_limits<uint32_t>::max();
+    entityIdxToComponent_[index] = std::numeric_limits<uint32_t>::max();
 
-    for (auto it = std::next(indices_.begin(), index);
-         it != std::next(indices_.begin(), indexToMaxValidComponentIndex_ + 1);
+    for (auto it = std::next(entityIdxToComponent_.begin(), index);
+         it != std::next(entityIdxToComponent_.begin(), componentIdxToEntityIdx_.crbegin() + 1);
          it++) {
         if (*it == std::numeric_limits<uint32_t>::max())
             continue;
 
         (*it)--;
     }
-
-    if (index == indexToMaxValidComponentIndex_) {
-        uint32_t validIndex = std::numeric_limits<uint32_t>::max();
-
-        for (uint32_t i = indexToMaxValidComponentIndex_; i != std::numeric_limits<uint32_t>::max(); i--) {
-            if (indices_[i] != std::numeric_limits<uint32_t>::max()) {
-                validIndex = i;
-                break;
-            }
-        }
-
-        indexToMaxValidComponentIndex_ = validIndex;
-    }
-    if (index == indexToMinValidComponentIndex_) {
-        uint32_t validIndex = std::numeric_limits<uint32_t>::max();
-        for (uint32_t i = indexToMinValidComponentIndex_; i < indexToMaxValidComponentIndex_; i++) {
-            if (indices_[i] != std::numeric_limits<uint32_t>::max()) {
-                validIndex = i;
-                break;
-            }
-        }
-
-        indexToMinValidComponentIndex_ = validIndex;
-    }
 }
 
 template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT, ComponentConcept ComponentType>
 void ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::resizeIndicesIfNecessary(uint32_t index)
 {
-    auto size = indices_.size();
+    auto size = entityIdxToComponent_.size();
 
     if (index >= size) {
         size = index + 1;
         size = size + CHUNK_SIZE - size % CHUNK_SIZE;
-        indices_.resize(size, std::numeric_limits<uint32_t>::max());
+        entityIdxToComponent_.resize(size, std::numeric_limits<uint32_t>::max());
     }
 }
 
@@ -238,31 +211,8 @@ void ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::reserveSt
         capacity = capacity + CHUNK_SIZE - capacity % CHUNK_SIZE;
 
         storage_.reserve(capacity);
+        componentIdxToEntityIdx_.reserve(capacity);
     }
-}
-
-template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT, ComponentConcept ComponentType>
-auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::getNextEntityIndex(uint32_t current) const
-  -> uint32_t
-{
-    auto index = std::numeric_limits<uint32_t>::max();
-    for (auto i = ++current; i <= indexToMaxValidComponentIndex_; i++) {
-        if (indices_[i] != std::numeric_limits<uint32_t>::max()) {
-            index = i;
-            break;
-        }
-    }
-    return index;
-}
-
-template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT, ComponentConcept ComponentType>
-auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::getLastEntityIndex() const -> uint32_t
-{
-    auto index = indexToMaxValidComponentIndex_;
-    if (index < std::numeric_limits<uint32_t>::max()) {
-        index++; // next after max valid
-    }
-    return index;
 }
 }
 

@@ -145,12 +145,14 @@ public:
 
     public:
         using filter_component_list_t = metrix::type_list<FilterComponents...>;
+        using entity_index_f = uint32_t (*)(void*, uint32_t);
 
         class Iterator
         {
         public:
             using iterator_category = std::input_iterator_tag;
-            using value_type = std::conditional_t<sizeof...(FilterComponents) == 0, Entity, std::tuple<Entity, FilterComponents&...>>;
+            using value_type =
+              std::conditional_t<sizeof...(FilterComponents) == 0, Entity, std::tuple<Entity, FilterComponents&...>>;
             using difference_type = uint32_t;
             using pointer = value_type*;
             using reference = value_type&;
@@ -165,20 +167,29 @@ public:
         private:
             friend class View<isConst, FilterComponents...>;
 
-            Iterator(entity_manager_t entityManager, component_mask_t filter, uint32_t cursor, uint32_t endIndex)
-              : cursor_{ cursor }
+            Iterator(entity_manager_t entityManager,
+                     component_mask_t filter,
+                     entity_index_f entityIndexFunc,
+                     void* storage,
+                     uint32_t cursor,
+                     uint32_t endIndex)
+              : entityManager_{ entityManager }
+              , entityIndexFunc_{ entityIndexFunc }
+              , storage_{ storage }
+              , cursor_{ cursor }
               , endIndex_{ endIndex }
               , filter_{ filter }
-              , entityManager_{ entityManager }
             {
             }
 
             void next();
 
+            entity_manager_t entityManager_;
+            entity_index_f entityIndexFunc_;
+            void* storage_;
             uint32_t cursor_;
             uint32_t endIndex_;
             component_mask_t filter_;
-            entity_manager_t entityManager_;
         };
 
         [[nodiscard]] auto begin() const -> Iterator;
@@ -191,11 +202,21 @@ public:
         explicit View(entity_manager_t entityManager);
 
         template<ComponentStorageConcept StorageType>
-        auto getIteratorIndices(StorageType& storage, size_t entityCount, uint32_t& firstIndex, uint32_t& lastIndex)
-          -> size_t;
+        auto getIteratorArguments(StorageType& storage,
+                                  size_t entityCount,
+                                  uint32_t& firstIndex,
+                                  uint32_t& lastIndex,
+                                  entity_index_f& entityIdxFunc,
+                                  void*& storagePtr) -> size_t;
 
         entity_manager_t entityManager_;
         component_mask_t filter_;
+
+        template<ComponentStorageConcept StorageType>
+        static auto getNextEntityIndex(void* storagePtr, uint32_t componentIdx) -> uint32_t
+        {
+            return std::launder(reinterpret_cast<StorageType*>(storagePtr))->getEntityIndex(componentIdx);
+        }
     };
 
 private:
@@ -411,12 +432,13 @@ template<bool isConst, typename... FilterComponents>
 void EntityManager<Config>::View<isConst, FilterComponents...>::Iterator::next()
 {
     if constexpr (sizeof...(FilterComponents) != 0) {
-        while (cursor_ < endIndex_ && (entityManager_.masks_[cursor_] & filter_) != filter_) {
-            cursor_++; // TODO:: make better get next
+        while (cursor_ < endIndex_) {
+            auto entityIdx = entityIndexFunc_(storage_, cursor_);
+            if ((entityManager_.masks_[entityIdx] & filter_) == filter_) {
+                break;
+            }
+            cursor_++;
         }
-    }
-    if constexpr (sizeof...(FilterComponents) == 0) {
-        cursor_++;
     }
 }
 
@@ -425,7 +447,10 @@ template<bool isConst, typename... FilterComponents>
 auto EntityManager<Config>::View<isConst, FilterComponents...>::Iterator::operator++()
   -> EntityManager<Config>::View<isConst, FilterComponents...>::Iterator&
 {
-    cursor_++;
+    if (cursor_ < endIndex_) {
+        cursor_++;
+    }
+
     next();
     return *this;
 }
@@ -434,36 +459,13 @@ template<typename Config>
 template<bool isConst, typename... FilterComponents>
 auto EntityManager<Config>::View<isConst, FilterComponents...>::Iterator::operator*() const -> Iterator::value_type
 {
-    auto entity = Entity{ cursor_, entityManager_.versions_[cursor_] };
+    auto entity = Entity{ entityIndexFunc_(storage_, cursor_), entityManager_.versions_[cursor_] };
 
     if (sizeof...(FilterComponents) == 0) {
         return entity;
     } else {
         return std::tie(entity, (entityManager_.template getComponent<FilterComponents>(entity))...);
     }
-}
-
-template<typename Config>
-template<bool isConst, typename... FilterComponents>
-auto EntityManager<Config>::View<isConst, FilterComponents...>::begin() const -> Iterator
-{
-    auto entityCount = size_t{ 0 };
-    auto firstIndex = uint32_t{ 0 };
-    auto lastIndex = uint32_t{ 0 };
-
-    ((entityCount = getIteratorIndices(
-        std::get<EntityManager<Config>::component_list_t::template get_type_index<FilterComponents>::value>(
-          entityManager_.storage_),
-        entityCount,
-        firstIndex,
-        lastIndex)),
-     ...);
-
-    auto iterator = Iterator{ entityManager_, filter_, firstIndex, lastIndex };
-
-    iterator.next();
-
-    return iterator;
 }
 
 template<typename Config>
@@ -481,15 +483,19 @@ EntityManager<Config>::View<isConst, FilterComponents...>::View(entity_manager_t
 template<typename Config>
 template<bool isConst, typename... FilterComponents>
 template<ComponentStorageConcept StorageType>
-auto EntityManager<Config>::View<isConst, FilterComponents...>::getIteratorIndices(StorageType& storage,
-                                                                                   size_t entityCount,
-                                                                                   uint32_t& firstIndex,
-                                                                                   uint32_t& lastIndex) -> size_t
+auto EntityManager<Config>::View<isConst, FilterComponents...>::getIteratorArguments(StorageType& storage,
+                                                                                     size_t entityCount,
+                                                                                     uint32_t& firstIndex,
+                                                                                     uint32_t& lastIndex,
+                                                                                     entity_index_f& entityIdxFunc,
+                                                                                     void*& storagePtr) -> size_t
 {
     if (storage.size() < entityCount) {
         entityCount = storage.size();
         firstIndex = storage.getFirstEntityIndex();
-        lastIndex = storage.getLastEntityIndex();
+        lastIndex = storage.getLastEntityIndex() + 1;
+        entityIdxFunc = &getNextEntityIndex<StorageType>;
+        storagePtr = &storage;
     }
 
     return entityCount;
@@ -501,17 +507,21 @@ auto EntityManager<Config>::View<isConst, FilterComponents...>::begin() const ->
 {
     auto entityCount = entityManager_.size();
     auto firstIndex = uint32_t{ 0 };
-    auto lastIndex = uint32_t{ 0 };
+    auto lastIndex = entityManager_.size();
+    auto entityIdxFunc = [](void*, uint32_t) -> uint32_t { return 0; };
+    auto* storagePtr = std::add_pointer_t<void>{ &std::get<0>(entityManager_.storage_) };
 
-    ((entityCount = getIteratorIndices(
+    ((entityCount = getIteratorArguments(
         std::get<EntityManager<Config>::component_list_t::template get_type_index<FilterComponents>::value>(
           entityManager_.storage_),
         entityCount,
         firstIndex,
-        lastIndex)),
+        lastIndex,
+        entityIdxFunc,
+        storagePtr)),
      ...);
 
-    auto iterator = Iterator{ entityManager_, filter_, firstIndex, lastIndex };
+    auto iterator = Iterator{ entityManager_, filter_, entityIdxFunc, storagePtr, 0, lastIndex };
 
     iterator.next();
 
@@ -525,16 +535,20 @@ auto EntityManager<Config>::View<isConst, FilterComponents...>::end() const -> I
     auto entityCount = entityManager_.size();
     auto firstIndex = uint32_t{ 0 };
     auto lastIndex = uint32_t{ 0 };
+    auto entityIdxFunc = [](void*, uint32_t) -> uint32_t { return 0; };
+    auto* storagePtr = std::add_pointer_t<void>{ &std::get<0>(entityManager_.storage_) };
 
-    ((entityCount = getIteratorIndices(
+    ((entityCount = getIteratorArguments(
         std::get<EntityManager<Config>::component_list_t::template get_type_index<FilterComponents>::value>(
           entityManager_.storage_),
         entityCount,
         firstIndex,
-        lastIndex)),
+        lastIndex,
+        entityIdxFunc,
+        storagePtr)),
      ...);
 
-    return Iterator{ entityManager_, filter_, lastIndex, lastIndex };
+    return Iterator{ entityManager_, filter_, entityIdxFunc, storagePtr, lastIndex, lastIndex };
 }
 }
 
