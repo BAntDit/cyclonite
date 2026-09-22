@@ -439,6 +439,14 @@ void EntityManager<Config>::View<isConst, FilterComponents...>::Iterator::next()
             }
             cursor_++;
         }
+    } else {
+        while (cursor_ < endIndex_) { // skips empty entities
+            auto entityIdx = cursor_;
+            if (entityManager_.masks_[entityIdx].any()) {
+                break;
+            }
+            cursor_;
+        }
     }
 }
 
@@ -459,11 +467,11 @@ template<typename Config>
 template<bool isConst, typename... FilterComponents>
 auto EntityManager<Config>::View<isConst, FilterComponents...>::Iterator::operator*() const -> Iterator::value_type
 {
-    auto entity = Entity{ entityIndexFunc_(storage_, cursor_), entityManager_.versions_[cursor_] };
-
     if (sizeof...(FilterComponents) == 0) {
+        auto entity = Entity{ cursor_, entityManager_.versions_[cursor_] };
         return entity;
     } else {
+        auto entity = Entity{ entityIndexFunc_(storage_, cursor_), entityManager_.versions_[cursor_] };
         return std::tie(entity, (entityManager_.template getComponent<FilterComponents>(entity))...);
     }
 }
