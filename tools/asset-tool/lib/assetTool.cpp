@@ -365,16 +365,15 @@ void fillAssetAccessor(tinygltf::Model const& model, int gltfAccessorIndex, shar
 
             }
 
-            auto rootNodeCount = size_t{ 0 };
+            output.scenes.reserve(model.scenes.size());
             for (auto& gltfScene : model.scenes) {
-                rootNodeCount += gltfScene.nodes.size();
-            }
+                auto& assetScene = output.scenes.emplace_back();
+                assetScene.name = gltfScene.name;
+                assetScene.rootNodes.reserve(gltfScene.nodes.size());
 
-            output.rootNodes.reserve(rootNodeCount);
-            for (auto& gltfScene : model.scenes) {
                 std::transform(gltfScene.nodes.begin(),
                                gltfScene.nodes.end(),
-                               std::back_inserter(output.rootNodes),
+                               std::back_inserter(assetScene.rootNodes),
                                [](int n) -> uint32_t { return static_cast<uint32_t>(n); });
             }
         } break;

@@ -400,6 +400,24 @@ struct AssetNode
     AssetTransformType transformType;
 };
 
+struct AssetScene
+{
+    void get(std::string& nameOut, std::vector<uint32_t>& rootNodesOut) const
+    {
+        nameOut = name;
+        rootNodesOut = rootNodes;
+    }
+
+    void set(std::string const& nameIn, std::vector<uint32_t> const& rootNodesIn)
+    {
+        name = nameIn;
+        rootNodes = rootNodesIn;
+    }
+
+    std::string name;
+    std::vector<uint32_t> rootNodes;
+};
+
 struct AssetMainBlock
 {
     std::vector<std::vector<std::byte>> buffers;
@@ -410,7 +428,7 @@ struct AssetMainBlock
     std::vector<AssetMaterial> materials;
     std::vector<AssetMesh> meshes;
     std::vector<AssetNode> nodes;
-    std::vector<uint32_t> rootNodes;
+    std::vector<AssetScene> scenes;
 };
 
 struct AssetModuleBinary

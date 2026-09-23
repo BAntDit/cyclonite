@@ -135,7 +135,8 @@ int main(int argc, char* argv[])
                                                &cyclonite::shared::AssetMaterial::name>(),
             cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::nodes,
                                                &cyclonite::shared::AssetNode::get>(),
-            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::rootNodes>()
+            cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::scenes,
+                                               &cyclonite::shared::AssetScene::get>()
         };
 
         assetBinaryModule.mainBlock = std::move(std::get<cyclonite::shared::AssetMainBlock>(command.output));
@@ -174,7 +175,8 @@ int main(int argc, char* argv[])
                                                &cyclonite::shared::AssetMainBlock::nodes,
                                                &cyclonite::shared::AssetNode::get>(),
             cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetModuleBinary::mainBlock,
-                                               &cyclonite::shared::AssetMainBlock::rootNodes>()
+                                               &cyclonite::shared::AssetMainBlock::scenes,
+                                               &cyclonite::shared::AssetScene::get>()
         }; 
         
         auto binaryWriter = cyclonite::shared::BinaryStreamWriter{ outputPath, cyclonite::shared::Endian::Little };

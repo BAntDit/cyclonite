@@ -6,7 +6,7 @@ import os
 
 class AssetToolRecipe(ConanFile):
     name = "asset-tool"
-    version = "0.1.2.0"
+    version = "0.1.3.0"
     description = "asset tool for cyclonite engine."
 
     settings = "os", "compiler", "arch", "build_type"
