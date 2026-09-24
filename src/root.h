@@ -6,8 +6,11 @@
 #define CYCLONITE_ROOT_H
 
 #include "resources/resourceGroupManager.h"
+#include "enttx/entityManager.h"
 #include "rootBase.h"
 #include "rootConfigTraits.h"
+#include <boost/unordered/unordered_flat_map.hpp>
+#include <stdexcept>
 
 namespace cyclonite {
 namespace internal {
@@ -31,7 +34,12 @@ public:
 
     auto operator=(Root&&) -> Root& = delete;
 
+    [[nodiscard]] auto getSceneEntities(core::ResourceSharedRef const& scene) const -> enttx::EntityManager<Config> const&;
+
+    [[nodiscard]] auto getSceneEntities(core::ResourceSharedRef const& scene) -> enttx::EntityManager<Config>&;
+
 private:
+    boost::unordered_flat_map<uint64_t, enttx::EntityManager<Config>> sceneEcs_;
     resources::ResourceGroupManager<Config> resourceGroupManager_;
 
 public:
@@ -49,5 +57,23 @@ Root<Config>::Root()
   , resourceGroupManager_{ *this }
 {
 }
+
+template<typename Config>
+auto Root<Config>::getSceneEntities(core::ResourceSharedRef const& scene) const -> enttx::EntityManager<Config> const&
+{
+    auto& res = scene.as<core::ResourceBase>();
+    auto sceneId = static_cast<uint64_t>(res.resourceId());
+
+    if (!sceneEcs_.contains(sceneId))
+        throw std::invalid_argument("invalid scene");
+
+    return sceneEcs_.at(sceneId);
 }
+
+template<typename Config>
+auto Root<Config>::getSceneEntities(core::ResourceSharedRef const& scene) -> enttx::EntityManager<Config>&
+{
+    return const_cast<enttx::EntityManager<Config>&>(std::as_const(*this)->getSceneEntities(scene));
+}
+} // cyclonite
 #endif // CYCLONITE_ROOT_H

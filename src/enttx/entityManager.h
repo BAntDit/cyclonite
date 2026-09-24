@@ -90,6 +90,14 @@ public:
 
     explicit EntityManager(size_t initialCapacity = 10000);
 
+    EntityManager(EntityManager const&) = delete;
+    
+    EntityManager(EntityManager&&) = default;
+
+    auto operator=(EntityManager const&) -> EntityManager& = delete;
+    
+    auto operator=(EntityManager&&) -> EntityManager& = default;
+
     [[nodiscard]] auto size() const -> size_t { return versions_.size() - freeIndices_.size(); }
 
     [[nodiscard]] auto capacity() const -> size_t { return versions_.size(); }
