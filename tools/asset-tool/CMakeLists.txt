@@ -1,6 +1,6 @@
 
 cmake_minimum_required(VERSION 3.17.2)
-project(asset-tool VERSION 0.1.3.0)
+project(asset-tool VERSION 0.1.4.0)
 
 file(GLOB TOOLS_ASSET_TOOL_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/includes/*.h")
 

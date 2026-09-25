@@ -284,12 +284,16 @@ struct AssetDataAccessor
 
 struct AssetSubMesh
 {
-    void get(std::vector<uint32_t>& attributesOut,
+    void get(std::string& nameOut,
+             std::string& uuidOut,
+             std::vector<uint32_t>& attributesOut,
              std::vector<uint32_t>& morphTargetOut,
              uint32_t& indicesOut,
              uint32_t& materialOut,
              uint8_t& topologyOut) const
     {
+        nameOut = name;
+        uuidOut = uuid;
         attributesOut = attributes;
         morphTargetOut = morphTargetAccessors;
         indicesOut = indices;
@@ -297,12 +301,16 @@ struct AssetSubMesh
         topologyOut = metrix::value_cast(primitiveTopology);
     }
 
-    void set(std::vector<uint32_t> const& attributesIn,
+    void set(std::string const& nameIn,
+             std::string const& uuidIn,
+             std::vector<uint32_t> const& attributesIn,
              std::vector<uint32_t> const& morphTargetIn,
              uint32_t indicesIn,
              uint32_t materialIn,
              uint8_t topologyIn)
     {
+        name = nameIn;
+        uuid = uuidIn;
         attributes = attributesIn;
         morphTargetAccessors = morphTargetIn;
         indices = indicesIn;
@@ -310,6 +318,8 @@ struct AssetSubMesh
         primitiveTopology = internal::toAssetPrimitiveTopology(topologyIn);
     }
 
+    std::string name;
+    std::string uuid;
     std::vector<uint32_t> attributes;
     std::vector<uint32_t> morphTargetAccessors;
     uint32_t indices;
@@ -355,6 +365,19 @@ struct AssetVertexAttribute
 
 struct AssetMaterial
 {
+    void get(std::string& uuidOut, std::string& nameOut) const
+    {
+        uuidOut = uuid;
+        nameOut = name;
+    }
+
+    void set(std::string const& uuidIn, std::string const& nameIn)
+    {
+        uuid = uuidIn;
+        name = nameIn;
+    }
+
+    std::string uuid;
     std::string name;
 };
 
@@ -402,18 +425,21 @@ struct AssetNode
 
 struct AssetScene
 {
-    void get(std::string& nameOut, std::vector<uint32_t>& rootNodesOut) const
+    void get(std::string& uuidOut, std::string& nameOut, std::vector<uint32_t>& rootNodesOut) const
     {
+        uuidOut = uuid;
         nameOut = name;
         rootNodesOut = rootNodes;
     }
 
-    void set(std::string const& nameIn, std::vector<uint32_t> const& rootNodesIn)
+    void set(std::string const& uuidIn, std::string const& nameIn, std::vector<uint32_t> const& rootNodesIn)
     {
+        uuid = uuidIn;
         name = nameIn;
         rootNodes = rootNodesIn;
     }
 
+    std::string uuid;
     std::string name;
     std::vector<uint32_t> rootNodes;
 };

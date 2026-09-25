@@ -14,6 +14,7 @@
 #include <iterator>
 #include <regex>
 #include <bit>
+#include <format>
 
 #if defined(_WIN32) // _WIN32 / _WIN64 at once
 #ifdef max
@@ -25,6 +26,13 @@
 #endif
 
 #include <limits>
+
+#ifdef uuid
+#undef uuid
+#endif
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 namespace cyclonite::tools {
 namespace
@@ -188,6 +196,8 @@ void fillAssetAccessor(tinygltf::Model const& model, int gltfAccessorIndex, shar
                 std::cout << warn << std::endl;
             }
 
+            auto uuidGen = boost::uuids::random_generator_mt19937{};
+
             // gltf -> asset:
             output.buffers.reserve(model.buffers.size());
             for (auto const& gltfBuffer : model.buffers) {
@@ -212,6 +222,9 @@ void fillAssetAccessor(tinygltf::Model const& model, int gltfAccessorIndex, shar
             for (auto const& gltfMaterial : model.materials) {
                 auto& assetMaterial = output.materials.emplace_back();
                 assetMaterial.name = gltfMaterial.name;
+
+                auto uuid = boost::uuids::uuid{ uuidGen() };
+                assetMaterial.uuid = boost::uuids::to_string(uuid);
             }
 
             auto subMeshCount = uint32_t{0};
@@ -249,9 +262,15 @@ void fillAssetAccessor(tinygltf::Model const& model, int gltfAccessorIndex, shar
                 assetMesh.name = gltfMesh.name;
                 assetMesh.subMeshes.reserve(gltfMesh.primitives.size());
 
+                auto submeshIndex = size_t{ 0 };
                 for (auto const& gltfPrimitive : gltfMesh.primitives) { // submesh
                     auto subMeshIndex = static_cast<uint32_t>(output.subMeshes.size());
                     auto& assetSubMesh = output.subMeshes.emplace_back();
+
+                    assetSubMesh.name = std::format("{}_{}", gltfMesh.name, subMeshIndex++);
+
+                    auto uuid = boost::uuids::uuid{ uuidGen() };
+                    assetSubMesh.uuid = boost::uuids::to_string(uuid);
 
                     assetSubMesh.primitiveTopology = gltfModeToPrimitiveTopology(gltfPrimitive.mode);
 
@@ -368,6 +387,9 @@ void fillAssetAccessor(tinygltf::Model const& model, int gltfAccessorIndex, shar
             output.scenes.reserve(model.scenes.size());
             for (auto& gltfScene : model.scenes) {
                 auto& assetScene = output.scenes.emplace_back();
+                auto uuid = boost::uuids::uuid{ uuidGen() };
+
+                assetScene.uuid = boost::uuids::to_string(uuid);
                 assetScene.name = gltfScene.name;
                 assetScene.rootNodes.reserve(gltfScene.nodes.size());
 

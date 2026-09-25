@@ -52,7 +52,7 @@ class CycloniteRecipe(ConanFile):
             self.tool_requires("ninja/[>=1.11.0]")
 
         self.tool_requires("shader-compiler/0.1.5.0")
-        self.tool_requires("asset-tool/0.1.3.0")
+        self.tool_requires("asset-tool/0.1.4.0")
 
     def requirements(self):
         self.requires("gtest/[~1.16]")
