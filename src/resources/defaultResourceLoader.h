@@ -5,14 +5,15 @@
 #ifndef CYCLONITE_RESOURCES_DEFAULT_RESOURCE_LOADER_H
 #define CYCLONITE_RESOURCES_DEFAULT_RESOURCE_LOADER_H
 
+#include "assetModuleBinary.h"
 #include "binaryStreamReader.h"
 #include "core/resourceSharedRef.h"
+#include "geometry.h"
 #include "multithreading/utility.h"
+#include "scene.h"
 #include "serialization.h"
 #include "shader.h"
-#include "scene.h"
 #include "shaderModuleBinary.h"
-#include "assetModuleBinary.h"
 #include <boost/uuid/string_generator.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <cassert>
@@ -99,13 +100,77 @@ template<typename ResourceGroup>
             magicDeserializer.deserialize(magicNumber, magicReader);
 
             switch (magicNumber.value) {
-                case shared::ASSET_MODULE_MAGIC_NUMBER:
-                    if constexpr (ResourceGroup::template is_group_resource_type<cyclonite::Shader>) {
-                        auto assetModuleBinary = shared::AssetModuleBinary{};
-                        // TODO:: split scenes and main block
-                        // TODO:: create scenes
-                    }
-                    break;
+                case shared::ASSET_MODULE_MAGIC_NUMBER: {
+                    auto assetModuleBinary = shared::AssetModuleBinary{};
+
+                    auto headersDeserializer =
+                      shared::Deserializer{ shared::makeAccessChain<&shared::AssetModuleBinary::blockHeaders,
+                                                                    &shared::AssetBlockHeader::setBlockHeaderData>() };
+
+                    auto headersReader = shared::BinaryStreamReader{ file, shared::Endian::Little };
+                    headersReader.setStreamOffset(sizeof(magicNumber.value));
+
+                    headersDeserializer.deserialize(assetModuleBinary, headersReader);
+                    if (!assetModuleBinary.blockHeaders.empty()) {
+                        if (auto& header = assetModuleBinary.blockHeaders.back();
+                            header.id == shared::ASSET_MODULE_MAIN_BLOCK) {
+                            auto [baseOffset, blockOffset, _0, _1] = header;
+
+                            auto mainBlockReader = shared::BinaryStreamReader{ file, shared::Endian::Little };
+                            mainBlockReader.setStreamOffset(baseOffset + blockOffset);
+
+                            // main block deserializer:
+                            auto mainBlockDeserializer = cyclonite::shared::Deserializer{
+                                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::buffers>(),
+                                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::bufferViews,
+                                                                   &cyclonite::shared::AssetBufferView::set>(),
+                                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::dataAccessors,
+                                                                   &cyclonite::shared::AssetDataAccessor::set>(),
+                                cyclonite::shared::makeAccessChain<
+                                  &cyclonite::shared::AssetMainBlock::subMeshAttributes,
+                                  &cyclonite::shared::AssetVertexAttribute::set>(),
+                                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::subMeshes,
+                                                                   &cyclonite::shared::AssetSubMesh::set>(),
+                                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::meshes,
+                                                                   &cyclonite::shared::AssetMesh::set>(),
+                                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::materials,
+                                                                   &cyclonite::shared::AssetMaterial::set>(),
+                                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::nodes,
+                                                                   &cyclonite::shared::AssetNode::set>(),
+                                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::scenes,
+                                                                   &cyclonite::shared::AssetScene::set>()
+                            };
+
+                            auto mainBlock = std::make_shared<shared::AssetMainBlock>();
+                            mainBlockDeserializer.deserialize(*mainBlock, mainBlockReader);
+
+                            if constexpr (ResourceGroup::template is_group_resource_type<cyclonite::Geometry>) {
+                                auto generator = boost::uuids::string_generator{};
+
+                                for (auto& assetSubMesh : mainBlock.subMeshes) {
+                                    auto uuid = generator(assetSubMesh.uuid);
+
+                                    auto ref = resourceGroup->getResource(uuid);
+                                    if (!ref.valid()) {
+                                        ref = core::ResourceSharedRef{
+                                            resourceGroup->template addResource<cyclonite::Geometry>(assetSubMesh.name,
+                                                                                                     uuid)
+                                        };
+                                    }
+
+                                    auto& geometry = ref.as<cyclonite::Geometry>();
+                                    auto future = geometry.load(entry.path(), std::ios::binary | std::ios::in);
+
+                                    futures.push_back(std::move(future));
+                                }
+                            }
+
+                            // TODO:: create empty scenes
+                            // TODO:: make unique geometry
+                        }
+                    } // if asset is not empty
+                } // binary asset
+                break;
                 case shared::SHADER_MODULE_MAGIC_NUMBER:
                     if constexpr (ResourceGroup::template is_group_resource_type<cyclonite::Shader>) {
                         auto shaderModuleBinary = shared::ShaderModuleBinary{};
