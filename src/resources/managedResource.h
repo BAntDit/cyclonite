@@ -30,7 +30,7 @@ concept is_loadable = requires(T t, std::istream& stream) {
 };
 
 template<typename T>
-concept is_prepareable = requires(T t, core::ResourceSharedRef const& deviceRef) {
+concept is_prepareable = requires(T t, core::ResourceSharedRef deviceRef) {
     { t.prepareImpl(deviceRef) } -> std::same_as<void>;
 };
 
@@ -230,7 +230,7 @@ auto ManagedResource<Resource>::prepare(core::ResourceSharedRef const& deviceRef
             auto weakRef = core::ResourceWeakRef{ core::makeResourceSharedRefUnsafe(res) };
 
             preparationResult_ = multithreading::Executor::threadExecutor().taskManager().submitTask(
-              [weakRef, deviceRef]() mutable -> void {
+              [weakRef, deviceRef = deviceRef]() mutable -> void {
                   if (auto sharedRef = weakRef.lock(); sharedRef.valid()) {
                       auto& r = sharedRef.as<Resource>();
                       r.prepareImpl(deviceRef);

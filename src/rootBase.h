@@ -7,8 +7,7 @@
 #include "multithreading/taskManager.h"
 #include <string_view>
 
-namespace cyclonite 
-{
+namespace cyclonite {
 class RootBase
 {
 public:

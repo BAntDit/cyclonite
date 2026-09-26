@@ -5,8 +5,8 @@
 #ifndef CYCLONITE_ROOT_H
 #define CYCLONITE_ROOT_H
 
-#include "resources/resourceGroupManager.h"
 #include "enttx/entityManager.h"
+#include "resources/resourceGroupManager.h"
 #include "rootBase.h"
 #include "rootConfigTraits.h"
 #include <boost/unordered/unordered_flat_map.hpp>
@@ -34,7 +34,8 @@ public:
 
     auto operator=(Root&&) -> Root& = delete;
 
-    [[nodiscard]] auto getSceneEntities(core::ResourceSharedRef const& scene) const -> enttx::EntityManager<Config> const&;
+    [[nodiscard]] auto getSceneEntities(core::ResourceSharedRef const& scene) const
+      -> enttx::EntityManager<Config> const&;
 
     [[nodiscard]] auto getSceneEntities(core::ResourceSharedRef const& scene) -> enttx::EntityManager<Config>&;
 

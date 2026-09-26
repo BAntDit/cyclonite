@@ -110,8 +110,8 @@ auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::get(uint3
 
 template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT, ComponentConcept ComponentType>
 template<typename... Args>
-auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::create(uint32_t index, Args&&... args)
-  -> ComponentType&
+auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::create(uint32_t index,
+                                                                              Args&&... args) -> ComponentType&
 {
     auto it = storage_.end();
 

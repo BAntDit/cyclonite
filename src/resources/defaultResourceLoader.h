@@ -147,19 +147,19 @@ template<typename ResourceGroup>
                             if constexpr (ResourceGroup::template is_group_resource_type<cyclonite::Geometry>) {
                                 auto generator = boost::uuids::string_generator{};
 
-                                for (auto& assetSubMesh : mainBlock.subMeshes) {
+                                for (auto& assetSubMesh : mainBlock->subMeshes) {
                                     auto uuid = generator(assetSubMesh.uuid);
 
                                     auto ref = resourceGroup->getResource(uuid);
                                     if (!ref.valid()) {
                                         ref = core::ResourceSharedRef{
-                                            resourceGroup->template addResource<cyclonite::Geometry>(assetSubMesh.name,
-                                                                                                     uuid)
+                                            resourceGroup->template addResource<cyclonite::Geometry>(
+                                              assetSubMesh.name, uuid, mainBlock)
                                         };
                                     }
 
-                                    auto& geometry = ref.as<cyclonite::Geometry>();
-                                    auto future = geometry.load(entry.path(), std::ios::binary | std::ios::in);
+                                    auto& geometry = ref.template as<cyclonite::Geometry>();
+                                    auto future = geometry.load(nullptr, 0);
 
                                     futures.push_back(std::move(future));
                                 }
