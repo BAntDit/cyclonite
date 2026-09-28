@@ -197,13 +197,6 @@ void QueueSubmissionManager::flush()
         actualSubmissions[actualSubmissionCount++] = std::pair{ submissionRef, priority };
     }
 
-    std::sort(actualSubmissions.begin(), actualSubmissions.end(), [](auto& a, auto& b) -> bool {
-        auto& [_1, priority1] = a;
-        auto& [_2, priority2] = b;
-
-        return priority1 < priority2;
-    });
-
     std::ranges::sort(actualSubmissions, [](auto& a, auto& b) -> bool {
         auto& [_1, priority1] = a;
         auto& [_2, priority2] = b;

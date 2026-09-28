@@ -235,7 +235,7 @@ void Arena::free(size_t offset, size_t size)
     }
 }
 
-void Arena::freeAl() 
+void Arena::freeAll() 
 {
     freeRangeOffsets_.clear();
     freeRanges_.clear();

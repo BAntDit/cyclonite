@@ -26,7 +26,7 @@ public:
 
     void free(size_t offset, size_t size);
 
-    void freeAl();
+    void freeAll();
 
     [[nodiscard]] auto capacity() const -> size_t { return capacity_; }
 
