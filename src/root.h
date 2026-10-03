@@ -62,7 +62,7 @@ public:
 template<typename Config>
 Root<Config>::Root()
   : RootBase{}
-  , systemManager_{}
+  , systemManager_{ *this }
   , sceneEcs_{}
   , resourceGroupManager_{ *this }
 {

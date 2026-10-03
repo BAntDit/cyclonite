@@ -17,8 +17,8 @@ enum class SystemUpdateStageList : uint32_t
 };
 
 template<typename T>
-concept SystemUpdateStageListConcept = requires(T) { 
-    requires std::is_enum_v<T>; 
+concept SystemStageListConcept = requires(T) {
+    requires std::is_enum_v<T>;
 
     { T::LAST_STAGE };
 };
