@@ -94,6 +94,9 @@ template<typename F>
 concept FutureConcept =
   metrix::is_specialization_of_v<F, std::future> || metrix::is_specialization_of_v<F, std::shared_future>;
 
+template<typename F>
+concept VoidFutureConcept = FutureConcept<F> && std::is_same_v<typename internal::get_future_type<F>::type_t, void>;
+
 template<FutureConcept F>
 using future_type_t = typename internal::get_future_type<F>::type_t;
 
@@ -127,6 +130,23 @@ auto when_all(F&&... f) -> std::future<std::tuple<future_type_t<F>...>>
     Executor::threadExecutor().submitTask([p = std::move(promise), fs = std::move(futures)]() mutable -> void {
         []<size_t... I>(std::index_sequence<I...>, auto&& futures, auto&& promise) -> void {
             promise.set_value(std::make_tuple(internal::get_one_future_result(std::move(std::get<I>(futures)))...));
+        }(std::make_index_sequence<std::tuple_size_v<decltype(fs)>>{}, std::move(fs), std::move(p));
+    });
+
+    return future;
+}
+
+template<VoidFutureConcept... F>
+auto when_all(F&&... f) -> std::future<void>
+{
+    auto promise = std::promise<void>{};
+    auto future = promise.get_future();
+    auto futures = std::make_tuple(std::forward<F>(f)...);
+
+    Executor::threadExecutor().submitTask([p = std::move(promise), fs = std::move(futures)]() mutable -> void {
+        []<size_t... I>(std::index_sequence<I...>, auto&& futures, auto&& promise) -> void {
+            (std::get<I>(futures).get(), ...);
+            p.set_value();
         }(std::make_index_sequence<std::tuple_size_v<decltype(fs)>>{}, std::move(fs), std::move(p));
     });
 
