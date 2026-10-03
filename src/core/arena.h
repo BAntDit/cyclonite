@@ -2,11 +2,10 @@
 #ifndef CYCLONITE_CORE_ARENA_H
 #define CYCLONITE_CORE_ARENA_H
 
-#include <utility>
 #include <map>
+#include <utility>
 
-namespace cyclonite::core 
-{
+namespace cyclonite::core {
 class Arena
 {
 public:

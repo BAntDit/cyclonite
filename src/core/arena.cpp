@@ -103,8 +103,10 @@ auto Arena::AllocInternal(std::byte* const basePtr,
     return allocInfo;
 }
 
-auto Arena::alloc(void* basePtr, size_t requiredSize, size_t offsetAlignment /*= 1*/, size_t sizeAlignment /*= 1*/)
-  -> Arena::AllocInfo
+auto Arena::alloc(void* basePtr,
+                  size_t requiredSize,
+                  size_t offsetAlignment /*= 1*/,
+                  size_t sizeAlignment /*= 1*/) -> Arena::AllocInfo
 {
     auto offset = std::numeric_limits<size_t>::max();
     auto align = std::numeric_limits<size_t>::max();
@@ -177,7 +179,7 @@ auto Arena::alloc(size_t requiredSize, size_t offsetAlignment /*= 1*/, size_t si
     return allocInfo;
 }
 
-void Arena::free(size_t offset, size_t size) 
+void Arena::free(size_t offset, size_t size)
 {
     assert((offset + size) <= capacity_);
 
@@ -235,7 +237,7 @@ void Arena::free(size_t offset, size_t size)
     }
 }
 
-void Arena::freeAll() 
+void Arena::freeAll()
 {
     freeRangeOffsets_.clear();
     freeRanges_.clear();

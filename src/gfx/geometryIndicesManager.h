@@ -2,13 +2,12 @@
 #ifndef CYCLONITE_GFX_GEOMETRY_INDICES_MANAGER
 #define CYCLONITE_GFX_GEOMETRY_INDICES_MANAGER
 
-#include "gfx/common.h"
 #include "core/arena.h"
 #include "core/resourceSharedRef.h"
+#include "gfx/common.h"
 #include <mutex>
 
-namespace cyclonite::gfx 
-{
+namespace cyclonite::gfx {
 class GeometryIndicesManager;
 
 class Device;
@@ -25,26 +24,26 @@ public:
     IndicesAllocation() = default;
 
     IndicesAllocation(IndicesAllocation const&) = delete;
-    
+
     IndicesAllocation(IndicesAllocation&&) = default;
 
     ~IndicesAllocation();
 
     auto operator=(IndicesAllocation const&) -> IndicesAllocation& = delete;
-    
+
     auto operator=(IndicesAllocation&&) -> IndicesAllocation& = default;
 
     [[nodiscard]] auto indexBuffer() const -> core::ResourceSharedRef const& { return indexBufferRef_; }
 
     [[nodiscard]] auto firstIndex() const -> uint32_t { return firstIndex_; }
 
-    [[nodiscard]] auto indexCount() const -> uint32_t { return indexCount_; } 
-    
-    [[nodiscard]] auto indexType() const -> gfx::IndexType { return indexType_; } 
-    
-    [[nodiscard]] auto lock() -> void*; 
-    
-    void unlock(); 
+    [[nodiscard]] auto indexCount() const -> uint32_t { return indexCount_; }
+
+    [[nodiscard]] auto indexType() const -> gfx::IndexType { return indexType_; }
+
+    [[nodiscard]] auto lock() -> void*;
+
+    void unlock();
 
 private:
     std::mutex lock_;
@@ -57,20 +56,20 @@ private:
 };
 
 namespace internal {
-class IndexArena: protected core::Arena
+class IndexArena : protected core::Arena
 {
-friend class GeometryIndicesManager;
+    friend class GeometryIndicesManager;
 
 private:
     IndexArena(GeometryIndicesManager& geometryIndicesManager, size_t capacity, gfx::IndexType indexType);
 
 public:
     [[nodiscard]] auto indicesManager() const -> GeometryIndicesManager const& { return *indicesManager_; }
-    
+
     [[nodiscard]] auto indicesManager() -> GeometryIndicesManager& { return *indicesManager_; }
-    
+
     [[nodiscard]] auto alloc(uint32_t indexCount) -> IndicesAllocation;
-    
+
     void free(uint32_t firstIndex, uint32_t indexCount);
 
     using Arena::freeAll;
@@ -93,7 +92,7 @@ public:
 
 private:
     core::ResourceSharedRef deviceRef_;
-	// TODO:: arena
+    // TODO:: arena
 };
 }
 
