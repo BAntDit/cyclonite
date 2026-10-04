@@ -27,7 +27,7 @@ namespace internal {
 class IndexArena : protected core::Arena
 {
 public:
-    IndexArena(GeometryManagementSystem& geometryIndicesManager, size_t capacity, gfx::IndexType indexType);
+    IndexArena(GeometryManagementSystem& geometrySystem, size_t count, gfx::IndexType indexType);
 
     [[nodiscard]] auto alloc(uint32_t indexCount) -> gfx::GeometryIndicesAllocation;
 
@@ -49,7 +49,7 @@ class GeometryManagementSystem
 public:
     GeometryManagementSystem() = default;
 
-    void init(core::ResourceSharedRef const& deviceRef) { deviceRef_ = deviceRef; }
+    void init(core::ResourceSharedRef const& deviceRef, uint32_t initialIndexArenaCapacity);
 
     [[nodiscard]] auto allocateIndices(uint32_t count, gfx::IndexType type) -> gfx::GeometryIndicesAllocation;
 
@@ -66,7 +66,7 @@ private:
     std::list<internal::IndexArena> index32ArenaList_;
     std::list<internal::IndexArena> index16ArenaList_;
     core::ResourceSharedRef deviceRef_;
-
+    uint32_t initialIndexArenaCapacity_;
 };
 }
 

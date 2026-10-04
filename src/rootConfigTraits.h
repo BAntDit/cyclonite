@@ -8,12 +8,15 @@
 #include "core/configTraitMacro.h"
 #include "shader.h"
 #include "systems/stages.h"
+#include "systems/geometryManagementSystem.h"
 #include <metrix/type_list.h>
 
 namespace cyclonite {
 namespace internal {
 struct DefualtEnttxConfig
 {};
+
+using default_system_list_t = metrix::type_list<systems::GeometryManagementSystem>;
 
 template<typename T>
 struct config_traits_declaration
@@ -23,7 +26,7 @@ struct config_traits_declaration
 
     DECLARE_CONFIG_TYPE_TRAIT(custom_resource_type_list, metrix::type_list<>)
     DECLARE_CONFIG_TYPE_TRAIT(system_update_stage_enum, systems::SystemUpdateStageList)
-    DECLARE_CONFIG_TYPE_TRAIT(system_list, metrix::type_list<>)
+    DECLARE_CONFIG_TYPE_TRAIT(system_list, default_system_list_t)
     DECLARE_CONFIG_TYPE_TRAIT(enttx_config, DefualtEnttxConfig)
 };
 }

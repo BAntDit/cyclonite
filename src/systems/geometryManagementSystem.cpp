@@ -6,19 +6,14 @@
 #include "gfx/device.h"
 
 namespace cyclonite::systems {
-internal::IndexArena::IndexArena(GeometryManagementSystem& geometryIndicesManager,
-                                 size_t capacity,
-                                 gfx::IndexType indexType)
-  : core::Arena{ capacity }
+internal::IndexArena::IndexArena(GeometryManagementSystem& geometrySystem, size_t count, gfx::IndexType indexType)
+  : core::Arena{ count * (indexType == gfx::IndexType::TYPE_UINT16 ? sizeof(uint16_t) : sizeof(uint32_t)) }
   , lock_{}
-  , geometrySystem_{ &geometryIndicesManager }
+  , geometrySystem_{ &geometrySystem }
   , indexBufferRef_{}
   , indexType_{ indexType }
 {
-    auto& device = geometryIndicesManager.device().as<gfx::Device>();
-
-    auto byteSize =
-      (indexType_ == gfx::IndexType::TYPE_UINT16) ? capacity * sizeof(uint16_t) : capacity * sizeof(uint32_t);
+    auto& device = geometrySystem.device().as<gfx::Device>();
 
     auto allocationFlags = gfx::GpuMemoryAllocationFlagBits{};
     allocationFlags.set(gfx::GpuMemoryAllocationFlags::DEDICATED_MEMORY);
@@ -26,7 +21,7 @@ internal::IndexArena::IndexArena(GeometryManagementSystem& geometryIndicesManage
     auto usageFlags = gfx::BufferUsageFlagBits{};
     usageFlags.set(gfx::BufferUsageFlags::INDEX_BUFFER, gfx::BufferUsageFlags::TRANSFER_DST);
 
-    indexBufferRef_ = device.createBuffer(allocationFlags, usageFlags, byteSize);
+    indexBufferRef_ = device.createBuffer(allocationFlags, usageFlags, capacity());
 }
 
 auto internal::IndexArena::alloc(uint32_t indexCount) -> gfx::GeometryIndicesAllocation
@@ -63,14 +58,35 @@ void internal::IndexArena::free(uint32_t firstIndex, uint32_t indexCount)
     Arena::free(offset, size);
 }
 
+void GeometryManagementSystem::init(core::ResourceSharedRef const& deviceRef, uint32_t initialIndexArenaCapacity)
+{
+    deviceRef_ = deviceRef;
+    initialIndexArenaCapacity_ = initialIndexArenaCapacity;
+}
+
 auto GeometryManagementSystem::allocateIndices(uint32_t count, gfx::IndexType type) -> gfx::GeometryIndicesAllocation
 {
+    auto allocation = gfx::GeometryIndicesAllocation{};
+
     auto& arenaList = (type == gfx::IndexType::TYPE_UINT16) ? index16ArenaList_ : index32ArenaList_;
 
-    if (arenaList.empty() == 0) {
-        // TODO:: capacity
-        // arenaList.emplace_back()
+    // from back to end, becuase last arena should has more free memory
+    for (auto it = arenaList.rbegin(); it != arenaList.rend(); it++) {
+        auto& arena = *it;
+
+        if ((allocation = arena.alloc(count)).valid())
+            break;
     }
-    // TODO::
+
+    if (!allocation.valid()) {
+        auto capacity = std::max(count, initialIndexArenaCapacity_);
+        auto& arena = arenaList.emplace_back(*this, capacity, type);
+
+        if (!(allocation = arena.alloc(count)).valid()) {
+            throw std::runtime_error("geometry system is running out of indices memeory");
+        }
+    }
+
+    return allocation;
 }
 }
