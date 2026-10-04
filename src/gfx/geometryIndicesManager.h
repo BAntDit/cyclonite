@@ -10,8 +10,6 @@
 namespace cyclonite::gfx {
 class GeometryIndicesManager;
 
-class Device;
-
 namespace internal {
 class IndexArena;
 }
@@ -86,10 +84,6 @@ private:
 class GeometryIndicesManager
 {
 public:
-    [[nodiscard]] auto device() const -> gfx::Device const& { return deviceRef_.template as<gfx::Device>(); }
-
-    [[nodiscard]] auto device() -> gfx::Device& { return deviceRef_.template as<gfx::Device>(); }
-
 private:
     core::ResourceSharedRef deviceRef_;
     // TODO:: arena
