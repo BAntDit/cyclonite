@@ -1,6 +1,8 @@
 
 #include "arena.h"
+#include <algorithm>
 #include <cassert>
+#include <limits>
 #include <memory>
 
 namespace cyclonite::core {
@@ -54,10 +56,11 @@ auto Arena::AllocInternal(std::byte* const basePtr,
     if (it != freeRanges_.end()) {
         auto [rangeSize, rangeOffset] = *it;
         auto space = rangeSize;
-        auto* ptr = reinterpret_cast<void*>(basePtr + rangeOffset);
+        auto* ptr = std::add_pointer_t<void>{ nullptr };
 
         assert(space >= offsetAlignment);
         if (offsetAlignment > 1 && basePtr != nullptr) {
+            ptr = reinterpret_cast<void*>(basePtr + rangeOffset);
             outPtr = std::align(offsetAlignment, requiredSize, ptr, space);
             assert(rangeSize >= space);
         } else if (offsetAlignment > 1) {
