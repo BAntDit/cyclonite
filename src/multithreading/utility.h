@@ -146,7 +146,7 @@ auto when_all(F&&... f) -> std::future<void>
     Executor::threadExecutor().submitTask([p = std::move(promise), fs = std::move(futures)]() mutable -> void {
         []<size_t... I>(std::index_sequence<I...>, auto&& futures, auto&& promise) -> void {
             (std::get<I>(futures).get(), ...);
-            p.set_value();
+            promise.set_value();
         }(std::make_index_sequence<std::tuple_size_v<decltype(fs)>>{}, std::move(fs), std::move(p));
     });
 
