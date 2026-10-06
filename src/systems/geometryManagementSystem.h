@@ -11,9 +11,9 @@
 #include "gfx/geometryIndicesAllocation.h"
 #include "stages.h"
 #include <future>
+#include <list>
 #include <metrix/enum.h>
 #include <mutex>
-#include <list>
 
 namespace cyclonite {
 template<typename Config>
@@ -53,17 +53,17 @@ public:
 
     [[nodiscard]] auto allocateIndices(uint32_t count, gfx::IndexType type) -> gfx::GeometryIndicesAllocation;
 
-    template<size_t ExecutionStage, typename Config>
+    /*template<size_t ExecutionStage, typename Config>
     auto run(Root<Config>& root,
              std::shared_future<void>& prevStageFutures,
-             core::ResourceSharedRef const& sceneRef) -> std::future<void>;
+             core::ResourceSharedRef const& sceneRef) -> std::future<void>;*/
 
     [[nodiscard]] auto device() const -> core::ResourceSharedRef const& { return deviceRef_; }
 
     [[nodiscard]] auto device() -> core::ResourceSharedRef& { return deviceRef_; }
 
     // push the current CPU state toward the GPU on the next transfer stage
-    auto commitGeometry(core::ResourceSharedRef geometryRef) -> std::future<void>;
+    // auto commitGeometry(core::ResourceSharedRef geometryRef) -> std::future<void>;
 
 private:
     std::list<internal::IndexArena> index32ArenaList_;

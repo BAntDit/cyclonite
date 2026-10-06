@@ -5,10 +5,10 @@
 #ifdef uuid
 #undef uuid
 #endif
+#include "systems/geometryManagementSystem.h"
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <gfx/device.h>
-#include "systems/geometryManagementSystem.h"
 
 namespace cyclonite {
 namespace {
@@ -105,7 +105,7 @@ Geometry::Geometry(core::ResourceManagerBase* resourceManager,
                    resources::ResourceGroupBase* resourceGroup,
                    std::string_view name,
                    boost::uuids::uuid const& uuid,
-                   GeometryManagementSystem& geometrySystem)
+                   systems::GeometryManagementSystem& geometrySystem)
   : core::ResourceBase{ resourceManager, resourceId, false }
   , resources::ManagedResource<cyclonite::Geometry>{ resourceGroup, name, uuid }
   , geometrySystem_{ &geometrySystem }
@@ -121,7 +121,7 @@ Geometry::Geometry(core::ResourceManagerBase* resourceManager,
                    resources::ResourceGroupBase* resourceGroup,
                    std::string_view name,
                    boost::uuids::uuid const& uuid,
-                   GeometryManagementSystem& geometrySystem,
+                   systems::GeometryManagementSystem& geometrySystem,
                    std::shared_ptr<shared::AssetMainBlock> const& asset)
   : Geometry{ resourceManager, resourceId, resourceGroup, name, uuid, geometrySystem }
 {
@@ -164,7 +164,7 @@ void Geometry::loadImpl(std::istream& stream)
     }
 }
 
-void Geometry::prepareImpl(core::ResourceSharedRef deviceRef) // TODO:: pass gfx instance also
+void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
 {
     if (asset_) {
         auto& device = deviceRef.template as<gfx::Device>();
@@ -195,36 +195,50 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef) // TODO:: pass gfx
 
             assert(type == shared::AssetAccessorDataType::Scalar);
 
-            auto bytesPerIndex = bytesPerComponentType(componentType);
-            
+            auto bytesPerElement = bytesPerComponentType(componentType);
 
+            auto indexType =
+              (bytesPerElement < sizeof(uint32_t)) ? gfx::IndexType::TYPE_UINT16 : gfx::IndexType::TYPE_UINT32;
 
-            geometrySystem_->allocateIndices(elementCount, gfx::IndexType type)
-            
-            indexCount_ = elementCount;
+            auto bytesPerIndex = (indexType == gfx::IndexType::TYPE_UINT16) ? sizeof(uint16_t) : sizeof(uint32_t);
+
+            indices_ = geometrySystem_->allocateIndices(elementCount, indexType);
 
             auto indexAllocationFlags = gfx::GpuMemoryAllocationFlagBits{};
-            indexAllocationFlags.set(gfx::GpuMemoryAllocationFlags::HOST_ACCESS_SEQUENTIAL_WRITE,
-                                     gfx::GpuMemoryAllocationFlags::PERSISTENT_MAPPED_MEMORY);
+            indexAllocationFlags.set(gfx::GpuMemoryAllocationFlags::HOST_ACCESS_SEQUENTIAL_WRITE);
 
             auto usageFlags = gfx::BufferUsageFlagBits{};
             usageFlags.set(gfx::BufferUsageFlags::TRANSFER_SRC);
 
-            auto indexStagingRef = core::ResourceSharedRef{ device.createBuffer(
-              indexAllocationFlags, usageFlags, bytesPerIndex * indexCount_) };
+            indices_.staging() =
+              device.createBuffer(indexAllocationFlags, usageFlags, bytesPerIndex * indices_.indexCount());
 
-            auto& indexStaging = indexStagingRef.template as<gfx::Buffer>();
+            auto& indexStaging = indices_.staging().as<gfx::Buffer>();
 
             auto* dstPtr = reinterpret_cast<std::byte*>(indexStaging.map());
             auto* srcPtr = buffer.data() + offset;
 
-            /*for (auto i  = uint32_t{ 0 }; i < indexCount_; i++) {
-                std::memcpy(dstPtr + i * bytesPerIndex, )
-            }*/
+            for (auto i = uint32_t{ 0 }, count = indices_.indexCount(); i < count; i++) {
+                if (componentType == shared::AssetAccessorComponentType::Uint8_t) {
+                    assert(indexType == gfx::IndexType::TYPE_UINT16);
+                    auto index = static_cast<uint16_t>(*(srcPtr + i * sizeof(uint8_t) + byteOffset));
+                    memcpy(dstPtr + i * sizeof(uint16_t), &index, sizeof(index));
+                } else if (componentType == shared::AssetAccessorComponentType::Uint16_t) {
+                    assert(indexType == gfx::IndexType::TYPE_UINT16);
+                    memcpy(dstPtr + i * sizeof(uint16_t), srcPtr + i * sizeof(uint16_t) + byteOffset, sizeof(uint16_t));
+                } else if (componentType == shared::AssetAccessorComponentType::Uint32_t) {
+                    assert(indexType == gfx::IndexType::TYPE_UINT32);
+                    memcpy(dstPtr + i * sizeof(uint32_t), srcPtr + i * sizeof(uint32_t) + byteOffset, sizeof(uint32_t));
+                } else {
+                    throw std::runtime_error("geometry unsupported index type");
+                }
+            }
 
             indexStaging.unmap();
             dstPtr = nullptr;
         }
+
+        // TODO:: commit geometry
 
         asset_.reset();
     } else {

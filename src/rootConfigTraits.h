@@ -6,8 +6,8 @@
 #define CYCLONITE_ROOT_CONFIG_TRAITS_H
 
 #include "core/configTraitMacro.h"
-#include "systems/stages.h"
 #include "systems/geometryManagementSystem.h"
+#include "systems/stages.h"
 #include <metrix/type_list.h>
 
 namespace cyclonite {

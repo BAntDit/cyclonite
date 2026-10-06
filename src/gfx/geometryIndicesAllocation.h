@@ -38,6 +38,10 @@ public:
 
     [[nodiscard]] auto valid() const -> bool { return arena_ != nullptr && indexCount_ > 0 && indexBufferRef_.valid(); }
 
+    [[nodiscard]] auto staging() const -> core::ResourceSharedRef const& { return stagingBufferRef_; }
+
+    [[nodiscard]] auto staging() -> core::ResourceSharedRef& { return stagingBufferRef_; }
+
 private:
     core::ResourceSharedRef indexBufferRef_;
     core::ResourceSharedRef stagingBufferRef_;

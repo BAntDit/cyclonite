@@ -22,11 +22,6 @@
 #include <type_traits>
 #include <variant>
 
-namespace cyclonite {
-template<typename Config>
-class Root;
-}
-
 namespace cyclonite::resources {
 // TODO:: rewrite concepts to be able test private methods
 template<typename T>
@@ -34,12 +29,11 @@ concept is_loadable = requires(T t, std::istream& stream) {
     { t.loadImpl(stream) } -> std::same_as<void>;
 };
 
-template<typename T, typename Config>
-concept is_prepareable = requires(T t, Root<Config>& root, core::ResourceSharedRef deviceRef) {
-    { t.prepareImpl(root, deviceRef) } -> std::same_as<void>; // reolace with system manager
+template<typename T>
+concept is_prepareable = requires(T t, core::ResourceSharedRef deviceRef) {
+    { t.prepareImpl(deviceRef) } -> std::same_as<void>; // reolace with system manager
 };
 
-// TODO:: move whole loading into loader
 template<typename Resource>
 class ManagedResource
 {
