@@ -62,6 +62,9 @@ public:
 
     [[nodiscard]] auto device() -> core::ResourceSharedRef& { return deviceRef_; }
 
+    // push the current CPU state toward the GPU on the next transfer stage
+    auto commitGeometry(core::ResourceSharedRef geometryRef) -> std::future<void>;
+
 private:
     std::list<internal::IndexArena> index32ArenaList_;
     std::list<internal::IndexArena> index16ArenaList_;

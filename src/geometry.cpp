@@ -8,6 +8,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <gfx/device.h>
+#include "systems/geometryManagementSystem.h"
 
 namespace cyclonite {
 namespace {
@@ -103,16 +104,14 @@ Geometry::Geometry(core::ResourceManagerBase* resourceManager,
                    core::ResourceId resourceId,
                    resources::ResourceGroupBase* resourceGroup,
                    std::string_view name,
-                   boost::uuids::uuid const& uuid)
+                   boost::uuids::uuid const& uuid,
+                   GeometryManagementSystem& geometrySystem)
   : core::ResourceBase{ resourceManager, resourceId, false }
   , resources::ManagedResource<cyclonite::Geometry>{ resourceGroup, name, uuid }
+  , geometrySystem_{ &geometrySystem }
   , asset_{}
-  , indexBuffer_{}
   , buffers_{}
   , attributes_{}
-  , indexCount_{ 0 }
-  , vertexCount_{ 0 }
-  , indexType_{ gfx::IndexType::TYPE_UINT32 }
   , primitiveTopology_{ gfx::PrimitiveTopology::TRIANGLE_LIST }
 {
 }
@@ -122,8 +121,9 @@ Geometry::Geometry(core::ResourceManagerBase* resourceManager,
                    resources::ResourceGroupBase* resourceGroup,
                    std::string_view name,
                    boost::uuids::uuid const& uuid,
+                   GeometryManagementSystem& geometrySystem,
                    std::shared_ptr<shared::AssetMainBlock> const& asset)
-  : Geometry{ resourceManager, resourceId, resourceGroup, name, uuid }
+  : Geometry{ resourceManager, resourceId, resourceGroup, name, uuid, geometrySystem }
 {
     asset_ = asset;
 }
@@ -145,7 +145,7 @@ void Geometry::loadImpl(std::istream& stream)
 
         primitiveTopology_ = primitiveTopologyFromAsset(subMesh.primitiveTopology);
 
-        // load indices
+        // TODO:: load indices
         // subMesh.indices
 
         auto customBufferToFvfMap = boost::unordered_flat_map<uint32_t, shared::VertexFormatFlagBits>{};
@@ -164,7 +164,7 @@ void Geometry::loadImpl(std::istream& stream)
     }
 }
 
-void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
+void Geometry::prepareImpl(core::ResourceSharedRef deviceRef) // TODO:: pass gfx instance also
 {
     if (asset_) {
         auto& device = deviceRef.template as<gfx::Device>();
@@ -183,6 +183,7 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
 
         if (subMesh.indices != std::numeric_limits<uint32_t>::max()) {
             assert(subMesh.indices < asset_->dataAccessors.size());
+
             auto [bufferViewIdx, elementCount, byteOffset, type, componentType] =
               asset_->dataAccessors[subMesh.indices];
 
@@ -195,6 +196,11 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
             assert(type == shared::AssetAccessorDataType::Scalar);
 
             auto bytesPerIndex = bytesPerComponentType(componentType);
+            
+
+
+            geometrySystem_->allocateIndices(elementCount, gfx::IndexType type)
+            
             indexCount_ = elementCount;
 
             auto indexAllocationFlags = gfx::GpuMemoryAllocationFlagBits{};

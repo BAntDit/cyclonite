@@ -7,9 +7,12 @@
 #include "core/resourceSharedRef.h"
 #include "fvf.h"
 #include "gfx/common.h"
+#include "gfx/geometryIndicesAllocation.h"
 #include "resources/managedResource.h"
 
 namespace cyclonite {
+class GeometryManagementSystem;
+
 class Geometry
   : public core::ResourceBase
   , public resources::ManagedResource<cyclonite::Geometry>
@@ -27,13 +30,15 @@ public:
              core::ResourceId resourceId,
              resources::ResourceGroupBase* resourceGroup,
              std::string_view name,
-             boost::uuids::uuid const& uuid);
+             boost::uuids::uuid const& uuid,
+             GeometryManagementSystem& geometrySystem);
 
     Geometry(core::ResourceManagerBase* resourceManager,
              core::ResourceId resourceId,
              resources::ResourceGroupBase* resourceGroup,
              std::string_view name,
              boost::uuids::uuid const& uuid,
+             GeometryManagementSystem& geometrySystem,
              std::shared_ptr<shared::AssetMainBlock> const& asset);
 
     using core::ResourceBase::resourceBase;
@@ -46,13 +51,15 @@ private:
     constexpr static size_t max_attribute_count_v = 64;
     constexpr static size_t max_vertex_buffer_count_v = 8;
 
+    GeometryManagementSystem* geometrySystem_;
+
     std::shared_ptr<shared::AssetMainBlock> asset_;
-    core::ResourceSharedRef indexBuffer_;
+
+    gfx::GeometryIndicesAllocation indices_;
+
     core::StaticHashTable<core::ResourceSharedRef, max_vertex_buffer_count_v, uint64_t> buffers_;
     core::StaticHashTable<Attribute, max_attribute_count_v, uint64_t> attributes_;
-    uint32_t indexCount_;
-    uint32_t vertexCount_;
-    gfx::IndexType indexType_;
+
     gfx::PrimitiveTopology primitiveTopology_;
 };
 }

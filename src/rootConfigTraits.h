@@ -6,7 +6,6 @@
 #define CYCLONITE_ROOT_CONFIG_TRAITS_H
 
 #include "core/configTraitMacro.h"
-#include "shader.h"
 #include "systems/stages.h"
 #include "systems/geometryManagementSystem.h"
 #include <metrix/type_list.h>

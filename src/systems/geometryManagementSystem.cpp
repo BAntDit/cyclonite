@@ -4,6 +4,7 @@
 
 #include "geometryManagementSystem.h"
 #include "gfx/device.h"
+#include "geometry.h"
 
 namespace cyclonite::systems {
 internal::IndexArena::IndexArena(GeometryManagementSystem& geometrySystem, size_t count, gfx::IndexType indexType)
@@ -88,5 +89,11 @@ auto GeometryManagementSystem::allocateIndices(uint32_t count, gfx::IndexType ty
     }
 
     return allocation;
+}
+
+auto GeometryManagementSystem::commitGeometry(core::ResourceSharedRef geometryRef) -> std::future<void> 
+{
+    auto& geometry = geometryRef.as<Geometry>();
+
 }
 }
