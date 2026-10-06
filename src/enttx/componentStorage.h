@@ -138,13 +138,13 @@ auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::create(ui
         it = storage_.emplace(std::next(storage_.cbegin(), componentIdx), std::forward<Args>(args)...);
         componentIdxToEntityIdx_.emplace(std::next(componentIdxToEntityIdx_.cbegin(), componentIdx), index);
     } else {
-        auto maxValidEntityIdx = componentIdxToEntityIdx_.back();
+        maxValidEntityIdx = componentIdxToEntityIdx_.back();
 
         auto componentIdx = std::numeric_limits<uint32_t>::max();
 
         // increment all indices after the element we're going to place component in
         for (auto componentIdxIt = std::next(entityIdxToComponent_.begin(), index);
-             componentIdxIt != std::next(entityIdxToComponent_.begin(), componentIdxToEntityIdx_.crbegin() + 1);
+             componentIdxIt != std::next(entityIdxToComponent_.begin(), *componentIdxToEntityIdx_.crbegin() + 1);
              ++componentIdxIt) {
 
             if (*componentIdxIt == std::numeric_limits<uint32_t>::max())
@@ -180,7 +180,7 @@ void ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::destroy(u
     entityIdxToComponent_[index] = std::numeric_limits<uint32_t>::max();
 
     for (auto it = std::next(entityIdxToComponent_.begin(), index);
-         it != std::next(entityIdxToComponent_.begin(), componentIdxToEntityIdx_.crbegin() + 1);
+         it != std::next(entityIdxToComponent_.begin(), *componentIdxToEntityIdx_.crbegin() + 1);
          it++) {
         if (*it == std::numeric_limits<uint32_t>::max())
             continue;

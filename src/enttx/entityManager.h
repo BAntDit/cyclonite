@@ -427,7 +427,7 @@ template<typename... Cs>
 auto EntityManager<Config>::hasComponents(Entity entity) const
   -> enable_if_components<std::bitset<sizeof...(Cs)>, Cs...>
 {
-    using test_list_t = metrix::type_list<Cs>;
+    using test_list_t = metrix::type_list<Cs...>;
     auto result = std::bitset<sizeof...(Cs)>{};
 
     (result.set(test_list_t::template get_type_index<Cs>::value, hasComponent<Cs>(entity)), ...);
@@ -453,7 +453,7 @@ void EntityManager<Config>::View<isConst, FilterComponents...>::Iterator::next()
             if (entityManager_.masks_[entityIdx].any()) {
                 break;
             }
-            cursor_;
+            cursor_++;
         }
     }
 }
