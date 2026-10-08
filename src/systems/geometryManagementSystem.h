@@ -51,8 +51,6 @@ public:
 
     void init(core::ResourceSharedRef const& deviceRef, uint32_t initialIndexArenaCapacity);
 
-    [[nodiscard]] auto allocateIndices(uint32_t count, gfx::IndexType type) -> gfx::GeometryIndicesAllocation;
-
     /*template<size_t ExecutionStage, typename Config>
     auto run(Root<Config>& root,
              std::shared_future<void>& prevStageFutures,
@@ -66,6 +64,8 @@ public:
     // auto commitGeometry(core::ResourceSharedRef geometryRef) -> std::future<void>;
 
 private:
+    [[nodiscard]] auto allocateIndices(uint32_t count, gfx::IndexType type) -> gfx::GeometryIndicesAllocation;
+
     std::list<internal::IndexArena> index32ArenaList_;
     std::list<internal::IndexArena> index16ArenaList_;
     core::ResourceSharedRef deviceRef_;

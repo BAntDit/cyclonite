@@ -10,9 +10,8 @@ enum class SystemUpdateStageList : uint32_t
 {
     FRAME_START = 0,
     TRANSFER_START = 1,
-    TRANSFER_GEOMETRY = 2,
-    TRANSFER_END = 3,
-    FRAME_END = 4,
+    TRANSFER_END = 2,
+    FRAME_END = 3,
     LAST_STAGE = FRAME_END
 };
 

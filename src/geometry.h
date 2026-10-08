@@ -49,6 +49,13 @@ public:
 
     void prepareImpl(core::ResourceSharedRef deviceRef);
 
+    // TODO::
+    // auto lockIndices() -> core::ResourceSharedRef const&;
+
+    // void unlock();
+    // TODO::
+    void commit();
+
 private:
     constexpr static size_t max_attribute_count_v = 64;
     constexpr static size_t max_vertex_buffer_count_v = 8;

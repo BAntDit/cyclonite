@@ -164,7 +164,7 @@ void Geometry::loadImpl(std::istream& stream)
     }
 }
 
-void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
+void Geometry::prepareImpl(core::ResourceSharedRef deviceRef) // TODO:: pass gfx instance and system manager instead
 {
     if (asset_) {
         auto& device = deviceRef.template as<gfx::Device>();
