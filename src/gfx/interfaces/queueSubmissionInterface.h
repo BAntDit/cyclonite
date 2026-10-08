@@ -61,6 +61,8 @@ concept QueueSubmissionConcept = requires(T t,
     { t.submit() } -> std::same_as<void>;
 
     { t.signal() } -> std::same_as<core::ResourceSharedRef>;
+
+    { t.isOneTimeSubmission() } -> std::same_as<bool>;
 };
 
 template<QueueSubmissionConcept PlatformImplementation>
@@ -84,6 +86,7 @@ public:
     using PlatformImplementation::isInCommandListRecordingState;
     using PlatformImplementation::isInInitialState;
     using PlatformImplementation::isInRecordingState;
+    using PlatformImplementation::isOneTimeSubmission;
     using PlatformImplementation::isPending;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::purpose;

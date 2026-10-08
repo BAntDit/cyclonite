@@ -29,6 +29,7 @@ public:
     QueueSubmission(core::ResourceManagerBase* resourceManager,
                     core::ResourceId resourceId,
                     core::ResourceSharedRef deviceRef,
+                    QueueSubmissionManager* manager,
                     uint32_t queueFamilyIndex);
 
     ~QueueSubmission();
@@ -82,9 +83,9 @@ public:
 
     [[nodiscard]] auto isPending() const -> bool { return state_.test(QueueSubmissionStateFlags::Pending); }
 
-    [[nodiscard]] auto currentFrameIndex() const -> uint64_t { return currentFrameIndex_; };
+    [[nodiscard]] auto isOneTimeSubmission() const -> bool { return isOneTime_; }
 
-    [[nodiscard]] auto isOneTimeIndependentSubmission() const -> bool { return manager_ == nullptr; }
+    [[nodiscard]] auto currentFrameIndex() const -> uint64_t { return currentFrameIndex_; };
 
     void setFrameIndices(uint64_t currentFrameIndex, uint64_t lastCompletedFrameIndex);
 
@@ -120,6 +121,7 @@ private:
     std::vector<VkSemaphore> vkSignals_;
     size_t dependencyCount_;
     size_t commandBufferCount_;
+    bool isOneTime_;
 };
 }
 
