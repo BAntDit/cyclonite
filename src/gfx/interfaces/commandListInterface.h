@@ -13,6 +13,7 @@
 namespace cyclonite::gfx::interfaces {
 template<typename T>
 concept CommandListConcept = requires(T t,
+                                      bool b,
                                       CommandListUsageFlagBits usage,
                                       core::ResourceSharedRef ref,
                                       PipelineBindPoint bindPoint,
@@ -57,6 +58,8 @@ concept CommandListConcept = requires(T t,
     { t.releaseResourceToTransfer(psf, psf, afs, afs, ref, a, a) } -> std::same_as<void>;
 
     { t.copyBuffers(ref, ref, a, a, a) } -> std::same_as<void>;
+
+    { t.reset(b) } -> std::same_as<void>;
 };
 
 template<CommandListConcept PlatformImplementation>
@@ -80,6 +83,7 @@ public:
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::releaseResourceToGraphics;
     using PlatformImplementation::releaseResourceToTransfer;
+    using PlatformImplementation::reset;
     using PlatformImplementation::state;
     using PlatformImplementation::usage;
 

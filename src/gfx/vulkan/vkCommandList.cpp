@@ -486,5 +486,19 @@ void CommandList::end()
     state_ = CommandListState::Executable;
 }
 
+void CommandList::reset(bool releaseResources)
+{
+    assert(vkCommandBuffer_ != VK_NULL_HANDLE);
+
+    auto flags = VkCommandBufferResetFlags{};
+    if (releaseResources) {
+        flags = VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT;
+    }
+
+    if (auto vkResult = vkResetCommandBuffer(vkCommandBuffer_, flags); vkResult != VK_SUCCESS) {
+        throw Exception{ vkResult, "vkResetCommandBuffer" };
+    }
+}
+
 }
 #endif // GFX_DRIVER_VULKAN

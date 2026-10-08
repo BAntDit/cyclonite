@@ -96,6 +96,8 @@ public:
 
     void end();
 
+    void reset(bool releaseResources);
+
     [[nodiscard]] auto handle() const -> VkCommandBuffer { return vkCommandBuffer_; }
 
 private:
