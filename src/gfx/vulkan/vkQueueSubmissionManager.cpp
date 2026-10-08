@@ -15,6 +15,7 @@ QueueSubmissionManager::QueueSubmissionManager(Device* device)
   , signalPool_{}
   , queueSubmissionRingMap_{}
   , completedFrames_{}
+  , currentFrameSubmissions_{}
   , currentFrameNumber_{ 1 }
 {
 }
@@ -117,6 +118,10 @@ auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purp
             submission.setFrameIndices(currentFrameNumber_, completedFrame == nullptr ? 0 : *completedFrame);
         }
 
+        auto [newIt, success] =
+          currentFrameSubmissions_.add(submissionRef, purposeBits.value, queueFamilyIndex, priorityGroup, flags.value);
+        assert(success);
+
         return submissionRef;
     };
 
@@ -125,6 +130,54 @@ auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purp
         queueSubmissionRef = acquireQueueSubmissionTask();
     } else {
         queueSubmissionRef = multithreading::TaskManager::submitTask(acquireQueueSubmissionTask, purpose).get();
+    }
+
+    return queueSubmissionRef;
+}
+
+auto QueueSubmissionManager::getSubmission(multithreading::Purpose purpose,
+                                           CommandPoolFlagBits flags,
+                                           uint16_t priorityGroup) -> core::ResourceSharedRef
+{
+    auto getQueueSubmissionTask = [purpose, flags, priorityGroup, this]() -> core::ResourceSharedRef {
+        assert(purpose != multithreading::Purpose::General);
+        auto queueFamilyIndex = uint32_t{ 0 };
+
+        switch (purpose) {
+            case multithreading::Purpose::Render:
+                queueFamilyIndex = device_->graphicsQueueFamilyIndex();
+                break;
+            case multithreading::Purpose::Compute:
+                queueFamilyIndex = device_->computeQueueFamilyIndex();
+                break;
+            case multithreading::Purpose::Transfer:
+                queueFamilyIndex = device_->transferQueueFamilyIndex();
+                break;
+            default:
+                assert(false);
+        }
+
+        auto purposeBits = getPurposeBits(purpose);
+
+        auto it = currentFrameSubmissions_.find(purposeBits.value, queueFamilyIndex, priorityGroup, flags.value);
+
+        auto submissionRef = core::ResourceSharedRef{};
+
+        if (it == currentFrameSubmissions_.end()) {
+            submissionRef = acquireQueueSubmission(purpose, flags, priorityGroup);
+        } else {
+            auto [_, currentSubmissionRef] = *it;
+            submissionRef = currentSubmissionRef;
+        }
+
+        return submissionRef;
+    };
+
+    auto queueSubmissionRef = core::ResourceSharedRef{};
+    if (multithreading::Executor::threadExecutor().matchesPurpose(purpose)) {
+        queueSubmissionRef = getQueueSubmissionTask();
+    } else {
+        queueSubmissionRef = multithreading::TaskManager::submitTask(getQueueSubmissionTask, purpose).get();
     }
 
     return queueSubmissionRef;

@@ -40,6 +40,10 @@ public:
         return currentFrameNumber_ % config_t::queue_submission_ring_size_v;
     }
 
+    [[nodiscard]] auto getSubmission(multithreading::Purpose purpose,
+                                     CommandPoolFlagBits flags,
+                                     uint16_t priorityGroup) -> core::ResourceSharedRef;
+
     [[nodiscard]] auto acquireQueueSubmission(multithreading::Purpose purpose,
                                               CommandPoolFlagBits flags,
                                               uint16_t priorityGroup) -> core::ResourceSharedRef;
@@ -79,12 +83,20 @@ private:
                                                    uint16_t, // priority group
                                                    std::underlying_type_t<gfx::CommandPoolFlags>>;
 
+    using current_frame_submission_map_t = core::StaticHashTable<core::ResourceSharedRef,
+                                                                 config_t::max_queue_submission_ring_count_v,
+                                                                 std::underlying_type_t<multithreading::Purpose>,
+                                                                 uint32_t,
+                                                                 uint16_t,
+                                                                 std::underlying_type_t<gfx::CommandPoolFlags>>;
+
     Device* device_;
 
     std::vector<core::ResourceSharedRef> signalPool_;
 
     queue_submission_map_t queueSubmissionRingMap_;
     completion_map_t completedFrames_;
+    current_frame_submission_map_t currentFrameSubmissions_;
 
     uint64_t currentFrameNumber_;
 };

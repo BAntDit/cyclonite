@@ -22,6 +22,8 @@ concept QueueSubmissionManagerConcept =
 
       { t.acquireQueueSubmission(p, f, priority) } -> std::same_as<core::ResourceSharedRef>;
 
+      { t.getSubmission(p, f, priority) } -> std::same_as<core::ResourceSharedRef>;
+
       { t.flush() } -> std::same_as<void>;
 
       { t.reset() } -> std::same_as<void>;
@@ -36,6 +38,7 @@ public:
     using PlatformImplementation::currentFrameNumber;
     using PlatformImplementation::currentSubmissionIndex;
     using PlatformImplementation::flush;
+    using PlatformImplementation::getSubmission;
     using PlatformImplementation::PlatformImplementation;
     using PlatformImplementation::platformQueueSubmissionManager;
     using PlatformImplementation::reset;
