@@ -44,6 +44,37 @@ QueueSubmission::QueueSubmission(core::ResourceManagerBase* resourceManager,
     commandPool_ = device.createCommandPool(queueFamilyIndex, commandPoolFlags);
 }
 
+QueueSubmission::QueueSubmission(core::ResourceManagerBase* resourceManager,
+                                 core::ResourceId resourceId,
+                                 core::ResourceSharedRef deviceRef,
+                                 uint32_t queueFamilyIndex)
+  : core::ResourceBase{ resourceManager, resourceId, false }
+  , batchNameToIndex_{}
+  , manager_{ nullptr }
+  , commandPool_{}
+  , batches_{}
+  , completionFrameIndex_{ 0 }
+  , currentFrameIndex_{ 0 }
+  , lastCompletedFrameIndex_{ 0 }
+  , state_{}
+  , vkSubmissions_{}
+  , vkTimelineSubmissions_{}
+  , timelineSemaphoreValues_{}
+  , signalValues_{}
+  , waitSemaphores_{}
+  , vkCommandBuffers_{}
+  , vkSignals_{}
+  , dependencyCount_{ 0 }
+  , commandBufferCount_{ 0 }
+{
+    state_.set(QueueSubmissionStateFlags::Initial);
+
+    assert(deviceRef.valid());
+    auto& device = deviceRef.as<type_traits::platform_implementation_t<gfx::Device>>();
+
+    commandPool_ = device.getOrCreateSharedCommandPool(queueFamilyIndex);
+}
+
 QueueSubmission::~QueueSubmission()
 {
     state_.set(QueueSubmissionStateFlags::Invalid);
@@ -92,7 +123,7 @@ void QueueSubmission::endRecording()
     state_.value = metrix::value_cast(QueueSubmissionStateFlags::Executable);
 }
 
-void QueueSubmission::beginBatchRecording(std::string_view batchName)
+void QueueSubmission::beginBatchRecording(std::string_view batchName /* =""*/)
 {
     [[maybe_unused]] auto submissionPurpose = purpose();
     assert(multithreading::Executor::threadExecutor().matchesPurpose(submissionPurpose));
@@ -103,9 +134,14 @@ void QueueSubmission::beginBatchRecording(std::string_view batchName)
     auto index = batches_.size();
     auto& batch = batches_.emplace_back();
 
-    batch.signal = manager_->acquireSignal(lastCompletedFrameIndex_);
+    if (!isOneTimeIndependentSubmission()) {
+        batch.signal = manager_->acquireSignal(lastCompletedFrameIndex_);
+    }
 
-    batchNameToIndex_.emplace(batchName, index);
+    if (!batchName.empty()) {
+        assert(!batchNameToIndex_.contains(std::string{ batchName }));
+        batchNameToIndex_.emplace(batchName, index);
+    }
 }
 
 void QueueSubmission::addBatchDependency(size_t fromBatch, PipelineStageFlagBits stageMask)
@@ -233,7 +269,9 @@ void QueueSubmission::reset()
     }
 
     for (auto& batch : batches_) {
-        manager_->returnSignal(batch.signal);
+        if (batch.signal.valid()) {
+            manager_->returnSignal(batch.signal);
+        }
     }
     batches_.clear();
 
@@ -349,13 +387,16 @@ void QueueSubmission::submit()
             waitStages_.push_back(dependency.stageMask().cast_to<VkPipelineStageFlags>());
         }
 
-        assert(batch.signal.valid());
-        auto signalCount = size_t{ 1 };
+        auto signalCount = size_t{ 0 };
 
-        assert(signalValues_.size() < signalValues_.capacity());
-        signalValues_.push_back(currentFrameIndex_);
+        if (batch.signal.valid()) {
+            signalCount++;
 
-        vkSignals_.push_back(batch.signal.as<type_traits::platform_implementation_t<gfx::Signal>>().handle());
+            assert(signalValues_.size() < signalValues_.capacity());
+            signalValues_.push_back(currentFrameIndex_);
+
+            vkSignals_.push_back(batch.signal.as<type_traits::platform_implementation_t<gfx::Signal>>().handle());
+        }
 
         if (batch.presentationSignal.valid()) {
             signalCount++;
@@ -370,7 +411,9 @@ void QueueSubmission::submit()
         vkTimelineSubmission.waitSemaphoreValueCount = waitCount;
         vkTimelineSubmission.pWaitSemaphoreValues = timelineSemaphoreValues_.data() + timelineValueOffset;
         vkTimelineSubmission.signalSemaphoreValueCount = signalCount;
-        vkTimelineSubmission.pSignalSemaphoreValues = signalValues_.data() + signalsOffset; // signal values
+        if (signalCount > 0) {
+            vkTimelineSubmission.pSignalSemaphoreValues = signalValues_.data() + signalsOffset; // signal values
+        }
 
         auto commandBufferCount = batch.commandLists.size();
         for (auto const& commandList : batch.commandLists) {
@@ -388,7 +431,9 @@ void QueueSubmission::submit()
         vkBatch.commandBufferCount = commandBufferCount;
         vkBatch.pCommandBuffers = vkCommandBuffers_.data() + commandBuffersOffset;
         vkBatch.signalSemaphoreCount = signalCount;
-        vkBatch.pSignalSemaphores = vkSignals_.data() + signalsOffset;
+        if (signalCount > 0) {
+            vkBatch.pSignalSemaphores = vkSignals_.data() + signalsOffset;
+        }
 
         timelineValueOffset += waitCount;
         waitSemaphoresOffset += waitCount;

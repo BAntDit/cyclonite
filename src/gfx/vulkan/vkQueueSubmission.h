@@ -26,13 +26,18 @@ public:
                     uint32_t queueFamilyIndex,
                     CommandPoolFlagBits commandPoolFlags);
 
+    QueueSubmission(core::ResourceManagerBase* resourceManager,
+                    core::ResourceId resourceId,
+                    core::ResourceSharedRef deviceRef,
+                    uint32_t queueFamilyIndex);
+
     ~QueueSubmission();
 
     void beginRecording();
 
     void endRecording();
 
-    void beginBatchRecording(std::string_view batchName);
+    void beginBatchRecording(std::string_view batchName = "");
     void endBatchRecording();
 
     void addBatchDependency(size_t fromBatch, PipelineStageFlagBits stageMask);
@@ -78,6 +83,8 @@ public:
     [[nodiscard]] auto isPending() const -> bool { return state_.test(QueueSubmissionStateFlags::Pending); }
 
     [[nodiscard]] auto currentFrameIndex() const -> uint64_t { return currentFrameIndex_; };
+
+    [[nodiscard]] auto isOneTimeIndependentSubmission() const -> bool { return manager_ == nullptr; }
 
     void setFrameIndices(uint64_t currentFrameIndex, uint64_t lastCompletedFrameIndex);
 
