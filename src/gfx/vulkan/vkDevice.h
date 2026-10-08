@@ -194,6 +194,8 @@ public:
         return *queueSubmissionManager_;
     }
 
+    [[nodiscard]] auto getOrCreateSharedCommandPool(uint32_t queueFamilyIndex) -> core::ResourceSharedRef;
+
     using core::ResourceBase::resourceBase;
 
 private:
@@ -217,6 +219,7 @@ private:
     std::unique_ptr<core::ResourceManagerBase> internalResourceManager_;
     std::unique_ptr<PipelineManager> pipelineManager_;
     std::unique_ptr<gfx::QueueSubmissionManager> queueSubmissionManager_;
+    core::StaticHashTable<core::ResourceSharedRef, 8, uint32_t> sharedCommandPools_;
 };
 }
 

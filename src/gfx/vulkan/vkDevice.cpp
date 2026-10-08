@@ -618,6 +618,27 @@ auto Device::createCommandPool(uint32_t queueFamilyIndex, CommandPoolFlagBits fl
     return result;
 }
 
+auto Device::getOrCreateSharedCommandPool(uint32_t queueFamilyIndex) -> core::ResourceSharedRef
+{
+    auto it = sharedCommandPools_.find(queueFamilyIndex);
+    if (it == sharedCommandPools_.end()) {
+        auto flags = gfx::CommandPoolFlagBits{};
+        flags.set(gfx::CommandPoolFlags::ALLOW_COMMAND_BUFFERS_RESET, gfx::CommandPoolFlags::TRANSIENT);
+
+        auto poolNew = createCommandPool(queueFamilyIndex, flags);
+
+        auto [itNew, success] =
+          sharedCommandPools_.add(core::ResourceSharedRef{ std::move(poolNew) }, queueFamilyIndex);
+
+        assert(success);
+        it = itNew;
+    }
+
+    auto [_, poolRef] = *it;
+
+    return poolRef;
+}
+
 auto Device::createQueueSubmission(uint32_t queueFamilyIndex,
                                    CommandPoolFlagBits commandPoolFlags) -> core::ResourceUniqueRef
 {
