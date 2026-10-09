@@ -6,6 +6,7 @@
 #include "gfx/device.h"
 #include "gfx/queueSubmission.h"
 #include "multithreading/taskManager.h"
+#include "multithreading/executor.h"
 #include <algorithm>
 
 #if defined(GFX_DRIVER_VULKAN)
@@ -30,21 +31,27 @@ auto getPurposeBits(multithreading::Purpose purpose) -> multithreading::PurposeB
 
 auto QueueSubmissionManager::acquireSignal(uint64_t signalInitialValue) -> core::ResourceSharedRef
 {
-    auto result = core::ResourceSharedRef{};
-    if (!signalPool_.empty()) {
-        result = signalPool_.back();
-        signalPool_.pop_back();
-    } else {
-        assert(device_ != nullptr);
-        result = device_->createSignal(gfx::SignalType::TIMELINE, signalInitialValue);
-    }
+    auto acquireSignalTask = [this, signalInitialValue]() -> core::ResourceSharedRef {
+        auto result = core::ResourceSharedRef{};
+        if (!signalPool_.empty()) {
+            result = signalPool_.back();
+            signalPool_.pop_back();
+        } else {
+            assert(device_ != nullptr);
+            result = device_->createSignal(gfx::SignalType::TIMELINE, signalInitialValue);
+        }
+        return result;
+    };
 
-    return result;
+    return multithreading::Executor::threadExecutor().taskManager().strandTask(acquireSignalTask).get();
 }
 
 void QueueSubmissionManager::returnSignal(core::ResourceSharedRef const& signal)
 {
-    signalPool_.push_back(signal);
+    auto returnSignalTask = [this, signal = signal]() -> void {
+        signalPool_.push_back(signal);
+    };
+    multithreading::Executor::threadExecutor().taskManager().strandTask(returnSignalTask).get();
 }
 
 auto QueueSubmissionManager::acquireQueueSubmission(multithreading::Purpose purpose,

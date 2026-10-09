@@ -40,7 +40,10 @@ struct TransferJob
     {
         auto& device = deviceRef_.as<gfx::Device>();
 
-        auto submissionRef =
+        device.createQ
+
+          // add aquire one time independent submission
+          auto submissionRef =
           device.queueSubmissionManager().getSubmission(multithreading::Purpose::Transfer,
                                                         gfx::CommandPoolFlagBits{ gfx::CommandPoolFlags::TRANSIENT },
                                                         gfx::default_transfer_submission_priority_v);
@@ -54,7 +57,43 @@ struct TransferJob
             transferSubmissionRecorder.start();
         }
 
-        auto batchRecorder = transferSubmissionRecorder.addBatch(""); // TODO:: transient batches can be anonymous
+        auto batchRecorder = transferSubmissionRecorder.addBatch();
+
+        auto commandListRecorder = batchRecorder.addCommandList();
+
+        commandListRecorder.begin(gfx::CommandListUsageFlagBits{ gfx::CommandListUsageFlags::ONE_TIME_SUBMIT });
+
+        if (transferTask_.type == TransferSystem::TransferTaskType::BufferTransfer) {
+            auto& transferProps = std::get<TransferSystem::BufferTransferProps>(transferTask_.props);
+            auto const& stagingRef = transferProps.stagingRef;
+            auto const& gpuResRef = transferProps.gpuResourceRef;
+            auto srcOffset = transferProps.srcOffset;
+            auto dstOffset = transferProps.dstOffset;
+            auto byteCount = transferProps.size;
+
+            // TODO:: test if necessary
+            // acquiring barrier
+            commandListRecorder.acquireResourceForTransfer(
+              gfx::PipelineStageFlagBits{ gfx::PipelineStageFlags::TOP_OF_PIPE_BIT },
+              gfx::PipelineStageFlagBits{ gfx::PipelineStageFlags::TRANSFER_BIT },
+              gfx::AccessFlagBits{},
+              gfx::AccessFlagBits{ gfx::AccessFlags::TRANSFER_WRITE_BIT },
+              gpuResRef);
+
+            commandListRecorder.copyBuffers(stagingRef, gpuResRef, srcOffset, dstOffset, byteCount);
+
+            // release barrier
+            commandListRecorder.releaseResourceToGraphics(
+              gfx::PipelineStageFlagBits{ gfx::PipelineStageFlags::TRANSFER_BIT },
+              gfx::PipelineStageFlagBits{ gfx::PipelineStageFlags::BOTTOM_OF_PIPE_BIT },
+              gfx::AccessFlagBits{ gfx::AccessFlags::TRANSFER_WRITE_BIT },
+              gfx::AccessFlagBits{},
+              gpuResRef);
+        }
+
+        commandListRecorder.end();
+
+        // one batch
     }
 
     core::ResourceSharedRef deviceRef_;
