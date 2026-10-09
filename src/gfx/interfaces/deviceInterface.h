@@ -7,6 +7,7 @@
 
 #include "core/resourceSharedRef.h"
 #include "gfx/common.h"
+#include "multithreading/common.h"
 #include <concepts>
 #include <metrix/type_list.h>
 
@@ -28,7 +29,8 @@ concept DeviceConcept = requires(T t,
                                  std::string_view s,
                                  SurfaceFlagBits f,
                                  SignalType st,
-                                 CommandPoolFlagBits cp) {
+                                 CommandPoolFlagBits cp,
+                                 multithreading::Purpose p) {
     { t.resourceBase() } -> std::same_as<core::ResourceBase*>;
     { t.name() } -> std::same_as<std::string_view>;
     { t.vendor() } -> std::same_as<DeviceVendor>;
@@ -113,7 +115,7 @@ concept DeviceConcept = requires(T t,
 
     { t.queueSubmissionManager() };
 
-    { t.createOneTimeQueueSubmission(a) } -> std::same_as<core::ResourceUniqueRef>;
+    { t.createOneTimeQueueSubmission(p) } -> std::same_as<core::ResourceUniqueRef>;
 };
 
 template<DeviceConcept PlatformImplementation>

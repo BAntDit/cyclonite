@@ -835,9 +835,26 @@ auto Device::createDescriptorPool(core::ResourceSharedRef layoutRef,
     return result;
 }
 
-auto Device::createOneTimeQueueSubmission(uint32_t queueFamilyIndex) -> core::ResourceUniqueRef
+auto Device::createOneTimeQueueSubmission(multithreading::Purpose purpose) -> core::ResourceUniqueRef
 {
     auto result = core::ResourceUniqueRef{};
+
+    assert(purpose != multithreading::Purpose::General);
+    auto queueFamilyIndex = uint32_t{ 0 };
+
+    switch (purpose) {
+        case multithreading::Purpose::Render:
+            queueFamilyIndex = graphicsQueueFamilyIndex();
+            break;
+        case multithreading::Purpose::Compute:
+            queueFamilyIndex = computeQueueFamilyIndex();
+            break;
+        case multithreading::Purpose::Transfer:
+            queueFamilyIndex = transferQueueFamilyIndex();
+            break;
+        default:
+            assert(false);
+    }
 
     auto& resManager = static_cast<resource_manager_t&>(resourceManager());
 

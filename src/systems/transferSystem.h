@@ -12,6 +12,8 @@
 #include <future>
 #include <memory>
 #include <metrix/enum.h>
+#include <multithreading/executor.h>
+#include <multithreading/taskManager.h>
 #include <variant>
 
 namespace cyclonite {
@@ -69,9 +71,12 @@ public:
              core::ResourceSharedRef const& sceneRef) -> std::future<void>;
 
 private:
-    auto transfer() -> std::future<void>;
+    void transferPrerecord();
+
+    void transferCompletion();
 
     core::ResourceSharedRef deviceRef_;
+    core::ResourceSharedRef transferSubmissionRef_;
     std::unique_ptr<multithreading::DynamicMpscQueue<TransferTask>> transferTasks_;
 };
 
@@ -88,9 +93,25 @@ auto TransferSystem::run(Root<Config>& root,
             prevStageFutures.get();
         }
 
-        return transfer();
+        auto& taskManager = multithreading::Executor::threadExecutor().taskManager();
+        return taskManager.submitTask([this]() -> void { transferPrerecord(); });
+    } else if constexpr (ExecutionStage == metrix::value_cast(SystemUpdateStageList::TRANSFER_END)) {
+        (void)root;
+        (void)sceneRef;
+
+        if (prevStageFutures.valid()) {
+            prevStageFutures.get();
+        }
+
+        auto& taskManager = multithreading::Executor::threadExecutor().taskManager();
+        return taskManager.submitTask([this]() -> void { transferCompletion(); });
     } else {
-        // TODO:: ...
+        auto promise = std::promise<void>();
+        auto future = promise.get_future();
+
+        promise.set_value();
+
+        return future;
     }
 }
 }

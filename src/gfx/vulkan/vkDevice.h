@@ -16,6 +16,7 @@
 #include "gfx/config.h"
 #include "gfx/queueSubmissionManager.h"
 #include "handle.h"
+#include "multithreading/common.h"
 #include "vmaUsage.h"
 #include <array>
 #include <span>
@@ -194,7 +195,7 @@ public:
         return *queueSubmissionManager_;
     }
 
-    [[nodiscard]] auto createOneTimeQueueSubmission(uint32_t queueFamilyIndex) -> core::ResourceUniqueRef;
+    [[nodiscard]] auto createOneTimeQueueSubmission(multithreading::Purpose purpose) -> core::ResourceUniqueRef;
 
     [[nodiscard]] auto getOrCreateSharedCommandPool(uint32_t queueFamilyIndex) -> core::ResourceSharedRef;
 

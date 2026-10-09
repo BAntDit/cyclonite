@@ -5,8 +5,8 @@
 #include "vkQueueSubmissionManager.h"
 #include "gfx/device.h"
 #include "gfx/queueSubmission.h"
-#include "multithreading/taskManager.h"
 #include "multithreading/executor.h"
+#include "multithreading/taskManager.h"
 #include <algorithm>
 
 #if defined(GFX_DRIVER_VULKAN)
@@ -48,9 +48,7 @@ auto QueueSubmissionManager::acquireSignal(uint64_t signalInitialValue) -> core:
 
 void QueueSubmissionManager::returnSignal(core::ResourceSharedRef const& signal)
 {
-    auto returnSignalTask = [this, signal = signal]() -> void {
-        signalPool_.push_back(signal);
-    };
+    auto returnSignalTask = [this, signal = signal]() -> void { signalPool_.push_back(signal); };
     multithreading::Executor::threadExecutor().taskManager().strandTask(returnSignalTask).get();
 }
 
