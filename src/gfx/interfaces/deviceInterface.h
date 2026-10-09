@@ -112,6 +112,8 @@ concept DeviceConcept = requires(T t,
                               metrix::member_function_return_type_t<decltype(&T::getOrCreatePipelineBindingSchema)>>;
 
     { t.queueSubmissionManager() };
+
+    { t.createOneTimeQueueSubmission(a) } -> std::same_as<core::ResourceUniqueRef>;
 };
 
 template<DeviceConcept PlatformImplementation>
@@ -123,6 +125,7 @@ public:
     using PlatformImplementation::allocateDescriptorSetBySchema;
     using PlatformImplementation::createBuffer;
     using PlatformImplementation::createCommandPool;
+    using PlatformImplementation::createOneTimeQueueSubmission;
     using PlatformImplementation::createRenderWindow;
     using PlatformImplementation::createSampler;
     using PlatformImplementation::createShader;

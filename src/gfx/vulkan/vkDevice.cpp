@@ -835,6 +835,20 @@ auto Device::createDescriptorPool(core::ResourceSharedRef layoutRef,
     return result;
 }
 
+auto Device::createOneTimeQueueSubmission(uint32_t queueFamilyIndex) -> core::ResourceUniqueRef
+{
+    auto result = core::ResourceUniqueRef{};
+
+    auto& resManager = static_cast<resource_manager_t&>(resourceManager());
+
+    auto deviceRef = getSharedFromThis(this);
+
+    auto* queueSubmissionManager = queueSubmissionManager_->platformQueueSubmissionManager();
+    result = resManager.allocResource<gfx::QueueSubmission>(deviceRef, queueSubmissionManager, queueFamilyIndex);
+
+    return result;
+}
+
 Device::~Device()
 {
     pipelineManager_.reset();

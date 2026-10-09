@@ -194,6 +194,8 @@ public:
         return *queueSubmissionManager_;
     }
 
+    [[nodiscard]] auto createOneTimeQueueSubmission(uint32_t queueFamilyIndex) -> core::ResourceUniqueRef;
+
     [[nodiscard]] auto getOrCreateSharedCommandPool(uint32_t queueFamilyIndex) -> core::ResourceSharedRef;
 
     using core::ResourceBase::resourceBase;
