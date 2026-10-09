@@ -20,7 +20,7 @@ public:
 
     ~QueueSubmissionRecorder() = default;
 
-    [[nodiscard]] auto addBatch(std::string_view batchName) -> SubmissionBatchRecorder;
+    [[nodiscard]] auto addBatch(std::string_view batchName = "") -> SubmissionBatchRecorder;
 
     void start();
 

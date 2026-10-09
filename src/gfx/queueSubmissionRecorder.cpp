@@ -36,7 +36,7 @@ void QueueSubmissionRecorder::start()
     addTask(multithreading::TaskManager::submitTask(task, purpose));
 }
 
-auto QueueSubmissionRecorder::addBatch(std::string_view batchName) -> SubmissionBatchRecorder
+auto QueueSubmissionRecorder::addBatch(std::string_view batchName /* =""*/) -> SubmissionBatchRecorder
 {
     auto batchRecorder = SubmissionBatchRecorder{ this };
 
