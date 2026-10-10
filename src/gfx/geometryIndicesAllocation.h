@@ -8,14 +8,14 @@
 #include "core/resourceSharedRef.h"
 #include "gfx/common.h"
 
-namespace cyclonite::systems::internal {
+namespace cyclonite::internal {
 class IndexArena;
 }
 
 namespace cyclonite::gfx {
 class GeometryIndicesAllocation
 {
-    friend class systems::internal::IndexArena;
+    friend class internal::IndexArena;
 
 public:
     GeometryIndicesAllocation() = default;
@@ -45,7 +45,7 @@ public:
 private:
     core::ResourceSharedRef indexBufferRef_;
     core::ResourceSharedRef stagingBufferRef_;
-    systems::internal::IndexArena* arena_;
+    internal::IndexArena* arena_;
     uint32_t firstIndex_;
     uint32_t indexCount_;
     gfx::IndexType indexType_;

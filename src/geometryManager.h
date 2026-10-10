@@ -2,17 +2,14 @@
 // Created by anton on 10/4/26.
 //
 
-#ifndef CYCLONITE_SYSTEMS_GEOMETRY_MANAGEMENT_SYSTEM_H
-#define CYCLONITE_SYSTEMS_GEOMETRY_MANAGEMENT_SYSTEM_H
+#ifndef CYCLONITE_GEOMETRY_MANAGEMER_H
+#define CYCLONITE_GEOMETRY_MANAGEMER_H
 
 #include "core/arena.h"
 #include "core/resourceSharedRef.h"
 #include "gfx/common.h"
 #include "gfx/geometryIndicesAllocation.h"
-#include "stages.h"
-#include <future>
 #include <list>
-#include <metrix/enum.h>
 #include <mutex>
 
 namespace cyclonite {
@@ -20,14 +17,12 @@ template<typename Config>
 class Root;
 }
 
-namespace cyclonite::systems {
-class GeometryManagementSystem;
-
+namespace cyclonite {
 namespace internal {
 class IndexArena : protected core::Arena
 {
 public:
-    IndexArena(GeometryManagementSystem& geometrySystem, size_t count, gfx::IndexType indexType);
+    IndexArena(core::ResourceSharedRef const& deviceRef, size_t count, gfx::IndexType indexType);
 
     [[nodiscard]] auto alloc(uint32_t indexCount) -> gfx::GeometryIndicesAllocation;
 
@@ -38,28 +33,25 @@ public:
 
 private:
     std::mutex lock_;
-    GeometryManagementSystem* geometrySystem_;
+    core::ResourceSharedRef deviceRef_;
     core::ResourceSharedRef indexBufferRef_;
     gfx::IndexType indexType_;
 };
 }
 
-class GeometryManagementSystem
+class GeometryManager
 {
 public:
-    GeometryManagementSystem() = default;
+    GeometryManager() = default;
 
+    // pass here transfer system template
     void init(core::ResourceSharedRef const& deviceRef, uint32_t initialIndexArenaCapacity);
-
-    /*template<size_t ExecutionStage, typename Config>
-    auto run(Root<Config>& root,
-             std::shared_future<void>& prevStageFutures,
-             core::ResourceSharedRef const& sceneRef) -> std::future<void>;*/
 
     [[nodiscard]] auto device() const -> core::ResourceSharedRef const& { return deviceRef_; }
 
     [[nodiscard]] auto device() -> core::ResourceSharedRef& { return deviceRef_; }
 
+    // ensure geometry
     // push the current CPU state toward the GPU on the next transfer stage
     // auto commitGeometry(core::ResourceSharedRef geometryRef) -> std::future<void>;
 
@@ -73,4 +65,4 @@ private:
 };
 }
 
-#endif // CYCLONITE_SYSTEMS_GEOMETRY_MANAGEMENT_SYSTEM_H
+#endif // CYCLONITE_GEOMETRY_MANAGEMER_H

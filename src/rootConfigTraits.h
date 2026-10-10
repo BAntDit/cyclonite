@@ -6,7 +6,7 @@
 #define CYCLONITE_ROOT_CONFIG_TRAITS_H
 
 #include "core/configTraitMacro.h"
-#include "systems/geometryManagementSystem.h"
+#include "systems/transferSystem.h"
 #include "systems/stages.h"
 #include <metrix/type_list.h>
 
@@ -15,7 +15,7 @@ namespace internal {
 struct DefualtEnttxConfig
 {};
 
-using default_system_list_t = metrix::type_list<systems::GeometryManagementSystem>;
+using default_system_list_t = metrix::type_list<systems::TransferSystem>;
 
 template<typename T>
 struct config_traits_declaration

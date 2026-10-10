@@ -3,7 +3,7 @@
 //
 
 #include "geometryIndicesAllocation.h"
-#include "systems/geometryManagementSystem.h"
+#include "geometryManager.h"
 
 namespace cyclonite::gfx {
 GeometryIndicesAllocation::~GeometryIndicesAllocation()

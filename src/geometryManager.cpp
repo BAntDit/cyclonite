@@ -2,18 +2,18 @@
 // Created by anton on 10/4/26.
 //
 
-#include "geometryManagementSystem.h"
+#include "geometryManager.h"
 #include "gfx/device.h"
 
-namespace cyclonite::systems {
-internal::IndexArena::IndexArena(GeometryManagementSystem& geometrySystem, size_t count, gfx::IndexType indexType)
+namespace cyclonite {
+internal::IndexArena::IndexArena(core::ResourceSharedRef const& deviceRef, size_t count, gfx::IndexType indexType)
   : core::Arena{ count * (indexType == gfx::IndexType::TYPE_UINT16 ? sizeof(uint16_t) : sizeof(uint32_t)) }
   , lock_{}
-  , geometrySystem_{ &geometrySystem }
+  , deviceRef_{ deviceRef }
   , indexBufferRef_{}
   , indexType_{ indexType }
 {
-    auto& device = geometrySystem.device().as<gfx::Device>();
+    auto& device = deviceRef_.as<gfx::Device>();
 
     auto allocationFlags = gfx::GpuMemoryAllocationFlagBits{};
     allocationFlags.set(gfx::GpuMemoryAllocationFlags::DEDICATED_MEMORY);
@@ -55,16 +55,18 @@ void internal::IndexArena::free(uint32_t firstIndex, uint32_t indexCount)
     auto size =
       (indexType_ == gfx::IndexType::TYPE_UINT16) ? indexCount * sizeof(uint16_t) : indexCount * sizeof(uint32_t);
 
+    auto lockGuard = std::lock_guard{ lock_ };
+
     Arena::free(offset, size);
 }
 
-void GeometryManagementSystem::init(core::ResourceSharedRef const& deviceRef, uint32_t initialIndexArenaCapacity)
+void GeometryManager::init(core::ResourceSharedRef const& deviceRef, uint32_t initialIndexArenaCapacity)
 {
     deviceRef_ = deviceRef;
     initialIndexArenaCapacity_ = initialIndexArenaCapacity;
 }
 
-auto GeometryManagementSystem::allocateIndices(uint32_t count, gfx::IndexType type) -> gfx::GeometryIndicesAllocation
+auto GeometryManager::allocateIndices(uint32_t count, gfx::IndexType type) -> gfx::GeometryIndicesAllocation
 {
     auto allocation = gfx::GeometryIndicesAllocation{};
 
@@ -80,7 +82,7 @@ auto GeometryManagementSystem::allocateIndices(uint32_t count, gfx::IndexType ty
 
     if (!allocation.valid()) {
         auto capacity = std::max(count, initialIndexArenaCapacity_);
-        auto& arena = arenaList.emplace_back(*this, capacity, type);
+        auto& arena = arenaList.emplace_back(deviceRef_, capacity, type);
 
         if (!(allocation = arena.alloc(count)).valid()) {
             throw std::runtime_error("geometry system is running out of indices memeory");
