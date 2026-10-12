@@ -7,17 +7,17 @@
 
 #include "core/arena.h"
 #include "core/resourceSharedRef.h"
+#include "geometryManager.h"
 #include "gfx/common.h"
 #include "gfx/geometryIndicesAllocation.h"
+#include <concepts>
 #include <list>
 #include <mutex>
+#include <new>
 
 namespace cyclonite {
-template<typename Config>
-class Root;
-}
+class Geometry;
 
-namespace cyclonite {
 namespace internal {
 class IndexArena : protected core::Arena
 {
@@ -37,14 +37,21 @@ private:
     core::ResourceSharedRef indexBufferRef_;
     gfx::IndexType indexType_;
 };
+
+template<typename T>
+concept TransferSystemConcept = requires(T& t, core::ResourceSharedRef const& r, size_t s) {
+    { t.commitTransferTask(r, r, s, s, s) } -> std::same_as<void>;
+};
 }
 
 class GeometryManager
 {
-public:
-    GeometryManager() = default;
+    friend class Geometry;
 
-    // pass here transfer system template
+public:
+    template<internal::TransferSystemConcept TransferSystemType>
+    explicit GeometryManager(TransferSystemType& transferSystem);
+
     void init(core::ResourceSharedRef const& deviceRef, uint32_t initialIndexArenaCapacity);
 
     [[nodiscard]] auto device() const -> core::ResourceSharedRef const& { return deviceRef_; }
@@ -56,13 +63,52 @@ public:
     // auto commitGeometry(core::ResourceSharedRef geometryRef) -> std::future<void>;
 
 private:
+    void ensureGeometry(Geometry& geometry); // TODO::
+
     [[nodiscard]] auto allocateIndices(uint32_t count, gfx::IndexType type) -> gfx::GeometryIndicesAllocation;
+
+    template<internal::TransferSystemConcept TransferSystemType>
+    static void transferTaskCommit(void* transferSystemPtr,
+                                   core::ResourceSharedRef const& stagingRef,
+                                   core::ResourceSharedRef const& gpuResourceRef,
+                                   size_t offset,
+                                   size_t size);
+
+    using transfer_task_commit_invoke_f = void (*)(void* transferSystemPtr,
+                                                   core::ResourceSharedRef const& stagingRef,
+                                                   core::ResourceSharedRef const& gpuResourceRef,
+                                                   size_t offset,
+                                                   size_t size);
 
     std::list<internal::IndexArena> index32ArenaList_;
     std::list<internal::IndexArena> index16ArenaList_;
     core::ResourceSharedRef deviceRef_;
+    void* transferSystemPtr_;
+    transfer_task_commit_invoke_f transferTaskInvoke_;
     uint32_t initialIndexArenaCapacity_;
 };
+
+template<internal::TransferSystemConcept TransferSystemType>
+/*static*/ void GeometryManager::transferTaskCommit(void* transferSystemPtr,
+                                                    core::ResourceSharedRef const& stagingRef,
+                                                    core::ResourceSharedRef const& gpuResourceRef,
+                                                    size_t offset,
+                                                    size_t size)
+{
+    auto* transferSystem = std::launder(reinterpret_cast<TransferSystemType*>(transferSystemPtr));
+    transferSystem->commitTransferTask(stagingRef, gpuResourceRef, 0, offset, size);
+}
+
+template<internal::TransferSystemConcept TransferSystemType>
+GeometryManager::GeometryManager(TransferSystemType& transferSystem)
+  : index32ArenaList_{}
+  , index16ArenaList_{}
+  , deviceRef_{}
+  , transferSystemPtr_{ &transferSystem }
+  , transferTaskInvoke_{ &transferTaskCommit<TransferSystemType> }
+  , initialIndexArenaCapacity_{ 0 }
+{
+}
 }
 
 #endif // CYCLONITE_GEOMETRY_MANAGEMER_H

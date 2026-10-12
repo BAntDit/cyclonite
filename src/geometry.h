@@ -11,9 +11,7 @@
 #include "resources/managedResource.h"
 
 namespace cyclonite {
-namespace systems {
-class GeometryManagementSystem;
-}
+class GeometryManager;
 
 class Geometry
   : public core::ResourceBase
@@ -33,14 +31,14 @@ public:
              resources::ResourceGroupBase* resourceGroup,
              std::string_view name,
              boost::uuids::uuid const& uuid,
-             systems::GeometryManagementSystem& geometrySystem);
+             GeometryManager& geometryManager);
 
     Geometry(core::ResourceManagerBase* resourceManager,
              core::ResourceId resourceId,
              resources::ResourceGroupBase* resourceGroup,
              std::string_view name,
              boost::uuids::uuid const& uuid,
-             systems::GeometryManagementSystem& geometrySystem,
+             GeometryManager& geometryManager,
              std::shared_ptr<shared::AssetMainBlock> const& asset);
 
     using core::ResourceBase::resourceBase;
@@ -49,8 +47,7 @@ public:
 
     void prepareImpl(core::ResourceSharedRef deviceRef);
 
-    // TODO::
-    // auto lockIndices() -> core::ResourceSharedRef const&;
+    void setIndices(core::ResourceSharedRef const& stagingRef); // TODO::
 
     // void unlock();
     // TODO::
@@ -60,7 +57,7 @@ private:
     constexpr static size_t max_attribute_count_v = 64;
     constexpr static size_t max_vertex_buffer_count_v = 8;
 
-    systems::GeometryManagementSystem* geometrySystem_;
+    GeometryManager* geometryManager_;
 
     std::shared_ptr<shared::AssetMainBlock> asset_;
 

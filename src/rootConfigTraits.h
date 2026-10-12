@@ -6,8 +6,8 @@
 #define CYCLONITE_ROOT_CONFIG_TRAITS_H
 
 #include "core/configTraitMacro.h"
-#include "systems/transferSystem.h"
 #include "systems/stages.h"
+#include "systems/transferSystem.h"
 #include <metrix/type_list.h>
 
 namespace cyclonite {
@@ -26,6 +26,7 @@ struct config_traits_declaration
     DECLARE_CONFIG_TYPE_TRAIT(custom_resource_type_list, metrix::type_list<>)
     DECLARE_CONFIG_TYPE_TRAIT(system_update_stage_enum, systems::SystemUpdateStageList)
     DECLARE_CONFIG_TYPE_TRAIT(system_list, default_system_list_t)
+    DECLARE_CONFIG_TYPE_TRAIT(transfer_system, systems::TransferSystem)
     DECLARE_CONFIG_TYPE_TRAIT(enttx_config, DefualtEnttxConfig)
 };
 }
@@ -36,6 +37,7 @@ struct ConfigTraits
     DEFINE_CONFIG_TYPE_TRAIT(custom_resource_type_list)
     DEFINE_CONFIG_TYPE_TRAIT(system_update_stage_enum)
     DEFINE_CONFIG_TYPE_TRAIT(system_list)
+    DEFINE_CONFIG_TYPE_TRAIT(transfer_system)
     DEFINE_CONFIG_TYPE_TRAIT(enttx_config)
 };
 }

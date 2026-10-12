@@ -55,6 +55,10 @@ public:
 
     [[nodiscard]] auto getResource(std::string_view name) const -> core::ResourceSharedRef;
 
+    [[nodiscard]] auto root() const -> Root<Config> const& { return *root_; }
+
+    [[nodiscard]] auto root() -> Root<Config>& { return *root_; }
+
 private:
     template<typename... Resource>
     auto prepareInternal(core::ResourceSharedRef const& deviceRef, metrix::type_list<Resource...>) -> std::future<void>;

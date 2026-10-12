@@ -91,10 +91,4 @@ auto GeometryManager::allocateIndices(uint32_t count, gfx::IndexType type) -> gf
 
     return allocation;
 }
-
-/*auto GeometryManagementSystem::commitGeometry(core::ResourceSharedRef geometryRef) -> std::future<void>
-{
-    auto& geometry = geometryRef.as<Geometry>();
-
-}*/
 }

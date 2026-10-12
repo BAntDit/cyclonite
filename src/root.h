@@ -6,6 +6,7 @@
 #define CYCLONITE_ROOT_H
 
 #include "enttx/entityManager.h"
+#include "geometryManager.h"
 #include "resources/resourceGroupManager.h"
 #include "rootBase.h"
 #include "rootConfigTraits.h"
@@ -23,8 +24,10 @@ template<typename Config = internal::DefaultConfig>
 class Root : public RootBase
 {
 public:
+    // TDDO:: move to root meta
     using config_t = cyclonite::ConfigTraits<Config>;
     using enttx_config_t = enttx::internal::ConfigTraits<typename config_t::enttx_config_t>;
+    using transfer_system_t = config_t::transfer_system_t;
 
     Root();
 
@@ -45,10 +48,15 @@ public:
 
     [[nodiscard]] auto getSceneEntities(core::ResourceSharedRef const& scene) -> enttx::EntityManager<enttx_config_t>&;
 
+    [[nodiscard]] auto geometryManager() const -> GeometryManager const& { return *geometryManager_; }
+
+    [[nodiscard]] auto geometryManager() -> GeometryManager& { return *geometryManager_; }
+
 private:
     systems::SystemManager<Config> systemManager_;
     boost::unordered_flat_map<uint64_t, enttx::EntityManager<enttx_config_t>> sceneEcs_;
     resources::ResourceGroupManager<Config> resourceGroupManager_;
+    std::unique_ptr<GeometryManager> geometryManager_;
 
 public:
     [[nodiscard]] auto resourceManager() const -> resources::ResourceGroupManager<Config> const&
@@ -65,7 +73,9 @@ Root<Config>::Root()
   , systemManager_{ *this }
   , sceneEcs_{}
   , resourceGroupManager_{ *this }
+  , geometryManager_{}
 {
+    geometryManager_.reset(new GeometryManager{ systemManager().template getSystem<transfer_system_t>() });
 }
 
 template<typename Config>

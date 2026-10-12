@@ -10,6 +10,7 @@
 #include "core/resourceSharedRef.h"
 #include "geometry.h"
 #include "multithreading/utility.h"
+#include "root.h"
 #include "scene.h"
 #include "serialization.h"
 #include "shader.h"
@@ -152,9 +153,11 @@ template<typename ResourceGroup>
 
                                     auto ref = resourceGroup->getResource(uuid);
                                     if (!ref.valid()) {
+                                        auto& root = resourceGroup->root();
+
                                         ref = core::ResourceSharedRef{
                                             resourceGroup->template addResource<cyclonite::Geometry>(
-                                              assetSubMesh.name, uuid, mainBlock)
+                                              assetSubMesh.name, uuid, root.geometryManager(), mainBlock)
                                         };
                                     }
 
