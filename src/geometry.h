@@ -47,7 +47,7 @@ public:
 
     void prepareImpl(core::ResourceSharedRef deviceRef);
 
-    void setIndices(core::ResourceSharedRef const& stagingRef); // TODO::
+    void setIndices(core::ResourceSharedRef const& stagingRef, gfx::IndexType indexType, uint32_t indexCount);
 
     // void unlock();
     // TODO::

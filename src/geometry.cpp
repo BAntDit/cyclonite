@@ -211,68 +211,13 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
 
             auto stagingRef = core::ResourceSharedRef{ device.createBuffer(
               indexAllocationFlags, usageFlags, bytesPerIndex * indices_.indexCount()) };
-        }
 
-        // TODO::
-
-        asset_.reset();
-    } else {
-        throw std::runtime_error("not implemented");
-    }
-
-    /*if (asset_) {
-        auto& device = deviceRef.template as<gfx::Device>();
-
-        auto uuidStr = boost::uuids::to_string(uuid());
-
-        auto subMeshIt = std::find_if(asset_->subMeshes.begin(),
-                                      asset_->subMeshes.end(),
-                                      [uuidStr](auto&& subMesh) -> bool { return subMesh.uuid == uuidStr; });
-
-        if (subMeshIt == asset_->subMeshes.end()) {
-            throw std::runtime_error(std::format("could not load geometry {}, {} from asset", name(), uuidStr));
-        }
-
-        auto& subMesh = *subMeshIt;
-
-        if (subMesh.indices != std::numeric_limits<uint32_t>::max()) {
-            assert(subMesh.indices < asset_->dataAccessors.size());
-
-            auto [bufferViewIdx, elementCount, byteOffset, type, componentType] =
-              asset_->dataAccessors[subMesh.indices];
-
-            assert(bufferViewIdx < asset_->bufferViews.size());
-            auto [bufferIdx, offset, size, stride] = asset_->bufferViews[bufferViewIdx];
-
-            assert(bufferIdx < asset_->buffers.size());
-            auto& buffer = asset_->buffers[bufferIdx];
-
-            assert(type == shared::AssetAccessorDataType::Scalar);
-
-            auto bytesPerElement = bytesPerComponentType(componentType);
-
-            auto indexType =
-              (bytesPerElement < sizeof(uint32_t)) ? gfx::IndexType::TYPE_UINT16 : gfx::IndexType::TYPE_UINT32;
-
-            auto bytesPerIndex = (indexType == gfx::IndexType::TYPE_UINT16) ? sizeof(uint16_t) : sizeof(uint32_t);
-
-            indices_ = geometrySystem_->allocateIndices(elementCount, indexType);
-
-            auto indexAllocationFlags = gfx::GpuMemoryAllocationFlagBits{};
-            indexAllocationFlags.set(gfx::GpuMemoryAllocationFlags::HOST_ACCESS_SEQUENTIAL_WRITE);
-
-            auto usageFlags = gfx::BufferUsageFlagBits{};
-            usageFlags.set(gfx::BufferUsageFlags::TRANSFER_SRC);
-
-            indices_.staging() =
-              device.createBuffer(indexAllocationFlags, usageFlags, bytesPerIndex * indices_.indexCount());
-
-            auto& indexStaging = indices_.staging().as<gfx::Buffer>();
+            auto& indexStaging = stagingRef.as<gfx::Buffer>();
 
             auto* dstPtr = reinterpret_cast<std::byte*>(indexStaging.map());
             auto* srcPtr = buffer.data() + offset;
 
-            for (auto i = uint32_t{ 0 }, count = indices_.indexCount(); i < count; i++) {
+            for (auto i = uint32_t{ 0 }, count = elementCount; i < count; i++) {
                 if (componentType == shared::AssetAccessorComponentType::Uint8_t) {
                     assert(indexType == gfx::IndexType::TYPE_UINT16);
                     auto index = static_cast<uint16_t>(*(srcPtr + i * sizeof(uint8_t) + byteOffset));
@@ -288,17 +233,26 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
                 }
             }
 
-            indexStaging.unmap();
-            dstPtr = nullptr;
+            setIndices(stagingRef, indexType, elementCount);
         }
 
-        // TODO:: commit geometry
+        // TODO::
 
         asset_.reset();
     } else {
         throw std::runtime_error("not implemented");
-    }*/
+    }
+}
 
-    // device.create
+void Geometry::setIndices(core::ResourceSharedRef const& stagingRef, gfx::IndexType indexType, uint32_t indexCount)
+{
+    // TODO:: release previous
+
+    indices_ = geometryManager_->allocateIndices(indexCount, indexType);
+    indices_.staging() = stagingRef;
+
+    if (!indices_.valid()) {
+        throw std::runtime_error("could not set indices");
+    }
 }
 }
