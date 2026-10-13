@@ -54,6 +54,34 @@ auto bytesPerComponentType(shared::AssetAccessorComponentType componentType) -> 
     return result;
 }
 
+auto componentCountByType(shared::AssetAccessorDataType type) -> uint8_t
+{
+    auto count = uint8_t{ 0 };
+
+    if (type == shared::AssetAccessorDataType::Scalar) {
+        count = 1;
+    } else if (type == shared::AssetAccessorDataType::Vector2) {
+        count = 2;
+    } else if (type == shared::AssetAccessorDataType::Vector3) {
+        count = 3;
+    } else if (type == shared::AssetAccessorDataType::Vector4 || type == shared::AssetAccessorDataType::Matrix2x2) {
+        count = 4;
+    } else if (type == shared::AssetAccessorDataType::Matrix2x3 || type == shared::AssetAccessorDataType::Matrix3x2) {
+        count = 6;
+    } else if (type == shared::AssetAccessorDataType::Matrix3x3) {
+        count = 9;
+    } else if (type == shared::AssetAccessorDataType::Matrix4x2 || type == shared::AssetAccessorDataType::Matrix2x4) {
+        count = 8;
+    } else if (type == shared::AssetAccessorDataType::Matrix4x3 || type == shared::AssetAccessorDataType::Matrix3x4) {
+        count = 12;
+    } else if (type == shared::AssetAccessorDataType::Matrix4x4) {
+        count = 16;
+    }
+
+    assert(count > 0);
+    return count;
+}
+
 auto primitiveTopologyFromAsset(shared::AssetPrimitiveTopology assetTopology) -> gfx::PrimitiveTopology
 {
     auto result = gfx::PrimitiveTopology::TRIANGLE_LIST;
@@ -112,7 +140,9 @@ Geometry::Geometry(core::ResourceManagerBase* resourceManager,
   , asset_{}
   , indices_{}
   , buffers_{}
+  , bufferStrides_{}
   , attributes_{}
+  , vertexCount_{ std::numeric_limits<uint32_t>::max() }
   , primitiveTopology_{ gfx::PrimitiveTopology::TRIANGLE_LIST }
 {
 }
@@ -146,9 +176,6 @@ void Geometry::loadImpl(std::istream& stream)
 
         primitiveTopology_ = primitiveTopologyFromAsset(subMesh.primitiveTopology);
 
-        // TODO:: load indices
-        // subMesh.indices
-
         auto customBufferToFvfMap = boost::unordered_flat_map<uint32_t, shared::VertexFormatFlagBits>{};
         for (auto&& atrIdx : subMesh.attributes) {
             auto [semantic, accessorIdx] = asset_->subMeshAttributes[atrIdx];
@@ -157,8 +184,6 @@ void Geometry::loadImpl(std::istream& stream)
             // auto fvf = bufferToFvfMap[bufferViewIdx];
             // fvf.set(semantic);
         }
-
-        asset_.reset();
     } else {
         (void)stream;
         throw std::runtime_error("not implemented");
@@ -236,6 +261,42 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
             setIndices(stagingRef, indexType, elementCount);
         }
 
+        // count size:
+        auto mainBufferStride = uint8_t{ 0 };
+        auto mainBufferFvf = shared::VertexFormatFlagBits{};
+        auto mainVertexBufferStagingRef = core::ResourceSharedRef{};
+
+        for (auto attributeIndex : subMesh.attributes) {
+            auto [semantic, accessorIdx] = asset_->subMeshAttributes[attributeIndex];
+
+            assert(accessorIdx < asset_->dataAccessors.size());
+            auto [bufferViewIdx, elementCount, byteOffset, type, componentType] = asset_->dataAccessors[accessorIdx];
+
+            assert(bufferViewIdx < asset_->bufferViews.size());
+            auto [bufferIdx, offset, size, stride] = asset_->bufferViews[bufferViewIdx];
+
+            assert(bufferIdx < asset_->buffers.size());
+            auto& buffer = asset_->buffers[bufferIdx];
+
+            if (vertexCount_ == std::numeric_limits<uint32_t>::max()) {
+                vertexCount_ = elementCount;
+            }
+
+            if (semantic == shared::VertexFormatFlags::POSITION) {
+                mainBufferFvf.set(shared::VertexFormatFlags::POSITION);
+
+                auto attribute = Attribute{};
+                attribute.semantic = shared::VertexFormatFlags::POSITION;
+
+                attributes_.add(attribute, static_cast<uint64_t>(semantic));
+
+                auto srcComponentCount = 3;
+                auto bytesPerComponent = static_cast<uint8_t>(bytesPerComponentType(componentType));
+
+                mainBufferStride += bytesPerComponent * srcComponentCount;
+            }
+        }
+
         // TODO::
 
         asset_.reset();
@@ -246,7 +307,9 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
 
 void Geometry::setIndices(core::ResourceSharedRef const& stagingRef, gfx::IndexType indexType, uint32_t indexCount)
 {
-    // TODO:: release previous
+    if (indices_.valid()) {
+        indices_.reset();
+    }
 
     indices_ = geometryManager_->allocateIndices(indexCount, indexType);
     indices_.staging() = stagingRef;

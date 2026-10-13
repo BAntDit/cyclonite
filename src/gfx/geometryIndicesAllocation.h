@@ -42,6 +42,8 @@ public:
 
     [[nodiscard]] auto staging() -> core::ResourceSharedRef& { return stagingBufferRef_; }
 
+    void reset();
+
 private:
     core::ResourceSharedRef indexBufferRef_;
     core::ResourceSharedRef stagingBufferRef_;

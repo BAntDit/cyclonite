@@ -21,9 +21,8 @@ public:
     struct Attribute
     {
         shared::VertexFormatFlags semantic;
-        size_t stride;
-        size_t byteOffset; // offset per vertex
         size_t baseOffset; // offset common;
+        uint8_t byteOffset; // offset per vertex
     };
 
     Geometry(core::ResourceManagerBase* resourceManager,
@@ -64,7 +63,10 @@ private:
     gfx::GeometryIndicesAllocation indices_;
 
     core::StaticHashTable<core::ResourceSharedRef, max_vertex_buffer_count_v, uint64_t> buffers_;
+    core::StaticHashTable<uint8_t, max_vertex_buffer_count_v, uint64_t> bufferStrides_;
     core::StaticHashTable<Attribute, max_attribute_count_v, uint64_t> attributes_;
+
+    uint32_t vertexCount_;
 
     gfx::PrimitiveTopology primitiveTopology_;
 };
