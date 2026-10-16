@@ -12,76 +12,6 @@
 
 namespace cyclonite {
 namespace {
-auto bytesPerComponentType(shared::AssetAccessorComponentType componentType) -> size_t
-{
-    auto result = size_t{ 0 };
-
-    switch (componentType) {
-        case shared::AssetAccessorComponentType::Byte:
-            [[fallthrough]];
-        case shared::AssetAccessorComponentType::Boolean:
-            [[fallthrough]];
-        case shared::AssetAccessorComponentType::Int8_t:
-            [[fallthrough]];
-        case shared::AssetAccessorComponentType::Uint8_t:
-            result = 1;
-            break;
-        case shared::AssetAccessorComponentType::Float16_t:
-            [[fallthrough]];
-        case shared::AssetAccessorComponentType::Int16_t:
-            [[fallthrough]];
-        case shared::AssetAccessorComponentType::Uint16_t:
-            result = 2;
-            break;
-        case shared::AssetAccessorComponentType::Int32_t:
-            [[fallthrough]];
-        case shared::AssetAccessorComponentType::Uint32_t:
-            [[fallthrough]];
-        case shared::AssetAccessorComponentType::Float32_t:
-            result = 4;
-            break;
-        case shared::AssetAccessorComponentType::Float64_t:
-            [[fallthrough]];
-        case shared::AssetAccessorComponentType::Int64_t:
-            [[fallthrough]];
-        case shared::AssetAccessorComponentType::Uint64_t:
-            result = 8;
-            break;
-        default:
-            assert(false);
-    }
-
-    return result;
-}
-
-auto componentCountByType(shared::AssetAccessorDataType type) -> uint8_t
-{
-    auto count = uint8_t{ 0 };
-
-    if (type == shared::AssetAccessorDataType::Scalar) {
-        count = 1;
-    } else if (type == shared::AssetAccessorDataType::Vector2) {
-        count = 2;
-    } else if (type == shared::AssetAccessorDataType::Vector3) {
-        count = 3;
-    } else if (type == shared::AssetAccessorDataType::Vector4 || type == shared::AssetAccessorDataType::Matrix2x2) {
-        count = 4;
-    } else if (type == shared::AssetAccessorDataType::Matrix2x3 || type == shared::AssetAccessorDataType::Matrix3x2) {
-        count = 6;
-    } else if (type == shared::AssetAccessorDataType::Matrix3x3) {
-        count = 9;
-    } else if (type == shared::AssetAccessorDataType::Matrix4x2 || type == shared::AssetAccessorDataType::Matrix2x4) {
-        count = 8;
-    } else if (type == shared::AssetAccessorDataType::Matrix4x3 || type == shared::AssetAccessorDataType::Matrix3x4) {
-        count = 12;
-    } else if (type == shared::AssetAccessorDataType::Matrix4x4) {
-        count = 16;
-    }
-
-    assert(count > 0);
-    return count;
-}
-
 auto primitiveTopologyFromAsset(shared::AssetPrimitiveTopology assetTopology) -> gfx::PrimitiveTopology
 {
     auto result = gfx::PrimitiveTopology::TRIANGLE_LIST;
@@ -126,6 +56,76 @@ auto primitiveTopologyFromAsset(shared::AssetPrimitiveTopology assetTopology) ->
 
     return result;
 }
+}
+
+auto Geometry::bytesPerComponentType(shared::AssetAccessorComponentType componentType) -> size_t
+{
+    auto result = size_t{ 0 };
+
+    switch (componentType) {
+        case shared::AssetAccessorComponentType::Byte:
+            [[fallthrough]];
+        case shared::AssetAccessorComponentType::Boolean:
+            [[fallthrough]];
+        case shared::AssetAccessorComponentType::Int8_t:
+            [[fallthrough]];
+        case shared::AssetAccessorComponentType::Uint8_t:
+            result = 1;
+            break;
+        case shared::AssetAccessorComponentType::Float16_t:
+            [[fallthrough]];
+        case shared::AssetAccessorComponentType::Int16_t:
+            [[fallthrough]];
+        case shared::AssetAccessorComponentType::Uint16_t:
+            result = 2;
+            break;
+        case shared::AssetAccessorComponentType::Int32_t:
+            [[fallthrough]];
+        case shared::AssetAccessorComponentType::Uint32_t:
+            [[fallthrough]];
+        case shared::AssetAccessorComponentType::Float32_t:
+            result = 4;
+            break;
+        case shared::AssetAccessorComponentType::Float64_t:
+            [[fallthrough]];
+        case shared::AssetAccessorComponentType::Int64_t:
+            [[fallthrough]];
+        case shared::AssetAccessorComponentType::Uint64_t:
+            result = 8;
+            break;
+        default:
+            assert(false);
+    }
+
+    return result;
+}
+
+auto Geometry::componentCountByType(shared::AssetAccessorDataType type) -> uint8_t
+{
+    auto count = uint8_t{ 0 };
+
+    if (type == shared::AssetAccessorDataType::Scalar) {
+        count = 1;
+    } else if (type == shared::AssetAccessorDataType::Vector2) {
+        count = 2;
+    } else if (type == shared::AssetAccessorDataType::Vector3) {
+        count = 3;
+    } else if (type == shared::AssetAccessorDataType::Vector4 || type == shared::AssetAccessorDataType::Matrix2x2) {
+        count = 4;
+    } else if (type == shared::AssetAccessorDataType::Matrix2x3 || type == shared::AssetAccessorDataType::Matrix3x2) {
+        count = 6;
+    } else if (type == shared::AssetAccessorDataType::Matrix3x3) {
+        count = 9;
+    } else if (type == shared::AssetAccessorDataType::Matrix4x2 || type == shared::AssetAccessorDataType::Matrix2x4) {
+        count = 8;
+    } else if (type == shared::AssetAccessorDataType::Matrix4x3 || type == shared::AssetAccessorDataType::Matrix3x4) {
+        count = 12;
+    } else if (type == shared::AssetAccessorDataType::Matrix4x4) {
+        count = 16;
+    }
+
+    assert(count > 0);
+    return count;
 }
 
 Geometry::Geometry(core::ResourceManagerBase* resourceManager,
@@ -261,6 +261,7 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
             setIndices(stagingRef, indexType, elementCount);
         }
 
+        // TODO:: collect attributes
         // count size:
         auto mainBufferStride = uint8_t{ 0 };
         auto mainBufferFvf = shared::VertexFormatFlagBits{};
@@ -285,7 +286,7 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
             if (semantic == shared::VertexFormatFlags::POSITION) {
                 mainBufferFvf.set(shared::VertexFormatFlags::POSITION);
 
-                auto attribute = Attribute{};
+                auto attribute = GeometryAttribute{};
                 attribute.semantic = shared::VertexFormatFlags::POSITION;
 
                 attributes_.add(attribute, static_cast<uint64_t>(semantic));
