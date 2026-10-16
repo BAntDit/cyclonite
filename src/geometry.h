@@ -26,15 +26,13 @@ struct GeometryAttribute
 template<typename T>
 concept AttributeContainerConcept = requires(T t)
 {
-    { T::value_type };
-
-    { T::iterator };
+    typename std::decay_t<T>::value_type;
 
     { t.begin() };
 
     { t.end() };
 
-    requires std::is_same_v<typename T::value_type, GeometryAttribute>;
+    requires std::is_same_v<typename std::decay_t<T>::value_type, GeometryAttribute>;
 };
 
 class Geometry
@@ -67,7 +65,6 @@ public:
 
     template<AttributeContainerConcept AttributeContainer>
     void setupBufferLayout(AttributeContainer&& attributes);
-    // void setAttribute(shared::VertexFormatFlags semantic)
 
     // void unlock();
     // TODO::

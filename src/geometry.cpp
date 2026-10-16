@@ -261,11 +261,23 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
             setIndices(stagingRef, indexType, elementCount);
         }
 
-        // TODO:: collect attributes
-        // count size:
-        auto mainBufferStride = uint8_t{ 0 };
-        auto mainBufferFvf = shared::VertexFormatFlagBits{};
-        auto mainVertexBufferStagingRef = core::ResourceSharedRef{};
+        if (geometryManager_->options().flags.test(GeometryOptionFlags::KeepsOriginalAssetLayout)) {
+            throw std::runtime_error("not implemented");
+        }
+
+        auto vertexCount = std::numeric_limits<uint32_t>::max();
+
+        auto bufferViewToFvfs =
+          core::StaticHashTable<shared::VertexFormatFlagBits, max_vertex_buffer_count_v * 2, uint32_t>{};
+
+        auto semanticToAssetAttrIndex = core::StaticHashTable<size_t, max_vertex_buffer_count_v * 2, uint64_t>{};
+
+        // buffer index is a key
+        const auto mainBufferKeyIndex = static_cast<uint32_t>(max_vertex_buffer_count_v);
+        const auto skinningBufferKeyIndex = static_cast<uint32_t>(max_vertex_buffer_count_v + 1);
+
+        auto attributes = std::vector<GeometryAttribute>{};
+        attributes.resize(subMesh.attributes.size());
 
         for (auto attributeIndex : subMesh.attributes) {
             auto [semantic, accessorIdx] = asset_->subMeshAttributes[attributeIndex];
@@ -279,24 +291,154 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
             assert(bufferIdx < asset_->buffers.size());
             auto& buffer = asset_->buffers[bufferIdx];
 
-            if (vertexCount_ == std::numeric_limits<uint32_t>::max()) {
-                vertexCount_ = elementCount;
+            if (vertexCount == std::numeric_limits<uint32_t>::max()) {
+                vertexCount = elementCount;
             }
 
-            if (semantic == shared::VertexFormatFlags::POSITION) {
-                mainBufferFvf.set(shared::VertexFormatFlags::POSITION);
+            auto geometryAttribute = GeometryAttribute{};
 
-                auto attribute = GeometryAttribute{};
-                attribute.semantic = shared::VertexFormatFlags::POSITION;
+            if (semantic == shared::VertexFormatFlags::POSITION || semantic == shared::VertexFormatFlags::NORMAL) {
+                auto fvfIt = bufferViewToFvfs.find(mainBufferKeyIndex);
+                if (fvfIt == bufferViewToFvfs.end()) {
+                    auto [newIt, success] = bufferViewToFvfs.add(shared::VertexFormatFlagBits{}, mainBufferKeyIndex);
+                    assert(success);
+                    fvfIt = newIt;
+                }
 
-                attributes_.add(attribute, static_cast<uint64_t>(semantic));
+                auto& [_, fvf] = *fvfIt;
 
-                auto srcComponentCount = 3;
-                auto bytesPerComponent = static_cast<uint8_t>(bytesPerComponentType(componentType));
+                geometryAttribute.semantic = semantic;
+                geometryAttribute.componentType = shared::AssetAccessorComponentType::Float32_t;
+                geometryAttribute.type = shared::AssetAccessorDataType::Vector3;
 
-                mainBufferStride += bytesPerComponent * srcComponentCount;
+                fvf.set(semantic);
+
+                attributes.emplace_back(geometryAttribute);
+            } else if (semantic == shared::VertexFormatFlags::TEX_COORD_01) {
+                auto fvfIt = bufferViewToFvfs.find(mainBufferKeyIndex);
+                if (fvfIt == bufferViewToFvfs.end()) {
+                    auto [newIt, success] = bufferViewToFvfs.add(shared::VertexFormatFlagBits{}, mainBufferKeyIndex);
+                    assert(success);
+                    fvfIt = newIt;
+                }
+
+                auto& [_, fvf] = *fvfIt;
+
+                geometryAttribute.semantic = semantic;
+                geometryAttribute.componentType = shared::AssetAccessorComponentType::Float32_t;
+                geometryAttribute.type = shared::AssetAccessorDataType::Vector2;
+
+                fvf.set(shared::VertexFormatFlags::TEX_COORD_COUNT_1,
+                        shared::VertexFormatFlags::TEX_COORD_01,
+                        shared::VertexFormatFlags::TEX_COORD_02);
+
+                attributes.emplace_back(geometryAttribute);
+            } else if (semantic == shared::VertexFormatFlags::TANGENT ||
+                       semantic == shared::VertexFormatFlags::BINORMAL) {
+                auto fvfIt = bufferViewToFvfs.find(mainBufferKeyIndex);
+                if (fvfIt == bufferViewToFvfs.end()) {
+                    auto [newIt, success] = bufferViewToFvfs.add(shared::VertexFormatFlagBits{}, mainBufferKeyIndex);
+                    assert(success);
+                    fvfIt = newIt;
+                }
+
+                auto& [_, fvf] = *fvfIt;
+
+                fvf.set(semantic);
+
+                geometryAttribute.semantic = semantic;
+                geometryAttribute.componentType = shared::AssetAccessorComponentType::Float32_t;
+                geometryAttribute.type = shared::AssetAccessorDataType::Vector3;
+
+                attributes.emplace_back(geometryAttribute);
+            } else if (semantic == shared::VertexFormatFlags::BONE_WEIGHTS ||
+                       semantic == shared::VertexFormatFlags::BONE_INDICES) {
+                if (geometryManager_->options().flags.test(GeometryOptionFlags::CompressSkinningAttributes)) {
+                    auto fvfIt = bufferViewToFvfs.find(skinningBufferKeyIndex);
+                    if (fvfIt == bufferViewToFvfs.end()) {
+                        auto [newIt, success] = bufferViewToFvfs.add(
+                          shared::VertexFormatFlagBits{ shared::VertexFormatFlags::COMPRESSED_SKINNING_DATA },
+                          skinningBufferKeyIndex);
+                        assert(success);
+
+                        geometryAttribute.semantic = shared::VertexFormatFlags::COMPRESSED_SKINNING_DATA;
+                        geometryAttribute.componentType = shared::AssetAccessorComponentType::Uint32_t;
+                        geometryAttribute.type = shared::AssetAccessorDataType::Vector4;
+
+                        attributes.emplace_back(geometryAttribute);
+                    }
+                } else {
+                    auto fvfIt = bufferViewToFvfs.find(skinningBufferKeyIndex);
+                    if (fvfIt == bufferViewToFvfs.end()) {
+                        auto [newIt, success] =
+                          bufferViewToFvfs.add(shared::VertexFormatFlagBits{}, skinningBufferKeyIndex);
+                        assert(success);
+
+                        fvfIt = newIt;
+                    }
+
+                    auto& [_, fvf] = *fvfIt;
+
+                    fvf.set(semantic);
+
+                    geometryAttribute.semantic = semantic;
+                    geometryAttribute.componentType = (semantic == shared::VertexFormatFlags::BONE_WEIGHTS)
+                                                        ? shared::AssetAccessorComponentType::Float32_t
+                                                        : shared::AssetAccessorComponentType::Uint32_t;
+                    geometryAttribute.type = shared::AssetAccessorDataType::Vector4;
+
+                    attributes.emplace_back(geometryAttribute);
+                }
+            } else {
+                auto fvfIt = bufferViewToFvfs.find(bufferViewIdx);
+                if (fvfIt == bufferViewToFvfs.end()) {
+                    auto [newIt, success] = bufferViewToFvfs.add(shared::VertexFormatFlagBits{}, bufferViewIdx);
+                    assert(success);
+                    fvfIt = newIt;
+                }
+
+                auto& [_, fvf] = *fvfIt;
+
+                fvf.set(semantic);
+
+                geometryAttribute.semantic = semantic;
+                geometryAttribute.componentType = componentType;
+                geometryAttribute.type = type;
+
+                attributes.emplace_back(geometryAttribute);
+            }
+
+            {
+                auto [_, success] = semanticToAssetAttrIndex.add(attributeIndex, static_cast<uint64_t>(semantic));
+                assert(success);
+            }
+        } // asset attributes (fvf pass)
+
+        for (auto [k, fvf] : bufferViewToFvfs) {
+            auto attrIt = std::find_if(
+              attributes.begin(), attributes.end(), [fvf](auto&& a) -> bool { return fvf.test(a.semantic); });
+
+            (*attrIt).bufferFvfMask = fvf.value;
+        }
+
+        for (auto& attr : attributes) {
+            auto fvf = shared::VertexFormatFlagBits{};
+            fvf.value = attr.bufferFvfMask;
+
+            if (attr.semantic == shared::VertexFormatFlags::POSITION) {
+                attr.byteOffset = 0;
+            } else if (attr.semantic == shared::VertexFormatFlags::NORMAL) {
+                attr.byteOffset = bytesPerComponentType(shared::AssetAccessorComponentType::Float32_t) *
+                                  componentCountByType(shared::AssetAccessorDataType::Vector3);
+            } else if (attr.semantic == shared::VertexFormatFlags::TEX_COORD_01) {
+                attr.byteOffset = 2 * bytesPerComponentType(shared::AssetAccessorComponentType::Float32_t) *
+                                  componentCountByType(shared::AssetAccessorDataType::Vector3);
+            } else if (attr.semantic == shared::VertexFormatFlags::TANGENT) {
+                // TODO:: 
             }
         }
+
+        setupBufferLayout(attributes);
 
         // TODO::
 

@@ -5,6 +5,7 @@
 #include <boost/cstdfloat.hpp>
 #include <glm/detail/type_quat.hpp>
 #include <glm/glm.hpp>
+#include <metrix/enum.h>
 
 namespace cyclonite {
 using real = boost::float32_t;
@@ -22,6 +23,20 @@ using mat3x4 = glm::tmat3x4<boost::float32_t, glm::highp>; // 3x4 => C = 3, R = 
 using mat3 = glm::tmat3x3<boost::float32_t, glm::highp>; // 3x3
 
 using mat4 = glm::tmat4x4<boost::float32_t, glm::highp>; // 4x4
+
+
+enum class GeometryOptionFlags : uint8_t
+{
+	CompressSkinningAttributes = 1 << 0,
+	ComputeInFlightTBN = 1 << 1,
+	KeepsOriginalAssetLayout = 1 << 2
+};
+using GeometryOptionFlagBits = metrix::enum_bits<GeometryOptionFlags>;
+
+struct GeometryOptions
+{
+    GeometryOptionFlagBits flags;
+};
 }
 
 #endif // CYCLONITE_COMMON_H

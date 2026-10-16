@@ -58,6 +58,10 @@ public:
 
     [[nodiscard]] auto device() -> core::ResourceSharedRef& { return deviceRef_; }
 
+    [[nodiscard]] auto options() const -> GeometryOptions const& { return options_; }
+
+    [[nodiscard]] auto options() -> GeometryOptions& { return options_; }
+
     // ensure geometry
     // push the current CPU state toward the GPU on the next transfer stage
     // auto commitGeometry(core::ResourceSharedRef geometryRef) -> std::future<void>;
@@ -86,6 +90,7 @@ private:
     void* transferSystemPtr_;
     transfer_task_commit_invoke_f transferTaskInvoke_;
     uint32_t initialIndexArenaCapacity_;
+    GeometryOptions options_;
 };
 
 template<internal::TransferSystemConcept TransferSystemType>
@@ -108,6 +113,8 @@ GeometryManager::GeometryManager(TransferSystemType& transferSystem)
   , transferTaskInvoke_{ &transferTaskCommit<TransferSystemType> }
   , initialIndexArenaCapacity_{ 0 }
 {
+    options_.flags.set(GeometryOptionFlags::ComputeInFlightTBN, GeometryOptionFlags::CompressSkinningAttributes);
+    options_.flags.reset(GeometryOptionFlags::KeepsOriginalAssetLayout);
 }
 }
 
