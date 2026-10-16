@@ -76,7 +76,7 @@ private:
     static auto componentCountByType(shared::AssetAccessorDataType type) -> uint8_t;
 
     constexpr static size_t max_attribute_count_v = 64;
-    constexpr static size_t max_vertex_buffer_count_v = 8;
+    constexpr static size_t max_vertex_buffer_count_v = 16;
 
     GeometryManager* geometryManager_;
 
@@ -115,7 +115,7 @@ void Geometry::setupBufferLayout(AttributeContainer&& attributes)
 
         auto& [_, stride] = (*strideIt);
 
-        stride += bytesPerComponent * static_cast<uint8_t>(bytesPerComponent);
+        stride += componentCount * static_cast<uint8_t>(bytesPerComponent);
 
         auto buffIt = buffers_.find(fvf);
         if (buffIt == buffers_.end()) {

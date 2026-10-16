@@ -414,7 +414,7 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
             }
         } // asset attributes (fvf pass)
 
-        for (auto [k, fvf] : bufferViewToFvfs) {
+        for (auto [_, fvf] : bufferViewToFvfs) {
             auto attrIt = std::find_if(
               attributes.begin(), attributes.end(), [fvf](auto&& a) -> bool { return fvf.test(a.semantic); });
 
@@ -434,13 +434,66 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
                 attr.byteOffset = 2 * bytesPerComponentType(shared::AssetAccessorComponentType::Float32_t) *
                                   componentCountByType(shared::AssetAccessorDataType::Vector3);
             } else if (attr.semantic == shared::VertexFormatFlags::TANGENT) {
-                // TODO:: 
+                assert(fvf.test(shared::VertexFormatFlags::TEX_COORD_01));
+                attr.byteOffset = (2 * bytesPerComponentType(shared::AssetAccessorComponentType::Float32_t) *
+                                   componentCountByType(shared::AssetAccessorDataType::Vector3)) +
+                                  (bytesPerComponentType(shared::AssetAccessorComponentType::Float32_t) *
+                                   componentCountByType(shared::AssetAccessorDataType::Vector2));
+            } else if (attr.semantic == shared::VertexFormatFlags::BINORMAL) {
+                assert(fvf.test(shared::VertexFormatFlags::TEX_COORD_01));
+                assert(fvf.test(shared::VertexFormatFlags::TANGENT));
+
+                attr.byteOffset = (2 * bytesPerComponentType(shared::AssetAccessorComponentType::Float32_t) *
+                                   componentCountByType(shared::AssetAccessorDataType::Vector3)) +
+                                  (bytesPerComponentType(shared::AssetAccessorComponentType::Float32_t) *
+                                   componentCountByType(shared::AssetAccessorDataType::Vector2)) +
+                                  (bytesPerComponentType(shared::AssetAccessorComponentType::Float32_t) *
+                                   componentCountByType(shared::AssetAccessorDataType::Vector3));
+            } else if (attr.semantic == shared::VertexFormatFlags::COMPRESSED_SKINNING_DATA) {
+                attr.byteOffset = 0;
+            } else if (attr.semantic == shared::VertexFormatFlags::BONE_WEIGHTS) {
+                attr.byteOffset = 0;
+            } else if (attr.semantic == shared::VertexFormatFlags::BONE_INDICES) {
+                assert(fvf.test(shared::VertexFormatFlags::BONE_WEIGHTS));
+                attr.byteOffset = bytesPerComponentType(shared::AssetAccessorComponentType::Float32_t) *
+                                  componentCountByType(shared::AssetAccessorDataType::Vector4);
+            } else {
+                auto* attrIndex = semanticToAssetAttrIndex.at(static_cast<uint64_t>(attr.semantic));
+                assert(attrIndex != nullptr);
+
+                auto [semantic, accessorIdx] = asset_->subMeshAttributes[*attrIndex];
+
+                assert(accessorIdx < asset_->dataAccessors.size());
+                auto [bufferViewIdx, elementCount, byteOffset, type, componentType] =
+                  asset_->dataAccessors[accessorIdx];
+
+                attr.byteOffset = byteOffset;
             }
         }
 
         setupBufferLayout(attributes);
 
-        // TODO::
+        auto stagings = core::StaticHashTable<core::ResourceSharedRef, max_vertex_buffer_count_v, uint64_t>{};
+
+        for (auto [k, stride] : bufferStrides_) {
+            auto [fvf] = k;
+            auto vertexAllocationFlags = gfx::GpuMemoryAllocationFlagBits{};
+            vertexAllocationFlags.set(gfx::GpuMemoryAllocationFlags::HOST_ACCESS_SEQUENTIAL_WRITE);
+
+            auto usageFlags = gfx::BufferUsageFlagBits{};
+            usageFlags.set(gfx::BufferUsageFlags::TRANSFER_SRC);
+
+            auto stagingSize = static_cast<size_t>(vertexCount_ * stride);
+            auto stagingRef = core::ResourceSharedRef{ device.createBuffer(vertexAllocationFlags, usageFlags, stagingSize) };
+            
+            auto [_, success] = stagings.add(stagingRef, fvf);
+            assert(success);
+        }
+
+        for (auto& [k, attr] : attributes_) {
+            auto& [semantic] = k;
+            // TODO:: ...
+        }
 
         asset_.reset();
     } else {
