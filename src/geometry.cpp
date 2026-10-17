@@ -672,15 +672,23 @@ void Geometry::setVertices(shared::VertexFormatFlagBits fvf, core::ResourceShare
 
 void Geometry::setIndices(core::ResourceSharedRef const& stagingRef, gfx::IndexType indexType, uint32_t indexCount)
 {
+    assert(geometryManager_ != nullptr);
+    assert(stagingRef.valid());
+
     if (indices_.valid()) {
         indices_.reset();
     }
 
     indices_ = geometryManager_->allocateIndices(indexCount, indexType);
-    indices_.staging() = stagingRef; // TODO:: refactor
+
+    auto bytesPerIndex = (indexType == gfx::IndexType::TYPE_UINT16) ? sizeof(uint16_t) : sizeof(uint32_t);
+
+    auto size = bytesPerIndex * indexCount;
 
     if (!indices_.valid()) {
         throw std::runtime_error("could not set indices");
     }
+
+    geometryManager_->commitGpuData(stagingRef, indices_.indexBuffer(), indices_.firstIndex() * bytesPerIndex, size);
 }
 }

@@ -15,7 +15,7 @@ class IndexArena;
 namespace cyclonite::gfx {
 class GeometryIndicesAllocation
 {
-    friend class internal::IndexArena;
+    friend class cyclonite::internal::IndexArena;
 
 public:
     GeometryIndicesAllocation() = default;
@@ -38,16 +38,11 @@ public:
 
     [[nodiscard]] auto valid() const -> bool { return arena_ != nullptr && indexCount_ > 0 && indexBufferRef_.valid(); }
 
-    [[nodiscard]] auto staging() const -> core::ResourceSharedRef const& { return stagingBufferRef_; }
-
-    [[nodiscard]] auto staging() -> core::ResourceSharedRef& { return stagingBufferRef_; }
-
     void reset();
 
 private:
     core::ResourceSharedRef indexBufferRef_;
-    core::ResourceSharedRef stagingBufferRef_;
-    internal::IndexArena* arena_;
+    cyclonite::internal::IndexArena* arena_;
     uint32_t firstIndex_;
     uint32_t indexCount_;
     gfx::IndexType indexType_;
