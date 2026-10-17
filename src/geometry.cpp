@@ -473,7 +473,7 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
 
         setupBufferLayout(attributes);
 
-        auto stagings = core::StaticHashTable<core::ResourceSharedRef, max_vertex_buffer_count_v, uint64_t>{};
+        auto stagings = core::StaticHashTable<std::pair<core::ResourceSharedRef, std::byte*>, max_vertex_buffer_count_v, uint64_t>{};
 
         for (auto [k, stride] : bufferStrides_) {
             auto [fvf] = k;
@@ -484,15 +484,100 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
             usageFlags.set(gfx::BufferUsageFlags::TRANSFER_SRC);
 
             auto stagingSize = static_cast<size_t>(vertexCount_ * stride);
-            auto stagingRef = core::ResourceSharedRef{ device.createBuffer(vertexAllocationFlags, usageFlags, stagingSize) };
-            
-            auto [_, success] = stagings.add(stagingRef, fvf);
+            auto stagingRef =
+              core::ResourceSharedRef{ device.createBuffer(vertexAllocationFlags, usageFlags, stagingSize) };
+
+            auto& staging = stagingRef.as<gfx::Buffer>();
+
+            auto* stagingPtr = reinterpret_cast<std::byte*>(staging.map());
+            assert(stagingPtr != nullptr);
+
+            auto [_, success] = stagings.add(std::pair{ stagingRef, stagingPtr }, fvf);
             assert(success);
         }
 
         for (auto& [k, attr] : attributes_) {
-            auto& [semantic] = k;
-            // TODO:: ...
+            auto [semanticKey] = k;
+
+            auto* stagingPair = stagings.at(attr.bufferFvfMask);
+            assert(stagingPair != nullptr);
+
+            auto const& [stagingRef, stagingDst] = *stagingPair;
+
+            if (attr.semantic == shared::VertexFormatFlags::COMPRESSED_SKINNING_DATA) {
+                auto* boneWeightAttrIdx =
+                  semanticToAssetAttrIndex.at(static_cast<uint64_t>(shared::VertexFormatFlags::BONE_WEIGHTS));
+                assert(boneWeightAttrIdx != nullptr);
+
+                auto* boneIndicesAttrIdx =
+                  semanticToAssetAttrIndex.at(static_cast<uint64_t>(shared::VertexFormatFlags::BONE_INDICES));
+                assert(boneIndicesAttrIdx != nullptr);
+
+                auto [_0, weightsAccessorIdx] = asset_->subMeshAttributes[*boneWeightAttrIdx];
+                auto [_1, indicesAccessorIdx] = asset_->subMeshAttributes[*boneIndicesAttrIdx];
+
+                assert(weightsAccessorIdx < asset_->dataAccessors.size());
+                auto [weightsViewIdx, weightsElementCount, weightsByteOffset, weightType, weightsComponentType] =
+                  asset_->dataAccessors[weightsAccessorIdx];
+
+                assert(indicesAccessorIdx < asset_->dataAccessors.size());
+                auto [indicesViewIdx, indicesElementCount, indicesByteOffset, indicesType, indicesComponentType] =
+                  asset_->dataAccessors[indicesAccessorIdx];
+
+                // refactor::
+                // auto* stagingDst = reinterpret_cast<std::byte*>(staging.map());
+
+                // staging.unmap();
+
+            } else {
+                auto* originalAttrIdx = semanticToAssetAttrIndex.at(semanticKey);
+                assert(originalAttrIdx != nullptr);
+
+                auto [semantic, accessorIdx] = asset_->subMeshAttributes[*originalAttrIdx];
+
+                assert(accessorIdx < asset_->dataAccessors.size());
+                auto [bufferViewIdx, elementCount, byteOffset, type, componentType] =
+                  asset_->dataAccessors[accessorIdx];
+
+                assert(bufferViewIdx < asset_->bufferViews.size());
+                auto [bufferIdx, offset, size, stride] = asset_->bufferViews[bufferViewIdx];
+
+                assert(bufferIdx < asset_->buffers.size());
+                auto& buffer = asset_->buffers[bufferIdx];
+
+                auto* srcPtr = buffer.data() + offset;
+
+                auto srcByteOffset = byteOffset;
+                auto dstByteOffset = attr.byteOffset;
+
+                auto srcStride = stride;
+                auto* dstStride = bufferStrides_.at(attr.bufferFvfMask);
+                assert(dstStride != nullptr);
+
+                auto srcByteCount = componentCountByType(type) * bytesPerComponentType(componentType);
+                auto dstByteCount = componentCountByType(attr.type) * bytesPerComponentType(attr.componentType);
+
+                auto byteCount = std::min(srcByteCount, dstByteCount);
+
+                assert(elementCount == vertexCount_);
+                for (auto attrIdx = uint32_t{ 0 }; attrIdx < vertexCount_; attrIdx++) {
+                    memset(stagingDst + (*dstStride) * attrIdx + dstByteOffset, 0, dstByteCount);
+
+                    memcpy(stagingDst + (*dstStride) * attrIdx + dstByteOffset,
+                           srcPtr + srcStride * attrIdx + srcByteOffset,
+                           byteCount);
+                }
+            }
+        } // attributes write end
+
+        for (auto& [k, v] : stagings) {
+            auto& [ref, ptr] = v;
+            auto& staging = ref.as<gfx::Buffer>();
+
+            ptr = nullptr;
+            staging.unmap();
+
+            // TODO:: set vertex attribute
         }
 
         asset_.reset();
