@@ -9,6 +9,8 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <gfx/device.h>
+#include <glm/gtc/packing.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace cyclonite {
 namespace {
@@ -473,7 +475,8 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
 
         setupBufferLayout(attributes);
 
-        auto stagings = core::StaticHashTable<std::pair<core::ResourceSharedRef, std::byte*>, max_vertex_buffer_count_v, uint64_t>{};
+        auto stagings =
+          core::StaticHashTable<std::pair<core::ResourceSharedRef, std::byte*>, max_vertex_buffer_count_v, uint64_t>{};
 
         for (auto [k, stride] : bufferStrides_) {
             auto [fvf] = k;
@@ -517,18 +520,59 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
                 auto [_1, indicesAccessorIdx] = asset_->subMeshAttributes[*boneIndicesAttrIdx];
 
                 assert(weightsAccessorIdx < asset_->dataAccessors.size());
-                auto [weightsViewIdx, weightsElementCount, weightsByteOffset, weightType, weightsComponentType] =
+                auto [weightsViewIdx, weightsElementCount, weightsByteOffset, weightsType, weightsComponentType] =
                   asset_->dataAccessors[weightsAccessorIdx];
+
+                assert(weightsType == shared::AssetAccessorDataType::Vector4);
+                assert(weightsComponentType == shared::AssetAccessorComponentType::Float32_t);
 
                 assert(indicesAccessorIdx < asset_->dataAccessors.size());
                 auto [indicesViewIdx, indicesElementCount, indicesByteOffset, indicesType, indicesComponentType] =
                   asset_->dataAccessors[indicesAccessorIdx];
 
-                // refactor::
-                // auto* stagingDst = reinterpret_cast<std::byte*>(staging.map());
+                assert(indicesType == shared::AssetAccessorDataType::Vector4);
+                assert(indicesComponentType == shared::AssetAccessorComponentType::Float32_t);
 
-                // staging.unmap();
+                assert(weightsViewIdx < asset_->bufferViews.size());
+                auto [weightsBufferIdx, weightsOffset, weightsSize, weightsStride] =
+                  asset_->bufferViews[weightsViewIdx];
 
+                assert(weightsBufferIdx < asset_->buffers.size());
+                auto& weightsBuffer = asset_->buffers[weightsBufferIdx];
+
+                assert(indicesViewIdx < asset_->bufferViews.size());
+                auto [indicesBufferIdx, indicesOffset, indicesSize, indicesStride] =
+                  asset_->bufferViews[indicesViewIdx];
+
+                assert(indicesBufferIdx < asset_->buffers.size());
+                auto& indicesBuffer = asset_->buffers[indicesBufferIdx];
+
+                auto* srcWeightsPtr = weightsBuffer.data() + weightsOffset;
+                auto* srcIndicesPtr = indicesBuffer.data() + indicesOffset;
+
+                auto dstStride = sizeof(uint32_t) * 4;
+
+                for (auto attrIdx = uint32_t{ 0 }; attrIdx < vertexCount_; attrIdx++) {
+                    auto weights = vec4{};
+                    auto indices = vec4{};
+
+                    memcpy(glm::value_ptr(weights),
+                           srcWeightsPtr + weightsStride * attrIdx + weightsByteOffset,
+                           sizeof(real) * 4);
+
+                    memcpy(glm::value_ptr(indices),
+                           srcIndicesPtr + indicesStride * attrIdx + indicesByteOffset,
+                           sizeof(real) * 4);
+
+                    auto packedSkinningData = glm::uvec4{ glm::packHalf2x16(vec2{ weights.x, weights.y }),
+                                                          glm::packHalf2x16(vec2{ weights.z, weights.w }),
+                                                          glm::packHalf2x16(vec2{ indices.x, indices.y }),
+                                                          glm::packHalf2x16(vec2{ indices.z, indices.w }) };
+
+
+
+                    memcpy(stagingDst + attrIdx * dstStride, glm::value_ptr(packedSkinningData), dstStride);
+                }
             } else {
                 auto* originalAttrIdx = semanticToAssetAttrIndex.at(semanticKey);
                 assert(originalAttrIdx != nullptr);
