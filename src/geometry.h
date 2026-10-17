@@ -63,12 +63,10 @@ public:
 
     void setIndices(core::ResourceSharedRef const& stagingRef, gfx::IndexType indexType, uint32_t indexCount);
 
+    void setVertices(shared::VertexFormatFlagBits fvf, core::ResourceSharedRef const& stagingRef);
+
     template<AttributeContainerConcept AttributeContainer>
     void setupBufferLayout(AttributeContainer&& attributes);
-
-    // void unlock();
-    // TODO::
-    // void commit();
 
 private:
     static auto bytesPerComponentType(shared::AssetAccessorComponentType componentType) -> size_t;

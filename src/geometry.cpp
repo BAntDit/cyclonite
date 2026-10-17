@@ -569,8 +569,6 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
                                                           glm::packHalf2x16(vec2{ indices.x, indices.y }),
                                                           glm::packHalf2x16(vec2{ indices.z, indices.w }) };
 
-
-
                     memcpy(stagingDst + attrIdx * dstStride, glm::value_ptr(packedSkinningData), dstStride);
                 }
             } else {
@@ -615,19 +613,61 @@ void Geometry::prepareImpl(core::ResourceSharedRef deviceRef)
         } // attributes write end
 
         for (auto& [k, v] : stagings) {
+            auto [fvfKey] = k;
             auto& [ref, ptr] = v;
             auto& staging = ref.as<gfx::Buffer>();
 
             ptr = nullptr;
             staging.unmap();
 
-            // TODO:: set vertex attribute
+            auto fvf = shared::VertexFormatFlagBits{};
+            fvf.value = fvfKey;
+
+            setVertices(fvf, ref);
         }
 
         asset_.reset();
     } else {
         throw std::runtime_error("not implemented");
     }
+}
+
+void Geometry::setVertices(shared::VertexFormatFlagBits fvf, core::ResourceSharedRef const& stagingRef)
+{
+    assert(geometryManager_ != nullptr);
+    assert(stagingRef.valid());
+
+    auto* stride = bufferStrides_.at(fvf.value);
+    if (stride == nullptr) {
+        throw std::runtime_error("buffer does not respect geometry layout");
+    }
+
+    auto& deviceRef = geometryManager_->device();
+    auto& device = deviceRef.as<gfx::Device>();
+
+    auto bufferIt = buffers_.find(fvf.value);
+    if (bufferIt == buffers_.end()) {
+        auto [newIt, success] = buffers_.add(core::ResourceSharedRef{}, fvf.value);
+        assert(success);
+        bufferIt = newIt;
+    }
+
+    auto& [_, bufferRef] = *bufferIt;
+
+    auto allocationFlags = gfx::GpuMemoryAllocationFlagBits{};
+    allocationFlags.set(gfx::GpuMemoryAllocationFlags::DEDICATED_MEMORY);
+
+    auto usageFlags = gfx::BufferUsageFlagBits{};
+    usageFlags.set(gfx::BufferUsageFlags::STORAGE_BUFFER,
+                   gfx::BufferUsageFlags::SHADER_DEVICE_ADDRESS,
+                   gfx::BufferUsageFlags::TRANSFER_DST);
+
+    auto size = *stride * vertexCount_;
+    assert(size > 0);
+
+    bufferRef = device.createBuffer(allocationFlags, usageFlags, size);
+
+    geometryManager_->commitGpuData(stagingRef, bufferRef, 0, size);
 }
 
 void Geometry::setIndices(core::ResourceSharedRef const& stagingRef, gfx::IndexType indexType, uint32_t indexCount)
@@ -637,7 +677,7 @@ void Geometry::setIndices(core::ResourceSharedRef const& stagingRef, gfx::IndexT
     }
 
     indices_ = geometryManager_->allocateIndices(indexCount, indexType);
-    indices_.staging() = stagingRef;
+    indices_.staging() = stagingRef; // TODO:: refactor
 
     if (!indices_.valid()) {
         throw std::runtime_error("could not set indices");

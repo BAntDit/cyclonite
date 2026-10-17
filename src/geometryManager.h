@@ -67,9 +67,12 @@ public:
     // auto commitGeometry(core::ResourceSharedRef geometryRef) -> std::future<void>;
 
 private:
-    void ensureGeometry(Geometry& geometry); // TODO::
-
     [[nodiscard]] auto allocateIndices(uint32_t count, gfx::IndexType type) -> gfx::GeometryIndicesAllocation;
+
+    void commitGpuData(core::ResourceSharedRef const& stagingRef,
+                       core::ResourceSharedRef const& gpuResourceRef,
+                       size_t offset,
+                       size_t size);
 
     template<internal::TransferSystemConcept TransferSystemType>
     static void transferTaskCommit(void* transferSystemPtr,

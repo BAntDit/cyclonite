@@ -91,4 +91,12 @@ auto GeometryManager::allocateIndices(uint32_t count, gfx::IndexType type) -> gf
 
     return allocation;
 }
+
+void GeometryManager::commitGpuData(core::ResourceSharedRef const& stagingRef,
+                                    core::ResourceSharedRef const& gpuResourceRef,
+                                    size_t offset,
+                                    size_t size)
+{
+    transferTaskInvoke_(transferSystemPtr_, stagingRef, gpuResourceRef, offset, size);
+}
 }
