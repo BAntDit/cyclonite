@@ -24,7 +24,6 @@ template<typename Config = internal::DefaultConfig>
 class Root : public RootBase
 {
 public:
-    // TDDO:: move to root meta
     using config_t = cyclonite::ConfigTraits<Config>;
     using enttx_config_t = enttx::internal::ConfigTraits<typename config_t::enttx_config_t>;
     using transfer_system_t = config_t::transfer_system_t;

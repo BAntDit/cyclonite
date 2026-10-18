@@ -169,7 +169,6 @@ template<typename ResourceGroup>
                             }
 
                             // TODO:: create empty scenes
-                            // TODO:: make unique geometry
                         }
                     } // if asset is not empty
                 } // binary asset
