@@ -219,7 +219,7 @@ auto ManagedResource<Resource>::loadInternal(loading_context_t&& loadingContext)
 template<typename Resource>
 auto ManagedResource<Resource>::prepare(core::ResourceSharedRef const& deviceRef) -> std::shared_future<void>
 {
-    auto expectedState = is_loadable<Resource> ? ManagedResourceState::Loaded : ManagedResourceState::Initial;
+    auto expectedState = ManagedResourceState::Loaded;
 
     if (state_.compare_exchange_strong(
           expectedState, ManagedResourceState::Preparing, std::memory_order_release, std::memory_order_relaxed)) {
