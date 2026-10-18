@@ -10,9 +10,12 @@
 #include <metrix/type_list.h>
 
 #include "defaultResourceLoader.h"
+#include "geometry.h"
 #include "material.h"
 #include "resourceConcepts.h"
 #include "rootConfigTraits.h"
+#include "scene.h"
+#include "shader.h"
 
 namespace cyclonite {
 template<typename Config>
@@ -25,7 +28,7 @@ class ResourceGroup : public ResourceGroupBase
 {
 public:
     using config_t = cyclonite::ConfigTraits<Config>;
-    using default_resource_list_t = metrix::type_list<Shader, Material>;
+    using default_resource_list_t = metrix::type_list<Shader, Material, Geometry, Scene>;
     using resource_type_list_t = metrix::distinct<
       typename metrix::concat<typename config_t::custom_resource_type_list_t, default_resource_list_t>::type>::type;
 
@@ -215,7 +218,7 @@ auto ResourceGroup<Config>::prepareInternal(core::ResourceSharedRef const& devic
                                                      resource_type_list_t::template get_type_index<Resource>::value>(
              typeId, deviceRef, ref, f)) ||
            ...);
-        if (result) {
+        if (result && f.valid()) { // TODO:: maybe silent skip of invalid futures is not good idea
             futures.push_back(std::move(f));
         }
     }
