@@ -272,7 +272,7 @@ void ManagedResource<Resource>::setState(ManagedResourceState state)
         auto expectedState = ManagedResourceState::Preparing;
         if (!state_.compare_exchange_strong(
               expectedState, ManagedResourceState::Loaded, std::memory_order_release, std::memory_order_relaxed)) {
-            throw std::logic_error("load state can be set from loading state only");
+            throw std::logic_error("ready state can be set from preparing state only");
         }
         ownerGroup_->notifyResourceStateChange(ManagedResourceState::Ready, name_);
     } else {
