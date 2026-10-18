@@ -24,12 +24,11 @@ using mat3 = glm::tmat3x3<boost::float32_t, glm::highp>; // 3x3
 
 using mat4 = glm::tmat4x4<boost::float32_t, glm::highp>; // 4x4
 
-
 enum class GeometryOptionFlags : uint8_t
 {
-	CompressSkinningAttributes = 1 << 0,
-	ComputeInFlightTBN = 1 << 1,
-	KeepsOriginalAssetLayout = 1 << 2
+    CompressSkinningAttributes = 1 << 0,
+    ComputeInFlightTBN = 1 << 1,
+    KeepsOriginalAssetLayout = 1 << 2
 };
 using GeometryOptionFlagBits = metrix::enum_bits<GeometryOptionFlags>;
 

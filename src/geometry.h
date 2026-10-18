@@ -2,7 +2,6 @@
 #ifndef CYCLONITE_GEOMETRY_H
 #define CYCLONITE_GEOMETRY_H
 
-#include <metrix/containers.h>
 #include "assetModuleBinary.h"
 #include "core/hashTable.h"
 #include "core/resourceSharedRef.h"
@@ -10,6 +9,7 @@
 #include "gfx/common.h"
 #include "gfx/geometryIndicesAllocation.h"
 #include "resources/managedResource.h"
+#include <metrix/containers.h>
 
 namespace cyclonite {
 class GeometryManager;
@@ -24,8 +24,7 @@ struct GeometryAttribute
 };
 
 template<typename T>
-concept AttributeContainerConcept = requires(T t)
-{
+concept AttributeContainerConcept = requires(T t) {
     typename std::decay_t<T>::value_type;
 
     { t.begin() };
