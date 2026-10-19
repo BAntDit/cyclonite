@@ -121,33 +121,29 @@ template<typename ResourceGroup>
                             mainBlockReader.setStreamOffset(baseOffset + blockOffset);
 
                             // main block deserializer:
-                            auto mainBlockDeserializer = cyclonite::shared::Deserializer{
-                                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::buffers>(),
-                                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::bufferViews,
-                                                                   &cyclonite::shared::AssetBufferView::set>(),
-                                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::dataAccessors,
-                                                                   &cyclonite::shared::AssetDataAccessor::set>(),
-                                cyclonite::shared::makeAccessChain<
-                                  &cyclonite::shared::AssetMainBlock::subMeshAttributes,
-                                  &cyclonite::shared::AssetVertexAttribute::set>(),
-                                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::subMeshes,
-                                                                   &cyclonite::shared::AssetSubMesh::set>(),
-                                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::meshes,
-                                                                   &cyclonite::shared::AssetMesh::set>(),
-                                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::materials,
-                                                                   &cyclonite::shared::AssetMaterial::set>(),
-                                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::nodes,
-                                                                   &cyclonite::shared::AssetNode::set>(),
-                                cyclonite::shared::makeAccessChain<&cyclonite::shared::AssetMainBlock::scenes,
-                                                                   &cyclonite::shared::AssetScene::set>()
+                            auto mainBlockDeserializer = shared::Deserializer{
+                                shared::makeAccessChain<&shared::AssetMainBlock::buffers>(),
+                                shared::makeAccessChain<&shared::AssetMainBlock::bufferViews,
+                                                        &shared::AssetBufferView::set>(),
+                                shared::makeAccessChain<&shared::AssetMainBlock::dataAccessors,
+                                                        &shared::AssetDataAccessor::set>(),
+                                shared::makeAccessChain<&shared::AssetMainBlock::subMeshAttributes,
+                                                        &shared::AssetVertexAttribute::set>(),
+                                shared::makeAccessChain<&shared::AssetMainBlock::subMeshes,
+                                                        &shared::AssetSubMesh::set>(),
+                                shared::makeAccessChain<&shared::AssetMainBlock::meshes, &shared::AssetMesh::set>(),
+                                shared::makeAccessChain<&shared::AssetMainBlock::materials,
+                                                        &shared::AssetMaterial::set>(),
+                                shared::makeAccessChain<&shared::AssetMainBlock::nodes, &shared::AssetNode::set>(),
+                                shared::makeAccessChain<&shared::AssetMainBlock::scenes, &shared::AssetScene::set>()
                             };
 
                             auto mainBlock = std::make_shared<shared::AssetMainBlock>();
                             mainBlockDeserializer.deserialize(*mainBlock, mainBlockReader);
 
-                            if constexpr (ResourceGroup::template is_group_resource_type<cyclonite::Geometry>) {
-                                auto generator = boost::uuids::string_generator{};
+                            auto generator = boost::uuids::string_generator{};
 
+                            if constexpr (ResourceGroup::template is_group_resource_type<Geometry>) {
                                 for (auto& assetSubMesh : mainBlock->subMeshes) {
                                     auto uuid = generator(assetSubMesh.uuid);
 
@@ -155,20 +151,28 @@ template<typename ResourceGroup>
                                     if (!ref.valid()) {
                                         auto& root = resourceGroup->root();
 
-                                        ref = core::ResourceSharedRef{
-                                            resourceGroup->template addResource<cyclonite::Geometry>(
-                                              assetSubMesh.name, uuid, root.geometryManager(), mainBlock)
-                                        };
+                                        ref = root.createGeometry(resourceGroup->id(), assetSubMesh.name, uuid);
                                     }
 
-                                    auto& geometry = ref.template as<cyclonite::Geometry>();
-                                    auto future = geometry.load(nullptr, 0);
+                                    auto& geometry = ref.template as<Geometry>();
+                                    auto future = geometry.loadFrom(mainBlock);
 
                                     futures.push_back(std::move(future));
                                 }
                             }
 
-                            // TODO:: create empty scenes
+                            if constexpr (ResourceGroup::template is_group_resource_type<Scene>) {
+                                for (auto& assetScene : mainBlock->scenes) {
+                                    auto uuid = generator(assetScene.uuid);
+
+                                    auto& root = resourceGroup->root();
+
+                                    auto ref = resourceGroup->getResource(uuid);
+                                    if (!ref.valid()) {
+                                        ref = root.createScene(resourceGroup->id(), assetScene.name, uuid);
+                                    }
+                                }
+                            }
                         }
                     } // if asset is not empty
                 } // binary asset
