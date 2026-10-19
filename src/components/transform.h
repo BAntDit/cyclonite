@@ -5,6 +5,8 @@
 #ifndef CYCLONITE_COMPONENTS_TRANSFORM_H
 #define CYCLONITE_COMPONENTS_TRANSFORM_H
 #include "common.h"
+#include "enttx/entity.h"
+#include <cstdint>
 
 namespace cyclonite::components {
 struct Transform
@@ -26,12 +28,15 @@ struct Transform
 
     explicit Transform(mat4 mat);
 
+    enttx::Entity parent;
+
     glm::vec3 position;
     glm::vec3 scale;
     quat orientation;
 
     mat4 matrix;
-    mat4 worldMatrix;
+
+    uint32_t level;
 
     State state;
 };
