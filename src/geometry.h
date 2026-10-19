@@ -46,17 +46,7 @@ public:
              boost::uuids::uuid const& uuid,
              GeometryManager& geometryManager);
 
-    Geometry(core::ResourceManagerBase* resourceManager,
-             core::ResourceId resourceId,
-             resources::ResourceGroupBase* resourceGroup,
-             std::string_view name,
-             boost::uuids::uuid const& uuid,
-             GeometryManager& geometryManager,
-             std::shared_ptr<shared::AssetMainBlock> const& asset);
-
-    using core::ResourceBase::resourceBase;
-
-    void loadImpl(std::istream& stream);
+    void loadImpl(std::shared_ptr<shared::AssetMainBlock> const& asset);
 
     void prepareImpl(core::ResourceSharedRef deviceRef);
 
@@ -67,6 +57,8 @@ public:
     template<AttributeContainerConcept AttributeContainer>
     void setupBufferLayout(AttributeContainer&& attributes);
 
+    using core::ResourceBase::resourceBase;
+
 private:
     static auto bytesPerComponentType(shared::AssetAccessorComponentType componentType) -> size_t;
 
@@ -75,9 +67,17 @@ private:
     constexpr static size_t max_attribute_count_v = 64;
     constexpr static size_t max_vertex_buffer_count_v = 16;
 
-    GeometryManager* geometryManager_;
+    struct raw_data_t
+    {
+        gfx::IndexType indexType;
+        uint32_t indexCount;
+        std::vector<std::byte> indexData;
+        core::StaticHashTable<std::vector<std::byte>, max_vertex_buffer_count_v, uint64_t> vertexData;
+    };
 
-    std::shared_ptr<shared::AssetMainBlock> asset_;
+    std::unique_ptr<raw_data_t> rawData_;
+
+    GeometryManager* geometryManager_;
 
     gfx::GeometryIndicesAllocation indices_;
 
