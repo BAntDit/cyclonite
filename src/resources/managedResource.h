@@ -23,20 +23,32 @@
 #include <variant>
 
 namespace cyclonite::resources {
-// TODO:: rewrite concepts to be able test private methods
 template<typename T>
 concept is_loadable = requires(T t, std::istream& stream) {
     { t.loadImpl(stream) } -> std::same_as<void>;
 };
 
+template<typename T, typename CustomSharedSource>
+concept is_custom_loadable = requires(T t, CustomSharedSource customSource) {
+    requires std::is_copy_constructible_v<CustomSharedSource>;
+
+    requires std::is_copy_assignable_v<CustomSharedSource>;
+
+    { t.loadImpl(customSource) } -> std::same_as<void>;
+};
+
 template<typename T>
 concept is_prepareable = requires(T t, core::ResourceSharedRef deviceRef) {
-    { t.prepareImpl(deviceRef) } -> std::same_as<void>; // reolace with system manager
+    { t.prepareImpl(deviceRef) } -> std::same_as<void>;
 };
 
 template<typename Resource>
 class ManagedResource
 {
+    struct void_custom_data_t
+    {};
+
+    template<typename CustomSharedSource = void_custom_data_t>
     struct loading_context_t
     {
         loading_context_t(std::filesystem::path const& path, std::ios_base::openmode mode);
@@ -44,6 +56,8 @@ class ManagedResource
         loading_context_t(std::byte const* data, size_t size);
 
         explicit loading_context_t(std::istream& stream);
+
+        explicit loading_context_t(CustomSharedSource const& customSource);
 
         loading_context_t(loading_context_t&&) = default;
 
@@ -59,6 +73,7 @@ class ManagedResource
 
     private:
         std::variant<std::monostate,
+                     CustomSharedSource,
                      std::unique_ptr<std::ifstream>,
                      std::unique_ptr<boost::iostreams::stream<boost::iostreams::array_source>>,
                      std::istream*>
@@ -83,6 +98,9 @@ public:
 
     auto load(std::byte const* data, size_t size) -> std::shared_future<void>;
 
+    template<typename CustomSource>
+    auto loadFrom(CustomSource const& customSource) -> std::shared_future<void>;
+
     auto prepare(core::ResourceSharedRef const& deviceRef) -> std::shared_future<void>;
 
     void markToRemove();
@@ -102,7 +120,8 @@ public:
     [[nodiscard]] auto group() -> ResourceGroupBase& { return *ownerGroup_; }
 
 private:
-    auto loadInternal(loading_context_t&& loadingContext) -> std::shared_future<void>;
+    template<typename CustomSharedSource>
+    auto loadInternal(loading_context_t<CustomSharedSource>&& loadingContext) -> std::shared_future<void>;
 
     void setState(ManagedResourceState state);
 
@@ -115,13 +134,23 @@ private:
 };
 
 template<typename Resource>
-ManagedResource<Resource>::loading_context_t::loading_context_t(std::istream& stream)
+template<typename CustomSharedSource>
+ManagedResource<Resource>::loading_context_t<CustomSharedSource>::loading_context_t(std::istream& stream)
   : source_{ &stream }
 {
 }
 
 template<typename Resource>
-ManagedResource<Resource>::loading_context_t::loading_context_t(std::byte const* data, size_t size)
+template<typename CustomSharedSource>
+ManagedResource<Resource>::loading_context_t<CustomSharedSource>::loading_context_t(
+  CustomSharedSource const& customSource)
+  : source_{ customSource }
+{
+}
+
+template<typename Resource>
+template<typename CustomSharedSource>
+ManagedResource<Resource>::loading_context_t<CustomSharedSource>::loading_context_t(std::byte const* data, size_t size)
   : source_{ std::make_unique<boost::iostreams::stream<boost::iostreams::array_source>>(
       reinterpret_cast<char const*>(data),
       size) }
@@ -129,8 +158,9 @@ ManagedResource<Resource>::loading_context_t::loading_context_t(std::byte const*
 }
 
 template<typename Resource>
-ManagedResource<Resource>::loading_context_t::loading_context_t(std::filesystem::path const& path,
-                                                                std::ios_base::openmode mode)
+template<typename CustomSharedSource>
+ManagedResource<Resource>::loading_context_t<CustomSharedSource>::loading_context_t(std::filesystem::path const& path,
+                                                                                    std::ios_base::openmode mode)
   : source_{}
 {
     auto file = std::make_unique<std::ifstream>();
@@ -143,9 +173,10 @@ ManagedResource<Resource>::loading_context_t::loading_context_t(std::filesystem:
 }
 
 template<typename Resource>
-ManagedResource<Resource>::loading_context_t::~loading_context_t()
+template<typename CustomSharedSource>
+ManagedResource<Resource>::loading_context_t<CustomSharedSource>::~loading_context_t()
 {
-    if (source_.index() == 1) {
+    if (source_.index() == 2) {
         if (auto& stream = std::get<std::unique_ptr<std::ifstream>>(source_); stream) {
             stream->close();
         }
@@ -153,11 +184,13 @@ ManagedResource<Resource>::loading_context_t::~loading_context_t()
 }
 
 template<typename Resource>
-[[nodiscard]] auto ManagedResource<Resource>::loading_context_t::stream() -> std::istream&
+template<typename CustomSharedSource>
+[[nodiscard]] auto ManagedResource<Resource>::loading_context_t<CustomSharedSource>::stream() -> std::istream&
 {
     return std::visit(
       [](auto&& s) -> std::istream& {
-          if constexpr (!std::is_same_v<std::decay_t<decltype(s)>, std::monostate>) {
+          if constexpr (!std::is_same_v<std::decay_t<decltype(s)>, std::monostate> &&
+                        !std::is_same_v<std::decay_t<decltype(s)>, CustomSharedSource>) {
               return *s;
           }
           throw std::runtime_error("invalid loading context");
@@ -185,14 +218,23 @@ auto ManagedResource<Resource>::load(std::byte const* data, size_t size) -> std:
 }
 
 template<typename Resource>
-auto ManagedResource<Resource>::loadInternal(loading_context_t&& loadingContext) -> std::shared_future<void>
+template<typename CustomSource>
+auto ManagedResource<Resource>::loadFrom(CustomSource const& customSource) -> std::shared_future<void>
+{
+    return loadInternal(loading_context_t<std::decay_t<CustomSource>>{ customSource });
+}
+
+template<typename Resource>
+template<typename CustomSharedSource>
+auto ManagedResource<Resource>::loadInternal(loading_context_t<CustomSharedSource>&& loadingContext)
+  -> std::shared_future<void>
 {
     auto expectedState = ManagedResourceState::Initial;
     if (state_.compare_exchange_strong(
           expectedState, ManagedResourceState::Loading, std::memory_order_release, std::memory_order_relaxed)) {
         ownerGroup_->notifyResourceStateChange(ManagedResourceState::Loading, name_);
 
-        if constexpr (is_loadable<Resource>) {
+        if constexpr (std::is_same_v<void_custom_data_t, std::decay_t<CustomSharedSource>> && is_loadable<Resource>) {
             auto* res = static_cast<Resource*>(this);
             auto weakRef = core::ResourceWeakRef{ core::makeResourceSharedRefUnsafe(res) };
 
@@ -201,6 +243,18 @@ auto ManagedResource<Resource>::loadInternal(loading_context_t&& loadingContext)
                   if (auto sharedRef = weakRef.lock(); sharedRef.valid()) {
                       auto& r = sharedRef.as<Resource>();
                       r.loadImpl(loadingContext.stream());
+                      r.setState(ManagedResourceState::Loaded);
+                  }
+              });
+        } else if constexpr (is_custom_loadable<Resource, std::decay_t<CustomSharedSource>>) {
+            auto* res = static_cast<Resource*>(this);
+            auto weakRef = core::ResourceWeakRef{ core::makeResourceSharedRefUnsafe(res) };
+
+            loadingResult_ = multithreading::Executor::threadExecutor().taskManager().submitTask(
+              [weakRef, loadingContext = std::move(loadingContext)]() mutable -> void {
+                  if (auto sharedRef = weakRef.lock(); sharedRef.valid()) {
+                      auto& r = sharedRef.as<Resource>();
+                      // r.loadImpl(loadingContext.stream()); // TODO:: get data
                       r.setState(ManagedResourceState::Loaded);
                   }
               });
