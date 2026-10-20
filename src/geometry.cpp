@@ -454,7 +454,7 @@ void Geometry::loadImpl(std::shared_ptr<shared::AssetMainBlock> const& asset)
 
         if (attr.semantic == shared::VertexFormatFlags::COMPRESSED_SKINNING_DATA) {
             auto* boneWeightAttrIdx =
-                          semanticToAssetAttrIndex.at(static_cast<uint64_t>(shared::VertexFormatFlags::BONE_WEIGHTS));
+              semanticToAssetAttrIndex.at(static_cast<uint64_t>(shared::VertexFormatFlags::BONE_WEIGHTS));
             assert(boneWeightAttrIdx != nullptr);
 
             auto* boneIndicesAttrIdx =

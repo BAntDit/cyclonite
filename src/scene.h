@@ -26,8 +26,8 @@ public:
     void loadImpl(std::pair<Root<Config>*, std::shared_ptr<shared::AssetMainBlock>> const& rootAndAsset);
 
 private:
-    static auto getSceneAsset(std::shared_ptr<shared::AssetMainBlock> const& asset, boost::uuids::uuid const& uuid)
-      -> shared::AssetScene const&;
+    static auto getSceneAsset(std::shared_ptr<shared::AssetMainBlock> const& asset,
+                              boost::uuids::uuid const& uuid) -> shared::AssetScene const&;
 
     static auto computeNodeCount(std::shared_ptr<shared::AssetMainBlock> const& asset,
                                  shared::AssetScene const& assetScene) -> size_t;
@@ -61,14 +61,14 @@ void Scene::loadImpl(std::pair<Root<Config>*, std::shared_ptr<shared::AssetMainB
     auto& sceneAsset = getSceneAsset(asset, uuid());
 
     auto nodeCount = computeNodeCount(asset, sceneAsset);
- 
-    auto [it, success] = root.sceneEcs_.insert(
-      std::pair{ static_cast<uint64_t>(resourceId), enttx::EntityManager<Config>{ nodeCount } });
+
+    auto [it, success] =
+      root.sceneEcs_.insert(std::pair{ static_cast<uint64_t>(resourceId), enttx::EntityManager<Config>{ nodeCount } });
     assert(success);
 
     auto& [_, ecs] = *it;
 
-    // TODO:: 
+    // TODO::
 }
 }
 #endif

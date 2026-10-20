@@ -53,11 +53,13 @@ public:
 
     [[nodiscard]] auto geometryManager() -> GeometryManager& { return *geometryManager_; }
 
-    [[nodiscard]] auto createGeometry(uint32_t resourceGroupId, std::string_view name, boost::uuids::uuid const& uuid)
-      -> core::ResourceSharedRef;
+    [[nodiscard]] auto createGeometry(uint32_t resourceGroupId,
+                                      std::string_view name,
+                                      boost::uuids::uuid const& uuid) -> core::ResourceSharedRef;
 
-    [[nodiscard]] auto createScene(uint32_t resourceGroupId, std::string_view name, boost::uuids::uuid const& uuid)
-      -> core::ResourceSharedRef;
+    [[nodiscard]] auto createScene(uint32_t resourceGroupId,
+                                   std::string_view name,
+                                   boost::uuids::uuid const& uuid) -> core::ResourceSharedRef;
 
 private:
     systems::SystemManager<Config> systemManager_;
@@ -105,15 +107,17 @@ auto Root<Config>::getSceneEntities(core::ResourceSharedRef const& scene) -> ent
 }
 
 template<typename Config>
-auto Root<Config>::createScene(uint32_t resourceGroupId, std::string_view name, boost::uuids::uuid const& uuid)
-  -> core::ResourceSharedRef
+auto Root<Config>::createScene(uint32_t resourceGroupId,
+                               std::string_view name,
+                               boost::uuids::uuid const& uuid) -> core::ResourceSharedRef
 {
     return resourceGroupManager_.template addResource<Scene>(resourceGroupId, name, uuid);
 }
 
 template<typename Config>
-auto Root<Config>::createGeometry(uint32_t resourceGroupId, std::string_view name, boost::uuids::uuid const& uuid)
-  -> core::ResourceSharedRef
+auto Root<Config>::createGeometry(uint32_t resourceGroupId,
+                                  std::string_view name,
+                                  boost::uuids::uuid const& uuid) -> core::ResourceSharedRef
 {
     return resourceGroupManager_.template addResource<Geometry>(resourceGroupId, name, uuid, geometryManager());
 }
