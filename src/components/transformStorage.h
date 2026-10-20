@@ -27,6 +27,13 @@ public:
 
     auto create(uint32_t index, enttx::Entity parent) -> Transform&;
 
+    auto create(uint32_t index, enttx::Entity parent, vec3 const& position, vec3 const& scale, quat const& rotation)
+      -> Transform&;
+
+    auto create(uint32_t index, enttx::Entity parent, mat4 const& matrix) -> Transform&;
+
+    void destroy(uint32_t index);
+
     [[nodiscard]] auto begin() const -> std::vector<Transform>::const_iterator { return storage_.cbegin(); }
 
     [[nodiscard]] auto end() const -> std::vector<Transform>::const_iterator { return storage_.cend(); }
