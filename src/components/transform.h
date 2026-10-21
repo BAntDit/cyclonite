@@ -9,8 +9,12 @@
 #include <cstdint>
 
 namespace cyclonite::components {
-struct Transform
+class TransformStorage;
+
+class Transform
 {
+    friend class TransformStorage;
+
     enum class State : uint8_t
     {
         UPDATE_NOTHING = 0,
@@ -23,22 +27,47 @@ struct Transform
     };
 
     Transform();
+    
+    Transform(enttx::Entity parent, uint32_t level);
 
-    Transform(vec3 const& pos, vec3 const& sc, quat const& rot);
+    Transform(enttx::Entity parent, uint32_t level, vec3 const& pos, vec3 const& sc, quat const& rot);
 
-    explicit Transform(mat4 mat);
+    explicit Transform(enttx::Entity parent, uint32_t level, mat4 mat);
 
-    enttx::Entity parent;
+    [[nodiscard]] auto parent() const -> enttx::Entity { return parent_; }
+    
+    [[nodiscard]] auto position() const -> vec3 const& { return position_; }
+    
+    [[nodiscard]] auto scale() const -> vec3 const& { return scale_; }
+    
+    [[nodiscard]] auto orientation() const -> quat const& { return orientation_; }
+    
+    [[nodiscard]] auto level() const -> uint32_t { return level_; }
+    
+    [[nodiscard]] auto state() const -> Transform::State { return state_; }
 
-    glm::vec3 position;
-    glm::vec3 scale;
-    quat orientation;
+    void setState(Transform::State state) { state_ = state; }
 
-    mat4 matrix;
+    void setPosition(vec3 const& pos);
 
-    uint32_t level;
+    void setScale(vec3 const& sc);
 
-    State state;
+    void setOrientation(quat const& rotation);
+
+    void setMatrix(mat4 const& mat);
+
+private:
+    enttx::Entity parent_;
+
+    glm::vec3 position_;
+    glm::vec3 scale_;
+    quat orientation_;
+
+    mat4 matrix_;
+
+    uint32_t level_;
+
+    State state_;
 };
 }
 
