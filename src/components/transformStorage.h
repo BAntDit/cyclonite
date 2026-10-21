@@ -42,6 +42,24 @@ public:
 
     [[nodiscard]] auto end() -> std::vector<Transform>::iterator { return storage_.end(); }
 
+    [[nodiscard]] auto getFirstEntityIndex() const -> uint32_t
+    {
+        return componentIdxToEntityIdx_.empty() ? std::numeric_limits<uint32_t>::max()
+                                                : *componentIdxToEntityIdx_.cbegin();
+    }
+
+    [[nodiscard]] auto getLastEntityIndex() const -> uint32_t
+    {
+        return componentIdxToEntityIdx_.empty() ? std::numeric_limits<uint32_t>::max()
+                                                : *componentIdxToEntityIdx_.crbegin();
+    }
+
+    [[nodiscard]] auto getEntityIndex(uint32_t componentIdx) const -> uint32_t
+    {
+        return componentIdx < componentIdxToEntityIdx_.size() ? componentIdxToEntityIdx_[componentIdx]
+                                                              : std::numeric_limits<uint32_t>::max();
+    }
+
 private:
     constexpr static size_t chunk_size_v = 256;
 
@@ -49,7 +67,7 @@ private:
 
     void reserveStoreIfNecessary(uint32_t componentIdx);
 
-    std::vector<uint32_t> entityIdxToComponent_; // maybe better use unordered map
+    std::vector<uint32_t> entityIdxToComponent_; 
     std::vector<uint32_t> componentIdxToEntityIdx_;
     std::vector<component_type> storage_;
 };

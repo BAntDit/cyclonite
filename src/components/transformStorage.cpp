@@ -51,12 +51,12 @@ auto TransformStorage::create(uint32_t index, enttx::Entity parent) -> Transform
         assert(parentComponentIdx < storage_.size());
         auto& parentTransform = storage_[parentComponentIdx];
 
-        level = parentTransform.level + 1;
+        level = parentTransform.level() + 1;
 
         it = std::upper_bound(
           storage_.begin(), storage_.end(), std::pair{ level, parent }, [](auto&& lhs, auto const& rhs) -> bool {
               auto&& [level, parent] = lhs;
-              return (level < rhs.level) || (level == rhs.level && parent.index() < rhs.parent.index());
+              return (level < rhs.level()) || (level == rhs.level() && parent.index() < rhs.parent().index());
           });
     }
 
@@ -64,7 +64,7 @@ auto TransformStorage::create(uint32_t index, enttx::Entity parent) -> Transform
 
     reserveStoreIfNecessary(componentIdx);
 
-    auto newIt = storage_.insert(std::next(storage_.begin(), componentIdx), Transform{});
+    auto newIt = storage_.insert(std::next(storage_.begin(), componentIdx), Transform{ parent, level });
     assert(componentIdx == std::distance(storage_.begin(), newIt));
 
     auto compIdxIt = componentIdxToEntityIdx_.insert(std::next(componentIdxToEntityIdx_.begin(), componentIdx), index);
@@ -86,22 +86,20 @@ auto TransformStorage::create(uint32_t index, enttx::Entity parent) -> Transform
 
     auto& transform = *newIt;
 
-    transform.parent = parent;
-    transform.level = level;
-    transform.state = Transform::State::UPDATE_NOTHING;
-
     return transform;
 }
 
-auto TransformStorage::create(uint32_t index, enttx::Entity parent, vec3 const& position, vec3 const& scale, quat const& rotation)
-      -> Transform&
+auto TransformStorage::create(uint32_t index,
+                              enttx::Entity parent,
+                              vec3 const& position,
+                              vec3 const& scale,
+                              quat const& rotation) -> Transform&
 {
     auto& transform = create(index, parent);
 
-    transform.position = position;
-    transform.scale = scale;
-    transform.orientation = rotation;
-    transform.state = Transform::State::UPDATE_LOCAL;
+    transform.setPosition(position);
+    transform.setScale(scale);
+    transform.setOrientation(rotation);
 
     return transform;
 }
@@ -110,8 +108,7 @@ auto TransformStorage::create(uint32_t index, enttx::Entity parent, mat4 const& 
 {
     auto& transform = create(index, parent);
 
-    transform.matrix = matrix;
-    transform.state = Transform::State::UPDATE_COMPONENTS;
+    transform.setMatrix(matrix);
 
     return transform;
 }
@@ -129,7 +126,23 @@ void TransformStorage::resizeIndicesIfNecessary(uint32_t index)
 
 void TransformStorage::destroy(uint32_t index)
 {
-    // TODO::
+    assert(index < entityIdxToComponent_.size());
+    auto componentIdx = entityIdxToComponent_[index];
+
+    entityIdxToComponent_[index] = std::numeric_limits<uint32_t>::max();
+
+    assert(componentIdx < storage_.size());
+
+    storage_.erase(std::next(storage_.begin(), componentIdx));
+    componentIdxToEntityIdx_.erase(std::next(componentIdxToEntityIdx_.begin(), componentIdx));
+
+    for (auto nextComponentIdx = static_cast<size_t>(componentIdx + 1);
+         nextComponentIdx < componentIdxToEntityIdx_.size();
+         ++nextComponentIdx) {
+        auto entityIdx = componentIdxToEntityIdx_[nextComponentIdx];
+
+        entityIdxToComponent_[entityIdx]--;
+    }
 }
 
 void TransformStorage::reserveStoreIfNecessary(uint32_t componentIdx)
