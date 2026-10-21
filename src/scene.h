@@ -34,6 +34,8 @@ private:
 
     static auto computeChildrenNodeCount(std::shared_ptr<shared::AssetMainBlock> const& asset,
                                          shared::AssetNode const& assetNode) -> size_t;
+
+    std::vector<mat4> nodeWorldTransform_;
 };
 }
 

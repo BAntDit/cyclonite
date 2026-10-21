@@ -9,9 +9,10 @@ namespace cyclonite::systems {
 enum class SystemUpdateStageList : uint32_t
 {
     FRAME_START = 0,
-    TRANSFER_START = 1,
-    TRANSFER_END = 2,
-    FRAME_END = 3,
+    EARLY_UPDATE = 1,
+    TRANSFER_START = 2,
+    TRANSFER_END = 3,
+    FRAME_END = 4,
     LAST_STAGE = FRAME_END
 };
 
