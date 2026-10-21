@@ -2,6 +2,7 @@
 #ifndef CYCLONITE_COMPONENTS_TRANSFORM_STORAGE
 #define CYCLONITE_COMPONENTS_TRANSFORM_STORAGE
 
+#include "enttx/componentStorageConcept.h"
 #include "transform.h"
 #include <vector>
 
@@ -32,6 +33,8 @@ public:
 
     auto create(uint32_t index, enttx::Entity parent, mat4 const& matrix) -> Transform&;
 
+    auto create(uint32_t index) -> Transform& { return create(index, enttx::Entity{}, 0); }
+
     void destroy(uint32_t index);
 
     [[nodiscard]] auto begin() const -> std::vector<Transform>::const_iterator { return storage_.cbegin(); }
@@ -60,6 +63,11 @@ public:
                                                               : std::numeric_limits<uint32_t>::max();
     }
 
+    [[nodiscard]] auto getComponentIndex(uint32_t index) const -> uint32_t {
+        assert(index < entityIdxToComponent_.size());
+        return entityIdxToComponent_[index];
+    }
+
 private:
     constexpr static size_t chunk_size_v = 256;
 
@@ -71,6 +79,8 @@ private:
     std::vector<uint32_t> componentIdxToEntityIdx_;
     std::vector<component_type> storage_;
 };
+// quick test:
+static_assert(enttx::ComponentStorageConcept<TransformStorage>);
 }
 
 #endif // CYCLONITE_COMPONENTS_TRANSFORM_STORAGE
