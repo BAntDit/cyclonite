@@ -335,7 +335,7 @@ void fillAssetAccessor(tinygltf::Model const& model, int gltfAccessorIndex, shar
 
                 if (!gltfNode.matrix.empty()) {
                     assetNode.transformType = shared::AssetTransformType::Matrix;
-                    for (auto i = 0; i < 4; i++) { // raw (pack into 4x3 raw major)
+                    for (auto i = 0; i < 3; i++) { // raw (pack into 4x3 raw major)
                         assetNode.transform[i * 4 + 0] = gltfNode.matrix[0 + i];
                         assetNode.transform[i * 4 + 1] = gltfNode.matrix[4 + i];
                         assetNode.transform[i * 4 + 2] = gltfNode.matrix[8 + i]; 
