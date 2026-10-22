@@ -171,6 +171,11 @@ template<typename ResourceGroup>
                                     if (!ref.valid()) {
                                         ref = root.createScene(resourceGroup->id(), assetScene.name, uuid);
                                     }
+
+                                    auto& scene = ref.template as<Scene>();
+                                    auto future = scene.loadFrom(std::pair{ &root, mainBlock });
+
+                                    futures.push_back(std::move(future));
                                 }
                             }
                         }

@@ -33,7 +33,7 @@ public:
 
     auto create(uint32_t index, enttx::Entity parent, mat4 const& matrix) -> Transform&;
 
-    auto create(uint32_t index) -> Transform& { return create(index, enttx::Entity{}, 0); }
+    auto create(uint32_t index) -> Transform& { return create(index, enttx::Entity{}); }
 
     void destroy(uint32_t index);
 
@@ -63,7 +63,8 @@ public:
                                                               : std::numeric_limits<uint32_t>::max();
     }
 
-    [[nodiscard]] auto getComponentIndex(uint32_t index) const -> uint32_t {
+    [[nodiscard]] auto getComponentIndex(uint32_t index) const -> uint32_t
+    {
         assert(index < entityIdxToComponent_.size());
         return entityIdxToComponent_[index];
     }
@@ -75,7 +76,7 @@ private:
 
     void reserveStoreIfNecessary(uint32_t componentIdx);
 
-    std::vector<uint32_t> entityIdxToComponent_; 
+    std::vector<uint32_t> entityIdxToComponent_;
     std::vector<uint32_t> componentIdxToEntityIdx_;
     std::vector<component_type> storage_;
 };

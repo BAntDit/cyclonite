@@ -27,7 +27,7 @@ class Transform
     };
 
     Transform();
-    
+
     Transform(enttx::Entity parent, uint32_t level);
 
     Transform(enttx::Entity parent, uint32_t level, vec3 const& pos, vec3 const& sc, quat const& rot);
@@ -35,15 +35,15 @@ class Transform
     explicit Transform(enttx::Entity parent, uint32_t level, mat4 mat);
 
     [[nodiscard]] auto parent() const -> enttx::Entity { return parent_; }
-    
+
     [[nodiscard]] auto position() const -> vec3 const& { return position_; }
-    
+
     [[nodiscard]] auto scale() const -> vec3 const& { return scale_; }
-    
+
     [[nodiscard]] auto orientation() const -> quat const& { return orientation_; }
-    
+
     [[nodiscard]] auto level() const -> uint32_t { return level_; }
-    
+
     [[nodiscard]] auto state() const -> Transform::State { return state_; }
 
     void setState(Transform::State state) { state_ = state; }

@@ -48,25 +48,25 @@ Transform::Transform(enttx::Entity parent, uint32_t level, mat4 mat)
     state_ = State::UPDATE_WORLD;
 }
 
-void Transform::setPosition(vec3 const& pos) 
+void Transform::setPosition(vec3 const& pos)
 {
     position_ = pos;
     state_ = State::UPDATE_LOCAL;
 }
 
-void Transform::setScale(vec3 const& sc) 
+void Transform::setScale(vec3 const& sc)
 {
     scale_ = sc;
     state_ = State::UPDATE_LOCAL;
 }
 
-void Transform::setOrientation(quat const& rotation) 
+void Transform::setOrientation(quat const& rotation)
 {
     orientation_ = rotation;
     state_ = State::UPDATE_LOCAL;
 }
 
-void Transform::setMatrix(mat4 const& mat) 
+void Transform::setMatrix(mat4 const& mat)
 {
     matrix_ = mat;
     state_ = State::UPDATE_LOCAL;

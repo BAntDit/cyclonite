@@ -50,7 +50,7 @@ public:
 
     [[nodiscard]] auto end() -> std::vector<ComponentType>::iterator { return storage_.end(); }
 
-    [[nodiscard]] auto getComponentIndex(uint32_t index) const -> uint32_t; 
+    [[nodiscard]] auto getComponentIndex(uint32_t index) const -> uint32_t;
 
     [[nodiscard]] auto getFirstEntityIndex() const -> uint32_t
     {
@@ -218,7 +218,8 @@ void ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::reserveSt
 }
 
 template<size_t CHUNK_SIZE, size_t INITIAL_CHUNK_COUNT, ComponentConcept ComponentType>
-auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::getComponentIndex(uint32_t index) const -> uint32_t
+auto ComponentStorage<CHUNK_SIZE, INITIAL_CHUNK_COUNT, ComponentType>::getComponentIndex(uint32_t index) const
+  -> uint32_t
 {
     assert(index < entityIdxToComponent_.size());
     return entityIdxToComponent_[index];
