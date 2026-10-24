@@ -18,7 +18,11 @@ template<typename ComponentList>
 struct component_list_traits;
 
 template<typename Component>
-struct component_storage_pair_decompose;
+struct component_storage_pair_decompose
+{
+    using component_t = Component;
+    using storage_t = void;
+};
 
 template<typename Component, typename Storage>
 struct component_storage_pair_decompose<metrix::type_pair<Component, Storage>>
@@ -65,7 +69,7 @@ private:
     struct Meta
     {
         using component_list_t =
-          typename internal::component_list_traits<typename EnttManagerConfig::component_list_t>::component_list_t;
+          typename internal::component_list_traits<typename EnttManagerConfig::component_type_list_t>::component_list_t;
 
         using storage_tuple_t =
           typename internal::component_list_traits<typename EnttManagerConfig::component_type_list_t>::storage_tuple_t;
@@ -81,6 +85,10 @@ public:
     using component_list_t = typename meta_t::component_list_t;
     using component_mask_t = typename meta_t::component_mask_t;
     using storage_tuple_t = typename meta_t::storage_tuple_t;
+
+    template<typename C>
+    using component_storage_t =
+      std::tuple_element_t<component_list_t::template get_type_index<C>::value, storage_tuple_t>;
 
     template<typename C, typename R = void>
     using enable_if_component = std::enable_if_t<component_list_t::template has_type<C>::value, R>;
@@ -143,6 +151,13 @@ public:
 
     template<typename... Cs>
     [[nodiscard]] auto hasComponents(Entity entity) const -> enable_if_components<std::bitset<sizeof...(Cs)>, Cs...>;
+
+    template<typename Component>
+    [[nodiscard]] auto getComponentStorage() const
+      -> enable_if_component<Component, component_storage_t<Component> const&>;
+
+    template<typename Component>
+    [[nodiscard]] auto getComponentStorage() -> enable_if_component<Component, component_storage_t<Component>&>;
 
     template<bool isConst, typename... FilterComponents>
     class View
@@ -433,6 +448,21 @@ auto EntityManager<Config>::hasComponents(Entity entity) const
     (result.set(test_list_t::template get_type_index<Cs>::value, hasComponent<Cs>(entity)), ...);
 
     return result;
+}
+
+template<typename Config>
+template<typename Component>
+auto EntityManager<Config>::getComponentStorage() const
+  -> enable_if_component<Component, component_storage_t<Component> const&>
+{
+    return std::get<component_list_t::template get_type_index<Component>::value>(storage_);
+}
+
+template<typename Config>
+template<typename Component>
+auto EntityManager<Config>::getComponentStorage() -> enable_if_component<Component, component_storage_t<Component>&>
+{
+    return std::get<component_list_t::template get_type_index<Component>::value>(storage_);
 }
 
 template<typename Config>
