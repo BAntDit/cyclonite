@@ -13,6 +13,7 @@ class TransformStorage;
 
 class Transform
 {
+public:
     friend class TransformStorage;
 
     enum class State : uint8_t
