@@ -21,10 +21,11 @@ public:
         UPDATE_NOTHING = 0,
         UPDATE_LOCAL = 1,
         UPDATE_COMPONENTS = 2,
-        UPDATE_WORLD = 4,
+        UPDATE_WORLD = 3,
+        UPDATE_CHILDREN = 4,
         MIN_VALUE = UPDATE_NOTHING,
-        MAX_VALUE = UPDATE_WORLD,
-        COUNT = 4
+        MAX_VALUE = UPDATE_CHILDREN,
+        COUNT = 5
     };
 
     Transform();

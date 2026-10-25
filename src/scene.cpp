@@ -2,7 +2,6 @@
 // Created by anton on 10/18/26.
 //
 
-#define CYCLONITE_SCENE_IMPLEMENTATION
 #include "scene.h"
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>

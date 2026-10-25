@@ -14,6 +14,8 @@
 #include <stdexcept>
 
 namespace cyclonite {
+class Scene;
+
 template<typename Config>
 class Root : public RootBase
 {

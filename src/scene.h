@@ -2,18 +2,16 @@
 #ifndef CYCLONITE_SCENE_H
 #define CYCLONITE_SCENE_H
 
-#include <glm/gtc/type_ptr.hpp>
-
 #include "assetModuleBinary.h"
 #include "common.h"
 #include "components/transform.h"
 #include "core/resourceBase.h"
+#include "enttx/entityManager.h"
 #include "resources/managedResource.h"
+#include "root.h"
+#include <glm/gtc/type_ptr.hpp>
 
 namespace cyclonite {
-template<typename Config>
-class Root;
-
 class Scene
   : public core::ResourceBase
   , public resources::ManagedResource<cyclonite::Scene>
@@ -28,6 +26,10 @@ public:
 
     template<typename Config>
     void loadImpl(std::pair<Root<Config>*, std::shared_ptr<shared::AssetMainBlock>> const& rootAndAsset);
+
+    [[nodiscard]] auto nodeWorldMatrices() const -> std::vector<mat4> const& { return nodeWorldTransform_; }
+
+    [[nodiscard]] auto nodeWorldMatrices() -> std::vector<mat4>& { return nodeWorldTransform_; }
 
 private:
     template<typename EcsType>
@@ -47,13 +49,7 @@ private:
 
     std::vector<mat4> nodeWorldTransform_;
 };
-}
 
-#ifdef CYCLONITE_SCENE_IMPLEMENTATION
-#include "enttx/entityManager.h"
-#include "root.h"
-
-namespace cyclonite {
 template<typename Config>
 Scene::Scene(core::ResourceManagerBase* resourceManager,
              core::ResourceId resourceId,
@@ -62,6 +58,7 @@ Scene::Scene(core::ResourceManagerBase* resourceManager,
              boost::uuids::uuid const& uuid)
   : core::ResourceBase{ resourceManager, resourceId, false }
   , resources::ManagedResource<cyclonite::Scene>{ resourceGroup, name, uuid }
+  , nodeWorldTransform_{}
 {
 }
 
@@ -133,5 +130,5 @@ void Scene::loadImpl(std::pair<Root<Config>*, std::shared_ptr<shared::AssetMainB
     // TODO:: store root node
 }
 }
-#endif
+
 #endif // CYCLONITE_SCENE_H
