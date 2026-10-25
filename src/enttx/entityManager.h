@@ -4,7 +4,6 @@
 
 #include "componentStorage.h"
 #include "entity.h"
-#include "enttx/configTraits.h"
 #include <bitset>
 #include <metrix/containers.h>
 #include <metrix/type_list.h>
@@ -78,7 +77,7 @@ private:
     };
 
 public:
-    using config_t = enttx::internal::ConfigTraits<Config>;
+    using config_t = Config;
 
     using meta_t = Meta<config_t>;
 

@@ -8,7 +8,6 @@
 #include "componentStorageConcept.h"
 #include <cassert>
 #include <limits>
-#include <memory>
 #include <vector>
 
 #if defined(max)

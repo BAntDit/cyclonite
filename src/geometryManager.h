@@ -7,7 +7,6 @@
 
 #include "core/arena.h"
 #include "core/resourceSharedRef.h"
-#include "geometryManager.h"
 #include "gfx/common.h"
 #include "gfx/geometryIndicesAllocation.h"
 #include <concepts>
@@ -61,10 +60,6 @@ public:
     [[nodiscard]] auto options() const -> GeometryOptions const& { return options_; }
 
     [[nodiscard]] auto options() -> GeometryOptions& { return options_; }
-
-    // ensure geometry
-    // push the current CPU state toward the GPU on the next transfer stage
-    // auto commitGeometry(core::ResourceSharedRef geometryRef) -> std::future<void>;
 
 private:
     [[nodiscard]] auto allocateIndices(uint32_t count, gfx::IndexType type) -> gfx::GeometryIndicesAllocation;

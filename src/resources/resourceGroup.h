@@ -6,16 +6,10 @@
 #define CYCLONITE_RESOURCES_RESOURCE_GROUP_H
 
 #include "core/resourceManager.h"
+#include "defaultResourceLoader.h"
+#include "resourceConcepts.h"
 #include <boost/uuid/uuid.hpp>
 #include <metrix/type_list.h>
-
-#include "defaultResourceLoader.h"
-#include "geometry.h"
-#include "material.h"
-#include "resourceConcepts.h"
-#include "rootConfigTraits.h"
-#include "scene.h"
-#include "shader.h"
 
 namespace cyclonite {
 template<typename Config>
@@ -27,10 +21,8 @@ template<typename Config>
 class ResourceGroup : public ResourceGroupBase
 {
 public:
-    using config_t = cyclonite::ConfigTraits<Config>;
-    using default_resource_list_t = metrix::type_list<Shader, Material, Geometry, Scene>;
-    using resource_type_list_t = metrix::distinct<
-      typename metrix::concat<typename config_t::custom_resource_type_list_t, default_resource_list_t>::type>::type;
+    using config_t = Config;
+    using resource_type_list_t = config_t::resource_type_list_t;
 
     template<ManagedResourceConcept R>
     constexpr static bool is_group_resource_type = resource_type_list_t::template has_type<R>::value;

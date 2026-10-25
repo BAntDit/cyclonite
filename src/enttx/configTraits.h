@@ -25,13 +25,12 @@ struct config_traits_declaration
 
     DECLARE_CONFIG_TYPE_TRAIT(component_type_list, default_enttx_component_list_t)
 };
-
+}
 template<typename Config>
 struct ConfigTraits
 {
     DEFINE_CONFIG_TYPE_TRAIT(component_type_list)
 };
-}
 }
 
 #endif // CYCLONITE_ENTTX_CONFIG_TRAITS_H

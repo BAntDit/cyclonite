@@ -4,7 +4,6 @@
 
 #include "core/resourceSharedRef.h"
 #include "multithreading/utility.h"
-#include "rootConfigTraits.h"
 #include "stages.h"
 #include <array>
 #include <future>
@@ -30,7 +29,7 @@ template<typename Config>
 class SystemManager
 {
 public:
-    using config_t = cyclonite::ConfigTraits<Config>;
+    using config_t = Config;
     using system_list_t = typename config_t::system_list_t;
     using system_update_stage_enum_t = typename config_t::system_update_stage_enum_t;
     static_assert(SystemStageListConcept<system_update_stage_enum_t>);

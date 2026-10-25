@@ -9,25 +9,19 @@
 #include "geometryManager.h"
 #include "resources/resourceGroupManager.h"
 #include "rootBase.h"
-#include "rootConfigTraits.h"
 #include "systems/systemManager.h"
 #include <boost/unordered/unordered_flat_map.hpp>
 #include <stdexcept>
 
 namespace cyclonite {
-namespace internal {
-struct DefaultConfig
-{};
-};
-
-template<typename Config = internal::DefaultConfig>
+template<typename Config>
 class Root : public RootBase
 {
     friend class Scene;
 
 public:
-    using config_t = cyclonite::ConfigTraits<Config>;
-    using enttx_config_t = enttx::internal::ConfigTraits<typename config_t::enttx_config_t>;
+    using config_t = Config;
+    using enttx_config_t = config_t::enttx_config_t;
     using transfer_system_t = config_t::transfer_system_t;
 
     Root();
