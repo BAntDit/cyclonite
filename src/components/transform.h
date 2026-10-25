@@ -48,7 +48,9 @@ public:
 
     [[nodiscard]] auto state() const -> Transform::State { return state_; }
 
-    void setState(Transform::State state) { state_ = state; }
+    [[nodiscard]] auto state() -> Transform::State& { return state_; }
+
+    [[nodiscard]] auto matrix() const -> mat4 const& { return matrix_; }
 
     void setPosition(vec3 const& pos);
 
