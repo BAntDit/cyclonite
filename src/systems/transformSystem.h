@@ -45,7 +45,7 @@ auto TransformSystem::run(Root<Config>& root,
         }
 
         return updateSceneTreeLevel(root.getSceneEntities(sceneRef), 0, 0);
-    } else if constexpr (ExecutionStage == metrix::value_cast(SystemUpdateStageList::EARLY_UPDATE)) {
+    } else if constexpr (ExecutionStage == metrix::value_cast(SystemUpdateStageList::LATE_UPDATE)) {
         if (prevStageFutures.valid()) {
             prevStageFutures.get();
         }

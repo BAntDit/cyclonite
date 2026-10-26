@@ -12,7 +12,8 @@ enum class SystemUpdateStageList : uint32_t
     EARLY_UPDATE = 1,
     TRANSFER_START = 2,
     TRANSFER_END = 3,
-    FRAME_END = 4,
+    LATE_UPDATE = 4,
+    FRAME_END = 5,
     LAST_STAGE = FRAME_END
 };
 
