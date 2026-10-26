@@ -23,12 +23,13 @@ public:
              std::shared_future<void>& prevStageFutures,
              core::ResourceSharedRef const& sceneRef) -> std::future<void>;
 
+    static void _updateTransform(components::Transform const& parent, components::Transform& transform);
+
 private:
     static constexpr size_t parallel_update_threshold_v = 64;
 
     template<typename EntityManagerConfig>
     auto updateSceneTreeLevel(enttx::EntityManager<EntityManagerConfig>& entityManager,
-                              std::vector<mat4>& worldMatrices,
                               size_t levelStart,
                               uint32_t level) -> std::future<void>;
 };
@@ -43,25 +44,29 @@ auto TransformSystem::run(Root<Config>& root,
             prevStageFutures.get();
         }
 
-        auto sceneCopyRef = sceneRef; // removes const
+        return updateSceneTreeLevel(root.getSceneEntities(sceneRef), 0, 0);
+    } else if constexpr (ExecutionStage == metrix::value_cast(SystemUpdateStageList::EARLY_UPDATE)) {
+        if (prevStageFutures.valid()) {
+            prevStageFutures.get();
+        }
         auto& ecs = root.getSceneEntities(sceneRef);
-        auto& scene = sceneCopyRef.as<Scene>();
-        auto& worldMatrices = scene.nodeWorldMatrices();
+        auto view = ecs.template getView<components::Transform>();
 
-        return updateSceneTreeLevel(ecs, worldMatrices, 0, 0);
-    } else {
-        auto promise = std::promise<void>();
-        auto future = promise.get_future();
-
-        promise.set_value();
-
-        return future;
+        for (auto&& [entity, transform] : view) {
+            transform.state() = components::Transform::State::UPDATE_NOTHING;
+        }
     }
+
+    auto promise = std::promise<void>();
+    auto future = promise.get_future();
+
+    promise.set_value();
+
+    return future;
 }
 
 template<typename EntityManagerConfig>
 auto TransformSystem::updateSceneTreeLevel(enttx::EntityManager<EntityManagerConfig>& entityManager,
-                                           std::vector<mat4>& worldMatrices,
                                            size_t levelStart,
                                            uint32_t level) -> std::future<void>
 {
@@ -86,61 +91,81 @@ auto TransformSystem::updateSceneTreeLevel(enttx::EntityManager<EntityManagerCon
     }
 
     if (levelTransformCount >= parallel_update_threshold_v) {
+        auto updateFutures = std::vector<std::future<void>>{};
+        auto taskCount = levelTransformCount / parallel_update_threshold_v +
+                         ((levelTransformCount % parallel_update_threshold_v) != 0);
 
-    } else {
-        auto beginIt = std::next(storage.begin(), static_cast<long>(levelStart));
-        auto endIt = std::next(storage.begin(), static_cast<long>(levelStart + levelTransformCount));
-        for (auto it = beginIt; it != endIt; ++it) {
-            auto& transform = *it;
-            auto parentWorldMatrix = mat4{ 1.f };
+        updateFutures.reserve(taskCount);
 
-            auto const& parentTransform =
-              (transform.parent() != enttx::Entity{})
-                ? entityManager.template getComponent<components::Transform>(transform.parent())
-                : components::Transform{};
+        auto start = levelStart;
 
-            if (transform.state() == components::Transform::State::UPDATE_NOTHING &&
-                parentTransform.state() == components::Transform::State::UPDATE_NOTHING) {
-                continue;
-            }
+        do {
+            auto componentCount = taskCount > parallel_update_threshold_v ? parallel_update_threshold_v : taskCount;
 
-            if (transform.state() == components::Transform::State::UPDATE_LOCAL) {
-                transform.setMatrix(glm::translate(transform.position()) * glm::mat4_cast(transform.orientation()) *
-                                    glm::scale(transform.scale()));
-                transform.state() = components::Transform::State::UPDATE_WORLD;
-            }
+            updateFutures.emplace_back() = multithreading::Executor::threadExecutor().submitTask(
+              [&storage, &entityManager, start, componentCount]() -> void {
+                  auto beginIt = std::next(storage.begin(), static_cast<long>(start));
+                  auto endIt = std::next(storage.begin(), static_cast<long>(start + componentCount));
 
-            if (transform.state() == components::Transform::State::UPDATE_COMPONENTS) {
-                [[maybe_unused]] auto skew = vec3{};
-                [[maybe_unused]] auto perspective = vec4{};
+                  for (auto it = beginIt; it != endIt; ++it) {
+                      auto& transform = *it;
 
-                auto scale = vec3{};
-                auto position = vec3{};
-                auto rotation = quat{};
+                      auto const& parentTransform =
+                        (transform.parent() != enttx::Entity{})
+                          ? entityManager.template getComponent<components::Transform>(transform.parent())
+                          : components::Transform{};
 
-                [[maybe_unused]] bool success =
-                  glm::decompose(transform.matrix(), scale, rotation, position, skew, perspective);
-                assert(success);
+                      if (transform.state() == components::Transform::State::UPDATE_NOTHING &&
+                          parentTransform.state() == components::Transform::State::UPDATE_NOTHING) {
+                          continue;
+                      }
 
-                transform.setScale(scale);
-                transform.setPosition(position);
-                transform.setOrientation(rotation);
+                      TransformSystem::_updateTransform(parentTransform, transform);
+                  }
+              });
 
-                transform.state() = components::Transform::State::UPDATE_WORLD;
-            }
+            start += componentCount;
 
-            if (transform.state() == components::Transform::State::UPDATE_WORLD || parentTransform.state() == components::Transform::State::UPDATE_CHILDREN) {
-                // TODO::
-                transform.state() = components::Transform::State::UPDATE_CHILDREN;
-            }
-        }
+            assert(componentCount <= taskCount);
+            taskCount -= componentCount;
+        } while (taskCount > 0);
 
+        auto updateFuture = multithreading::when_all(updateFutures);
         if (isLastLevel) {
-
-        } else {
-
+            return updateFuture;
         }
+        updateFuture.get();
+
+        return updateSceneTreeLevel(entityManager, levelStart + levelTransformCount, nextLevel);
     }
+
+    auto beginIt = std::next(storage.begin(), static_cast<long>(levelStart));
+    auto endIt = std::next(storage.begin(), static_cast<long>(levelStart + levelTransformCount));
+    for (auto it = beginIt; it != endIt; ++it) {
+        auto& transform = *it;
+
+        auto const& parentTransform = (transform.parent() != enttx::Entity{})
+                                        ? entityManager.template getComponent<components::Transform>(transform.parent())
+                                        : components::Transform{};
+
+        if (transform.state() == components::Transform::State::UPDATE_NOTHING &&
+            parentTransform.state() == components::Transform::State::UPDATE_NOTHING) {
+            continue;
+        }
+
+        TransformSystem::_updateTransform(parentTransform, transform);
+    }
+
+    if (isLastLevel) {
+        return updateSceneTreeLevel(entityManager, levelStart + levelTransformCount, nextLevel);
+    }
+
+    auto promise = std::promise<void>();
+    auto future = promise.get_future();
+
+    promise.set_value();
+
+    return future;
 }
 }
 #endif // CYCLONITE_SYSTEMS_TRANSFORM_SYSTEM_H

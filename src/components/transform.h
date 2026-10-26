@@ -46,11 +46,15 @@ public:
 
     [[nodiscard]] auto level() const -> uint32_t { return level_; }
 
-    [[nodiscard]] auto state() const -> Transform::State { return state_; }
+    [[nodiscard]] auto state() const -> State { return state_; }
 
-    [[nodiscard]] auto state() -> Transform::State& { return state_; }
+    [[nodiscard]] auto state() -> State& { return state_; }
 
     [[nodiscard]] auto matrix() const -> mat4 const& { return matrix_; }
+
+    [[nodiscard]] auto worldMatrix() const -> mat4 const& { return worldMatrix_; }
+
+    void setWorldMatrix(mat4 const& worldMatrix);
 
     void setPosition(vec3 const& pos);
 
@@ -68,6 +72,7 @@ private:
     quat orientation_;
 
     mat4 matrix_;
+    mat4 worldMatrix_;
 
     uint32_t level_;
 

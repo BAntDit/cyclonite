@@ -12,6 +12,7 @@ Transform::Transform()
   , scale_{ 1.f }
   , orientation_{ glm::angleAxis(glm::radians(0.f), vec3{ 0.f, 1.f, 1.f }) }
   , matrix_{ 1.f }
+  , worldMatrix_{ 1.f }
   , level_{ std::numeric_limits<uint32_t>::max() }
   , state_{ State::UPDATE_NOTHING }
 {
@@ -70,5 +71,11 @@ void Transform::setMatrix(mat4 const& mat)
 {
     matrix_ = mat;
     state_ = State::UPDATE_LOCAL;
+}
+
+void Transform::setWorldMatrix(mat4 const& worldMatrix)
+{
+    worldMatrix_ = worldMatrix;
+    state_ = State::UPDATE_CHILDREN;
 }
 }
