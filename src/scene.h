@@ -27,27 +27,21 @@ public:
     template<typename Config>
     void loadImpl(std::pair<Root<Config>*, std::shared_ptr<shared::AssetMainBlock>> const& rootAndAsset);
 
-    [[nodiscard]] auto nodeWorldMatrices() const -> std::vector<mat4> const& { return nodeWorldTransform_; }
-
-    [[nodiscard]] auto nodeWorldMatrices() -> std::vector<mat4>& { return nodeWorldTransform_; }
-
 private:
     template<typename EcsType>
-    void addRootNode(EcsType& ecs,
-                     enttx::Entity parent,
-                     std::shared_ptr<shared::AssetMainBlock> const& asset,
-                     shared::AssetNode const& assetNode);
+    void addNode(EcsType& ecs,
+                 enttx::Entity parent,
+                 std::shared_ptr<shared::AssetMainBlock> const& asset,
+                 shared::AssetNode const& assetNode);
 
-    static auto getSceneAsset(std::shared_ptr<shared::AssetMainBlock> const& asset,
-                              boost::uuids::uuid const& uuid) -> shared::AssetScene const&;
+    static auto getSceneAsset(std::shared_ptr<shared::AssetMainBlock> const& asset, boost::uuids::uuid const& uuid)
+      -> shared::AssetScene const&;
 
     static auto computeNodeCount(std::shared_ptr<shared::AssetMainBlock> const& asset,
                                  shared::AssetScene const& assetScene) -> size_t;
 
     static auto computeChildrenNodeCount(std::shared_ptr<shared::AssetMainBlock> const& asset,
                                          shared::AssetNode const& assetNode) -> size_t;
-
-    std::vector<mat4> nodeWorldTransform_;
 };
 
 template<typename Config>
@@ -58,15 +52,14 @@ Scene::Scene(core::ResourceManagerBase* resourceManager,
              boost::uuids::uuid const& uuid)
   : core::ResourceBase{ resourceManager, resourceId, false }
   , resources::ManagedResource<cyclonite::Scene>{ resourceGroup, name, uuid }
-  , nodeWorldTransform_{}
 {
 }
 
 template<typename EcsType>
-void Scene::addRootNode(EcsType& ecs,
-                        enttx::Entity parent,
-                        std::shared_ptr<shared::AssetMainBlock> const& asset,
-                        shared::AssetNode const& assetNode)
+void Scene::addNode(EcsType& ecs,
+                    enttx::Entity parent,
+                    std::shared_ptr<shared::AssetMainBlock> const& asset,
+                    shared::AssetNode const& assetNode)
 {
     auto entity = ecs.create();
 
@@ -94,9 +87,9 @@ void Scene::addRootNode(EcsType& ecs,
 
     for (auto child : assetNode.children) {
         assert(child < asset->nodes.size());
-        auto const& childNode = asset->nodes[child];
+        auto const& childAssetNode = asset->nodes[child];
 
-        assetNode(ecs, entity, asset, childNode);
+        addNode(ecs, entity, asset, childAssetNode);
     }
 }
 
@@ -111,8 +104,6 @@ void Scene::loadImpl(std::pair<Root<Config>*, std::shared_ptr<shared::AssetMainB
 
     auto nodeCount = computeNodeCount(asset, sceneAsset);
 
-    nodeWorldTransform_.resize(nodeCount, mat4{});
-
     auto [it, success] = root.sceneEcs_.insert(
       std::pair{ static_cast<uint64_t>(resourceId()), enttx::EntityManager<enttx_config_t>{ nodeCount } });
     assert(success);
@@ -120,14 +111,13 @@ void Scene::loadImpl(std::pair<Root<Config>*, std::shared_ptr<shared::AssetMainB
     auto& [_, ecs] = *it;
 
     auto rootEntity = ecs.create();
-
     ecs.template assign<components::Transform>(rootEntity);
 
     for (auto rootNode : sceneAsset.rootNodes) {
         auto& assetNode = asset->nodes[rootNode];
-    }
 
-    // TODO:: store root node
+        addNode(ecs, rootEntity, asset, assetNode);
+    }
 }
 }
 
