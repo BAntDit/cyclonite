@@ -8,19 +8,16 @@
 #include "enttx/entityManager.h"
 #include "geometryManager.h"
 #include "resources/resourceGroupManager.h"
+#include "root.h"
 #include "rootBase.h"
 #include "systems/systemManager.h"
 #include <boost/unordered/unordered_flat_map.hpp>
 #include <stdexcept>
 
 namespace cyclonite {
-class Scene;
-
 template<typename Config>
 class Root : public RootBase
 {
-    friend class Scene;
-
 public:
     using config_t = Config;
     using enttx_config_t = config_t::enttx_config_t;
@@ -48,14 +45,6 @@ public:
     [[nodiscard]] auto geometryManager() const -> GeometryManager const& { return *geometryManager_; }
 
     [[nodiscard]] auto geometryManager() -> GeometryManager& { return *geometryManager_; }
-
-    [[nodiscard]] auto createGeometry(uint32_t resourceGroupId,
-                                      std::string_view name,
-                                      boost::uuids::uuid const& uuid) -> core::ResourceSharedRef;
-
-    [[nodiscard]] auto createScene(uint32_t resourceGroupId,
-                                   std::string_view name,
-                                   boost::uuids::uuid const& uuid) -> core::ResourceSharedRef;
 
 private:
     systems::SystemManager<Config> systemManager_;
@@ -100,22 +89,6 @@ template<typename Config>
 auto Root<Config>::getSceneEntities(core::ResourceSharedRef const& scene) -> enttx::EntityManager<enttx_config_t>&
 {
     return const_cast<enttx::EntityManager<Config>&>(std::as_const(*this)->getSceneEntities(scene));
-}
-
-template<typename Config>
-auto Root<Config>::createScene(uint32_t resourceGroupId,
-                               std::string_view name,
-                               boost::uuids::uuid const& uuid) -> core::ResourceSharedRef
-{
-    return resourceGroupManager_.template addResource<Scene>(resourceGroupId, name, uuid);
-}
-
-template<typename Config>
-auto Root<Config>::createGeometry(uint32_t resourceGroupId,
-                                  std::string_view name,
-                                  boost::uuids::uuid const& uuid) -> core::ResourceSharedRef
-{
-    return resourceGroupManager_.template addResource<Geometry>(resourceGroupId, name, uuid, geometryManager());
 }
 } // cyclonite
 #endif // CYCLONITE_ROOT_H

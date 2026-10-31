@@ -71,6 +71,8 @@ class ManagedResource
 
         [[nodiscard]] auto stream() -> std::istream&;
 
+        [[nodiscard]] auto customData() -> CustomSharedSource;
+
     private:
         std::variant<std::monostate,
                      CustomSharedSource,
@@ -185,13 +187,27 @@ ManagedResource<Resource>::loading_context_t<CustomSharedSource>::~loading_conte
 
 template<typename Resource>
 template<typename CustomSharedSource>
-[[nodiscard]] auto ManagedResource<Resource>::loading_context_t<CustomSharedSource>::stream() -> std::istream&
+auto ManagedResource<Resource>::loading_context_t<CustomSharedSource>::stream() -> std::istream&
 {
     return std::visit(
       [](auto&& s) -> std::istream& {
           if constexpr (!std::is_same_v<std::decay_t<decltype(s)>, std::monostate> &&
                         !std::is_same_v<std::decay_t<decltype(s)>, CustomSharedSource>) {
               return *s;
+          }
+          throw std::runtime_error("invalid loading context");
+      },
+      source_);
+}
+
+template<typename Resource>
+template<typename CustomSharedSource>
+auto ManagedResource<Resource>::loading_context_t<CustomSharedSource>::customData() -> CustomSharedSource
+{
+    return std::visit(
+      [](auto&& s) -> CustomSharedSource {
+          if constexpr (std::is_same_v<std::decay_t<decltype(s)>, CustomSharedSource>) {
+              return s;
           }
           throw std::runtime_error("invalid loading context");
       },
@@ -254,7 +270,7 @@ auto ManagedResource<Resource>::loadInternal(loading_context_t<CustomSharedSourc
               [weakRef, loadingContext = std::move(loadingContext)]() mutable -> void {
                   if (auto sharedRef = weakRef.lock(); sharedRef.valid()) {
                       auto& r = sharedRef.as<Resource>();
-                      // r.loadImpl(loadingContext.stream()); // TODO:: get data
+                      r.loadImpl(loadingContext.customData());
                       r.setState(ManagedResourceState::Loaded);
                   }
               });

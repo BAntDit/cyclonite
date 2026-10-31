@@ -1,385 +1,280 @@
 //
-// Created by anton on 3/9/26.
+// Created by anton on 10/28/26.
 //
 
 #ifndef CYCLONITE_RESOURCES_RESOURCE_GROUP_H
 #define CYCLONITE_RESOURCES_RESOURCE_GROUP_H
 
 #include "core/resourceManager.h"
-#include "defaultResourceLoader.h"
-#include "resourceConcepts.h"
+#include "resourceGroupBase.h"
 #include <boost/uuid/uuid.hpp>
-#include <metrix/type_list.h>
-
-namespace cyclonite {
-template<typename Config>
-class Root;
-}
+#include <boost/uuid/uuid_io.hpp>
+#include <string_view>
 
 namespace cyclonite::resources {
-template<typename Config>
+template<typename... ResourceType>
 class ResourceGroup : public ResourceGroupBase
 {
 public:
-    using config_t = Config;
-    using resource_type_list_t = config_t::resource_type_list_t;
-
-    template<ManagedResourceConcept R>
-    constexpr static bool is_group_resource_type = resource_type_list_t::template has_type<R>::value;
-
-    ResourceGroup(Root<Config>& root, ResourceGroupManagerBase* groupManager, uint32_t id);
-
-    template<CustomSourceConcept CustomSource>
-    auto load(CustomSource&& customSource) -> std::future<void>;
-
-    auto load(std::wstring_view location) -> std::future<void>;
-
-    auto prepare(core::ResourceSharedRef const& deviceRef) -> std::future<void>;
+    ResourceGroup(ResourceGroupManagerBase& groupManager, uint32_t id);
 
     template<typename R, typename... Args>
-    auto addResource(Args&&... args) -> core::ResourceUniqueRef
-        requires(resource_type_list_t::template has_type<R>::value);
-
-    void releaseAll();
-
-    void releaseResource(boost::uuids::uuid const& uuid);
+    auto addResource(std::string_view name, boost::uuids::uuid const& uuid, Args&&... args) -> core::ResourceSharedRef;
 
     [[nodiscard]] auto isExists(boost::uuids::uuid const& uuid) const -> bool;
+
+    [[nodiscard]] auto isExists(std::string_view name) const -> bool;
 
     [[nodiscard]] auto getResource(boost::uuids::uuid const& uuid) const -> core::ResourceSharedRef;
 
     [[nodiscard]] auto getResource(std::string_view name) const -> core::ResourceSharedRef;
 
-    [[nodiscard]] auto root() const -> Root<Config> const& { return *root_; }
+    void releaseResource(boost::uuids::uuid const& uuid);
 
-    [[nodiscard]] auto root() -> Root<Config>& { return *root_; }
+    void releaseResource(std::string_view name);
 
-private:
-    template<typename... Resource>
-    auto prepareInternal(core::ResourceSharedRef const& deviceRef, metrix::type_list<Resource...>) -> std::future<void>;
-
-    template<typename... Resource>
-    void releaseAllInternal(metrix::type_list<Resource...>);
-
-    template<typename... Resource>
-    void releaseResourceInternal(boost::uuids::uuid const& uuid, metrix::type_list<Resource...>);
-
-    template<typename... Resource>
-    [[nodiscard]] auto isExistsInternal(boost::uuids::uuid const& uuid, metrix::type_list<Resource...>) const -> bool;
-
-    template<typename... Resource>
-    [[nodiscard]] auto getResourceInternal(boost::uuids::uuid const& uuid,
-                                           metrix::type_list<Resource...>) const -> core::ResourceSharedRef;
-
-    template<typename... Resource>
-    [[nodiscard]] auto getResourceInternal(std::string_view name,
-                                           metrix::type_list<Resource...>) const -> core::ResourceSharedRef;
-
-    static void makeOwn(core::ResourceBase& res);
-
-    static void releaseOwnership(core::ResourceBase& res);
-
-    template<CustomSourceConcept CustomSource>
-    static auto readSource(CustomSource* customSourcePtr) -> std::future<void>;
-
-private:
-    template<typename ResourceList>
-    struct resources_meta;
-
-    template<ManagedResourceConcept... Resource>
-    struct resources_meta<metrix::type_list<Resource...>>
+    template<typename... ResourceFilter>
+    class ResourceList
     {
-        using resource_manager_type_t = core::ResourceManager<Resource...>;
-    };
-    using resource_manager_t = typename resources_meta<resource_type_list_t>::resource_manager_type_t;
+        friend class ResourceGroup<ResourceType...>;
 
-    resource_manager_t resourcesLifetimeManager_;
-    Root<Config>* root_;
+    public:
+        class Iterator
+        {
+        public:
+            using iterator_category = std::input_iterator_tag;
+            using value_type = std::conditional_t<
+              sizeof...(ResourceFilter) == 0,
+              std::tuple<core::ResourceSharedRef, std::string_view, boost::uuids::uuid, std::variant<ResourceType*...>>,
+              std::
+                tuple<core::ResourceSharedRef, std::string_view, boost::uuids::uuid, std::variant<ResourceFilter*...>>>;
+
+            using difference_type = uint32_t;
+            using pointer = value_type*;
+            using reference = value_type&;
+
+            auto operator++() -> Iterator&;
+
+            auto operator==(Iterator const& rhs) const -> bool { return it_ == rhs.it_; }
+            auto operator!=(Iterator const& rhs) const -> bool { return it_ != rhs.it_; }
+
+            auto operator*() const -> value_type;
+
+        private:
+            friend class ResourceList;
+
+            Iterator(std::unordered_map<std::string_view, core::ResourceSharedRef>::iterator it,
+                     std::unordered_map<std::string_view, core::ResourceSharedRef>::iterator end)
+              : it_{ it }
+              , end_{ end }
+            {
+                next();
+            }
+
+            void next();
+
+            std::unordered_map<std::string_view, core::ResourceSharedRef>::iterator it_;
+            std::unordered_map<std::string_view, core::ResourceSharedRef>::iterator end_;
+        };
+
+        auto begin() const -> Iterator {
+            return Iterator{ group_->resourceNameToRef_.begin(), group_->resourceNameToRef_.end() };
+        }
+
+        auto end() const -> Iterator {
+            return Iterator{ group_->resourceNameToRef_.end(), group_->resourceNameToRef_.end() };
+        }
+
+    private:
+        ResourceList(ResourceGroup& group)
+          : group_{ group }
+        {
+        }
+
+        ResourceGroup* group_;
+    };
+
+private:
+    static auto getResourceName(core::ResourceSharedRef const& ref) -> std::string_view;
+
+    static auto getResourceUuid(core::ResourceSharedRef const& ref) -> boost::uuids::uuid const&;
+
+    core::ResourceManager<ResourceType...> resources_;
+    std::unordered_map<std::string_view, core::ResourceSharedRef> resourceNameToRef_;
+    std::unordered_map<std::string, core::ResourceSharedRef> resourceUuidToRef_;
 };
 
-template<typename Config>
-template<CustomSourceConcept CustomSource>
-/*static*/ auto ResourceGroup<Config>::readSource(CustomSource* customSourcePtr) -> std::future<void>
+template<typename... ResourceType>
+auto ResourceGroup<ResourceType...>::getResourceName(core::ResourceSharedRef const& ref) -> std::string_view
 {
-    assert(customSourcePtr != nullptr);
-    return customSourcePtr->load();
-}
+    auto name = std::string_view{};
 
-template<typename Config>
-ResourceGroup<Config>::ResourceGroup(Root<Config>& root, ResourceGroupManagerBase* groupManager, uint32_t id)
-  : ResourceGroupBase{ groupManager, id }
-  , resourcesLifetimeManager_{}
-  , root_{ &root }
-{
-}
-
-template<typename Config>
-template<CustomSourceConcept CustomSource>
-auto ResourceGroup<Config>::load(CustomSource&& customSource) -> std::future<void>
-{
-    auto source = std::make_unique<CustomSource>(std::move(customSource));
-    source->setResourceGroup(*this);
-    return ResourceGroup<Config>::readSource<CustomSource>(source.get());
-}
-
-template<typename Config>
-auto ResourceGroup<Config>::load(std::wstring_view location) -> std::future<void>
-{
-    return load(DefaultResourceLoader{ location });
-}
-
-namespace internal {
-template<typename ResType, size_t index>
-auto test_if_resource_type_match(size_t typeId,
-                                 core::ResourceSharedRef const& ref,
-                                 boost::uuids::uuid const& uuid) -> bool
-{
-    if (index == typeId) {
-        auto const& r = ref.as<ResType>();
-        return r.uuid() == uuid;
-    }
-    return false;
-}
-
-template<typename ResType, size_t index>
-auto test_if_resource_type_match(size_t typeId, core::ResourceSharedRef const& ref, std::string_view name) -> bool
-{
-    if (index == typeId) {
-        auto const& r = ref.as<ResType>();
-        return r.name() == name;
-    }
-    return false;
-}
-
-template<typename ResType, size_t index>
-auto mark_to_remove_if_resource_type_match(size_t typeId,
-                                           core::ResourceSharedRef& ref,
-                                           boost::uuids::uuid const& uuid) -> bool
-{
-    if (index == typeId) {
-        auto& r = ref.as<ResType>();
-        if (r.uuid() == uuid) {
-            r.markToRemove();
-            return true;
-        }
-    }
-    return false;
-}
-
-template<typename ResType, size_t index>
-auto mark_to_remove_if_resource_type_match(size_t typeId, core::ResourceSharedRef& ref) -> bool
-{
-    if (index == typeId) {
-        auto& r = ref.as<ResType>();
-        r.markToRemove();
-        return true;
-    }
-    return false;
-}
-
-template<typename ResType, size_t index>
-auto prepare_if_resource_type_match(size_t typeId,
-                                    core::ResourceSharedRef const& deviceRef,
-                                    core::ResourceSharedRef& ref,
-                                    std::shared_future<void>& f) -> bool
-{
-    if (index == typeId) {
-        auto& r = ref.as<ResType>();
-        f = r.prepare(deviceRef);
-        return true;
-    }
-    return false;
-}
-}
-
-template<typename Config>
-template<typename... Resource>
-auto ResourceGroup<Config>::prepareInternal(core::ResourceSharedRef const& deviceRef,
-                                            metrix::type_list<Resource...>) -> std::future<void>
-{
-    auto resCount = resourcesLifetimeManager_.template resourceCount<Resource...>();
-    auto&& resList = resourcesLifetimeManager_.template resourceList<Resource...>();
-
-    auto futures = std::vector<std::shared_future<void>>{};
-    futures.reserve(resCount);
-
-    for (auto&& [ref, typeId] : resList) {
-        auto f = std::shared_future<void>{};
-        auto result =
-          ((internal::prepare_if_resource_type_match<Resource,
-                                                     resource_type_list_t::template get_type_index<Resource>::value>(
-             typeId, deviceRef, ref, f)) ||
+    (void)((metrix::type_list<ResourceType...>::template get_type_index<ResourceType>::value == ref.typeIndex()
+              ? (name = ref.as<ResourceType>().name(), true)
+              : false) ||
            ...);
-        if (result && f.valid()) { // TODO:: maybe silent skip of invalid futures is not good idea
-            futures.push_back(std::move(f));
-        }
-    }
 
-    return multithreading::when_all(futures);
+    return name;
 }
 
-template<typename Config>
-auto ResourceGroup<Config>::prepare(core::ResourceSharedRef const& deviceRef) -> std::future<void>
+template<typename... ResourceType>
+auto ResourceGroup<ResourceType...>::getResourceUuid(core::ResourceSharedRef const& ref) -> boost::uuids::uuid const&
 {
-    return prepareInternal(deviceRef, resource_type_list_t{});
+    auto uuid = boost::uuids::uuid{};
+
+    (void)((metrix::type_list<ResourceType...>::template get_type_index<ResourceType>::value == ref.typeIndex()
+              ? (uuid = ref.as<ResourceType>().uuid(), true)
+              : false) ||
+           ...);
+
+    return uuid;
 }
 
-template<typename Config>
+template<typename... ResourceType>
+ResourceGroup<ResourceType...>::ResourceGroup(ResourceGroupManagerBase& groupManager, uint32_t id)
+  : ResourceGroupBase{ &groupManager, id }
+  , resources_{}
+  , resourceNameToRef_{}
+  , resourceUuidToRef_{}
+{
+}
+
+template<typename... ResourceType>
 template<typename R, typename... Args>
-auto ResourceGroup<Config>::addResource(Args&&... args) -> core::ResourceUniqueRef
-    requires(resource_type_list_t::template has_type<R>::value)
+auto ResourceGroup<ResourceType...>::addResource(std::string_view name,
+                                                 boost::uuids::uuid const& uuid,
+                                                 Args&&... args) -> core::ResourceSharedRef
 {
-    auto uniqueRes = resourcesLifetimeManager_.template allocResource<R>(this, std::forward<Args>(args)...);
-    assert(uniqueRes.resourceBase() != nullptr);
-    makeOwn(*uniqueRes.resourceBase());
+    auto ref = core::ResourceSharedRef{ resources_.template allocResource<R>(name, uuid, std::forward<Args>(args)...) };
 
-    return uniqueRes;
+    resourceNameToRef_.emplace(name, ref);
+
+    auto us = boost::uuids::to_string(uuid);
+    resourceUuidToRef_.emplace(us, ref);
+
+    return ref;
 }
 
-template<typename Config>
-/*static */ void ResourceGroup<Config>::makeOwn(core::ResourceBase& res)
+template<typename... ResourceType>
+auto ResourceGroup<ResourceType...>::isExists(boost::uuids::uuid const& uuid) const -> bool
 {
-    res.retain();
+    auto us = boost::uuids::to_string(uuid);
+    return resourceUuidToRef_.contains(us);
 }
 
-template<typename Config>
-/*static */ void ResourceGroup<Config>::releaseOwnership(core::ResourceBase& res)
+template<typename... ResourceType>
+auto ResourceGroup<ResourceType...>::isExists(std::string_view name) const -> bool
 {
-    res.release();
+    return resourceNameToRef_.contains(name);
 }
 
-template<typename Config>
-template<typename... Resource>
-void ResourceGroup<Config>::releaseAllInternal(metrix::type_list<Resource...>)
+template<typename... ResourceType>
+auto ResourceGroup<ResourceType...>::getResource(boost::uuids::uuid const& uuid) const -> core::ResourceSharedRef
 {
-    auto&& resList = resourcesLifetimeManager_.template resourceList<Resource...>();
+    auto ref = core::ResourceSharedRef{};
+    auto us = boost::uuids::to_string(uuid);
 
-    for (auto&& [ref, typeId] : resList) {
-        auto result = ((internal::mark_to_remove_if_resource_type_match<
-                         Resource,
-                         resource_type_list_t::template get_type_index<Resource>::value>(typeId, ref)) ||
-                       ...);
+    if (resourceUuidToRef_.contains(us)) {
+        ref = resourceUuidToRef_.at(us);
+    }
+    return ref;
+}
 
-        if (result) {
-            auto& baseRes = ref.template as<core::ResourceBase>();
-            releaseOwnership(baseRes);
-        }
+template<typename... ResourceType>
+auto ResourceGroup<ResourceType...>::getResource(std::string_view name) const -> core::ResourceSharedRef
+{
+    auto ref = core::ResourceSharedRef{};
+
+    if (resourceNameToRef_.contains(name)) {
+        ref = resourceNameToRef_.at(name);
+    }
+    return ref;
+}
+
+template<typename... ResourceType>
+void ResourceGroup<ResourceType...>::releaseResource(boost::uuids::uuid const& uuid)
+{
+    auto us = boost::uuids::to_string(uuid);
+    if (resourceUuidToRef_.contains(us)) {
+        auto ref = resourceUuidToRef_.at(us);
+
+        resourceUuidToRef_.erase(us);
+
+        auto name = getResourceName(ref);
+        assert(resourceNameToRef_.contains(name));
+
+        resourceNameToRef_.erase(name);
     }
 }
 
-template<typename Config>
-void ResourceGroup<Config>::releaseAll()
+template<typename... ResourceType>
+void ResourceGroup<ResourceType...>::releaseResource(std::string_view name)
 {
-    return releaseAllInternal(resource_type_list_t{});
-}
+    if (resourceNameToRef_.contains(name)) {
+        auto ref = resourceNameToRef_.at(name);
 
-template<typename Config>
-template<typename... Resource>
-void ResourceGroup<Config>::releaseResourceInternal(boost::uuids::uuid const& uuid, metrix::type_list<Resource...>)
-{
-    auto&& resList = resourcesLifetimeManager_.template resourceList<Resource...>();
-    for (auto&& [ref, typeId] : resList) {
-        auto result = ((internal::mark_to_remove_if_resource_type_match<
-                         Resource,
-                         resource_type_list_t::template get_type_index<Resource>::value>(typeId, ref, uuid)) ||
-                       ...);
+        resourceNameToRef_.erase(name);
 
-        if (result) {
-            auto& baseRes = ref.template as<core::ResourceBase>();
-            releaseOwnership(baseRes);
-            break;
-        }
+        auto uuid = getResourceUuid(ref);
+        auto us = boost::uuids::to_string(uuid);
+        assert(resourceUuidToRef_.contains(us));
+
+        resourceUuidToRef_.erase(us);
     }
 }
 
-template<typename Config>
-void ResourceGroup<Config>::releaseResource(boost::uuids::uuid const& uuid)
+template<typename... ResourceType>
+template<typename... ResourceFilter>
+void ResourceGroup<ResourceType...>::ResourceList<ResourceFilter...>::Iterator::next()
 {
-    releaseAllInternal(uuid, resource_type_list_t{});
-}
+    if constexpr (sizeof...(ResourceFilter) == 0) {
+        return;
+    }
 
-template<typename Config>
-template<typename... Resource>
-auto ResourceGroup<Config>::isExistsInternal(boost::uuids::uuid const& uuid,
-                                             metrix::type_list<Resource...>) const -> bool
-{
-    auto&& resList = resourcesLifetimeManager_.template resourceList<Resource...>();
-    for (auto&& [ref, typeId] : resList) {
-        auto result =
-          ((internal::test_if_resource_type_match<Resource,
-                                                  resource_type_list_t::template get_type_index<Resource>::value>(
-             typeId, ref, uuid)) ||
+    while (it_ != end_) {
+        auto&& [_, ref] = *it_;
+        auto matchFilter =
+          ((metrix::type_list<ResourceType...>::template get_type_index<ResourceFilter>::value == ref.typeIndex()) ||
            ...);
 
-        if (result) {
-            return true;
-        }
-    }
-    return false;
-}
-
-template<typename Config>
-auto ResourceGroup<Config>::isExists(boost::uuids::uuid const& uuid) const -> bool
-{
-    return isExistsInternal(uuid, resource_type_list_t{});
-}
-
-template<typename Config>
-template<typename... Resource>
-auto ResourceGroup<Config>::getResourceInternal(std::string_view name,
-                                                metrix::type_list<Resource...>) const -> core::ResourceSharedRef
-{
-    auto res = core::ResourceSharedRef{};
-    auto&& resList = resourcesLifetimeManager_.template resourceList<Resource...>();
-    for (auto&& [ref, typeId] : resList) {
-        auto result =
-          ((internal::test_if_resource_type_match<Resource,
-                                                  resource_type_list_t::template get_type_index<Resource>::value>(
-             typeId, ref, name)) ||
-           ...);
-
-        if (result) {
-            res = ref;
+        if (matchFilter)
             break;
-        }
+
+        it_++;
+    }
+}
+
+template<typename... ResourceType>
+template<typename... ResourceFilter>
+auto ResourceGroup<ResourceType...>::ResourceList<ResourceFilter...>::Iterator::operator++() -> Iterator&
+{
+    it_++;
+    next();
+    return *this;
+}
+
+template<typename... ResourceType>
+template<typename... ResourceFilter>
+auto ResourceGroup<ResourceType...>::ResourceList<ResourceFilter...>::Iterator::operator*() const -> value_type
+{
+    auto [name, ref] = *it_;
+    auto uuid = ResourceGroup<ResourceType...>::getResourceUuid(ref);
+    auto v = std::
+      conditional_t<sizeof...(ResourceFilter) == 0, std::variant<ResourceType*...>, std::variant<ResourceFilter*...>>{};
+
+    if constexpr (sizeof...(ResourceFilter) == 0) {
+        (void)((metrix::type_list<ResourceType...>::template get_type_index<ResourceType>::value == ref.typeIndex()
+                  ? (v = &ref.as<ResourceType>(), true)
+                  : false) ||
+               ...);
+    } else {
+        (void)((metrix::type_list<ResourceType...>::template get_type_index<ResourceFilter>::value == ref.typeIndex()
+                  ? (v = &ref.as<ResourceFilter>(), true)
+                  : false) ||
+               ...);
     }
 
-    return res;
-}
-
-template<typename Config>
-auto ResourceGroup<Config>::getResource(std::string_view name) const -> core::ResourceSharedRef
-{
-    return getResourceInternal(name, resource_type_list_t{});
-}
-
-template<typename Config>
-template<typename... Resource>
-auto ResourceGroup<Config>::getResourceInternal(boost::uuids::uuid const& uuid,
-                                                metrix::type_list<Resource...>) const -> core::ResourceSharedRef
-{
-    auto res = core::ResourceSharedRef{};
-    auto&& resList = resourcesLifetimeManager_.template resourceList<Resource...>();
-    for (auto&& [ref, typeId] : resList) {
-        auto result =
-          ((internal::test_if_resource_type_match<Resource,
-                                                  resource_type_list_t::template get_type_index<Resource>::value>(
-             typeId, ref, uuid)) ||
-           ...);
-
-        if (result) {
-            res = ref;
-            break;
-        }
-    }
-
-    return res;
-}
-
-template<typename Config>
-auto ResourceGroup<Config>::getResource(boost::uuids::uuid const& uuid) const -> core::ResourceSharedRef
-{
-    return getResourceInternal(uuid, resource_type_list_t{});
+    return std::make_tuple(ref, name, uuid, v);
 }
 }
 
