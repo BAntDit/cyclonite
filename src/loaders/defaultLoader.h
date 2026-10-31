@@ -122,9 +122,22 @@ static auto loadResources(Root<Config>& root,
                             } // geometry (end)
 
                             if (resourceManager.template groupHasResourceType<Scene>()) {
-                                // TODO::
-                            }
-                        }
+                                for (auto& assetScene : mainBlock->scenes) {
+                                    auto uuid = generator(assetScene.uuid);
+
+                                    auto resourceRef = resourceManager.getResource(destinationGroupName, uuid);
+                                    if (!resourceRef.valid()) {
+                                        resourceRef = resourceManager.template addResource<Scene>(
+                                          destinationGroupName, uuid, assetScene.name);
+                                    }
+
+                                    auto& scene = resourceRef.template as<Scene>();
+                                    auto future = scene.loadFrom(std::pair{ &root, mainBlock });
+
+                                    futures.push_back(std::move(future));
+                                }
+                            } // scenes (end)
+                        } // if main block (end)
                     }
                 } break;
                 case shared::SHADER_MODULE_MAGIC_NUMBER: {

@@ -39,7 +39,6 @@ auto ResourceGroupBase::isExists(boost::uuids::uuid const& uuid) const -> bool
     return resourceUuidToRef_.contains(us);
 }
 
-
 auto ResourceGroupBase::isExists(std::string_view name) const -> bool
 {
     return resourceNameToRef_.contains(name);

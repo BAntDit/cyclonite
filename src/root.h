@@ -14,9 +14,13 @@
 #include <stdexcept>
 
 namespace cyclonite {
+class Scene;
+
 template<typename Config>
 class Root : public RootBase
 {
+    friend class Scene;
+
 public:
     using config_t = Config;
     using enttx_config_t = config_t::enttx_config_t;

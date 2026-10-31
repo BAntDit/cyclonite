@@ -1,12 +1,14 @@
+//
+// Created by anton on 10/28/26.
+//
 
 #ifndef CYCLONITE_SCENE_H
 #define CYCLONITE_SCENE_H
 
 #include "assetModuleBinary.h"
-#include "common.h"
 #include "components/transform.h"
 #include "core/resourceBase.h"
-#include "enttx/entityManager.h"
+#include "enttx/entity.h"
 #include "resources/managedResource.h"
 #include "root.h"
 #include <glm/gtc/type_ptr.hpp>
@@ -17,12 +19,15 @@ class Scene
   , public resources::ManagedResource<cyclonite::Scene>
 {
 public:
-    template<typename Config>
     Scene(core::ResourceManagerBase* resourceManager,
           core::ResourceId resourceId,
           resources::ResourceGroupBase* resourceGroup,
           std::string_view name,
           boost::uuids::uuid const& uuid);
+
+    using core::ResourceBase::resourceBase;
+
+    [[nodiscard]] auto rootEntity() const -> enttx::Entity { return rootEntity_; }
 
     template<typename Config>
     void loadImpl(std::pair<Root<Config>*, std::shared_ptr<shared::AssetMainBlock>> const& rootAndAsset);
@@ -34,26 +39,17 @@ private:
                  std::shared_ptr<shared::AssetMainBlock> const& asset,
                  shared::AssetNode const& assetNode);
 
-    static auto getSceneAsset(std::shared_ptr<shared::AssetMainBlock> const& asset, boost::uuids::uuid const& uuid)
-      -> shared::AssetScene const&;
+    static auto getSceneAsset(std::shared_ptr<shared::AssetMainBlock> const& asset,
+                              boost::uuids::uuid const& uuid) -> shared::AssetScene const&;
 
     static auto computeNodeCount(std::shared_ptr<shared::AssetMainBlock> const& asset,
                                  shared::AssetScene const& assetScene) -> size_t;
 
     static auto computeChildrenNodeCount(std::shared_ptr<shared::AssetMainBlock> const& asset,
                                          shared::AssetNode const& assetNode) -> size_t;
-};
 
-template<typename Config>
-Scene::Scene(core::ResourceManagerBase* resourceManager,
-             core::ResourceId resourceId,
-             resources::ResourceGroupBase* resourceGroup,
-             std::string_view name,
-             boost::uuids::uuid const& uuid)
-  : core::ResourceBase{ resourceManager, resourceId, false }
-  , resources::ManagedResource<cyclonite::Scene>{ resourceGroup, name, uuid }
-{
-}
+    enttx::Entity rootEntity_;
+};
 
 template<typename EcsType>
 void Scene::addNode(EcsType& ecs,
@@ -110,13 +106,11 @@ void Scene::loadImpl(std::pair<Root<Config>*, std::shared_ptr<shared::AssetMainB
 
     auto& [_, ecs] = *it;
 
-    auto rootEntity = ecs.create();
-    ecs.template assign<components::Transform>(rootEntity);
+    rootEntity_ = ecs.create();
+    ecs.template assign<components::Transform>(rootEntity_);
 
     for (auto rootNode : sceneAsset.rootNodes) {
         auto& assetNode = asset->nodes[rootNode];
-
-        addNode(ecs, rootEntity, asset, assetNode);
     }
 }
 }

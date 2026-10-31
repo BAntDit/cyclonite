@@ -7,8 +7,19 @@
 #include <boost/uuid/uuid_io.hpp>
 
 namespace cyclonite {
-/*static */ auto Scene::getSceneAsset(std::shared_ptr<shared::AssetMainBlock> const& asset,
-                                      boost::uuids::uuid const& uuid) -> shared::AssetScene const&
+Scene::Scene(core::ResourceManagerBase* resourceManager,
+             core::ResourceId resourceId,
+             resources::ResourceGroupBase* resourceGroup,
+             std::string_view name,
+             boost::uuids::uuid const& uuid)
+  : core::ResourceBase{ resourceManager, resourceId, false }
+  , resources::ManagedResource<cyclonite::Scene>{ resourceGroup, name, uuid }
+  , rootEntity_{}
+{
+}
+
+auto Scene::getSceneAsset(std::shared_ptr<shared::AssetMainBlock> const& asset,
+                          boost::uuids::uuid const& uuid) -> shared::AssetScene const&
 {
     auto uuidStr = boost::uuids::to_string(uuid);
 
@@ -23,8 +34,8 @@ namespace cyclonite {
     return *it;
 }
 
-/*static */ auto Scene::computeNodeCount(std::shared_ptr<shared::AssetMainBlock> const& asset,
-                                         shared::AssetScene const& assetScene) -> size_t
+auto Scene::computeNodeCount(std::shared_ptr<shared::AssetMainBlock> const& asset,
+                             shared::AssetScene const& assetScene) -> size_t
 {
     auto count = size_t{ 1 }; // main root
 
@@ -40,8 +51,8 @@ namespace cyclonite {
     return count;
 }
 
-/*static */ auto Scene::computeChildrenNodeCount(std::shared_ptr<shared::AssetMainBlock> const& asset,
-                                                 shared::AssetNode const& assetNode) -> size_t
+auto Scene::computeChildrenNodeCount(std::shared_ptr<shared::AssetMainBlock> const& asset,
+                                     shared::AssetNode const& assetNode) -> size_t
 {
     auto count = assetNode.children.size();
 
