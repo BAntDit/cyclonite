@@ -9,7 +9,6 @@
 #include "scene.h"
 #include "stages.h"
 #include <future>
-#include <glm/gtx/matrix_decompose.hpp>
 #include <metrix/enum.h>
 
 namespace cyclonite::systems {
