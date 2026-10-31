@@ -75,6 +75,34 @@ public:
 
     void deleteGroup(std::string_view name);
 
+    template<typename R>
+    [[nodiscard]] auto groupHasResourceType(std::string_view groupName) const -> bool;
+
+    template<typename R>
+    [[nodiscard]] auto groupHasResourceType(uint32_t groupId) const -> bool;
+
+    [[nodiscard]] auto getResource(std::string_view groupName,
+                                   std::string_view resourceName) const -> core::ResourceSharedRef const&;
+
+    [[nodiscard]] auto getResource(uint32_t groupId,
+                                   std::string_view resourceName) const -> core::ResourceSharedRef const&;
+
+    [[nodiscard]] auto getResource(std::string_view groupName,
+                                   boost::uuids::uuid const& uuid) const -> core::ResourceSharedRef const&;
+
+    [[nodiscard]] auto getResource(uint32_t groupId,
+                                   boost::uuids::uuid const& uuid) const -> core::ResourceSharedRef const&;
+
+    template<typename R, typename... Args>
+    auto addResource(std::string_view groupName,
+                     boost::uuids::uuid const& uuid,
+                     std::string_view resourceName,
+                     Args&&... args) -> core::ResourceSharedRef;
+
+    template<typename R, typename... Args>
+    auto addResource(uint32_t groupId, boost::uuids::uuid const& uuid, std::string_view resourceName, Args&&... args)
+      -> core::ResourceSharedRef;
+
     template<typename OnVisit, typename... Args>
     auto visitGroupAsync(uint32_t groupId, OnVisit&& onVisit, Args&&... args) -> std::future<void>
     {
@@ -203,6 +231,109 @@ void ResourceGroupManager<Config>::deleteGroup(std::string_view name)
 
     assert(groupAndMaskPairs_.contains(id));
     groupAndMaskPairs_.erase(id);
+}
+
+template<typename Config>
+template<typename R>
+auto ResourceGroupManager<Config>::groupHasResourceType(std::string_view groupName) const -> bool
+{
+    assert(groupNameToId_.contains(std::string{ groupName }));
+    auto id = groupNameToId_.at(std::string{ groupName });
+
+    return groupHasResourceType<R>(id);
+}
+
+template<typename Config>
+template<typename R>
+auto ResourceGroupManager<Config>::groupHasResourceType(uint32_t groupId) const -> bool
+{
+    assert(groupAndMaskPairs_.contains(groupId));
+    auto& [_, mask] = groupAndMaskPairs_.at(groupId);
+
+    constexpr auto hasType = resource_type_list_t::template has_type<R>::value;
+    constexpr auto typeBit = resource_type_list_t::template get_type_index<R>::value;
+
+    return hasType && mask.test(typeBit);
+}
+
+template<typename Config>
+auto ResourceGroupManager<Config>::getResource(std::string_view groupName,
+                                               std::string_view resourceName) const -> core::ResourceSharedRef const&
+{
+    assert(groupNameToId_.contains(std::string{ groupName }));
+    auto id = groupNameToId_.at(std::string{ groupName });
+
+    return getResource(id, resourceName);
+}
+
+template<typename Config>
+auto ResourceGroupManager<Config>::getResource(uint32_t groupId,
+                                               std::string_view resourceName) const -> core::ResourceSharedRef const&
+{
+    assert(groupAndMaskPairs_.contains(groupId));
+    auto& [group, _] = groupAndMaskPairs_.at(groupId);
+
+    return group->getResource(resourceName);
+}
+
+template<typename Config>
+auto ResourceGroupManager<Config>::getResource(std::string_view groupName,
+                                               boost::uuids::uuid const& uuid) const -> core::ResourceSharedRef const&
+{
+    assert(groupNameToId_.contains(std::string{ groupName }));
+    auto id = groupNameToId_.at(std::string{ groupName });
+
+    return getResource(id, uuid);
+}
+
+template<typename Config>
+auto ResourceGroupManager<Config>::getResource(uint32_t groupId,
+                                               boost::uuids::uuid const& uuid) const -> core::ResourceSharedRef const&
+{
+    assert(groupAndMaskPairs_.contains(groupId));
+    auto& [group, _] = groupAndMaskPairs_.at(groupId);
+
+    return group->getResource(uuid);
+}
+
+template<typename Config>
+template<typename R, typename... Args>
+auto ResourceGroupManager<Config>::addResource(std::string_view groupName,
+                                               boost::uuids::uuid const& uuid,
+                                               std::string_view resourceName,
+                                               Args&&... args) -> core::ResourceSharedRef
+{
+    auto ref = core::ResourceSharedRef{};
+
+    visitGroup(
+      groupName,
+      [&ref](auto&& group, boost::uuids::uuid const& uuid, std::string_view resourceName, auto&&... args) mutable
+      -> void { ref = group->template addResource<R>(resourceName, uuid, std::forward<decltype(args)>(args)...); },
+      uuid,
+      resourceName,
+      std::forward<Args>(args)...);
+
+    return ref;
+}
+
+template<typename Config>
+template<typename R, typename... Args>
+auto ResourceGroupManager<Config>::addResource(uint32_t groupId,
+                                               boost::uuids::uuid const& uuid,
+                                               std::string_view resourceName,
+                                               Args&&... args) -> core::ResourceSharedRef
+{
+    auto ref = core::ResourceSharedRef{};
+
+    visitGroup(
+      groupId,
+      [&ref](auto&& group, boost::uuids::uuid const& uuid, std::string_view resourceName, auto&&... args) mutable
+      -> void { ref = group->template addResource<R>(resourceName, uuid, std::forward<decltype(args)>(args)...); },
+      uuid,
+      resourceName,
+      std::forward<Args>(args)...);
+
+    return ref;
 }
 }
 #endif // CYCLONITE_RESOURCES_RESOURCE_GROUP_MANAGER_H

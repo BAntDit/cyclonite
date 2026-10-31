@@ -7,27 +7,19 @@
 
 #include "core/resourceManager.h"
 #include "resourceGroupBase.h"
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_io.hpp>
-#include <string_view>
 
 namespace cyclonite::resources {
 template<typename... ResourceType>
 class ResourceGroup : public ResourceGroupBase
 {
 public:
+    template<typename R>
+    constexpr static bool has_resource_type_v = metrix::type_list<ResourceType...>::template has_type<R>::value;
+
     ResourceGroup(ResourceGroupManagerBase& groupManager, uint32_t id);
 
     template<typename R, typename... Args>
     auto addResource(std::string_view name, boost::uuids::uuid const& uuid, Args&&... args) -> core::ResourceSharedRef;
-
-    [[nodiscard]] auto isExists(boost::uuids::uuid const& uuid) const -> bool;
-
-    [[nodiscard]] auto isExists(std::string_view name) const -> bool;
-
-    [[nodiscard]] auto getResource(boost::uuids::uuid const& uuid) const -> core::ResourceSharedRef;
-
-    [[nodiscard]] auto getResource(std::string_view name) const -> core::ResourceSharedRef;
 
     void releaseResource(boost::uuids::uuid const& uuid);
 
@@ -77,11 +69,13 @@ public:
             std::unordered_map<std::string_view, core::ResourceSharedRef>::iterator end_;
         };
 
-        auto begin() const -> Iterator {
+        auto begin() const -> Iterator
+        {
             return Iterator{ group_->resourceNameToRef_.begin(), group_->resourceNameToRef_.end() };
         }
 
-        auto end() const -> Iterator {
+        auto end() const -> Iterator
+        {
             return Iterator{ group_->resourceNameToRef_.end(), group_->resourceNameToRef_.end() };
         }
 
@@ -100,8 +94,6 @@ private:
     static auto getResourceUuid(core::ResourceSharedRef const& ref) -> boost::uuids::uuid const&;
 
     core::ResourceManager<ResourceType...> resources_;
-    std::unordered_map<std::string_view, core::ResourceSharedRef> resourceNameToRef_;
-    std::unordered_map<std::string, core::ResourceSharedRef> resourceUuidToRef_;
 };
 
 template<typename... ResourceType>
@@ -134,8 +126,6 @@ template<typename... ResourceType>
 ResourceGroup<ResourceType...>::ResourceGroup(ResourceGroupManagerBase& groupManager, uint32_t id)
   : ResourceGroupBase{ &groupManager, id }
   , resources_{}
-  , resourceNameToRef_{}
-  , resourceUuidToRef_{}
 {
 }
 
@@ -152,42 +142,6 @@ auto ResourceGroup<ResourceType...>::addResource(std::string_view name,
     auto us = boost::uuids::to_string(uuid);
     resourceUuidToRef_.emplace(us, ref);
 
-    return ref;
-}
-
-template<typename... ResourceType>
-auto ResourceGroup<ResourceType...>::isExists(boost::uuids::uuid const& uuid) const -> bool
-{
-    auto us = boost::uuids::to_string(uuid);
-    return resourceUuidToRef_.contains(us);
-}
-
-template<typename... ResourceType>
-auto ResourceGroup<ResourceType...>::isExists(std::string_view name) const -> bool
-{
-    return resourceNameToRef_.contains(name);
-}
-
-template<typename... ResourceType>
-auto ResourceGroup<ResourceType...>::getResource(boost::uuids::uuid const& uuid) const -> core::ResourceSharedRef
-{
-    auto ref = core::ResourceSharedRef{};
-    auto us = boost::uuids::to_string(uuid);
-
-    if (resourceUuidToRef_.contains(us)) {
-        ref = resourceUuidToRef_.at(us);
-    }
-    return ref;
-}
-
-template<typename... ResourceType>
-auto ResourceGroup<ResourceType...>::getResource(std::string_view name) const -> core::ResourceSharedRef
-{
-    auto ref = core::ResourceSharedRef{};
-
-    if (resourceNameToRef_.contains(name)) {
-        ref = resourceNameToRef_.at(name);
-    }
     return ref;
 }
 

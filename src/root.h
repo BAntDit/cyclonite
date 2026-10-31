@@ -8,7 +8,6 @@
 #include "enttx/entityManager.h"
 #include "geometryManager.h"
 #include "resources/resourceGroupManager.h"
-#include "root.h"
 #include "rootBase.h"
 #include "systems/systemManager.h"
 #include <boost/unordered/unordered_flat_map.hpp>
