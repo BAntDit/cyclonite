@@ -8,6 +8,7 @@
 #include "assetModuleBinary.h"
 #include "binaryStreamReader.h"
 #include "geometry.h"
+#include "material.h"
 #include "root.h"
 #include "scene.h"
 #include "serialization.h"
@@ -120,6 +121,18 @@ static auto loadResources(Root<Config>& root,
                                     futures.emplace_back(geometry.loadFrom(mainBlock));
                                 }
                             } // geometry (end)
+
+                            if (resourceManager.template groupHasResourceType<Material>()) {
+                                for (auto& assetMaterial : mainBlock->materials) {
+                                    auto uuid = generator(assetMaterial.uuid);
+
+                                    auto resourceRef = resourceManager.getResource(destinationGroupName, uuid);
+                                    if (!resourceRef.valid()) {
+                                        resourceRef = resourceManager.template addResource<Material>(
+                                          destinationGroupName, uuid, assetMaterial.name);
+                                    }
+                                }
+                            }
 
                             if (resourceManager.template groupHasResourceType<Scene>()) {
                                 for (auto& assetScene : mainBlock->scenes) {

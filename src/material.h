@@ -18,8 +18,6 @@ class Material
   : public core::ResourceBase
   , public resources::ManagedResource<cyclonite::Material>
 {
-    friend class resources::ManagedResource<cyclonite::Material>;
-
 public:
     using shader_set_t = core::StaticHashTable<core::ResourceSharedRef,
                                                metrix::value_cast(gfx::ShaderStageFlags::STAGE_COUNT),
