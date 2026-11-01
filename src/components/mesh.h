@@ -6,7 +6,6 @@
 #define CYCLONITE_COMPONENTS_MESH_H
 
 #include <vector>
-
 #include "core/resourceSharedRef.h"
 
 namespace cyclonite::components {

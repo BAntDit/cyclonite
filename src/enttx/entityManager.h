@@ -237,7 +237,7 @@ public:
         template<ComponentStorageConcept StorageType>
         static auto getNextEntityIndex(void* storagePtr, uint32_t componentIdx) -> uint32_t
         {
-            return std::launder(reinterpret_cast<StorageType*>(storagePtr))->getEntityIndex(componentIdx);
+            return reinterpret_cast<StorageType*>(storagePtr)->getEntityIndex(componentIdx);
         }
     };
 

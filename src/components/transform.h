@@ -34,7 +34,7 @@ public:
 
     Transform(enttx::Entity parent, uint32_t level, vec3 const& pos, vec3 const& sc, quat const& rot);
 
-    explicit Transform(enttx::Entity parent, uint32_t level, mat4 mat);
+    Transform(enttx::Entity parent, uint32_t level, mat4 mat);
 
     [[nodiscard]] auto parent() const -> enttx::Entity { return parent_; }
 
