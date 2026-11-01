@@ -4,9 +4,9 @@
 
 #ifndef CYCLONITE_COMPONENTS_TRANSFORM_H
 #define CYCLONITE_COMPONENTS_TRANSFORM_H
+
 #include "common.h"
 #include "enttx/entity.h"
-#include <cstdint>
 
 namespace cyclonite::components {
 class TransformStorage;
