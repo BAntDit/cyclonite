@@ -7,11 +7,13 @@
 
 #include "assetModuleBinary.h"
 #include "components/transform.h"
+#include "components/mesh.h"
 #include "core/resourceBase.h"
 #include "enttx/entity.h"
 #include "resources/managedResource.h"
 #include "root.h"
 #include <glm/gtc/type_ptr.hpp>
+#include <boost/uuid/string_generator.hpp>
 
 namespace cyclonite {
 class Scene
@@ -37,7 +39,8 @@ private:
     void addNode(EcsType& ecs,
                  enttx::Entity parent,
                  std::shared_ptr<shared::AssetMainBlock> const& asset,
-                 shared::AssetNode const& assetNode);
+                 shared::AssetNode const& assetNode,
+                 boost::uuids::string_generator& generator);
 
     static auto getSceneAsset(std::shared_ptr<shared::AssetMainBlock> const& asset,
                               boost::uuids::uuid const& uuid) -> shared::AssetScene const&;
@@ -55,7 +58,8 @@ template<typename EcsType>
 void Scene::addNode(EcsType& ecs,
                     enttx::Entity parent,
                     std::shared_ptr<shared::AssetMainBlock> const& asset,
-                    shared::AssetNode const& assetNode)
+                    shared::AssetNode const& assetNode,
+                    boost::uuids::string_generator& generator)
 {
     auto entity = ecs.create();
 
@@ -76,7 +80,22 @@ void Scene::addNode(EcsType& ecs,
         assert(assetNode.mesh < asset->meshes.size());
         auto const& assetMesh = asset->meshes[assetNode.mesh];
 
-        // TODO::
+        auto& mesh = ecs.template assign<components::Mesh>(entity);
+
+        for (auto subMeshIdx : assetMesh.subMeshes) {
+            auto const& assetSubMesh = asset->subMeshes[subMeshIdx];
+            auto geometryUuid = generator(assetSubMesh.uuid);
+            auto geometryRef = group().getResource(geometryUuid);
+            assert(geometryRef.valid());
+
+            auto materialIdx = assetSubMesh.material;
+            auto const& assetMaterial = asset->materials[materialIdx];
+            auto materialUuid = generator(assetMaterial.uuid);
+            auto materialRef = group().getResource(materialUuid);
+            assert(materialRef.valid());
+
+            mesh.addSubMesh(geometryRef, materialRef);
+        }
     }
 
     // TODO:: add meta data component
@@ -109,8 +128,12 @@ void Scene::loadImpl(std::pair<Root<Config>*, std::shared_ptr<shared::AssetMainB
     rootEntity_ = ecs.create();
     ecs.template assign<components::Transform>(rootEntity_);
 
+    auto generator = boost::uuids::string_generator{};
+
     for (auto rootNode : sceneAsset.rootNodes) {
         auto& assetNode = asset->nodes[rootNode];
+
+        addNode(ecs, rootEntity_, asset, assetNode, generator);
     }
 }
 }
