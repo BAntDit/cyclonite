@@ -19,7 +19,7 @@ class MeshRenderSystem
 public:
     MeshRenderSystem() = default;
 
-    // TODO:: init swapchain
+    // TODO:: init frame ring size
 
     template<size_t ExecutionStage, typename Config>
     auto run(Root<Config>& root,
@@ -39,6 +39,8 @@ private:
     core::StaticHashTable<core::ResourceSharedRef, max_draw_batch_count_v, uint64_t, uint64_t, uint8_t, bool>
       drawBatchBufferStagings_;
 
+    // TODO:: staging struct: ref, mapped ptr, count
+
     core::StaticHashTable<core::ResourceSharedRef, max_draw_batch_count_v, uint64_t, uint64_t, uint8_t, bool>
       drawBatchBuffer_;
 
@@ -48,7 +50,7 @@ private:
     core::StaticHashTable<uint16_t, max_draw_command_per_buffer_v, uint64_t, uint64_t> geometryIdToCommandIndex_;
 
     uint64_t currentFrameNumber_;
-    uint8_t swapChainLength_;
+    uint8_t frameRingSize_;
 };
 
 template<size_t ExecutionStage, typename Config>
@@ -61,7 +63,7 @@ auto MeshRenderSystem::run(Root<Config>& root,
             prevStageFutures.get();
         }
 
-        auto frameIndex = static_cast<uint8_t>(currentFrameNumber_ % swapChainLength_);
+        auto frameIndex = static_cast<uint8_t>(currentFrameNumber_ % frameRingSize_);
 
         auto sceneKey = static_cast<uint64_t>(sceneRef.id());
 
@@ -77,10 +79,18 @@ auto MeshRenderSystem::run(Root<Config>& root,
                 auto& geometry = geometryRef.template as<Geometry>();
                 auto isIndexed = geometry.isIndexed();
 
+                auto stagingIt = drawBatchBufferStagings_.find(sceneKey, pipelineKey, frameIndex, isIndexed);
+
                 // TODO::
             }
         }
+    } else if constexpr (ExecutionStage == metrix::value_cast(SystemUpdateStageList::FRAME_END)) {
+        currentFrameNumber_++;
     }
+
+    (void)root;
+    (void)sceneRef;
+    (void)prevStageFutures;
 
     auto promise = std::promise<void>();
     auto future = promise.get_future();
