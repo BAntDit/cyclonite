@@ -6,14 +6,14 @@
 #define CYCLONITE_SCENE_H
 
 #include "assetModuleBinary.h"
-#include "components/transform.h"
 #include "components/mesh.h"
+#include "components/transform.h"
 #include "core/resourceBase.h"
 #include "enttx/entity.h"
 #include "resources/managedResource.h"
 #include "root.h"
-#include <glm/gtc/type_ptr.hpp>
 #include <boost/uuid/string_generator.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace cyclonite {
 class Scene

@@ -15,7 +15,9 @@
 namespace cyclonite::enttx {
 namespace internal {
 using default_enttx_component_list_t =
-  metrix::type_list<components::Camera, components::Mesh, metrix::type_pair<components::Transform, components::TransformStorage>>;
+  metrix::type_list<components::Camera,
+                    components::Mesh,
+                    metrix::type_pair<components::Transform, components::TransformStorage>>;
 
 template<typename T>
 struct config_traits_declaration

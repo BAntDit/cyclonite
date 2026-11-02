@@ -5,13 +5,14 @@
 #ifndef CYCLONITE_COMPONENTS_MESH_H
 #define CYCLONITE_COMPONENTS_MESH_H
 
-#include <vector>
 #include "core/resourceSharedRef.h"
+#include <vector>
 
 namespace cyclonite::components {
 class Mesh
 {
-    struct SubMesh {
+    struct SubMesh
+    {
         core::ResourceSharedRef geometryRef;
         core::ResourceSharedRef materialRef;
     };
