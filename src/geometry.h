@@ -57,6 +57,8 @@ public:
     template<AttributeContainerConcept AttributeContainer>
     void setupBufferLayout(AttributeContainer&& attributes);
 
+    [[nodiscard]] auto isIndexed() const -> bool { return indices_.indexCount() > 0; }
+
     using core::ResourceBase::resourceBase;
 
 private:
