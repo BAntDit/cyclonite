@@ -509,6 +509,13 @@ struct TextureResourceDescription : public ResourceDescription
 
 inline constexpr auto default_transfer_submission_priority_v = uint16_t{ 100 };
 inline constexpr auto default_render_submission_priority_v = uint16_t{ 50 };
+
+enum class DrawIndirectCommandState : uint8_t
+{
+    UPDATE_NOTHING = 0,
+    UPDATE_STAGING = 1,
+    UPDATE_HW_BUFFER = 2
+};
 }
 
 #endif // GFX_COMMON_H
