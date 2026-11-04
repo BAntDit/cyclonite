@@ -59,6 +59,8 @@ public:
 
     [[nodiscard]] auto isIndexed() const -> bool { return indices_.indexCount() > 0; }
 
+    [[nodiscard]] auto vertexCount() const -> uint32_t { return vertexCount_; }
+
     using core::ResourceBase::resourceBase;
 
 private:
