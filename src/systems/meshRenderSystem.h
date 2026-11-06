@@ -20,7 +20,11 @@ class MeshRenderSystem
 public:
     MeshRenderSystem() = default;
 
-    // TODO:: init frame ring size
+    void init(core::ResourceSharedRef const& deviceRef,
+              uint8_t frameRingSize,
+              core::ResourceSharedRef const& depthRef,
+              core::ResourceSharedRef const& normalsRef,
+              core::ResourceSharedRef const& albedoRef);
 
     template<size_t ExecutionStage, typename Config>
     auto run(Root<Config>& root, std::shared_future<void>& prevStageFutures, core::ResourceSharedRef const& sceneRef)
@@ -33,6 +37,9 @@ private:
 
     core::ResourceSharedRef deviceRef_;
 
+    core::ResourceSharedRef depthPrePassRef_;
+    core::ResourceSharedRef gBufferPassRef_;
+
     // keys:
     // 1. scene id
     // 2. pipeline id
@@ -41,10 +48,14 @@ private:
     core::StaticHashTable<gfx::DrawIndirectCommands, max_draw_batch_count_v, uint64_t, uint64_t, uint8_t>
       nonIndexedDrawBatchBufferStagings_;
 
-    // TODO:: staging struct: ref, mapped ptr, count
+    core::StaticHashTable<gfx::DrawIndirectCommandState, max_draw_batch_count_v, uint64_t, uint64_t, uint8_t>
+      indexedDrawBatchBufferStagings_;
 
     core::StaticHashTable<core::ResourceSharedRef, max_draw_batch_count_v, uint64_t, uint64_t, uint8_t>
       nonIndexedDrawBatchBuffers_;
+
+    core::StaticHashTable<core::ResourceSharedRef, max_draw_batch_count_v, uint64_t, uint64_t, uint8_t>
+      indexedDrawBatchBuffers_;
 
     // key:
     // 1. geometryId
