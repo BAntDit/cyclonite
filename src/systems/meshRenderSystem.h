@@ -78,6 +78,8 @@ auto MeshRenderSystem::run(Root<Config>& root,
 
         auto frameIndex = static_cast<uint8_t>(currentFrameNumber_ % frameRingSize_);
 
+        // TODO:: set per pass data
+
         auto sceneKey = static_cast<uint64_t>(sceneRef.id());
 
         auto& ecs = root.getSceneEntities(sceneRef);
@@ -86,45 +88,50 @@ auto MeshRenderSystem::run(Root<Config>& root,
 
         for (auto&& [entity, transform, mesh] : view) {
             for (auto&& [geometryRef, materialRef] : mesh.subMeshes()) {
-                auto& material = materialRef.template as<Material>();
-                auto pipelineKey = static_cast<uint64_t>(material.pipeline().id());
-
                 auto geometryKey = static_cast<uint64_t>(geometryRef.id());
                 auto& geometry = geometryRef.template as<Geometry>();
                 auto isIndexed = geometry.isIndexed();
+                
+                auto& material = materialRef.template as<Material>();
+                
+                {
+                    auto& technique = material.getPassTechnique(static_cast<uint64_t>(depthPrePassRef_.id()));
+                    auto pipelineKey = static_cast<uint64_t>(technique.pipelineRef.id());
 
-                // TODO:: handle per instance and per batch data
-                if (isIndexed) {
-                    auto stagingIt = nonIndexedDrawBatchBuffers_.find(sceneKey, pipelineKey, frameIndex);
+                    // TODO:: handle per instance and per batch data
+                    if (isIndexed) {
+                        auto stagingIt = nonIndexedDrawBatchBuffers_.find(sceneKey, pipelineKey, frameIndex);
 
-                    if (stagingIt == nonIndexedDrawBatchBuffers_.end()) {
-                        auto [it, success] = nonIndexedDrawBatchBufferStagings_.add(
-                          gfx::DrawIndirectCommands{ deviceRef_, initial_draw_command_count_v });
+                        if (stagingIt == nonIndexedDrawBatchBuffers_.end()) {
+                            auto [it, success] = nonIndexedDrawBatchBufferStagings_.add(
+                              gfx::DrawIndirectCommands{ deviceRef_, initial_draw_command_count_v });
 
-                        if (!success) { // skip geometry draw if no memory for batch
-                            continue;   // TODO:: mayebe warn it somehow
+                            if (!success) { // skip geometry draw if no memory for batch
+                                continue;   // TODO:: mayebe warn it somehow
+                            }
+
+                            stagingIt = it;
                         }
 
-                        stagingIt = it;
-                    }
+                        auto& [_, drawIndirectCommands] = stagingIt;
+                        auto stagingBufferRef = drawIndirectCommands.staging();
+                        auto stagingKey = static_cast<uint64_t>(stagingBufferRef.id());
+                        auto commandIndexIt = geometryIdToCommandIndex_.find(geometryKey, stagingKey);
 
-                    auto& [_, drawIndirectCommands] = stagingIt;
-                    auto stagingBufferRef = drawIndirectCommands.staging();
-                    auto stagingKey = static_cast<uint64_t>(stagingBufferRef.id());
-                    auto commandIndexIt = geometryIdToCommandIndex_.find(geometryKey, stagingKey);
-
-                    if (commandIndexIt == geometryIdToCommandIndex_.end()) { // if new command
-                        auto commandIndexNew = drawIndirectCommands.commandCount();
-                        auto [it, success] = geometryIdToCommandIndex_.add(commandIndexNew, geometryKey, stagingKey);
-                        if (!success) { // skip geometry draw if no memory for batch
-                            continue;
+                        if (commandIndexIt == geometryIdToCommandIndex_.end()) { // if new command
+                            auto commandIndexNew = drawIndirectCommands.commandCount();
+                            auto [it, success] =
+                              geometryIdToCommandIndex_.add(commandIndexNew, geometryKey, stagingKey);
+                            if (!success) { // skip geometry draw if no memory for batch
+                                continue;
+                            }
+                            drawIndirectCommands.addCommand(geometry.vertexCount(), 0, 1, 0);
+                        } else {
+                            auto const& [k, commandIndex] = *commandIndexIt;
+                            drawIndirectCommands.instanceCount(commandIndex)++;
                         }
-                        drawIndirectCommands.addCommand(geometry.vertexCount(), 0, 1, 0);
                     } else {
-                        auto const& [k, commandIndex] = *commandIndexIt;
-                        drawIndirectCommands.instanceCount(commandIndex)++;
                     }
-                } else {
                 }
 
                 // TODO::
