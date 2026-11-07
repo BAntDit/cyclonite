@@ -368,8 +368,8 @@ template<typename DataType, size_t TableSize, typename... Key>
 template<typename... KeyN>
 auto StaticHashTable<DataType, TableSize, Key...>::normalizedHash(KeyN&&... keyN) const -> size_t
 {
-    auto goldendRatioCapacity = std::max(size_t{ 1 }, static_cast<size_t>(capacity() * 0.618f));
-    return core::hash(Key(std::forward<KeyN>(keyN))...) % goldendRatioCapacity;
+    auto goldenRatioCapacity = std::max(size_t{ 1 }, static_cast<size_t>(capacity() * 0.618f));
+    return core::hash(Key(std::forward<KeyN>(keyN))...) % goldenRatioCapacity;
 }
 
 template<typename DataType, size_t TableSize, typename... Key>
