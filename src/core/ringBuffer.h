@@ -363,7 +363,7 @@ private:
     std::byte* buffer_;
 };
 
-// partial specialization #3: ConditionalRingBuffer around array of custom (default constractable) type
+// partial specialization #3: ConditionalRingBuffer around array of custom (default constructable) type
 template<typename ElementType, typename ConditionValueType, size_t Size>
 class ConditionalRingBuffer<ElementType, ConditionValueType, Size>
   : public internal::
@@ -385,7 +385,7 @@ private:
     std::array<element_type_t, Size> elements_;
 };
 
-// partial specialization #4: ConditionalRingBuffer around external array of custom (default constractable) type
+// partial specialization #4: ConditionalRingBuffer around external array of custom (default constructable) type
 template<typename ElementType, typename ConditionValueType, size_t Size>
 class ConditionalRingBuffer<ElementType, ConditionValueType, Size, true>
   : public internal::
