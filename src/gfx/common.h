@@ -317,9 +317,11 @@ enum class DescriptorSpace : uint_fast8_t
     SAMPLERS = 0,
     PER_FRAME = 1,
     PER_PASS = 2,
-    PER_BATCH_STATIC = 3,
-    PER_BATCH_DYNAMIC = 4,
-    GLOBAL_BINDLESS = 5,
+    PER_DRAW_STATIC = 3,
+    PER_DRAW_DYNAMIC = 4,
+    PER_BATCH = 5,
+    PER_INSTANCE = 6,
+    GLOBAL_BINDLESS = 7,
     DESCRIPTOR_SPACE_COUNT = GLOBAL_BINDLESS + 1
 };
 
