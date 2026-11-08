@@ -11,8 +11,7 @@
 // TODO:: null api not implemented
 #endif
 
-namespace cyclonite::gfx 
-{
+namespace cyclonite::gfx {
 #if defined(GFX_DRIVER_VULKAN)
 using DrawIndirectCommands = interfaces::DrawIndirectCommandsInterface<vulkan::DrawIndirectCommands>;
 #elif defined(GFX_DRIVER_D3D12)

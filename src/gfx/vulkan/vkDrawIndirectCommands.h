@@ -5,29 +5,31 @@
 #ifndef CYCLONITE_GFX_VK_DRAW_INDIRECT_COMMANDS_H
 #define CYCLONITE_GFX_VK_DRAW_INDIRECT_COMMANDS_H
 
-#include <vector>
-#include <vulkan/vulkan.h>
 #include "core/resourceSharedRef.h"
 #include "gfx/common.h"
+#include <vector>
+#include <vulkan/vulkan.h>
 
 namespace cyclonite::gfx::vulkan {
 class DrawIndirectCommands
 {
 public:
+    DrawIndirectCommands() = default;
+
     DrawIndirectCommands(core::ResourceSharedRef const& deviceRef, uint32_t initialCommandCount);
 
     [[nodiscard]] auto commandCount() const -> uint32_t { return commandCount_; }
-    
+
     [[nodiscard]] auto capacity() const -> uint32_t { return shadowBuffer_.capacity(); }
-    
+
     [[nodiscard]] auto state() const -> DrawIndirectCommandState { return state_; }
-    
+
     [[nodiscard]] auto state() -> DrawIndirectCommandState& { return state_; }
-    
+
     [[nodiscard]] auto staging() const -> core::ResourceSharedRef const& { return stagingRef_; }
 
     [[nodiscard]] auto vertexCount(size_t commandIndex) const -> uint32_t;
-    
+
     [[nodiscard]] auto vertexCount(size_t commandIndex) -> uint32_t&;
 
     [[nodiscard]] auto firstVertex(size_t commandIndex) const -> uint32_t;

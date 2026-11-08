@@ -11,6 +11,8 @@ namespace cyclonite::gfx::vulkan {
 class DrawIndexedIndirectCommands
 {
 public:
+    DrawIndexedIndirectCommands() = default;
+
     DrawIndexedIndirectCommands(core::ResourceSharedRef const& deviceRef, uint32_t initialCommandCount);
 
     [[nodiscard]] auto commandCount() const -> uint32_t { return commandCount_; }

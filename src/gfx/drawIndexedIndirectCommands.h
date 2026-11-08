@@ -13,7 +13,8 @@
 
 namespace cyclonite::gfx {
 #if defined(GFX_DRIVER_VULKAN)
-using DrawIndexedIndirectCommands = interfaces::DrawIndexedIndirectCommandsInterface<vulkan::DrawIndexedIndirectCommands>;
+using DrawIndexedIndirectCommands =
+  interfaces::DrawIndexedIndirectCommandsInterface<vulkan::DrawIndexedIndirectCommands>;
 #elif defined(GFX_DRIVER_D3D12)
 // TODO:: impl
 #else

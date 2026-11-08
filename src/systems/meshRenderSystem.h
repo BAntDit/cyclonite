@@ -10,6 +10,7 @@
 #include "core/hashTable.h"
 #include "core/resourceSharedRef.h"
 #include "geometry.h"
+#include "gfx/drawIndexedIndirectCommands.h"
 #include "gfx/drawIndirectCommands.h"
 #include "material.h"
 #include "root.h"
@@ -27,8 +28,9 @@ public:
               core::ResourceSharedRef const& albedoRef);
 
     template<size_t ExecutionStage, typename Config>
-    auto run(Root<Config>& root, std::shared_future<void>& prevStageFutures, core::ResourceSharedRef const& sceneRef)
-      -> std::future<void>;
+    auto run(Root<Config>& root,
+             std::shared_future<void>& prevStageFutures,
+             core::ResourceSharedRef const& sceneRef) -> std::future<void>;
 
 private:
     static constexpr size_t max_draw_batch_count_v = 16 * 1024;
@@ -48,7 +50,7 @@ private:
     core::StaticHashTable<gfx::DrawIndirectCommands, max_draw_batch_count_v, uint64_t, uint64_t, uint8_t>
       nonIndexedDrawBatchBufferStagings_;
 
-    core::StaticHashTable<gfx::DrawIndirectCommandState, max_draw_batch_count_v, uint64_t, uint64_t, uint8_t>
+    core::StaticHashTable<gfx::DrawIndexedIndirectCommands, max_draw_batch_count_v, uint64_t, uint64_t, uint8_t>
       indexedDrawBatchBufferStagings_;
 
     core::StaticHashTable<core::ResourceSharedRef, max_draw_batch_count_v, uint64_t, uint64_t, uint8_t>
@@ -91,20 +93,23 @@ auto MeshRenderSystem::run(Root<Config>& root,
                 auto geometryKey = static_cast<uint64_t>(geometryRef.id());
                 auto& geometry = geometryRef.template as<Geometry>();
                 auto isIndexed = geometry.isIndexed();
-                
+
                 auto& material = materialRef.template as<Material>();
-                
+
                 {
                     auto& technique = material.getPassTechnique(static_cast<uint64_t>(depthPrePassRef_.id()));
                     auto pipelineKey = static_cast<uint64_t>(technique.pipelineRef.id());
 
                     // TODO:: handle per instance and per batch data
                     if (isIndexed) {
-                        auto stagingIt = nonIndexedDrawBatchBuffers_.find(sceneKey, pipelineKey, frameIndex);
+                        auto stagingIt = nonIndexedDrawBatchBufferStagings_.find(sceneKey, pipelineKey, frameIndex);
 
-                        if (stagingIt == nonIndexedDrawBatchBuffers_.end()) {
+                        if (stagingIt == nonIndexedDrawBatchBufferStagings_.end()) {
                             auto [it, success] = nonIndexedDrawBatchBufferStagings_.add(
-                              gfx::DrawIndirectCommands{ deviceRef_, initial_draw_command_count_v });
+                              gfx::DrawIndirectCommands{ deviceRef_, initial_draw_command_count_v },
+                              sceneKey,
+                              pipelineKey,
+                              frameIndex);
 
                             if (!success) { // skip geometry draw if no memory for batch
                                 continue;   // TODO:: mayebe warn it somehow
@@ -113,7 +118,7 @@ auto MeshRenderSystem::run(Root<Config>& root,
                             stagingIt = it;
                         }
 
-                        auto& [_, drawIndirectCommands] = stagingIt;
+                        auto& [_, drawIndirectCommands] = *stagingIt;
                         auto stagingBufferRef = drawIndirectCommands.staging();
                         auto stagingKey = static_cast<uint64_t>(stagingBufferRef.id());
                         auto commandIndexIt = geometryIdToCommandIndex_.find(geometryKey, stagingKey);

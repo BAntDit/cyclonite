@@ -42,7 +42,7 @@ void DrawIndirectCommands::addCommand(uint32_t vertexCount,
     command.firstVertex = firstVertex;
     command.instanceCount = instanceCount;
     command.firstInstance = firstInstance;
-    
+
     state_ = DrawIndirectCommandState::UPDATE_STAGING;
 }
 
@@ -102,7 +102,7 @@ auto DrawIndirectCommands::firstInstance(size_t commandIndex) -> uint32_t&
     return shadowBuffer_[commandIndex].firstInstance;
 }
 
-void DrawIndirectCommands::validateStaging() 
+void DrawIndirectCommands::validateStaging()
 {
     auto readIndex = size_t{ 0 };
     auto writeIndex = size_t{ 0 };
@@ -132,8 +132,7 @@ void DrawIndirectCommands::validateStaging()
             copySkipped = false;
         }
 
-        if (readIndex < shadowBuffer_.size())
-        {
+        if (readIndex < shadowBuffer_.size()) {
             auto& src = shadowBuffer_[readIndex++];
             memcpy(commandsPtr_ + writeIndex++, &src, sizeof(VkDrawIndirectCommand));
             commandCount_++;

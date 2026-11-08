@@ -28,13 +28,13 @@ DrawIndexedIndirectCommands::DrawIndexedIndirectCommands(core::ResourceSharedRef
     commandsPtr_ = reinterpret_cast<VkDrawIndexedIndirectCommand*>(staging.map());
 }
 
-auto DrawIndexedIndirectCommands::indexCount(size_t commandIndex) const -> uint32_t 
+auto DrawIndexedIndirectCommands::indexCount(size_t commandIndex) const -> uint32_t
 {
     assert(commandIndex < shadowBuffer_.size());
     return shadowBuffer_[commandIndex].indexCount;
 }
 
-auto DrawIndexedIndirectCommands::indexCount(size_t commandIndex) -> uint32_t& 
+auto DrawIndexedIndirectCommands::indexCount(size_t commandIndex) -> uint32_t&
 {
     state_ = DrawIndirectCommandState::UPDATE_STAGING;
 
@@ -42,13 +42,13 @@ auto DrawIndexedIndirectCommands::indexCount(size_t commandIndex) -> uint32_t&
     return shadowBuffer_[commandIndex].indexCount;
 }
 
-auto DrawIndexedIndirectCommands::firstIndex(size_t commandIndex) const -> uint32_t 
+auto DrawIndexedIndirectCommands::firstIndex(size_t commandIndex) const -> uint32_t
 {
     assert(commandIndex < shadowBuffer_.size());
     return shadowBuffer_[commandIndex].firstIndex;
 }
 
-auto DrawIndexedIndirectCommands::firstIndex(size_t commandIndex) -> uint32_t& 
+auto DrawIndexedIndirectCommands::firstIndex(size_t commandIndex) -> uint32_t&
 {
     state_ = DrawIndirectCommandState::UPDATE_STAGING;
 
@@ -56,13 +56,13 @@ auto DrawIndexedIndirectCommands::firstIndex(size_t commandIndex) -> uint32_t&
     return shadowBuffer_[commandIndex].firstIndex;
 }
 
-auto DrawIndexedIndirectCommands::vertexOffset(size_t commandIndex) const -> int32_t 
+auto DrawIndexedIndirectCommands::vertexOffset(size_t commandIndex) const -> int32_t
 {
     assert(commandIndex < shadowBuffer_.size());
     return shadowBuffer_[commandIndex].vertexOffset;
 }
 
-auto DrawIndexedIndirectCommands::vertexOffset(size_t commandIndex) -> int32_t& 
+auto DrawIndexedIndirectCommands::vertexOffset(size_t commandIndex) -> int32_t&
 {
     state_ = DrawIndirectCommandState::UPDATE_STAGING;
 

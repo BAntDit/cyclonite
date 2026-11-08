@@ -8,20 +8,19 @@
 
 namespace cyclonite::gfx::interfaces {
 template<typename T>
-concept DrawIndirectCommandsConcept = requires(T& t, T const& ct, size_t s) 
-{
+concept DrawIndirectCommandsConcept = requires(T& t, T const& ct, size_t s) {
     { ct.commandCount() } -> std::same_as<uint32_t>;
-    
+
     { ct.capacity() } -> std::same_as<uint32_t>;
-    
+
     { ct.state() } -> std::same_as<DrawIndirectCommandState>;
-    
+
     { t.state() } -> std::same_as<DrawIndirectCommandState&>;
-    
+
     { ct.staging() } -> std::same_as<core::ResourceSharedRef const&>;
-    
+
     { ct.vertexCount(s) } -> std::same_as<uint32_t>;
-    
+
     { t.vertexCount(s) } -> std::same_as<uint32_t&>;
 
     { ct.firstVertex(s) } -> std::same_as<uint32_t>;
@@ -44,18 +43,19 @@ concept DrawIndirectCommandsConcept = requires(T& t, T const& ct, size_t s)
 template<DrawIndirectCommandsConcept PlatformImplementation>
 class DrawIndirectCommandsInterface : private PlatformImplementation
 {
+public:
     using PlatformImplementation::PlatformImplementation;
 
-    using PlatformImplementation::commandCount;
+    using PlatformImplementation::addCommand;
     using PlatformImplementation::capacity;
-    using PlatformImplementation::state;
-    using PlatformImplementation::staging;
-    using PlatformImplementation::vertexCount;
+    using PlatformImplementation::commandCount;
+    using PlatformImplementation::firstInstance;
     using PlatformImplementation::firstVertex;
     using PlatformImplementation::instanceCount;
-    using PlatformImplementation::firstInstance;
-    using PlatformImplementation::addCommand;
+    using PlatformImplementation::staging;
+    using PlatformImplementation::state;
     using PlatformImplementation::validateStaging;
+    using PlatformImplementation::vertexCount;
 };
 }
 

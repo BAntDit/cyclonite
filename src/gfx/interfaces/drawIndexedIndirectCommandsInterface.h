@@ -48,6 +48,7 @@ concept DrawIndexedIndirectCommandsConcept = requires(T& t, T const& ct, size_t 
 template<DrawIndexedIndirectCommandsConcept PlatformImplementation>
 class DrawIndexedIndirectCommandsInterface : private PlatformImplementation
 {
+public:
     using PlatformImplementation::PlatformImplementation;
 
     using PlatformImplementation::addCommand;
