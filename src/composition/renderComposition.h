@@ -14,6 +14,8 @@
 #include <vector>
 
 namespace cyclonite::composition {
+class Compositor;
+
 class RenderComposition
 {
     friend class Compositor;
@@ -110,6 +112,8 @@ private:
 
     std::vector<core::ResourceSharedRef> externalTextures_;
     std::vector<core::ResourceSharedRef> textures_;
+
+    // TODO:: replace with arena
     std::vector<std::byte> constantsBuffer_;
     core::ConditionalRingBuffer<std::byte, uint64_t, constants_ring_buffer_size_v, true> constantsRing_;
 };
@@ -138,7 +142,7 @@ void RenderComposition::setConstants(uint32_t constantsId, uint64_t frameIndex, 
     passConstants.size = sizeof(ConstantsData);
     passConstants.frameIndex = frameIndex;
 
-    memccpy(passConstants.data, &constantsData, sizeof(ConstantsData));
+    memcpy(passConstants.data, &constantsData, sizeof(ConstantsData));
 }
 }
 
