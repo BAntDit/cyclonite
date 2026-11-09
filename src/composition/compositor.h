@@ -75,10 +75,6 @@ private:
     {
         core::ResourceSharedRef passRef;
         enttx::Entity cameraEntity;
-        depth_t depth;
-        // std::array<uint32_t, max_render_target_per_pass_v> inputs;
-        // std::array<uint32_t, max_render_target_per_pass_v> targets;
-        // uint32_t constantIndex;
         uint16_t width;
         uint16_t height;
         RenderPassType type;
@@ -94,9 +90,12 @@ private:
                               std::tuple<std::string_view, gfx::TextureType, gfx::Format, uint16_t, uint16_t>>
       texturesToCreate_;
 
+    std::vector<std::pair<std::string_view, std::string>> constantNames_;
     std::vector<std::tuple<std::string_view, std::string_view, std::string_view, gfx::Format>> inputsToCreate_;
-    std::vector<std::pair<std::string_view, gfx::Format>> depthToCreate_;
-    std::vector<std::pair<std::string_view, std::string_view>> depthToReuse_;
+
+    boost::unordered_flat_map<std::string_view, gfx::Format> depthToCreate_;
+    boost::unordered_flat_map<std::string_view, std::string_view> depthToReuse_;
+
     std::vector<core::ResourceSharedRef> externalTextures_;
     std::vector<core::ResourceSharedRef> textures_;
 };

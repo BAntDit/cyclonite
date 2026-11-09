@@ -14,6 +14,7 @@ Compositor::Compositor(core::ResourceSharedRef const& device)
   , passes_{}
   , textureInputs_{}
   , texturesToCreate_{}
+  , constantNames_{}
   , inputsToCreate_{}
   , depthToCreate_{}
   , depthToReuse_{}
@@ -89,7 +90,7 @@ auto Compositor::addExternalTexture(std::string_view textureName,
 
 auto Compositor::addPassDepth(std::string_view passName, gfx::Format format) -> Compositor&
 {
-    depthToCreate_.emplace_back(passName, format);
+    depthToCreate_.emplace(passName, format);
 
     /*auto& pass = getPass(passName);
     auto& device = device_.as<gfx::Device>();
@@ -128,7 +129,7 @@ auto Compositor::addPassDepth(std::string_view passName, gfx::Format format) -> 
 
 auto Compositor::setPassDepth(std::string_view passName, std::string_view srcPassName) -> Compositor&
 {
-    depthToReuse_.emplace_back(passName, srcPassName);
+    depthToReuse_.emplace(passName, srcPassName);
     return *this;
 }
 
@@ -161,5 +162,70 @@ auto Compositor::addPassInputTexture(std::string_view passName,
 {
     inputsToCreate_.emplace_back(std::make_tuple(passName, std::string_view{}, externalTextureName, format));
     return *this;
+}
+
+auto Compositor::addPassInputFromDepth(std::string_view passName, std::string_view srcPassName) -> Compositor&
+{
+    inputsToCreate_.emplace_back(std::make_tuple(passName, srcPassName, std::string_view{}, gfx::Format::UNDEFINED));
+    return *this;
+}
+
+auto Compositor::addPassConstant(std::string_view passName, std::string_view constantBufferName) -> Compositor&
+{
+    constantNames_.emplace_back(passName, constantBufferName);
+    return *this;
+}
+
+auto Compositor::makeComposition() -> RenderComposition
+{
+    auto& device = device_.as<gfx::Device>();
+
+    auto composition = RenderComposition{};
+
+    for (auto& [name, desc] : passes_) {
+        auto pass = RenderComposition::pass_t{};
+
+        pass.type = desc.type;
+        pass.cameraEntity = desc.cameraEntity;
+        pass.width = desc.width;
+        pass.height = desc.height;
+
+        if (depthToCreate_.contains(name)) {
+            auto format = depthToCreate_.at(name);
+            auto depthTexIndex = textures_.size();
+            auto& depthTexRef = textures_.emplace_back();
+
+            auto allocationFlags = gfx::GpuMemoryAllocationFlagBits{};
+            allocationFlags.set(gfx::GpuMemoryAllocationFlags::DEDICATED_MEMORY);
+
+            auto textureAllocationFlags = gfx::TextureCreationFlagBits{};
+
+            auto textureUsageFlags = gfx::TextureUsageFlagBits{};
+            textureUsageFlags.set(gfx::TextureUsageFlags::DEPTH_STENCIL_ATTACHMENT);
+
+            auto samplerRef = core::ResourceSharedRef{};
+
+            depthTexRef = device.createTexture(allocationFlags,
+                                               textureAllocationFlags,
+                                               samplerRef,
+                                               gfx::TextureType::TEXTURE_2D,
+                                               format,
+                                               pass.width,
+                                               pass.height,
+                                               1,
+                                               1,
+                                               1,
+                                               gfx::TextureTiling::OPTIMAL,
+                                               textureUsageFlags);
+
+            pass.depth.textureIndex = depthTexIndex;
+            pass.depth.format = format;
+        }
+        // reused depth is filled in second pass over passes
+    }
+
+    auto pass = pass_t{};
+
+    return composition;
 }
 }
